@@ -32,7 +32,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 6.3.2
-Release: 4
+Release: 5
 License: MIT/X11
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -60,6 +60,8 @@ Mesa
 Summary: Mesa libGL runtime libraries and DRI drivers.
 Group: System Environment/Libraries
 
+Provides: libGL
+
 # libGL used to be in Mesa package in RHL 6.x, 7.[0-2], RHEL 2.1
 Conflicts: Mesa
 Obsoletes: Mesa
@@ -80,7 +82,9 @@ Mesa libGL runtime libraries and DRI drivers.
 %package libGL-devel
 Summary: Mesa libGL development package
 Group: Development/Libraries
-Requires: libGLU = %{version}-%{release}
+Requires: libGL = %{version}-%{release}
+
+Provides: libGL-devel
 
 # libGL devel files were in Mesa-devel package in RHL 6.x, 7.[0-2], RHEL 2.1
 Conflicts: Mesa-devel
@@ -96,6 +100,8 @@ Mesa libGL development package
 %package libGLU
 Summary: Mesa libGLU runtime library
 Group: System Environment/Libraries
+
+Provides: libGLU
 
 # libGLU used to be in Mesa package in RHL 6.x, 7.[0-2], RHEL 2.1
 Conflicts: Mesa
@@ -119,6 +125,8 @@ Summary: Mesa libGLU development package
 Group: Development/Libraries
 Requires: libGLU = %{version}-%{release}
 
+Provides: libGLU-devel
+
 # libGLU devel files were in Mesa-devel package in RHL 6.x, 7.[0-2], RHEL 2.1
 Conflicts: Mesa-devel
 Obsoletes: Mesa-devel
@@ -134,7 +142,7 @@ Mesa libGLU development package
 Summary: Mesa libGLw runtime library
 Group: System Environment/Libraries
 
-Conflicts: XFree86-libs, xorg-x11-libs, Mesa
+Provides: libGLw
 
 # libGLw used to be in Mesa package in RHL 6.x, 7.[0-2], RHEL 2.1
 Conflicts: Mesa
@@ -151,6 +159,8 @@ Mesa libGLw runtime library
 Summary: Mesa libGLw development package
 Group: Development/Libraries
 Requires: libGLw = %{version}-%{release}
+
+Provides: libGLw-devel
 
 # libGLw devel files were in Mesa-devel package in RHL 6.x, 7.[0-2], RHEL 2.1
 Conflicts: Mesa-devel
@@ -333,6 +343,10 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 
 %changelog
+* Mon Sep 5 2005 Mike A. Harris <mharris@redhat.com> 6.3.2-5
+- Fix mesa-libGL-devel to depend on mesa-libGL instead of mesa-libGLU.
+- Added virtual "Provides: libGL..." entries for each subpackage as relevant.
+
 * Mon Sep 5 2005 Mike A. Harris <mharris@redhat.com> 6.3.2-4
 - Added the mesa-source subpackage, which contains part of the Mesa source
   code needed by other packages such as the X server to build stuff.
