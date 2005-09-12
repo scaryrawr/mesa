@@ -1,23 +1,51 @@
 %define pkgname Mesa
 
-%ifarch %{ix86} x86_64 ppc ia64
+# NOTE: Build target macros:  For now, we will just use build_fc and
+# build_rhel to simplify things, until there is a reason to break it
+# into per-release macros.  Only 1 of these macros should be enabled.
+%define build_fc	1
+%define build_rhel	0
+
+#-- DRI Build Configuration ------------------------------------------
+# NOTE: Enable DRI on PPC for Fedora Core Mac users, but disable on
+# RHEL for improved stability, as DRI isn't really that important
+# on server platforms.
+%if %{build_fc}
+%define with_dri_ppc %{with_dri}
+%endif
+%if %{build_rhel}
+%define with_dri_ppc 0
+%endif
+
+# Define arches to make with_dri enabled by default
+%ifarch %{ix86} x86_64 ia64 alpha
 %define with_dri 1
-%else
+%endif
+# Define PPC OS variant override.
+%ifarch ppc
+%define with_dri %{with_dri_ppc}
+%endif
+# Define arches to make with_dri disabled by default
+%ifarch ppc64 s390 s390x
 %define with_dri 0
 %endif
+
+#-- END DRI Build Configuration ------------------------------------------
 
 Summary: Mesa
 Name: mesa
 Version: 6.3.2
-Release: 1
+Release: 2
 License: MIT/X11
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
 Source0: MesaLib-%{version}.tar.bz2
 # FIXME; Upstream Mesa 6.3.2 as shipped is broken and missing files for
 # the linux-dri-x86 target.
-Source1: r200_vtxtmp_x86.S
-Source2: radeon_vtxtmp_x86.S
+Source1: redhat-mesa-target
+Source2: redhat-mesa-driver-install
+Source10: r200_vtxtmp_x86.S
+Source11: radeon_vtxtmp_x86.S
 #Patch0: mesa-6.3.2-makedepend.patch
 Patch0: mesa-6.3.2-build-configuration-v4.patch
 Patch1: mesa-6.3.2-fix-installmesa.patch
@@ -99,105 +127,43 @@ Group: Development/Libraries
 %description libGLw-devel
 Mesa libGLw development package
 
-
+#---------------------------------------------------------------------
 %prep
 %setup -q -n Mesa-%{version}
-cp %{SOURCE1} src/mesa/drivers/dri/r200/
-cp %{SOURCE2} src/mesa/drivers/dri/radeon/
+# Copy Red Hat Mesa build/install simplification scripts into build dir.
+install -m 755 %{SOURCE1} ./
+install -m 755 %{SOURCE2} ./
+# FIXME: Install files missing from upstream Mesa 6.3.2 source
+cp %{SOURCE10} src/mesa/drivers/dri/r200/
+cp %{SOURCE11} src/mesa/drivers/dri/radeon/
 
 #%patch0 -p0 -b .makedepend
 %patch1 -p0 -b .fix-installmesa
 
+#---------------------------------------------------------------------
 %build
-#%%define makeopts MKDEP="$(which makedepend)"
-%define makeopts MKDEP="gcc -M -MF depend" MKDEP_OPTIONS=
+# Macroize this to simplify things
+%define makeopts MKDEP="gcc -M" MKDEP_OPTIONS="-MF depend"
+# NOTE: We use a custom script to determine which Mesa build target should
+# be used, and reduce spec file clutter.
+MESATARGET="$(./redhat-mesa-target %{with_dri} %{_arch})"
+make ${MESATARGET} %{makeopts}
 
-#export MKDEP="$(which makedepend)"
-%ifarch %{ix86}
-make linux-dri-x86 %{makeopts}
-%endif
-
-%ifarch x86_64
-make linux-dri-x86_64 %{makeopts}
-%endif
-
-# FIXME: ppc DRI needs to be Fedora Core only!  Not for RHEL!
-%ifarch ppc
-# With DRI
-make linux-dri-ppc %{makeopts}
-%else
-# Without DRI
-make linux-ppc %{makeopts}
-%endif
-
-%ifarch ia64 alpha
-make linux-dri %{makeopts}
-%endif
-
-%ifarch ppc64 s390 s390x sparc sparc64
-make linux %{makeopts}
-%endif
-
+#---------------------------------------------------------------------
 %install
 rm -rf $RPM_BUILD_ROOT
-#cd %{pkgname}-%{version}
 #%%makeinstall DESTDIR=$RPM_BUILD_ROOT
 make install DESTDIR=$RPM_BUILD_ROOT/usr
 
 %if %{with_dri}
-# FIXME: FC5's current kernel has the following DRM modules.  Some of them
-# shouldn't be there at all (ppc64), some don't make much sense (via on
-# ppc).  We'll have to talk to kernel folk to get the ones disabled that
-# don't make sense, or which we don't want to ship for some reason or
-# another.
-#
-# for a in i586 i686 ia64 ppc ppc64 s390x x86_64 ; do (echo -n "${a}:" \
-# rpm -qlp /mnt/redhat/beehive/comps/dist/fc5/kernel/2.6.13-1.1536_FC5/$a/kernel-2.6.13-1.1536_FC5.$a.rpm | \
-# grep /drm/ | sed -e 's;.*/;;g' |xargs echo ) ;done
-#
-# i586:  drm.ko i810.ko i830.ko i915.ko mga.ko r128.ko radeon.ko savage.ko sis.ko tdfx.ko via.ko
-# i686:  drm.ko i810.ko i830.ko i915.ko mga.ko r128.ko radeon.ko savage.ko sis.ko tdfx.ko via.ko
-# ia64:  drm.ko mga.ko r128.ko radeon.ko savage.ko sis.ko tdfx.ko via.ko
-# ppc:   drm.ko mga.ko r128.ko radeon.ko savage.ko sis.ko tdfx.ko via.ko
-# ppc64: drm.ko mga.ko r128.ko radeon.ko savage.ko sis.ko tdfx.ko via.ko
-# s390x:
-# x86_64: drm.ko i810.ko i830.ko i915.ko mga.ko r128.ko radeon.ko savage.ko sis.ko tdfx.ko via.ko
-
-%define alldridrivers ffb i810 i830 i915 mach64 mga r128 r200 r300 radeon s3v savage sis tdfx trident unichrome
-%ifarch %{ix86}
-%define dridrivers i810 i830 i915 mga r128 r200 radeon savage sis unichrome
-%endif
-%ifarch x86_64
-%define dridrivers i810 i830 i915 mga r128 r200 radeon savage sis unichrome
-%endif
-%ifarch ia64
-%define dridrivers mga r128 r200 radeon savage sis
-%endif
-%if %{with_dri}
-%define ppcdridrivers mga r128 r200 radeon
-%else
-%define ppcdridrivers
-%endif
-%ifarch ppc
-%define dridrivers %{ppcdridrivers}
-%endif
-%ifarch ppc64 s390 s390x sparc sparc64
-%define dridrivers
-%endif
-
-# Install DRI drivers
-%if %{with_dri}
-{
-    mkdir -p $RPM_BUILD_ROOT%{_libdir}/dri
-    for driver in %{dridrivers} ; do
-        install -m 0444 cp -a lib/${driver}_dri.so $RPM_BUILD_ROOT%{_libdir}/dri/
-    done
-}
+export DRIMODULEDIR="$RPM_BUILD_ROOT%{_libdir}/dri"
+echo $DRIMODULEDIR
+./redhat-mesa-driver-install %{_arch}
 %endif
 
 # No glut stuff.
 rm $RPM_BUILD_ROOT%{_includedir}/GL/uglglutshapes.h
-rm $RPM_BUILD_ROOT%{_includedir}/GL/uglmesa.h
+#rm $RPM_BUILD_ROOT%{_includedir}/GL/uglmesa.h
 
 # We intentionally don't ship *.la files
 #rm -f $RPM_BUILD_ROOT%{_libdir}/*.la
@@ -205,8 +171,12 @@ rm $RPM_BUILD_ROOT%{_includedir}/GL/uglmesa.h
 %clean
 rm -rf $RPM_BUILD_ROOT
 
-%post -p /sbin/ldconfig
-%postun -p /sbin/ldconfig
+%post libGL -p /sbin/ldconfig
+%postun libGL -p /sbin/ldconfig
+%post libGLU -p /sbin/ldconfig
+%postun libGLU -p /sbin/ldconfig
+%post libGLw -p /sbin/ldconfig
+%postun libGLw -p /sbin/ldconfig
 
 #%%files
 #%defattr(-,root,root,-)
@@ -255,7 +225,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_includedir}/GL/osmesa.h
 %{_includedir}/GL/svgamesa.h
 #%{_includedir}/GL/uglglutshapes.h
-#%{_includedir}/GL/uglmesa.h
+%{_includedir}/GL/uglmesa.h
 %{_includedir}/GL/vms_x_fix.h
 %{_includedir}/GL/wmesa.h
 %{_includedir}/GL/xmesa.h
