@@ -35,7 +35,7 @@
 Summary: Mesa
 Name: mesa
 Version: 6.3.2
-Release: 2
+Release: 3
 License: MIT/X11
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -61,73 +61,115 @@ BuildRequires: libXxf86vm-devel
 %description
 Mesa
 
+#-- libGL ------------------------------------------------------------
 %package libGL
 Summary: Mesa libGL runtime libraries and DRI drivers.
 Group: System Environment/Libraries
-#Requires: %{name} = %{version}-%{release}
 
-#Provides: %{pkgname}-devel
-#Conflicts: XFree86-devel, xorg-x11-devel
+# libGL used to be in Mesa package in RHL 6.x, 7.[0-2], RHEL 2.1
+Conflicts: Mesa
+Obsoletes: Mesa
+# libGL moved to XFree86-libs for RHL 7.3
+Conflicts: XFree86-libs
+# libGL moved to XFree86-Mesa-libGL for RHL 8.0, 9, FC1, RHEL 3
+Conflicts: XFree86-Mesa-libGL
+Obsoletes: XFree86-Mesa-libGL
+# libGL moved to xorg-x11-Mesa-libGL for FC[2-4], RHEL4
+Conflicts: xorg-x11-Mesa-libGL
+Obsoletes: xorg-x11-Mesa-libGL
+# Conflict with the xorg-x11-libs too, just to be safe for file conflicts
+Conflicts: xorg-x11-libs
 
 %description libGL
 Mesa libGL runtime libraries and DRI drivers.
-
+#-- libGLw -----------------------------------------------------------
 %package libGL-devel
 Summary: Mesa libGL development package
 Group: Development/Libraries
-#Requires: %{name} = %{version}-%{release}
+Requires: libGLU = %{version}-%{release}
 
-#Provides: %{pkgname}-devel
-#Conflicts: XFree86-devel, xorg-x11-devel
+# libGL devel files were in Mesa-devel package in RHL 6.x, 7.[0-2], RHEL 2.1
+Conflicts: Mesa-devel
+Obsoletes: Mesa-devel
+# libGL devel files moved to XFree86-devel for RHL 7.3, 8.0, 9, FC1, RHEL 3
+Conflicts: XFree86-devel
+# libGL devel files moved to xorg-x11-devel for FC2, FC3, FC4
+Conflicts: xorg-x11-devel
 
 %description libGL-devel
 Mesa libGL development package
-
+#-- libGLw -----------------------------------------------------------
 %package libGLU
 Summary: Mesa libGLU runtime library
 Group: System Environment/Libraries
-#Requires: %{name} = %{version}-%{release}
 
-#Provides: %{pkgname}-devel
-#Conflicts: XFree86-devel, xorg-x11-devel
+# libGLU used to be in Mesa package in RHL 6.x, 7.[0-2], RHEL 2.1
+Conflicts: Mesa
+Obsoletes: Mesa
+# libGLU moved to XFree86-libs for RHL 7.3
+Conflicts: XFree86-libs
+# libGLU moved to XFree86-Mesa-libGLU for RHL 8.0, 9, FC1, RHEL 3
+Conflicts: XFree86-Mesa-libGLU
+Obsoletes: XFree86-Mesa-libGLU
+# libGLU moved to xorg-x11-Mesa-libGLU for FC[2-4], RHEL4
+Conflicts: xorg-x11-Mesa-libGLU
+Obsoletes: xorg-x11-Mesa-libGLU
+# Conflict with the xorg-x11-libs too, just to be safe for file conflicts
+Conflicts: xorg-x11-libs
 
 %description libGLU
 Mesa libGLU runtime library
-
+#-- libGLw -----------------------------------------------------------
 %package libGLU-devel
 Summary: Mesa libGLU development package
 Group: Development/Libraries
-#Requires: %{name} = %{version}-%{release}
+Requires: libGLU = %{version}-%{release}
 
-#Provides: %{pkgname}-devel
-#Conflicts: XFree86-devel, xorg-x11-devel
+# libGLU devel files were in Mesa-devel package in RHL 6.x, 7.[0-2], RHEL 2.1
+Conflicts: Mesa-devel
+Obsoletes: Mesa-devel
+# libGLU devel files moved to XFree86-devel for RHL 7.3, 8.0, 9, FC1, RHEL 3
+Conflicts: XFree86-devel
+# libGLU devel files moved to xorg-x11-devel for FC2, FC3, FC4
+Conflicts: xorg-x11-devel
 
 %description libGLU-devel
 Mesa libGLU development package
-
+#-- libGLw -----------------------------------------------------------
 %package libGLw
 Summary: Mesa libGLw runtime library
 Group: System Environment/Libraries
-#Requires: %{name} = %{version}-%{release}
 
-#Provides: %{pkgname}-devel
-#Conflicts: XFree86-devel, xorg-x11-devel
+Conflicts: XFree86-libs, xorg-x11-libs, Mesa
+
+# libGLw used to be in Mesa package in RHL 6.x, 7.[0-2], RHEL 2.1
+Conflicts: Mesa
+Obsoletes: Mesa
+# libGLw moved to XFree86-libs for RHL 7.3, 8, 9, FC1, RHEL 3
+Conflicts: XFree86-libs
+# libGLw moved to xorg-x11-libs FC[2-4], RHEL4
+Conflicts: xorg-x11-libs
 
 %description libGLw
 Mesa libGLw runtime library
-
+#-- libGLw-devel -----------------------------------------------------
 %package libGLw-devel
 Summary: Mesa libGLw development package
 Group: Development/Libraries
-#Requires: %{name} = %{version}-%{release}
+Requires: libGLw = %{version}-%{release}
 
-#Provides: %{pkgname}-devel
-#Conflicts: XFree86-devel, xorg-x11-devel
+# libGLw devel files were in Mesa-devel package in RHL 6.x, 7.[0-2], RHEL 2.1
+Conflicts: Mesa-devel
+Obsoletes: Mesa-devel
+# libGLw devel files moved to XFree86-devel for RHL 7.3, 8.0, 9, FC1, RHEL 3
+Conflicts: XFree86-devel
+# libGLw devel files moved to xorg-x11-devel for FC2, FC3, FC4
+Conflicts: xorg-x11-devel
 
 %description libGLw-devel
 Mesa libGLw development package
 
-#---------------------------------------------------------------------
+#-- Prep -------------------------------------------------------------
 %prep
 %setup -q -n Mesa-%{version}
 # Copy Red Hat Mesa build/install simplification scripts into build dir.
@@ -140,7 +182,7 @@ cp %{SOURCE11} src/mesa/drivers/dri/radeon/
 #%patch0 -p0 -b .makedepend
 %patch1 -p0 -b .fix-installmesa
 
-#---------------------------------------------------------------------
+#-- Build ------------------------------------------------------------
 %build
 # Macroize this to simplify things
 %define makeopts MKDEP="gcc -M" MKDEP_OPTIONS="-MF depend"
@@ -149,7 +191,7 @@ cp %{SOURCE11} src/mesa/drivers/dri/radeon/
 MESATARGET="$(./redhat-mesa-target %{with_dri} %{_arch})"
 make ${MESATARGET} %{makeopts}
 
-#---------------------------------------------------------------------
+#-- Install ----------------------------------------------------------
 %install
 rm -rf $RPM_BUILD_ROOT
 #%%makeinstall DESTDIR=$RPM_BUILD_ROOT
@@ -168,8 +210,12 @@ rm $RPM_BUILD_ROOT%{_includedir}/GL/uglglutshapes.h
 # We intentionally don't ship *.la files
 #rm -f $RPM_BUILD_ROOT%{_libdir}/*.la
 
+#-- Clean ------------------------------------------------------------
 %clean
 rm -rf $RPM_BUILD_ROOT
+
+#-- Check ------------------------------------------------------------
+%check
 
 %post libGL -p /sbin/ldconfig
 %postun libGL -p /sbin/ldconfig
@@ -189,22 +235,30 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_libdir}/dri
 # x86 DRI modules
 %if %{with_dri}
+%dir %{_libdir}/dri
+# NOTE: This is a glob for now, as we explicitly determine and limit the DRI
+# drivers that are installed on a given OS/arch combo in our custom DRI
+# driver install script.  If the upstream install script improves enough to
+# make our script unnecessary, we might want to change to an explicit file
+# manifest here in the future.
+%{_libdir}/dri/*_dri.so
+# NOTE: Documentive list of all DRI drivers built by default in Mesa 6.3.2
 #%{_libdir}/dri/ffb_dri.so
-%{_libdir}/dri/i810_dri.so
-%{_libdir}/dri/i830_dri.so
-%{_libdir}/dri/i915_dri.so
+#%{_libdir}/dri/i810_dri.so
+#%{_libdir}/dri/i830_dri.so
+#%{_libdir}/dri/i915_dri.so
 #%{_libdir}/dri/mach64_dri.so
-%{_libdir}/dri/mga_dri.so
-%{_libdir}/dri/r128_dri.so
-%{_libdir}/dri/r200_dri.so
+#%{_libdir}/dri/mga_dri.so
+#%{_libdir}/dri/r128_dri.so
+#%{_libdir}/dri/r200_dri.so
 #%{_libdir}/dri/r300_dri.so
-%{_libdir}/dri/radeon_dri.so
+#%{_libdir}/dri/radeon_dri.so
 #%{_libdir}/dri/s3v_dri.so
-%{_libdir}/dri/savage_dri.so
-%{_libdir}/dri/sis_dri.so
+#%{_libdir}/dri/savage_dri.so
+#%{_libdir}/dri/sis_dri.so
 #%{_libdir}/dri/tdfx_dri.so
 #%{_libdir}/dri/trident_dri.so
-%{_libdir}/dri/unichrome_dri.so
+#%{_libdir}/dri/unichrome_dri.so
 %endif
 
 %files libGL-devel
@@ -254,5 +308,15 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libGLw.so
 
 %changelog
+* Mon Sep 5 2005 Mike A. Harris <mharris@redhat.com> 6.3.2-3
+- Added Conflicts/Obsoletes lines to all of the subpackages to make upgrades
+  from previous OS releases, and piecemeal upgrades work as nicely as
+  possible.
+
+* Mon Sep 5 2005 Mike A. Harris <mharris@redhat.com> 6.3.2-2
+- Wrote redhat-mesa-target script to simplify mesa build target selection.
+- Wrote redhat-mesa-driver-install to install the DRI drivers and simplify
+  per-arch conditionalization, etc.
+
 * Sun Sep 4 2005 Mike A. Harris <mharris@redhat.com> 6.3.2-1
 - Initial build.
