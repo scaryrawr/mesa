@@ -1,232 +1,288 @@
+%define pkgname Mesa
 
-%define version 6.3.2
-%define release 0.6
+%ifarch %{ix86} x86_64 ppc ia64
+%define with_dri 1
+%else
+%define with_dri 0
+%endif
 
-#BuildRequires: xorg-util-macros xorg-proto xorg-lib-X11 xorg-lib-Xext xorg-lib-Xt
-BuildRequires: xorg-x11-libXxf86vm-devel
-BuildRoot: /var/tmp/build-%{name}-%{version}
+Summary: Mesa
+Name: mesa
+Version: 6.3.2
+Release: 1
+License: MIT/X11
 Group: System Environment/Libraries
-License: dunno
-Release: %{release}
+URL: http://www.mesa3d.org
 Source0: MesaLib-%{version}.tar.bz2
-# temporary, should be fixed in the next release
+# FIXME; Upstream Mesa 6.3.2 as shipped is broken and missing files for
+# the linux-dri-x86 target.
 Source1: r200_vtxtmp_x86.S
 Source2: radeon_vtxtmp_x86.S
-Patch0: mesa-6.3.2-compile.patch
-Version: %{version}
+#Patch0: mesa-6.3.2-makedepend.patch
+Patch0: mesa-6.3.2-build-configuration-v4.patch
+Patch1: mesa-6.3.2-fix-installmesa.patch
+BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-buildroot
 
-Name: mesa
-Summary: Mesa
+BuildRequires: libdrm-devel
+BuildRequires: libXxf86vm-devel
+#BuildRequires: xorg-x11-xtrans-devel
+
+#Provides: %{pkgname}
+#Conflicts: XFree86-libs, xorg-x11-libs
 
 %description
-Mesa provides a library that may or may not meet the requirements of the OpenGL API.
+Mesa
 
-%package devel
-Summary: Libraries and headers needed to build programs using Mesa.
+%package libGL
+Summary: Mesa libGL runtime libraries and DRI drivers.
+Group: System Environment/Libraries
+#Requires: %{name} = %{version}-%{release}
+
+#Provides: %{pkgname}-devel
+#Conflicts: XFree86-devel, xorg-x11-devel
+
+%description libGL
+Mesa libGL runtime libraries and DRI drivers.
+
+%package libGL-devel
+Summary: Mesa libGL development package
 Group: Development/Libraries
-%description devel
-Libraries and headers needed to build programs using Mesa.
+#Requires: %{name} = %{version}-%{release}
 
-%package dri-ffb
-Group: User Interface/X Hardware Support
-Summary: DRI driver for ffb
-%description dri-ffb
-DRI driver for ffb
+#Provides: %{pkgname}-devel
+#Conflicts: XFree86-devel, xorg-x11-devel
 
-%package dri-i810
-Group: User Interface/X Hardware Support
-Summary: DRI driver for i810
-%description dri-i810
-DRI driver for i810
+%description libGL-devel
+Mesa libGL development package
 
-%package dri-i830
-Group: User Interface/X Hardware Support
-Summary: DRI driver for i830
-%description dri-i830
-DRI driver for i830
+%package libGLU
+Summary: Mesa libGLU runtime library
+Group: System Environment/Libraries
+#Requires: %{name} = %{version}-%{release}
 
-%package dri-i915
-Group: User Interface/X Hardware Support
-Summary: DRI driver for i915
-%description dri-i915
-DRI driver for i915
+#Provides: %{pkgname}-devel
+#Conflicts: XFree86-devel, xorg-x11-devel
 
-%package dri-mach64
-Group: User Interface/X Hardware Support
-Summary: DRI driver for mach64
-%description dri-mach64
-DRI driver for mach64
+%description libGLU
+Mesa libGLU runtime library
 
-%package dri-mga
-Group: User Interface/X Hardware Support
-Summary: DRI driver for mga
-%description dri-mga
-DRI driver for mga
+%package libGLU-devel
+Summary: Mesa libGLU development package
+Group: Development/Libraries
+#Requires: %{name} = %{version}-%{release}
 
-%package dri-r128
-Group: User Interface/X Hardware Support
-Summary: DRI driver for r128
-%description dri-r128
-DRI driver for r128
+#Provides: %{pkgname}-devel
+#Conflicts: XFree86-devel, xorg-x11-devel
 
-%package dri-r200
-Group: User Interface/X Hardware Support
-Summary: DRI driver for r200
-%description dri-r200
-DRI driver for r200
+%description libGLU-devel
+Mesa libGLU development package
 
-%package dri-r300
-Group: User Interface/X Hardware Support
-Summary: DRI driver for r300
-%description dri-r300
-DRI driver for r300
+%package libGLw
+Summary: Mesa libGLw runtime library
+Group: System Environment/Libraries
+#Requires: %{name} = %{version}-%{release}
 
-%package dri-radeon
-Group: User Interface/X Hardware Support
-Summary: DRI driver for radeon
-%description dri-radeon
-DRI driver for radeon
+#Provides: %{pkgname}-devel
+#Conflicts: XFree86-devel, xorg-x11-devel
 
-%package dri-s3v
-Group: User Interface/X Hardware Support
-Summary: DRI driver for s3v
-%description dri-s3v
-DRI driver for s3v
+%description libGLw
+Mesa libGLw runtime library
 
-%package dri-savage
-Group: User Interface/X Hardware Support
-Summary: DRI driver for savage
-%description dri-savage
-DRI driver for savage
+%package libGLw-devel
+Summary: Mesa libGLw development package
+Group: Development/Libraries
+#Requires: %{name} = %{version}-%{release}
 
-%package dri-sis
-Group: User Interface/X Hardware Support
-Summary: DRI driver for sis
-%description dri-sis
-DRI driver for sis
+#Provides: %{pkgname}-devel
+#Conflicts: XFree86-devel, xorg-x11-devel
 
-%package dri-tdfx
-Group: User Interface/X Hardware Support
-Summary: DRI driver for tdfx
-%description dri-tdfx
-DRI driver for tdfx
+%description libGLw-devel
+Mesa libGLw development package
 
-%package dri-trident
-Group: User Interface/X Hardware Support
-Summary: DRI driver for trident
-%description dri-trident
-DRI driver for trident
-
-%package dri-unichrome
-Group: User Interface/X Hardware Support
-Summary: DRI driver for unichrome
-%description dri-unichrome
-DRI driver for unichrome
 
 %prep
-%setup -T -b 0 -n Mesa-%{version}
-%patch0 -p1
+%setup -q -n Mesa-%{version}
 cp %{SOURCE1} src/mesa/drivers/dri/r200/
 cp %{SOURCE2} src/mesa/drivers/dri/radeon/
 
+#%patch0 -p0 -b .makedepend
+%patch1 -p0 -b .fix-installmesa
+
 %build
-make linux-dri-x86
+#%%define makeopts MKDEP="$(which makedepend)"
+%define makeopts MKDEP="gcc -M -MF depend" MKDEP_OPTIONS=
+
+#export MKDEP="$(which makedepend)"
+%ifarch %{ix86}
+make linux-dri-x86 %{makeopts}
+%endif
+
+%ifarch x86_64
+make linux-dri-x86_64 %{makeopts}
+%endif
+
+# FIXME: ppc DRI needs to be Fedora Core only!  Not for RHEL!
+%ifarch ppc
+# With DRI
+make linux-dri-ppc %{makeopts}
+%else
+# Without DRI
+make linux-ppc %{makeopts}
+%endif
+
+%ifarch ia64 alpha
+make linux-dri %{makeopts}
+%endif
+
+%ifarch ppc64 s390 s390x sparc sparc64
+make linux %{makeopts}
+%endif
 
 %install
-#echo -ne "\n\n\n" | make DESTDIR=$RPM_BUILD_ROOT install
-mkdir -p %{buildroot}%{_includedir}/GL
-cp include/GL/*.h %{buildroot}%{_includedir}/GL/
-mkdir -p %{buildroot}%{_libdir}
-mkdir -p %{buildroot}%{_libdir}/dri
-cp -a lib/lib* %{buildroot}%{_libdir}/
-cp -a lib/*_dri.so %{buildroot}%{_libdir}/dri/
+rm -rf $RPM_BUILD_ROOT
+#cd %{pkgname}-%{version}
+#%%makeinstall DESTDIR=$RPM_BUILD_ROOT
+make install DESTDIR=$RPM_BUILD_ROOT/usr
 
-%files
-%defattr(-, root, root)
-%{_libdir}/lib*.so.*
+%if %{with_dri}
+# FIXME: FC5's current kernel has the following DRM modules.  Some of them
+# shouldn't be there at all (ppc64), some don't make much sense (via on
+# ppc).  We'll have to talk to kernel folk to get the ones disabled that
+# don't make sense, or which we don't want to ship for some reason or
+# another.
+#
+# for a in i586 i686 ia64 ppc ppc64 s390x x86_64 ; do (echo -n "${a}:" \
+# rpm -qlp /mnt/redhat/beehive/comps/dist/fc5/kernel/2.6.13-1.1536_FC5/$a/kernel-2.6.13-1.1536_FC5.$a.rpm | \
+# grep /drm/ | sed -e 's;.*/;;g' |xargs echo ) ;done
+#
+# i586:  drm.ko i810.ko i830.ko i915.ko mga.ko r128.ko radeon.ko savage.ko sis.ko tdfx.ko via.ko
+# i686:  drm.ko i810.ko i830.ko i915.ko mga.ko r128.ko radeon.ko savage.ko sis.ko tdfx.ko via.ko
+# ia64:  drm.ko mga.ko r128.ko radeon.ko savage.ko sis.ko tdfx.ko via.ko
+# ppc:   drm.ko mga.ko r128.ko radeon.ko savage.ko sis.ko tdfx.ko via.ko
+# ppc64: drm.ko mga.ko r128.ko radeon.ko savage.ko sis.ko tdfx.ko via.ko
+# s390x:
+# x86_64: drm.ko i810.ko i830.ko i915.ko mga.ko r128.ko radeon.ko savage.ko sis.ko tdfx.ko via.ko
+
+%define alldridrivers ffb i810 i830 i915 mach64 mga r128 r200 r300 radeon s3v savage sis tdfx trident unichrome
+%ifarch %{ix86}
+%define dridrivers i810 i830 i915 mga r128 r200 radeon savage sis unichrome
+%endif
+%ifarch x86_64
+%define dridrivers i810 i830 i915 mga r128 r200 radeon savage sis unichrome
+%endif
+%ifarch ia64
+%define dridrivers mga r128 r200 radeon savage sis
+%endif
+%if %{with_dri}
+%define ppcdridrivers mga r128 r200 radeon
+%else
+%define ppcdridrivers
+%endif
+%ifarch ppc
+%define dridrivers %{ppcdridrivers}
+%endif
+%ifarch ppc64 s390 s390x sparc sparc64
+%define dridrivers
+%endif
+
+# Install DRI drivers
+%if %{with_dri}
+{
+    mkdir -p $RPM_BUILD_ROOT%{_libdir}/dri
+    for driver in %{dridrivers} ; do
+        install -m 0444 cp -a lib/${driver}_dri.so $RPM_BUILD_ROOT%{_libdir}/dri/
+    done
+}
+%endif
+
+# No glut stuff.
+rm $RPM_BUILD_ROOT%{_includedir}/GL/uglglutshapes.h
+rm $RPM_BUILD_ROOT%{_includedir}/GL/uglmesa.h
+
+# We intentionally don't ship *.la files
+#rm -f $RPM_BUILD_ROOT%{_libdir}/*.la
+
+%clean
+rm -rf $RPM_BUILD_ROOT
+
+%post -p /sbin/ldconfig
+%postun -p /sbin/ldconfig
+
+#%%files
+#%defattr(-,root,root,-)
+#%doc
+%files libGL
+%defattr(-,root,root,-)
+%dir %{_libdir}
+%{_libdir}/libGL.so.1
+%{_libdir}/libGL.so.1.2
 %dir %{_libdir}/dri
-
-%files devel
-%{_includedir}/GL/*
-%{_libdir}/lib*.so
-
-%files dri-ffb
-%dir %{_libdir}/dri
-%{_libdir}/dri/ffb_dri.so
-
-%files dri-i810
-%dir %{_libdir}/dri
+# x86 DRI modules
+%if %{with_dri}
+#%{_libdir}/dri/ffb_dri.so
 %{_libdir}/dri/i810_dri.so
-
-%files dri-i830
-%dir %{_libdir}/dri
 %{_libdir}/dri/i830_dri.so
-
-%files dri-i915
-%dir %{_libdir}/dri
 %{_libdir}/dri/i915_dri.so
-
-%files dri-mach64
-%dir %{_libdir}/dri
-%{_libdir}/dri/mach64_dri.so
-
-%files dri-mga
-%dir %{_libdir}/dri
+#%{_libdir}/dri/mach64_dri.so
 %{_libdir}/dri/mga_dri.so
-
-%files dri-r128
-%dir %{_libdir}/dri
 %{_libdir}/dri/r128_dri.so
-
-%files dri-r200
-%dir %{_libdir}/dri
 %{_libdir}/dri/r200_dri.so
-
-%files dri-r300
-%dir %{_libdir}/dri
-%{_libdir}/dri/r300_dri.so
-
-%files dri-radeon
-%dir %{_libdir}/dri
+#%{_libdir}/dri/r300_dri.so
 %{_libdir}/dri/radeon_dri.so
-
-%files dri-s3v
-%dir %{_libdir}/dri
-%{_libdir}/dri/s3v_dri.so
-
-%files dri-savage
-%dir %{_libdir}/dri
+#%{_libdir}/dri/s3v_dri.so
 %{_libdir}/dri/savage_dri.so
-
-%files dri-sis
-%dir %{_libdir}/dri
 %{_libdir}/dri/sis_dri.so
-
-%files dri-tdfx
-%dir %{_libdir}/dri
-%{_libdir}/dri/tdfx_dri.so
-
-%files dri-trident
-%dir %{_libdir}/dri
-%{_libdir}/dri/trident_dri.so
-
-%files dri-unichrome
-%dir %{_libdir}/dri
+#%{_libdir}/dri/tdfx_dri.so
+#%{_libdir}/dri/trident_dri.so
 %{_libdir}/dri/unichrome_dri.so
+%endif
+
+%files libGL-devel
+%defattr(-,root,root,-)
+%{_includedir}/GL/amesa.h
+%{_includedir}/GL/directfbgl.h
+%{_includedir}/GL/dmesa.h
+%{_includedir}/GL/fxmesa.h
+%{_includedir}/GL/ggimesa.h
+%{_includedir}/GL/gl.h
+%{_includedir}/GL/gl_mangle.h
+%{_includedir}/GL/glext.h
+%{_includedir}/GL/glx.h
+%{_includedir}/GL/glx_mangle.h
+%{_includedir}/GL/glxext.h
+%{_includedir}/GL/mesa_wgl.h
+%{_includedir}/GL/mglmesa.h
+%{_includedir}/GL/osmesa.h
+%{_includedir}/GL/svgamesa.h
+#%{_includedir}/GL/uglglutshapes.h
+#%{_includedir}/GL/uglmesa.h
+%{_includedir}/GL/vms_x_fix.h
+%{_includedir}/GL/wmesa.h
+%{_includedir}/GL/xmesa.h
+%{_includedir}/GL/xmesa_x.h
+%{_includedir}/GL/xmesa_xf86.h
+%{_libdir}/libGL.so
+
+%files libGLU
+%defattr(-,root,root,-)
+%{_libdir}/libGLU.so.1
+%{_libdir}/libGLU.so.1.3.060302
+
+%files libGLU-devel
+%defattr(-,root,root,-)
+%{_libdir}/libGLU.so
+%{_includedir}/GL/glu.h
+%{_includedir}/GL/glu_mangle.h
+
+%files libGLw
+%defattr(-,root,root,-)
+%{_libdir}/libGLw.so.1
+%{_libdir}/libGLw.so.1.0.0
+
+%files libGLw-devel
+%defattr(-,root,root,-)
+%{_libdir}/libGLw.so
 
 %changelog
-* Sun Sep 04 2005 Bill Crawford <billcrawford1970@hotmail.com>
-- change config to use gcc -M -MF depend
-
-* Sat Sep 03 2005 Bill Crawford <billcrawford1970@hotmail.com>
-- split out the -devel package
-- split out the dri drivers
-- actually remove the dri drivers from the main package
-
-* Tue Aug 23 2005 Bill Crawford <billcrawford1970@hotmail.com>
-- added missing files from CVS that were missing from the release
-- added patches to get the thing to build and install
-- added dri driver modules to file list
-
-* Mon Aug 22 2005 Bill Crawford <billcrawford1970@hotmail.com>
-- added BuildRequires
+* Sun Sep 4 2005 Mike A. Harris <mharris@redhat.com> 6.3.2-1
+- Initial build.
