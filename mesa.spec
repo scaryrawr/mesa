@@ -1,5 +1,3 @@
-%define pkgname Mesa
-
 # NOTE: Build target macros:  For now, we will just use build_fc and
 # build_rhel to simplify things, until there is a reason to break it
 # into per-release macros.  Only 1 of these macros should be enabled.
@@ -16,7 +14,6 @@
 %if %{build_rhel}
 %define with_dri_ppc 0
 %endif
-
 # Define arches to make with_dri enabled by default
 %ifarch %{ix86} x86_64 ia64 alpha
 %define with_dri 1
@@ -32,10 +29,10 @@
 
 #-- END DRI Build Configuration ------------------------------------------
 
-Summary: Mesa
+Summary: Mesa graphics libraries
 Name: mesa
 Version: 6.3.2
-Release: 3
+Release: 4
 License: MIT/X11
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -44,6 +41,7 @@ Source0: MesaLib-%{version}.tar.bz2
 # the linux-dri-x86 target.
 Source1: redhat-mesa-target
 Source2: redhat-mesa-driver-install
+Source5: mesa-source-filelist.in
 Source10: r200_vtxtmp_x86.S
 Source11: radeon_vtxtmp_x86.S
 #Patch0: mesa-6.3.2-makedepend.patch
@@ -53,10 +51,6 @@ BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-buildroot
 
 BuildRequires: libdrm-devel
 BuildRequires: libXxf86vm-devel
-#BuildRequires: xorg-x11-xtrans-devel
-
-#Provides: %{pkgname}
-#Conflicts: XFree86-libs, xorg-x11-libs
 
 %description
 Mesa
@@ -168,6 +162,15 @@ Conflicts: xorg-x11-devel
 
 %description libGLw-devel
 Mesa libGLw development package
+#-- source -----------------------------------------------------------
+%package source
+Summary: Mesa source code required to build X server
+Group: Development/Libraries
+
+%description source
+The mesa-source package provides the minimal source code needed to
+build DRI enabled X servers, etc.
+
 
 #-- Prep -------------------------------------------------------------
 %prep
@@ -182,6 +185,7 @@ cp %{SOURCE11} src/mesa/drivers/dri/radeon/
 #%patch0 -p0 -b .makedepend
 %patch1 -p0 -b .fix-installmesa
 
+
 #-- Build ------------------------------------------------------------
 %build
 # Macroize this to simplify things
@@ -190,6 +194,7 @@ cp %{SOURCE11} src/mesa/drivers/dri/radeon/
 # be used, and reduce spec file clutter.
 MESATARGET="$(./redhat-mesa-target %{with_dri} %{_arch})"
 make ${MESATARGET} %{makeopts}
+
 
 #-- Install ----------------------------------------------------------
 %install
@@ -203,12 +208,30 @@ echo $DRIMODULEDIR
 ./redhat-mesa-driver-install %{_arch}
 %endif
 
+# Install source code files for mesa-source subpackage
+{
+%define mesa_source_filelist mesa-source-files.lst
+%define mesasourcedir %{_datadir}/mesa/source
+
+    touch %{mesa_source_filelist}
+    for file in $(sort < %{SOURCE5} | uniq) ; do
+        DSTDIR=$RPM_BUILD_ROOT%{mesasourcedir}/${file%/*}
+        [ ! -d $DSTDIR ] && mkdir -p $DSTDIR
+        install -m 444 $file $DSTDIR/
+        # Write file to rpm file list manifest
+        echo "%%{mesasourcedir}/${file}" >> %{mesa_source_filelist}
+    done
+    # Search mesa source dir for directories the package should own
+    find $RPM_BUILD_ROOT%{mesasourcedir} -type d | \
+         sed -e "s#^$RPM_BUILD_ROOT%{mesasourcedir}#%dir %%{mesasourcedir}#g" >> %{mesa_source_filelist}
+    # Ugly hack to cause the 'mesa' dir to be owned by the package too.
+    echo "%dir %%{_datadir}/mesa" >> %{mesa_source_filelist}
+}
+
 # No glut stuff.
 rm $RPM_BUILD_ROOT%{_includedir}/GL/uglglutshapes.h
 #rm $RPM_BUILD_ROOT%{_includedir}/GL/uglmesa.h
 
-# We intentionally don't ship *.la files
-#rm -f $RPM_BUILD_ROOT%{_libdir}/*.la
 
 #-- Clean ------------------------------------------------------------
 %clean
@@ -232,7 +255,6 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_libdir}
 %{_libdir}/libGL.so.1
 %{_libdir}/libGL.so.1.2
-%dir %{_libdir}/dri
 # x86 DRI modules
 %if %{with_dri}
 %dir %{_libdir}/dri
@@ -307,7 +329,14 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 %{_libdir}/libGLw.so
 
+%files source -f %{mesa_source_filelist}
+%defattr(-,root,root,-)
+
 %changelog
+* Mon Sep 5 2005 Mike A. Harris <mharris@redhat.com> 6.3.2-4
+- Added the mesa-source subpackage, which contains part of the Mesa source
+  code needed by other packages such as the X server to build stuff.
+
 * Mon Sep 5 2005 Mike A. Harris <mharris@redhat.com> 6.3.2-3
 - Added Conflicts/Obsoletes lines to all of the subpackages to make upgrades
   from previous OS releases, and piecemeal upgrades work as nicely as
