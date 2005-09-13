@@ -1,3 +1,7 @@
+#!/bin/bash
+# NOTE: /bin/bash shebang on first line to get shell script syntax
+# highlighting in mcedit.  (temporary hack)
+
 # NOTE: Build target macros:  For now, we will just use build_fc and
 # build_rhel to simplify things, until there is a reason to break it
 # into per-release macros.  Only 1 of these macros should be enabled.
@@ -32,7 +36,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 6.3.2
-Release: 5
+Release: 6
 License: MIT/X11
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -345,6 +349,10 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 
 %changelog
+* Tue Sep 13 2005 Mike A. Harris <mharris@redhat.com> 6.3.2-6
+- Fix redhat-mesa-driver-install and spec file to work right on multilib
+  systems.
+  
 * Mon Sep 5 2005 Mike A. Harris <mharris@redhat.com> 6.3.2-5
 - Fix mesa-libGL-devel to depend on mesa-libGL instead of mesa-libGLU.
 - Added virtual "Provides: libGL..." entries for each subpackage as relevant.
