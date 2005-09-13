@@ -213,8 +213,10 @@ rm -rf $RPM_BUILD_ROOT
 make install DESTDIR=$RPM_BUILD_ROOT/usr
 
 %if %{with_dri}
-export DRIMODULEDIR="$RPM_BUILD_ROOT%{_libdir}/dri"
-echo $DRIMODULEDIR
+export DRIMODULE_SRCDIR="%{_lib}"
+export DRIMODULE_DESTDIR="$RPM_BUILD_ROOT%{_libdir}/dri"
+echo "DRIMODULE_SRCDIR=$DRIMODULE_SRCDIR"
+echo "DRIMODULE_DESTDIR=$DRIMODULE_DESTDIR"
 ./redhat-mesa-driver-install %{_arch}
 %endif
 
