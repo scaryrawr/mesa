@@ -46,8 +46,6 @@ Source0: MesaLib-%{version}.tar.bz2
 Source1: redhat-mesa-target
 Source2: redhat-mesa-driver-install
 Source5: mesa-source-filelist.in
-Source10: r200_vtxtmp_x86.S
-Source11: radeon_vtxtmp_x86.S
 #Patch0: mesa-6.3.2-makedepend.patch
 Patch0: mesa-6.3.2-build-configuration-v4.patch
 Patch1: mesa-6.3.2-fix-installmesa.patch
@@ -194,9 +192,6 @@ build DRI enabled X servers, etc.
 # Copy Red Hat Mesa build/install simplification scripts into build dir.
 install -m 755 %{SOURCE1} ./
 install -m 755 %{SOURCE2} ./
-# FIXME: Install files missing from upstream Mesa 6.3.2 source
-#cp %{SOURCE10} src/mesa/drivers/dri/r200/
-#cp %{SOURCE11} src/mesa/drivers/dri/radeon/
 
 #%patch0 -p0 -b .makedepend
 %patch1 -p0 -b .fix-installmesa
