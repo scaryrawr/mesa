@@ -13,7 +13,7 @@
 # RHEL for improved stability, as DRI isn't really that important
 # on server platforms.
 %if %{build_fc}
-%define with_dri_ppc %{with_dri}
+%define with_dri_ppc 1
 %endif
 %if %{build_rhel}
 %define with_dri_ppc 0
@@ -35,8 +35,8 @@
 
 Summary: Mesa graphics libraries
 Name: mesa
-Version: 6.3.2
-Release: 7
+Version: 6.4
+Release: 1
 License: MIT/X11
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -50,9 +50,12 @@ Source10: r200_vtxtmp_x86.S
 Source11: radeon_vtxtmp_x86.S
 #Patch0: mesa-6.3.2-makedepend.patch
 Patch0: mesa-6.3.2-build-configuration-v4.patch
+Patch1: mesa-6.3.2-fix-installmesa.patch
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-buildroot
 
-BuildRequires: libdrm-devel
+# NOTE: For Mesa 6.4, libdrm 1.0.5 or newer is needed or the via unichrome
+# driver fails to build
+BuildRequires: libdrm-devel >= 1.0.5
 BuildRequires: libXxf86vm-devel
 
 %description
@@ -192,19 +195,22 @@ build DRI enabled X servers, etc.
 install -m 755 %{SOURCE1} ./
 install -m 755 %{SOURCE2} ./
 # FIXME: Install files missing from upstream Mesa 6.3.2 source
-cp %{SOURCE10} src/mesa/drivers/dri/r200/
-cp %{SOURCE11} src/mesa/drivers/dri/radeon/
+#cp %{SOURCE10} src/mesa/drivers/dri/r200/
+#cp %{SOURCE11} src/mesa/drivers/dri/radeon/
 
 #%patch0 -p0 -b .makedepend
+%patch1 -p0 -b .fix-installmesa
 
 
 #-- Build ------------------------------------------------------------
 %build
 # Macroize this to simplify things
 %define makeopts MKDEP="gcc -M" MKDEP_OPTIONS="-MF depend"
+export CFLAGS="$RPM_OPT_FLAGS"
 # NOTE: We use a custom script to determine which Mesa build target should
 # be used, and reduce spec file clutter.
 MESATARGET="$(./redhat-mesa-target %{with_dri} %{_arch})"
+echo -e "********************\nMESATARGET=$MESATARGET\n********************\n"
 make ${MESATARGET} %{makeopts}
 
 
@@ -212,16 +218,7 @@ make ${MESATARGET} %{makeopts}
 %install
 rm -rf $RPM_BUILD_ROOT
 #%%makeinstall DESTDIR=$RPM_BUILD_ROOT
-
-# The mesa make install target use a small shell script that doesn't
-# know about multilib systems.  The crux of the shell script is
-# basically these 5 lines, so we just do it here.
-
-mkdir -p $RPM_BUILD_ROOT%{_includedir}
-mkdir -p $RPM_BUILD_ROOT%{_includedir}/GL
-mkdir -p $RPM_BUILD_ROOT%{_libdir}
-cp -f include/GL/*.h $RPM_BUILD_ROOT%{_includedir}/GL
-cp -fd %{_lib}/lib* $RPM_BUILD_ROOT%{_libdir}
+make install DESTDIR=$RPM_BUILD_ROOT/usr
 
 %if %{with_dri}
 export DRIMODULE_SRCDIR="%{_lib}"
@@ -335,7 +332,7 @@ rm -rf $RPM_BUILD_ROOT
 %files libGLU
 %defattr(-,root,root,-)
 %{_libdir}/libGLU.so.1
-%{_libdir}/libGLU.so.1.3.060302
+%{_libdir}/libGLU.so.1.3.060400
 
 %files libGLU-devel
 %defattr(-,root,root,-)
@@ -356,8 +353,11 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 
 %changelog
-* Thu Sep 15 2005 Kristian Høgsberg <krh@redhat.com> 6.3.2-7
-- Copy files manually instead of using the mesa install script.
+* Thu Oct 27 2005 Mike A. Harris <mharris@redhat.com> 6.4-1
+- Updated to new upstream MesaLib-6.4
+- Updated libGLU.so.1.3.060400 entry in file manifest
+- Updated "BuildRequires: libdrm-devel >= 1.0.5" to pick up fixes for the
+  unichrome driver.
 
 * Tue Sep 13 2005 Mike A. Harris <mharris@redhat.com> 6.3.2-6
 - Fix redhat-mesa-driver-install and spec file to work right on multilib
