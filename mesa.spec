@@ -36,7 +36,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 6.4
-Release: 2
+Release: 3
 License: MIT/X11
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -269,6 +269,17 @@ echo "DRIMODULE_DESTDIR=$DRIMODULE_DESTDIR"
     echo "%dir %%{_datadir}/mesa" >> %{mesa_source_filelist}
 }
 
+# NOTE: We rename the swrast-only libGL to be the same .so version, as it
+# seems risky to have libGL.so be 2 different .so versions depending on
+# wether DRI was enabled, and it never was that way in Xorg 6.8.2.
+{
+    SWRAST_LIBGL=$(ls $RPM_BUILD_ROOT%{_libdir}/libGL.so.1.5.*)
+    if [ -n "$SWRAST_LIBGL" -a -e "$SWRAST_LIBGL" ] ; then
+	mv "$SWRAST_LIBGL" "${SWRAST_LIBGL//1.5*/1.2}"
+	ln -sf $RPM_BUILD_ROOT%{_libdir}/libGL.so.1.2 $RPM_BUILD_ROOT%{_libdir}/libGL.so.1
+    fi
+}
+
 #-- Clean ------------------------------------------------------------
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -287,12 +298,13 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 %dir %{_libdir}
 %{_libdir}/libGL.so.1
+%{_libdir}/libGL.so.1.2
 # x86 DRI modules
 %if %{with_dri}
 # NOTE: It is libGL.so.1.2 in DRI builds, and libGL.so.1.5.060400 in non-DRI
 # builds, although it isn't clear what the rationale for this is to me yet,
 # nonetheless, I'm conditionalizing it to get it to build.
-%{_libdir}/libGL.so.1.2
+#%{_libdir}/libGL.so.1.2
 %dir %{_libdir}/dri
 # NOTE: This is a glob for now, as we explicitly determine and limit the DRI
 # drivers that are installed on a given OS/arch combo in our custom DRI
@@ -320,7 +332,7 @@ rm -rf $RPM_BUILD_ROOT
 %else
 # NOTE: This is the software rasterizer only.  Why it is 1.5.* is not clear
 # to me currently, but it is a change from Xorg 6.8.2's Mesa.
-%{_libdir}/libGL.so.1.5.060400
+#%{_libdir}/libGL.so.1.5.060400
 %{_libdir}/libOSMesa.so.6
 %{_libdir}/libOSMesa.so.6.4.060400
 %endif
@@ -378,7 +390,12 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 
 %changelog
-* Tue Nov 2 2005 Mike A. Harris <mharris@redhat.com> 6.4-2
+* Wed Nov 2 2005 Mike A. Harris <mharris@redhat.com> 6.4-3
+- Hack: autodetect if libGL was given .so.1.5* and rename it to 1.2 for
+  consistency on all architectures, and to avoid upgrade problems if we
+  ever disable DRI on an arch and then re-enable it later.
+
+* Wed Nov 2 2005 Mike A. Harris <mharris@redhat.com> 6.4-2
 - Added mesa-6.4-multilib-fix.patch to instrument and attempt to fix Mesa
   bin/installmesa script to work properly with multilib lib64 architectures.
 - Set and export LIB_DIR and INCLUDE_DIR in spec file 'install' section,
