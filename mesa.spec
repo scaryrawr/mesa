@@ -321,6 +321,8 @@ rm -rf $RPM_BUILD_ROOT
 # NOTE: This is the software rasterizer only.  Why it is 1.5.* is not clear
 # to me currently, but it is a change from Xorg 6.8.2's Mesa.
 %{_libdir}/libGL.so.1.5.060400
+%{_libdir}/libOSMesa.so.6
+%{_libdir}/libOSMesa.so.6.4.060400
 %endif
 
 %files libGL-devel
@@ -348,6 +350,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_includedir}/GL/xmesa_x.h
 %{_includedir}/GL/xmesa_xf86.h
 %{_libdir}/libGL.so
+%if ! %{with_dri}
+%{_libdir}/libOSMesa.so
+%endif
 
 %files libGLU
 %defattr(-,root,root,-)
