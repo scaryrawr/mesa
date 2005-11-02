@@ -198,12 +198,21 @@ install -m 755 %{SOURCE2} ./
 %patch1 -p0 -b .fix-installmesa
 %patch2 -p0 -b .multilib-fix
 
+# WARNING: The following files are copyright "Mark J. Kilgard" under the GLUT
+# license and are not open source software, so we must remove them.
+rm include/GL/uglglutshapes.h
 
 #-- Build ------------------------------------------------------------
 %build
 # Macroize this to simplify things
 %define makeopts MKDEP="gcc -M" MKDEP_OPTIONS="-MF depend"
 export CFLAGS="$RPM_OPT_FLAGS"
+export LIB_DIR=$RPM_BUILD_ROOT%{_libdir}
+export INCLUDE_DIR=$RPM_BUILD_ROOT%{_includedir}
+echo "****************************************"
+echo "rpm specfile defined LIB_DIR=$LIB_DIR"
+echo "rpm specfile defined INCLUDE_DIR=$INCLUDE_DIR"
+echo "****************************************"
 # NOTE: We use a custom script to determine which Mesa build target should
 # be used, and reduce spec file clutter.
 MESATARGET="$(./redhat-mesa-target %{with_dri} %{_arch})"
@@ -214,10 +223,25 @@ make ${MESATARGET} %{makeopts}
 #-- Install ----------------------------------------------------------
 %install
 rm -rf $RPM_BUILD_ROOT
+# NOTE: the rpm makeinstall macro does not work for mesa
 #%%makeinstall DESTDIR=$RPM_BUILD_ROOT
-make install DESTDIR=$RPM_BUILD_ROOT/usr
+# NOTE: "make install" calls mesa's installmesa script, passing DESTDIR
+# to it as a commandline arg, but LIB_DIR and INCLUDE_DIR get hard coded in
+# that script, meaning multilib breaks.
+#make install DESTDIR=$RPM_BUILD_ROOT/usr
+
+# NOTE: Since Mesa's install procedure doesn't work on multilib properly,
+# we fix it here, as I have patched the installmesa script to remove the
+# hard coding, and we set the variables ourself right here, and it should
+# hopefully pick them up.
+#	-- Mike A. Harris <mharris@redhat.com>
+export LIB_DIR=$RPM_BUILD_ROOT%{_libdir}
+export INCLUDE_DIR=$RPM_BUILD_ROOT%{_includedir}
+bin/installmesa $RPM_BUILD_ROOT/usr
 
 %if %{with_dri}
+# NOTE: Since Mesa's install target does not seem to properly install the
+# DRI modules, we install them by hand here.  -- mharris
 export DRIMODULE_SRCDIR="%{_lib}"
 export DRIMODULE_DESTDIR="$RPM_BUILD_ROOT%{_libdir}/dri"
 echo "DRIMODULE_SRCDIR=$DRIMODULE_SRCDIR"
@@ -244,11 +268,6 @@ echo "DRIMODULE_DESTDIR=$DRIMODULE_DESTDIR"
     # Ugly hack to cause the 'mesa' dir to be owned by the package too.
     echo "%dir %%{_datadir}/mesa" >> %{mesa_source_filelist}
 }
-
-# No glut stuff.
-rm $RPM_BUILD_ROOT%{_includedir}/GL/uglglutshapes.h
-#rm $RPM_BUILD_ROOT%{_includedir}/GL/uglmesa.h
-
 
 #-- Clean ------------------------------------------------------------
 %clean
@@ -349,7 +368,12 @@ rm -rf $RPM_BUILD_ROOT
 %changelog
 * Tue Nov 2 2005 Mike A. Harris <mharris@redhat.com> 6.4-2
 - Added mesa-6.4-multilib-fix.patch to instrument and attempt to fix Mesa
-  multilib lib64 issues on x86_64 and potentially other multilib arches.
+  bin/installmesa script to work properly with multilib lib64 architectures.
+- Set and export LIB_DIR and INCLUDE_DIR in spec file 'install' section,
+  and invoke our modified bin/installmesa directly instead of using
+  "make install".
+- Remove "include/GL/uglglutshapes.h", as it uses the GLUT license, and seems
+  like an extraneous file anyway.
 
 * Thu Oct 27 2005 Mike A. Harris <mharris@redhat.com> 6.4-1
 - Updated to new upstream MesaLib-6.4
