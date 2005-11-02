@@ -36,7 +36,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 6.4
-Release: 1
+Release: 2
 License: MIT/X11
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -49,6 +49,7 @@ Source5: mesa-source-filelist.in
 #Patch0: mesa-6.3.2-makedepend.patch
 Patch0: mesa-6.3.2-build-configuration-v4.patch
 Patch1: mesa-6.3.2-fix-installmesa.patch
+Patch2: mesa-6.4-multilib-fix.patch
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-buildroot
 
 # NOTE: For Mesa 6.4, libdrm 1.0.5 or newer is needed or the via unichrome
@@ -195,6 +196,7 @@ install -m 755 %{SOURCE2} ./
 
 #%patch0 -p0 -b .makedepend
 %patch1 -p0 -b .fix-installmesa
+%patch2 -p0 -b .multilib-fix
 
 
 #-- Build ------------------------------------------------------------
@@ -262,9 +264,6 @@ rm -rf $RPM_BUILD_ROOT
 %post libGLw -p /sbin/ldconfig
 %postun libGLw -p /sbin/ldconfig
 
-#%%files
-#%defattr(-,root,root,-)
-#%doc
 %files libGL
 %defattr(-,root,root,-)
 %dir %{_libdir}
@@ -348,6 +347,10 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 
 %changelog
+* Tue Nov 2 2005 Mike A. Harris <mharris@redhat.com> 6.4-2
+- Added mesa-6.4-multilib-fix.patch to instrument and attempt to fix Mesa
+  multilib lib64 issues on x86_64 and potentially other multilib arches.
+
 * Thu Oct 27 2005 Mike A. Harris <mharris@redhat.com> 6.4-1
 - Updated to new upstream MesaLib-6.4
 - Updated libGLU.so.1.3.060400 entry in file manifest
