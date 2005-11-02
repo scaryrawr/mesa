@@ -287,9 +287,12 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 %dir %{_libdir}
 %{_libdir}/libGL.so.1
-%{_libdir}/libGL.so.1.2
 # x86 DRI modules
 %if %{with_dri}
+# NOTE: It is libGL.so.1.2 in DRI builds, and libGL.so.1.5.060400 in non-DRI
+# builds, although it isn't clear what the rationale for this is to me yet,
+# nonetheless, I'm conditionalizing it to get it to build.
+%{_libdir}/libGL.so.1.2
 %dir %{_libdir}/dri
 # NOTE: This is a glob for now, as we explicitly determine and limit the DRI
 # drivers that are installed on a given OS/arch combo in our custom DRI
@@ -314,6 +317,10 @@ rm -rf $RPM_BUILD_ROOT
 #%{_libdir}/dri/tdfx_dri.so
 #%{_libdir}/dri/trident_dri.so
 #%{_libdir}/dri/unichrome_dri.so
+%else
+# NOTE: This is the software rasterizer only.  Why it is 1.5.* is not clear
+# to me currently, but it is a change from Xorg 6.8.2's Mesa.
+%{_libdir}/libGL.so.1.5.060400
 %endif
 
 %files libGL-devel
@@ -374,6 +381,10 @@ rm -rf $RPM_BUILD_ROOT
   "make install".
 - Remove "include/GL/uglglutshapes.h", as it uses the GLUT license, and seems
   like an extraneous file anyway.
+- Conditionalize the file manifest to include libGL.so.1.2 on DRI enabled
+  builds, but use libGL.so.1.5.060400 instead on DRI disabled builds, as
+  this is how upstream builds the library, although it is not clear to me
+  why this difference exists yet (which was not in Xorg 6.8.2 Mesa).
 
 * Thu Oct 27 2005 Mike A. Harris <mharris@redhat.com> 6.4-1
 - Updated to new upstream MesaLib-6.4
