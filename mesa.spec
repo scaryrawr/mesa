@@ -36,15 +36,14 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 6.4
-Release: 3
+Release: 4
 License: MIT/X11
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
 Source0: MesaLib-%{version}.tar.bz2
-# FIXME; Upstream Mesa 6.3.2 as shipped is broken and missing files for
-# the linux-dri-x86 target.
 Source1: redhat-mesa-target
 Source2: redhat-mesa-driver-install
+Source3: redhat-mesa-source-filelist-generator
 Source5: mesa-source-filelist.in
 #Patch0: mesa-6.3.2-makedepend.patch
 Patch0: mesa-6.3.2-build-configuration-v4.patch
@@ -193,6 +192,7 @@ build DRI enabled X servers, etc.
 # Copy Red Hat Mesa build/install simplification scripts into build dir.
 install -m 755 %{SOURCE1} ./
 install -m 755 %{SOURCE2} ./
+install -m 755 %{SOURCE3} ./
 
 #%patch0 -p0 -b .makedepend
 %patch1 -p0 -b .fix-installmesa
@@ -244,36 +244,20 @@ bin/installmesa $RPM_BUILD_ROOT/usr
 # DRI modules, we install them by hand here.  -- mharris
 export DRIMODULE_SRCDIR="%{_lib}"
 export DRIMODULE_DESTDIR="$RPM_BUILD_ROOT%{_libdir}/dri"
-echo "DRIMODULE_SRCDIR=$DRIMODULE_SRCDIR"
-echo "DRIMODULE_DESTDIR=$DRIMODULE_DESTDIR"
 ./redhat-mesa-driver-install %{_arch}
 %endif
 
-# Install source code files for mesa-source subpackage
-{
-%define mesa_source_filelist mesa-source-files.lst
+# Run custom source filelist generator script, passing it a prefix
+%define mesa_source_filelist mesa-source-rpm-filelist.lst
 %define mesasourcedir %{_datadir}/mesa/source
 
-    touch %{mesa_source_filelist}
-    for file in $(sort < %{SOURCE5} | uniq) ; do
-        DSTDIR=$RPM_BUILD_ROOT%{mesasourcedir}/${file%/*}
-        [ ! -d $DSTDIR ] && mkdir -p $DSTDIR
-        install -m 444 $file $DSTDIR/
-        # Write file to rpm file list manifest
-        echo "%%{mesasourcedir}/${file}" >> %{mesa_source_filelist}
-    done
-    # Search mesa source dir for directories the package should own
-    find $RPM_BUILD_ROOT%{mesasourcedir} -type d | \
-         sed -e "s#^$RPM_BUILD_ROOT%{mesasourcedir}#%dir %%{mesasourcedir}#g" >> %{mesa_source_filelist}
-    # Ugly hack to cause the 'mesa' dir to be owned by the package too.
-    echo "%dir %%{_datadir}/mesa" >> %{mesa_source_filelist}
-}
+./redhat-mesa-source-filelist-generator $RPM_BUILD_ROOT %{mesasourcedir}
 
 # NOTE: We rename the swrast-only libGL to be the same .so version, as it
 # seems risky to have libGL.so be 2 different .so versions depending on
 # wether DRI was enabled, and it never was that way in Xorg 6.8.2.
 {
-    SWRAST_LIBGL=$(ls $RPM_BUILD_ROOT%{_libdir}/libGL.so.1.5.*)
+    SWRAST_LIBGL="$(ls $RPM_BUILD_ROOT%{_libdir}/libGL.so.1.5.* 2> /dev/null || :)"
     if [ -n "$SWRAST_LIBGL" -a -e "$SWRAST_LIBGL" ] ; then
 	mv "$SWRAST_LIBGL" "${SWRAST_LIBGL//1.5*/1.2}"
 	ln -sf $RPM_BUILD_ROOT%{_libdir}/libGL.so.1.2 $RPM_BUILD_ROOT%{_libdir}/libGL.so.1
@@ -386,10 +370,16 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 %{_libdir}/libGLw.so
 
-%files source -f %{mesa_source_filelist}
+%files source -f mesa-source-rpm-filelist.lst
 %defattr(-,root,root,-)
 
 %changelog
+* Thu Nov 3 2005 Mike A. Harris <mharris@redhat.com> 6.4-4
+- Wrote redhat-mesa-source-filelist-generator to dynamically generate the
+  files to be included in the mesa-source subpackage, to minimize future
+  maintenance.
+- Fixed detection and renaming of software mesa .so version.
+
 * Wed Nov 2 2005 Mike A. Harris <mharris@redhat.com> 6.4-3
 - Hack: autodetect if libGL was given .so.1.5* and rename it to 1.2 for
   consistency on all architectures, and to avoid upgrade problems if we
