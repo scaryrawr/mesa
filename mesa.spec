@@ -44,7 +44,6 @@ Source0: MesaLib-%{version}.tar.bz2
 Source1: redhat-mesa-target
 Source2: redhat-mesa-driver-install
 Source3: redhat-mesa-source-filelist-generator
-Source5: mesa-source-filelist.in
 #Patch0: mesa-6.3.2-makedepend.patch
 Patch0: mesa-6.3.2-build-configuration-v4.patch
 Patch1: mesa-6.3.2-fix-installmesa.patch
@@ -260,7 +259,7 @@ export DRIMODULE_DESTDIR="$RPM_BUILD_ROOT%{_libdir}/dri"
     SWRAST_LIBGL="$(ls $RPM_BUILD_ROOT%{_libdir}/libGL.so.1.5.* 2> /dev/null || :)"
     if [ -n "$SWRAST_LIBGL" -a -e "$SWRAST_LIBGL" ] ; then
 	mv "$SWRAST_LIBGL" "${SWRAST_LIBGL//1.5*/1.2}"
-	ln -sf $RPM_BUILD_ROOT%{_libdir}/libGL.so.1.2 $RPM_BUILD_ROOT%{_libdir}/libGL.so.1
+	ln -sf libGL.so.1.2 $RPM_BUILD_ROOT%{_libdir}/libGL.so.1
     fi
 }
 
