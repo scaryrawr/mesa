@@ -1,0 +1,50 @@
+#!/bin/bash
+# Copyright 2005 by Red Hat, Inc.
+# Author: Mike A. Harris <mharris@redhat.com>
+#
+# License: MIT/X11
+# <FIXME: Insert legal terms here>
+
+set -vx
+DESTDIR=$1
+MESA_SOURCE_SUBDIR=$2
+MESA_SOURCE_FILES=mesa-source-files.lst
+OUTPUT_FILE=mesa-source-rpm-filelist.lst
+
+function create_source_file_list {
+    ## Generate mesa-source file list manifest, massaging with grep to filter
+    ## out some things we know aren't needed/wanted.
+    find . -type f -regex '.*\.[ch]$' | \
+	sed -e 's#^\./##g' | \
+	egrep -v '^progs' | \
+	egrep -v '^src/(glu|glw)' | \
+	egrep -v '^src/drivers/(dri|dos|windows|glide|svga|ggi)' \
+               > $MESA_SOURCE_FILES
+}
+
+
+function install_mesa_source_files {
+    mkdir -p $DESTDIR/$MESA_SOURCE_SUBDIR
+    touch $OUTPUT_FILE
+    for file in $(sort < $MESA_SOURCE_FILES | uniq) ; do
+        DIR=$DESTDIR/${MESA_SOURCE_SUBDIR}/${file%/*}
+        echo "DSTDIR=$DIR"
+        [ ! -d $DIR ] && mkdir -p $DIR
+        install -m 444 $file $DIR/
+        # Write file to rpm file list manifest
+        echo "%{mesasourcedir}/${file}" >> $OUTPUT_FILE
+    done
+}
+
+function find_source_dirs {
+    # Search mesa source dir for directories the package should own
+    find $DESTDIR/$MESA_SOURCE_SUBDIR -type d | \
+         sed -e "s#^$DESTDIR/$MESA_SOURCE_SUBDIR#%dir %{mesasourcedir}#g" >> $OUTPUT_FILE
+    # Ugly hack to cause the 'mesa' dir to be owned by the package too.
+#    echo "%dir ${MESA_SOURCE_SUBDIR}%/*" >> $OUTPUT_FILE
+}
+
+create_source_file_list
+install_mesa_source_files
+find_source_dirs
+set -
