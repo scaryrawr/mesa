@@ -36,7 +36,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 6.4
-Release: 4
+Release: 5
 License: MIT/X11
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -48,6 +48,7 @@ Source3: redhat-mesa-source-filelist-generator
 Patch0: mesa-6.3.2-build-configuration-v4.patch
 Patch1: mesa-6.3.2-fix-installmesa.patch
 Patch2: mesa-6.4-multilib-fix.patch
+Patch3: mesa-modular-dri-dir.patch
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-buildroot
 
 # NOTE: For Mesa 6.4, libdrm 1.0.5 or newer is needed or the via unichrome
@@ -196,6 +197,7 @@ install -m 755 %{SOURCE3} ./
 #%patch0 -p0 -b .makedepend
 %patch1 -p0 -b .fix-installmesa
 %patch2 -p0 -b .multilib-fix
+%patch3 -p1 -b .modular
 
 # WARNING: The following files are copyright "Mark J. Kilgard" under the GLUT
 # license and are not open source software, so we must remove them.
@@ -208,6 +210,7 @@ rm include/GL/uglglutshapes.h
 export CFLAGS="$RPM_OPT_FLAGS"
 export LIB_DIR=$RPM_BUILD_ROOT%{_libdir}
 export INCLUDE_DIR=$RPM_BUILD_ROOT%{_includedir}
+export DRI_DRIVER_DIR="%{_libdir}/dri"
 echo "****************************************"
 echo "rpm specfile defined LIB_DIR=$LIB_DIR"
 echo "rpm specfile defined INCLUDE_DIR=$INCLUDE_DIR"
@@ -373,6 +376,10 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 
 %changelog
+* Sun Nov 20 2005 Jeremy Katz <katzj@redhat.com> - 6.4-5
+- fix directory used for loading dri modules (#173679)
+- install dri drivers as executable so they get stripped (#173292)
+
 * Thu Nov 3 2005 Mike A. Harris <mharris@redhat.com> 6.4-4
 - Wrote redhat-mesa-source-filelist-generator to dynamically generate the
   files to be included in the mesa-source subpackage, to minimize future
