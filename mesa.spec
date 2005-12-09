@@ -36,7 +36,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 6.4
-Release: 5
+Release: 5.1
 License: MIT/X11
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -376,6 +376,9 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 
 %changelog
+* Fri Dec 09 2005 Jesse Keating <jkeating@redhat.com>
+- rebuilt
+
 * Sun Nov 20 2005 Jeremy Katz <katzj@redhat.com> - 6.4-5
 - fix directory used for loading dri modules (#173679)
 - install dri drivers as executable so they get stripped (#173292)
