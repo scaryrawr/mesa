@@ -31,11 +31,15 @@
 %define with_dri 0
 %endif
 
-# FIXME: We dont build libOSMesa, because it seems next to impossible to get
-# the totally broken Mesa buildsystem to build both DRI drivers and OSMesa in
-# a single build.  If someone feels like fixing all this to build on all 7
-# architectures, be my guest.
+# FIXME: libOSMesa does not build when DRI is enabled for some reason.  It
+# seems next to impossible using the totally broken Mesa buildsystem to build
+# both DRI drivers and OSMesa in a single build.  If someone feels like fixing
+# all this to build on all 7 architectures, be my guest.
+%if %{with_dri}
 %define with_OSMesa	0
+%else
+%define with_OSMesa	1
+%endif
 
 #-- END DRI Build Configuration ------------------------------------------
 
