@@ -40,6 +40,7 @@ Release: 1
 License: MIT/X11
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
+BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-buildroot
 Source0: MesaLib-%{version}.tar.bz2
 Source1: redhat-mesa-target
 Source2: redhat-mesa-driver-install
@@ -49,7 +50,8 @@ Patch0: mesa-6.3.2-build-configuration-v4.patch
 Patch1: mesa-6.3.2-fix-installmesa.patch
 Patch2: mesa-6.4-multilib-fix.patch
 Patch3: mesa-modular-dri-dir.patch
-BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-buildroot
+# General patches from upstream go here:
+#Patch100:
 
 BuildRequires: pkgconfig
 BuildRequires: libdrm-devel >= 2.0-1
@@ -205,6 +207,11 @@ install -m 755 %{SOURCE3} ./
 %patch1 -p0 -b .fix-installmesa
 %patch2 -p0 -b .multilib-fix
 %patch3 -p1 -b .modular
+
+# FIXME: Builds fail on AMD64 arch without this, however it is fixed in
+# upstream CVS, but in a way that we can't use against 6.4.1.  This can
+# probably be dropped however when we move to 6.4.2.
+ln -s src/mesa/x86/assyntax.h src/mesa/x86-64/assyntax.h
 
 # WARNING: The following files are copyright "Mark J. Kilgard" under the GLUT
 # license and are not open source software, so we must remove them.
@@ -388,6 +395,9 @@ rm -rf $RPM_BUILD_ROOT
 - Added pkgconfig dependency.
 - Updated "BuildRequires: libdrm-devel >= 2.0-1"
 - Added Obsoletes lines to all the subpackages to have cleaner upgrades.
+- Added symlink in x86_64 directory pointing to assyntax.h header to work
+  around a build problem on AMD64, which is fixed in CVS in a way unuseable
+  as a patch to 6.4.1.
 
 * Fri Dec 09 2005 Jesse Keating <jkeating@redhat.com> 6.4-5.1
 - rebuilt
