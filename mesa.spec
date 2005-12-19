@@ -31,8 +31,10 @@
 %define with_dri 0
 %endif
 
-# FIXME: We dont build libOSMesa by default.  Some work is needed to make
-# this build on all architectures if it is enabled.
+# FIXME: We dont build libOSMesa, because it seems next to impossible to get
+# the totally broken Mesa buildsystem to build both DRI drivers and OSMesa in
+# a single build.  If someone feels like fixing all this to build on all 7
+# architectures, be my guest.
 %define with_OSMesa	0
 
 #-- END DRI Build Configuration ------------------------------------------
@@ -54,6 +56,7 @@ Patch0: mesa-6.3.2-build-configuration-v4.patch
 Patch1: mesa-6.3.2-fix-installmesa.patch
 Patch2: mesa-6.4-multilib-fix.patch
 Patch3: mesa-modular-dri-dir.patch
+#Patch4: mesa-6.4.1-enable-osmesa.patch
 # General patches from upstream go here:
 # FIXME: mesa-6.4.1-amd64-assyntax-fix.patch is backported from Mesa 6.4
 # branch and can be dropped when we update to 6.4.2.
@@ -213,6 +216,8 @@ install -m 755 %{SOURCE3} ./
 %patch1 -p0 -b .fix-installmesa
 %patch2 -p0 -b .multilib-fix
 %patch3 -p1 -b .modular
+#%patch4 -p0 -b .enable-osmesa
+
 %patch100 -p1 -b .amd64-assyntax-fix
 
 # WARNING: The following files are copyright "Mark J. Kilgard" under the GLUT
@@ -227,13 +232,12 @@ export CFLAGS="$RPM_OPT_FLAGS"
 export LIB_DIR=$RPM_BUILD_ROOT%{_libdir}
 export INCLUDE_DIR=$RPM_BUILD_ROOT%{_includedir}
 export DRI_DRIVER_DIR="%{_libdir}/dri"
-echo "****************************************"
-echo "rpm specfile defined LIB_DIR=$LIB_DIR"
-echo "rpm specfile defined INCLUDE_DIR=$INCLUDE_DIR"
-echo "****************************************"
+
 # NOTE: We use a custom script to determine which Mesa build target should
 # be used, and reduce spec file clutter.
 MESATARGET="$(./redhat-mesa-target %{with_dri} %{_arch})"
+#DRIVER_DIRS="dri osmesa"
+
 echo -e "********************\nMESATARGET=$MESATARGET\n********************\n"
 make ${MESATARGET} %{makeopts}
 
@@ -258,6 +262,9 @@ export INCLUDE_DIR=$RPM_BUILD_ROOT%{_includedir}
 bin/installmesa $RPM_BUILD_ROOT/usr
 
 %if %{with_dri}
+#pushd src/mesa/drivers/dri
+#    make install DESTDIR=$RPM_BUILD_ROOT/usr %{makeopts}
+#popd
 # NOTE: Since Mesa's install target does not seem to properly install the
 # DRI modules, we install them by hand here.  -- mharris
 export DRIMODULE_SRCDIR="%{_lib}"
@@ -314,7 +321,7 @@ rm -rf $RPM_BUILD_ROOT
 # make our script unnecessary, we might want to change to an explicit file
 # manifest here in the future.
 %{_libdir}/dri/*_dri.so
-# NOTE: Documentive list of all DRI drivers built by default in Mesa 6.3.2
+# NOTE: Documentive list of all DRI drivers built by default in Mesa 6.4.1
 #%{_libdir}/dri/ffb_dri.so
 #%{_libdir}/dri/i810_dri.so
 #%{_libdir}/dri/i830_dri.so
@@ -337,7 +344,7 @@ rm -rf $RPM_BUILD_ROOT
 # to me currently, but it is a change from Xorg 6.8.2's Mesa.
 #%{_libdir}/libGL.so.1.5.060400
 %{_libdir}/libOSMesa.so.6
-%{_libdir}/libOSMesa.so.6.4.060400
+%{_libdir}/libOSMesa.so.6.4.060401
 %endif
 
 %files libGL-devel
