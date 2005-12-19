@@ -385,11 +385,14 @@ rm -rf $RPM_BUILD_ROOT
 %changelog
 * Sat Dec 17 2005 Mike A. Harris <mharris@redhat.com> 6.4.1-1
 - Updated MesaLib tarball to version 6.4.1 from Mesa project for X11R7 RC4.
+- Added pkgconfig dependency.
+- Updated "BuildRequires: libdrm-devel >= 2.0-1"
+- Added Obsoletes lines to all the subpackages to have cleaner upgrades.
 
-* Fri Dec 09 2005 Jesse Keating <jkeating@redhat.com>
+* Fri Dec 09 2005 Jesse Keating <jkeating@redhat.com> 6.4-5.1
 - rebuilt
 
-* Sun Nov 20 2005 Jeremy Katz <katzj@redhat.com> - 6.4-5
+* Sun Nov 20 2005 Jeremy Katz <katzj@redhat.com> 6.4-5
 - fix directory used for loading dri modules (#173679)
 - install dri drivers as executable so they get stripped (#173292)
 
