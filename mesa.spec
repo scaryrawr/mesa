@@ -35,8 +35,8 @@
 
 Summary: Mesa graphics libraries
 Name: mesa
-Version: 6.4
-Release: 6
+Version: 6.4.1
+Release: 1
 License: MIT/X11
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -51,9 +51,8 @@ Patch2: mesa-6.4-multilib-fix.patch
 Patch3: mesa-modular-dri-dir.patch
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-buildroot
 
-# NOTE: For Mesa 6.4, libdrm 1.0.5 or newer is needed or the via unichrome
-# driver fails to build
-BuildRequires: libdrm-devel >= 1.0.5
+BuildRequires: pkgconfig
+BuildRequires: libdrm-devel >= 2.0-1
 BuildRequires: libXxf86vm-devel
 
 %description
@@ -71,6 +70,7 @@ Conflicts: Mesa
 Obsoletes: Mesa
 # libGL moved to XFree86-libs for RHL 7.3
 Conflicts: XFree86-libs
+Obsoletes: XFree86-libs
 # libGL moved to XFree86-Mesa-libGL for RHL 8.0, 9, FC1, RHEL 3
 Conflicts: XFree86-Mesa-libGL
 Obsoletes: XFree86-Mesa-libGL
@@ -79,6 +79,7 @@ Conflicts: xorg-x11-Mesa-libGL
 Obsoletes: xorg-x11-Mesa-libGL
 # Conflict with the xorg-x11-libs too, just to be safe for file conflicts
 Conflicts: xorg-x11-libs
+Obsoletes: xorg-x11-libs
 
 %description libGL
 Mesa libGL runtime libraries and DRI drivers.
@@ -86,7 +87,7 @@ Mesa libGL runtime libraries and DRI drivers.
 %package libGL-devel
 Summary: Mesa libGL development package
 Group: Development/Libraries
-Requires: libGL = %{version}-%{release}
+Requires: mesa-libGL = %{version}-%{release}
 
 Provides: libGL-devel
 
@@ -127,7 +128,7 @@ Mesa libGLU runtime library
 %package libGLU-devel
 Summary: Mesa libGLU development package
 Group: Development/Libraries
-Requires: libGLU = %{version}-%{release}
+Requires: mesa-libGLU = %{version}-%{release}
 
 Provides: libGLU-devel
 
@@ -136,8 +137,10 @@ Conflicts: Mesa-devel
 Obsoletes: Mesa-devel
 # libGLU devel files moved to XFree86-devel for RHL 7.3, 8.0, 9, FC1, RHEL 3
 Conflicts: XFree86-devel
+Obsoletes: XFree86-devel
 # libGLU devel files moved to xorg-x11-devel for FC2, FC3, FC4
 Conflicts: xorg-x11-devel
+Obsoletes: xorg-x11-devel
 
 %description libGLU-devel
 Mesa libGLU development package
@@ -153,8 +156,10 @@ Conflicts: Mesa
 Obsoletes: Mesa
 # libGLw moved to XFree86-libs for RHL 7.3, 8, 9, FC1, RHEL 3
 Conflicts: XFree86-libs
+Obsoletes: XFree86-libs
 # libGLw moved to xorg-x11-libs FC[2-4], RHEL4
 Conflicts: xorg-x11-libs
+Obsoletes: xorg-x11-libs
 
 %description libGLw
 Mesa libGLw runtime library
@@ -171,8 +176,10 @@ Conflicts: Mesa-devel
 Obsoletes: Mesa-devel
 # libGLw devel files moved to XFree86-devel for RHL 7.3, 8.0, 9, FC1, RHEL 3
 Conflicts: XFree86-devel
+Obsoletes: XFree86-devel
 # libGLw devel files moved to xorg-x11-devel for FC2, FC3, FC4
 Conflicts: xorg-x11-devel
+Obsoletes: xorg-x11-devel
 
 %description libGLw-devel
 Mesa libGLw development package
@@ -355,7 +362,7 @@ rm -rf $RPM_BUILD_ROOT
 %files libGLU
 %defattr(-,root,root,-)
 %{_libdir}/libGLU.so.1
-%{_libdir}/libGLU.so.1.3.060400
+%{_libdir}/libGLU.so.1.3.060401
 
 %files libGLU-devel
 %defattr(-,root,root,-)
@@ -376,8 +383,11 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 
 %changelog
-* Sun Dec 18 2005 Warren Togami <wtogami@redhat.com> - 6.4-6
-- rebuild
+* Sat Dec 17 2005 Mike A. Harris <mharris@redhat.com> 6.4.1-1
+- Updated MesaLib tarball to version 6.4.1 from Mesa project for X11R7 RC4.
+
+* Fri Dec 09 2005 Jesse Keating <jkeating@redhat.com>
+- rebuilt
 
 * Sun Nov 20 2005 Jeremy Katz <katzj@redhat.com> - 6.4-5
 - fix directory used for loading dri modules (#173679)
