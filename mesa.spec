@@ -31,6 +31,10 @@
 %define with_dri 0
 %endif
 
+# FIXME: We dont build libOSMesa by default.  Some work is needed to make
+# this build on all architectures if it is enabled.
+%define with_OSMesa	0
+
 #-- END DRI Build Configuration ------------------------------------------
 
 Summary: Mesa graphics libraries
@@ -211,11 +215,6 @@ install -m 755 %{SOURCE3} ./
 %patch3 -p1 -b .modular
 %patch100 -p1 -b .amd64-assyntax-fix
 
-# FIXME: Builds fail on AMD64 arch without this, however it is fixed in
-# upstream CVS, but in a way that we can't use against 6.4.1.  This can
-# probably be dropped however when we move to 6.4.2.
-ln -s src/mesa/x86/assyntax.h src/mesa/x86-64/assyntax.h
-
 # WARNING: The following files are copyright "Mark J. Kilgard" under the GLUT
 # license and are not open source software, so we must remove them.
 rm include/GL/uglglutshapes.h
@@ -332,7 +331,8 @@ rm -rf $RPM_BUILD_ROOT
 #%{_libdir}/dri/tdfx_dri.so
 #%{_libdir}/dri/trident_dri.so
 #%{_libdir}/dri/unichrome_dri.so
-%else
+%endif
+%if %{with_OSMesa}
 # NOTE: This is the software rasterizer only.  Why it is 1.5.* is not clear
 # to me currently, but it is a change from Xorg 6.8.2's Mesa.
 #%{_libdir}/libGL.so.1.5.060400
@@ -400,6 +400,7 @@ rm -rf $RPM_BUILD_ROOT
 - Added Obsoletes lines to all the subpackages to have cleaner upgrades.
 - Added mesa-6.4.1-amd64-assyntax-fix.patch to work around a build problem on
   AMD64, which is fixed in the 6.4 branch of Mesa CVS.
+- Conditionalize libOSMesa inclusion, and default to not including it for now.
 
 * Fri Dec 09 2005 Jesse Keating <jkeating@redhat.com> 6.4-5.1
 - rebuilt
