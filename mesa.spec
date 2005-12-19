@@ -51,7 +51,9 @@ Patch1: mesa-6.3.2-fix-installmesa.patch
 Patch2: mesa-6.4-multilib-fix.patch
 Patch3: mesa-modular-dri-dir.patch
 # General patches from upstream go here:
-#Patch100:
+# FIXME: mesa-6.4.1-amd64-assyntax-fix.patch is backported from Mesa 6.4
+# branch and can be dropped when we update to 6.4.2.
+Patch100: mesa-6.4.1-amd64-assyntax-fix.patch
 
 BuildRequires: pkgconfig
 BuildRequires: libdrm-devel >= 2.0-1
@@ -207,6 +209,7 @@ install -m 755 %{SOURCE3} ./
 %patch1 -p0 -b .fix-installmesa
 %patch2 -p0 -b .multilib-fix
 %patch3 -p1 -b .modular
+%patch100 -p1 -b .amd64-assyntax-fix
 
 # FIXME: Builds fail on AMD64 arch without this, however it is fixed in
 # upstream CVS, but in a way that we can't use against 6.4.1.  This can
@@ -395,9 +398,8 @@ rm -rf $RPM_BUILD_ROOT
 - Added pkgconfig dependency.
 - Updated "BuildRequires: libdrm-devel >= 2.0-1"
 - Added Obsoletes lines to all the subpackages to have cleaner upgrades.
-- Added symlink in x86_64 directory pointing to assyntax.h header to work
-  around a build problem on AMD64, which is fixed in CVS in a way unuseable
-  as a patch to 6.4.1.
+- Added mesa-6.4.1-amd64-assyntax-fix.patch to work around a build problem on
+  AMD64, which is fixed in the 6.4 branch of Mesa CVS.
 
 * Fri Dec 09 2005 Jesse Keating <jkeating@redhat.com> 6.4-5.1
 - rebuilt
