@@ -46,7 +46,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 6.4.1
-Release: 1
+Release: 2
 License: MIT/X11
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -98,25 +98,25 @@ Obsoletes: xorg-x11-libs
 
 %description libGL
 Mesa libGL runtime libraries and DRI drivers.
-#-- libGLw -----------------------------------------------------------
+#-- libGL ------------------------------------------------------------
 %package libGL-devel
 Summary: Mesa libGL development package
 Group: Development/Libraries
 Requires: mesa-libGL = %{version}-%{release}
+Requires: libX11-devel
 
 Provides: libGL-devel
 
 # libGL devel files were in Mesa-devel package in RHL 6.x, 7.[0-2], RHEL 2.1
-Conflicts: Mesa-devel
 Obsoletes: Mesa-devel
 # libGL devel files moved to XFree86-devel for RHL 7.3, 8.0, 9, FC1, RHEL 3
-Conflicts: XFree86-devel
+Obsoletes: XFree86-devel
 # libGL devel files moved to xorg-x11-devel for FC2, FC3, FC4
-Conflicts: xorg-x11-devel
+Obsoletes: xorg-x11-devel
 
 %description libGL-devel
 Mesa libGL development package
-#-- libGLw -----------------------------------------------------------
+#-- libGLU -----------------------------------------------------------
 %package libGLU
 Summary: Mesa libGLU runtime library
 Group: System Environment/Libraries
@@ -124,37 +124,32 @@ Group: System Environment/Libraries
 Provides: libGLU
 
 # libGLU used to be in Mesa package in RHL 6.x, 7.[0-2], RHEL 2.1
-Conflicts: Mesa
 Obsoletes: Mesa
 # libGLU moved to XFree86-libs for RHL 7.3
-Conflicts: XFree86-libs
+Obsoletes: XFree86-libs
 # libGLU moved to XFree86-Mesa-libGLU for RHL 8.0, 9, FC1, RHEL 3
-Conflicts: XFree86-Mesa-libGLU
 Obsoletes: XFree86-Mesa-libGLU
 # libGLU moved to xorg-x11-Mesa-libGLU for FC[2-4], RHEL4
-Conflicts: xorg-x11-Mesa-libGLU
 Obsoletes: xorg-x11-Mesa-libGLU
-# Conflict with the xorg-x11-libs too, just to be safe for file conflicts
-Conflicts: xorg-x11-libs
+# Obsolete xorg-x11-libs too, just to be safe
+Obsoletes: xorg-x11-libs
 
 %description libGLU
 Mesa libGLU runtime library
-#-- libGLw -----------------------------------------------------------
+#-- libGLU-devel -----------------------------------------------------
 %package libGLU-devel
 Summary: Mesa libGLU development package
 Group: Development/Libraries
 Requires: mesa-libGLU = %{version}-%{release}
+Requires: libGL-devel
 
 Provides: libGLU-devel
 
 # libGLU devel files were in Mesa-devel package in RHL 6.x, 7.[0-2], RHEL 2.1
-Conflicts: Mesa-devel
 Obsoletes: Mesa-devel
 # libGLU devel files moved to XFree86-devel for RHL 7.3, 8.0, 9, FC1, RHEL 3
-Conflicts: XFree86-devel
 Obsoletes: XFree86-devel
 # libGLU devel files moved to xorg-x11-devel for FC2, FC3, FC4
-Conflicts: xorg-x11-devel
 Obsoletes: xorg-x11-devel
 
 %description libGLU-devel
@@ -167,13 +162,10 @@ Group: System Environment/Libraries
 Provides: libGLw
 
 # libGLw used to be in Mesa package in RHL 6.x, 7.[0-2], RHEL 2.1
-Conflicts: Mesa
 Obsoletes: Mesa
 # libGLw moved to XFree86-libs for RHL 7.3, 8, 9, FC1, RHEL 3
-Conflicts: XFree86-libs
 Obsoletes: XFree86-libs
 # libGLw moved to xorg-x11-libs FC[2-4], RHEL4
-Conflicts: xorg-x11-libs
 Obsoletes: xorg-x11-libs
 
 %description libGLw
@@ -187,13 +179,10 @@ Requires: libGLw = %{version}-%{release}
 Provides: libGLw-devel
 
 # libGLw devel files were in Mesa-devel package in RHL 6.x, 7.[0-2], RHEL 2.1
-Conflicts: Mesa-devel
 Obsoletes: Mesa-devel
 # libGLw devel files moved to XFree86-devel for RHL 7.3, 8.0, 9, FC1, RHEL 3
-Conflicts: XFree86-devel
 Obsoletes: XFree86-devel
 # libGLw devel files moved to xorg-x11-devel for FC2, FC3, FC4
-Conflicts: xorg-x11-devel
 Obsoletes: xorg-x11-devel
 
 %description libGLw-devel
@@ -207,11 +196,10 @@ Group: Development/Libraries
 The mesa-source package provides the minimal source code needed to
 build DRI enabled X servers, etc.
 
-
-#-- Prep -------------------------------------------------------------
+#-- prep -------------------------------------------------------------
 %prep
 %setup -q -n Mesa-%{version}
-# Copy Red Hat Mesa build/install simplification scripts into build dir.
+# Copy Red Hat Mesa build/install simplificomplication scripts into build dir.
 install -m 755 %{SOURCE1} ./
 install -m 755 %{SOURCE2} ./
 install -m 755 %{SOURCE3} ./
@@ -225,7 +213,7 @@ install -m 755 %{SOURCE3} ./
 %patch100 -p1 -b .amd64-assyntax-fix
 
 # WARNING: The following files are copyright "Mark J. Kilgard" under the GLUT
-# license and are not open source software, so we must remove them.
+# license and are not open source/free software, so we remove them.
 rm include/GL/uglglutshapes.h
 
 #-- Build ------------------------------------------------------------
@@ -404,6 +392,14 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 
 %changelog
+* Tue Dec 20 2005 Mike A. Harris <mharris@redhat.com> 6.4.1-2
+- Rebuild to ensure libGLU gets rebuilt with new gcc with C++ compiler fixes.
+- Changed the 3 devel packages to use Obsoletes instead of Conflicts for the
+  packages the files used to be present in, as this is more friendy for
+  OS upgrades.
+- Added "Requires: libX11-devel" to mesa-libGL-devel package (#173712)
+- Added "Requires: libGL-devel" to mesa-libGLU-devel package (#175253)
+
 * Sat Dec 17 2005 Mike A. Harris <mharris@redhat.com> 6.4.1-1
 - Updated MesaLib tarball to version 6.4.1 from Mesa project for X11R7 RC4.
 - Added pkgconfig dependency.
