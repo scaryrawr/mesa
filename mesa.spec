@@ -291,15 +291,18 @@ rm -rf $RPM_BUILD_ROOT
 
 %files libGL
 %defattr(-,root,root,-)
-%dir %{_libdir}
 %{_libdir}/libGL.so.1
-%{_libdir}/libGL.so.1.2
-# x86 DRI modules
+
+# NOTE: The software libGL is OpenGL 1.5, however the DRI enabled libGL is
+# only OpenGL 1.2
 %if %{with_dri}
-# NOTE: It is libGL.so.1.2 in DRI builds, and libGL.so.1.5.060400 in non-DRI
-# builds, although it isn't clear what the rationale for this is to me yet,
-# nonetheless, I'm conditionalizing it to get it to build.
-#%{_libdir}/libGL.so.1.2
+%{_libdir}/libGL.so.1.2
+%else
+%{_libdir}/libGL.so.1.5.*
+%endif
+
+%if %{with_dri}
+# DRI modules
 %dir %{_libdir}/dri
 # NOTE: This is a glob for now, as we explicitly determine and limit the DRI
 # drivers that are installed on a given OS/arch combo in our custom DRI
