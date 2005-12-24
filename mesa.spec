@@ -41,12 +41,15 @@
 %define with_OSMesa	1
 %endif
 
+# NOTE: This option enables motif support in libGLw for bug #175251
+%define with_motif	1
+
 #-- END DRI Build Configuration ------------------------------------------
 
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 6.4.1
-Release: 2
+Release: 3
 License: MIT/X11
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -60,6 +63,7 @@ Patch0: mesa-6.3.2-build-configuration-v4.patch
 Patch1: mesa-6.3.2-fix-installmesa.patch
 Patch2: mesa-6.4-multilib-fix.patch
 Patch3: mesa-modular-dri-dir.patch
+Patch4: mesa-6.4.1-libGLw-enable-motif-support.patch
 #Patch4: mesa-6.4.1-enable-osmesa.patch
 # General patches from upstream go here:
 # FIXME: mesa-6.4.1-amd64-assyntax-fix.patch is backported from Mesa 6.4
@@ -69,6 +73,9 @@ Patch100: mesa-6.4.1-amd64-assyntax-fix.patch
 BuildRequires: pkgconfig
 BuildRequires: libdrm-devel >= 2.0-1
 BuildRequires: libXxf86vm-devel
+%if %{with_motif}
+BuildRequires: openmotif-devel
+%endif
 
 %description
 Mesa
@@ -81,19 +88,14 @@ Group: System Environment/Libraries
 Provides: libGL
 
 # libGL used to be in Mesa package in RHL 6.x, 7.[0-2], RHEL 2.1
-Conflicts: Mesa
 Obsoletes: Mesa
 # libGL moved to XFree86-libs for RHL 7.3
-Conflicts: XFree86-libs
 Obsoletes: XFree86-libs
 # libGL moved to XFree86-Mesa-libGL for RHL 8.0, 9, FC1, RHEL 3
-Conflicts: XFree86-Mesa-libGL
 Obsoletes: XFree86-Mesa-libGL
 # libGL moved to xorg-x11-Mesa-libGL for FC[2-4], RHEL4
-Conflicts: xorg-x11-Mesa-libGL
 Obsoletes: xorg-x11-Mesa-libGL
 # Conflict with the xorg-x11-libs too, just to be safe for file conflicts
-Conflicts: xorg-x11-libs
 Obsoletes: xorg-x11-libs
 
 %description libGL
@@ -208,7 +210,9 @@ install -m 755 %{SOURCE3} ./
 %patch1 -p0 -b .fix-installmesa
 %patch2 -p0 -b .multilib-fix
 %patch3 -p1 -b .modular
-#%patch4 -p0 -b .enable-osmesa
+%if %{with_motif}
+%patch4 -p0 -b .libGLw-enable-motif-support
+%endif
 
 %patch100 -p1 -b .amd64-assyntax-fix
 
@@ -252,6 +256,7 @@ rm -rf $RPM_BUILD_ROOT
 export LIB_DIR=$RPM_BUILD_ROOT%{_libdir}
 export INCLUDE_DIR=$RPM_BUILD_ROOT%{_includedir}
 bin/installmesa $RPM_BUILD_ROOT/usr
+install -m 644 src/glw/GLw{,M}DrawA{,P}.h $RPM_BUILD_ROOT%{_includedir}/GL/
 
 %if %{with_dri}
 #pushd src/mesa/drivers/dri
@@ -269,17 +274,6 @@ export DRIMODULE_DESTDIR="$RPM_BUILD_ROOT%{_libdir}/dri"
 %define mesasourcedir %{_datadir}/mesa/source
 
 ./redhat-mesa-source-filelist-generator $RPM_BUILD_ROOT %{mesasourcedir}
-
-# NOTE: We rename the swrast-only libGL to be the same .so version, as it
-# seems risky to have libGL.so be 2 different .so versions depending on
-# wether DRI was enabled, and it never was that way in Xorg 6.8.2.
-{
-    SWRAST_LIBGL="$(ls $RPM_BUILD_ROOT%{_libdir}/libGL.so.1.5.* 2> /dev/null || :)"
-    if [ -n "$SWRAST_LIBGL" -a -e "$SWRAST_LIBGL" ] ; then
-	mv "$SWRAST_LIBGL" "${SWRAST_LIBGL//1.5*/1.2}"
-	ln -sf libGL.so.1.2 $RPM_BUILD_ROOT%{_libdir}/libGL.so.1
-    fi
-}
 
 #-- Clean ------------------------------------------------------------
 %clean
@@ -387,11 +381,21 @@ rm -rf $RPM_BUILD_ROOT
 %files libGLw-devel
 %defattr(-,root,root,-)
 %{_libdir}/libGLw.so
+%{_includedir}/GL/GLwDrawA.h
+%{_includedir}/GL/GLwDrawAP.h
+%{_includedir}/GL/GLwMDrawA.h
+%{_includedir}/GL/GLwMDrawAP.h
 
 %files source -f mesa-source-rpm-filelist.lst
 %defattr(-,root,root,-)
 
 %changelog
+* Sat Dec 24 2005 Mike A. Harris <mharris@redhat.com> 6.4.1-3
+- Manually copy libGLw headers that Mesa forgets to install, to fix (#173879).
+- Added mesa-6.4.1-libGLw-enable-motif-support.patch to fix (#175251).
+- Removed "Conflicts" lines from libGL package, as they are "Obsoletes" now.
+- Do not rename swrast libGL .so version, as it is the OpenGL version.
+
 * Tue Dec 20 2005 Mike A. Harris <mharris@redhat.com> 6.4.1-2
 - Rebuild to ensure libGLU gets rebuilt with new gcc with C++ compiler fixes.
 - Changed the 3 devel packages to use Obsoletes instead of Conflicts for the
