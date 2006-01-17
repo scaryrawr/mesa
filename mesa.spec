@@ -49,7 +49,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 6.4.1
-Release: 3
+%Release: 4
 License: MIT/X11
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -397,7 +397,7 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 
 %changelog
-* Tue Jan 17 2006 Kristian Høgsberg <krh@redhat.com> 6.4.1-3
+* Tue Jan 17 2006 Kristian Høgsberg <krh@redhat.com> 6.4.1-4
 - Add mesa-6.4.1-texture-from-drawable.patch to implement protocol
   support for GLX_EXT_texture_from_drawable extension.
 
