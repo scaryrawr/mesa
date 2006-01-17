@@ -70,6 +70,8 @@ Patch4: mesa-6.4.1-libGLw-enable-motif-support.patch
 # branch and can be dropped when we update to 6.4.2.
 Patch100: mesa-6.4.1-amd64-assyntax-fix.patch
 
+Patch200: mesa-6.4.1-texture-from-drawable.patch
+
 BuildRequires: pkgconfig
 BuildRequires: libdrm-devel >= 2.0-1
 BuildRequires: libXxf86vm-devel
@@ -215,6 +217,8 @@ install -m 755 %{SOURCE3} ./
 %endif
 
 %patch100 -p1 -b .amd64-assyntax-fix
+
+%patch200 -p0 -b .texture-from-drawable
 
 # WARNING: The following files are copyright "Mark J. Kilgard" under the GLUT
 # license and are not open source/free software, so we remove them.
@@ -393,6 +397,10 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 
 %changelog
+* Tue Jan 17 2006 Kristian Høgsberg <krh@redhat.com> 6.4.1-3
+- Add mesa-6.4.1-texture-from-drawable.patch to implement protocol
+  support for GLX_EXT_texture_from_drawable extension.
+
 * Sat Dec 24 2005 Mike A. Harris <mharris@redhat.com> 6.4.1-3
 - Manually copy libGLw headers that Mesa forgets to install, to fix (#173879).
 - Added mesa-6.4.1-libGLw-enable-motif-support.patch to fix (#175251).
