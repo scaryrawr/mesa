@@ -49,7 +49,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 6.4.1
-%Release: 4
+Release: 4
 License: MIT/X11
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
