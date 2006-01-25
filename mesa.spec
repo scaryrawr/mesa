@@ -220,7 +220,7 @@ install -m 755 %{SOURCE3} ./
 
 %patch100 -p1 -b .amd64-assyntax-fix
 
-%patch200 -p0 -b .texture-from-drawable
+#%patch200 -p0 -b .texture-from-drawable
 
 # WARNING: The following files are copyright "Mark J. Kilgard" under the GLUT
 # license and are not open source/free software, so we remove them.
@@ -401,6 +401,8 @@ rm -rf $RPM_BUILD_ROOT
 %changelog
 * Tue Jan 24 2006 Mike A. Harris <mharris@redhat.com> 6.4.1-5
 - Added missing "BuildRequires: expat-devel" for bug (#178525)
+- Temporarily disabled mesa-6.4.1-texture-from-drawable.patch, as it fails
+  to compile on at least ia64, and possibly other architectures.
 
 * Tue Jan 17 2006 Kristian Høgsberg <krh@redhat.com> 6.4.1-4
 - Add mesa-6.4.1-texture-from-drawable.patch to implement protocol
