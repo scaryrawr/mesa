@@ -49,7 +49,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 6.4.1
-Release: 4
+Release: 5
 License: MIT/X11
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -75,6 +75,8 @@ Patch200: mesa-6.4.1-texture-from-drawable.patch
 BuildRequires: pkgconfig
 BuildRequires: libdrm-devel >= 2.0-1
 BuildRequires: libXxf86vm-devel
+BuildRequires: expat-devel
+
 %if %{with_motif}
 BuildRequires: openmotif-devel
 %endif
@@ -397,6 +399,9 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 
 %changelog
+* Tue Jan 24 2006 Mike A. Harris <mharris@redhat.com> 6.4.1-5
+- Added missing "BuildRequires: expat-devel" for bug (#178525)
+
 * Tue Jan 17 2006 Kristian Høgsberg <krh@redhat.com> 6.4.1-4
 - Add mesa-6.4.1-texture-from-drawable.patch to implement protocol
   support for GLX_EXT_texture_from_drawable extension.
