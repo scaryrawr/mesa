@@ -1,6 +1,10 @@
 #!/bin/bash
-# NOTE: /bin/bash shebang on first line to get shell script syntax
-# highlighting in mcedit.  (temporary hack)
+# NOTE: Yes, this spec file is a horrible mess.  Mesa's buildsystem
+# currently leaves a lot to be desired, so we hack around it in the rpm
+# spec file with various hacks and kludges, which are further complicated
+# by needing it to build on all 7 RHEL/Fedora architectures, with and
+# without DRI enabled via conditional.  Lots of fun.  Patches to improve
+# either Mesa, or the spec file are welcome bugzilla submissions however.
 
 # NOTE: Build target macros:  For now, we will just use build_fc and
 # build_rhel to simplify things, until there is a reason to break it
@@ -48,13 +52,13 @@
 
 Summary: Mesa graphics libraries
 Name: mesa
-Version: 6.4.1
-Release: 5
+Version: 6.4.2
+Release: 1
 License: MIT/X11
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-buildroot
-Source0: MesaLib-%{version}.tar.bz2
+Source0: http://internap.dl.sourceforge.net/sourceforge/mesa3d/MesaLib-%{version}.tar.bz2
 Source1: redhat-mesa-target
 Source2: redhat-mesa-driver-install
 Source3: redhat-mesa-source-filelist-generator
@@ -65,11 +69,10 @@ Patch2: mesa-6.4-multilib-fix.patch
 Patch3: mesa-modular-dri-dir.patch
 Patch4: mesa-6.4.1-libGLw-enable-motif-support.patch
 #Patch4: mesa-6.4.1-enable-osmesa.patch
-# General patches from upstream go here:
-# FIXME: mesa-6.4.1-amd64-assyntax-fix.patch is backported from Mesa 6.4
-# branch and can be dropped when we update to 6.4.2.
-Patch100: mesa-6.4.1-amd64-assyntax-fix.patch
 
+# General patches from upstream go here:
+
+# Red Hat custom patches, feature development
 Patch200: mesa-6.4.1-texture-from-drawable.patch
 
 BuildRequires: pkgconfig
@@ -218,7 +221,7 @@ install -m 755 %{SOURCE3} ./
 %patch4 -p0 -b .libGLw-enable-motif-support
 %endif
 
-%patch100 -p1 -b .amd64-assyntax-fix
+# NOT NEEDED NOW%patch100 -p1 -b .amd64-assyntax-fix
 
 #%patch200 -p0 -b .texture-from-drawable
 
@@ -262,7 +265,6 @@ rm -rf $RPM_BUILD_ROOT
 export LIB_DIR=$RPM_BUILD_ROOT%{_libdir}
 export INCLUDE_DIR=$RPM_BUILD_ROOT%{_includedir}
 bin/installmesa $RPM_BUILD_ROOT/usr
-install -m 644 src/glw/GLw{,M}DrawA{,P}.h $RPM_BUILD_ROOT%{_includedir}/GL/
 
 %if %{with_dri}
 #pushd src/mesa/drivers/dri
@@ -352,6 +354,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_includedir}/GL/gl.h
 %{_includedir}/GL/gl_mangle.h
 %{_includedir}/GL/glext.h
+%{_includedir}/GL/glfbdev.h
 %{_includedir}/GL/glx.h
 %{_includedir}/GL/glx_mangle.h
 %{_includedir}/GL/glxext.h
@@ -374,7 +377,7 @@ rm -rf $RPM_BUILD_ROOT
 %files libGLU
 %defattr(-,root,root,-)
 %{_libdir}/libGLU.so.1
-%{_libdir}/libGLU.so.1.3.060401
+%{_libdir}/libGLU.so.1.3.0604*
 
 %files libGLU-devel
 %defattr(-,root,root,-)
@@ -399,6 +402,11 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 
 %changelog
+* Sat Feb  4 2006 Mike A. Harris <mharris@redhat.com> 6.4.2-1
+- Updated to Mesa 6.4.2
+- Use "libGLU.so.1.3.0604*" glob in file manifest, to avoid having to update it
+  each upstream release.
+
 * Tue Jan 24 2006 Mike A. Harris <mharris@redhat.com> 6.4.1-5
 - Added missing "BuildRequires: expat-devel" for bug (#178525)
 - Temporarily disabled mesa-6.4.1-texture-from-drawable.patch, as it fails
