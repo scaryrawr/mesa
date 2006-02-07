@@ -53,21 +53,28 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 6.4.2
-Release: 1
+Release: 2
 License: MIT/X11
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-buildroot
 Source0: http://internap.dl.sourceforge.net/sourceforge/mesa3d/MesaLib-%{version}.tar.bz2
-Source1: redhat-mesa-target
-Source2: redhat-mesa-driver-install
-Source3: redhat-mesa-source-filelist-generator
+# MesaDemos is included here just for glxinfo and glxgears, as they were
+# previously supplied in X.Org sources, whereas the rest of the demos were not.
+# It would be in it's own separate package if there was a way of sanely building
+# it outside of Mesa.
+Source1: http://internap.dl.sourceforge.net/sourceforge/mesa3d/MesaDemos-%{version}.tar.bz2
+Source10: redhat-mesa-target
+Source11: redhat-mesa-driver-install
+Source12: redhat-mesa-source-filelist-generator
 #Patch0: mesa-6.3.2-makedepend.patch
 Patch0: mesa-6.3.2-build-configuration-v4.patch
 Patch1: mesa-6.3.2-fix-installmesa.patch
 Patch2: mesa-6.4-multilib-fix.patch
 Patch3: mesa-modular-dri-dir.patch
 Patch4: mesa-6.4.1-libGLw-enable-motif-support.patch
+Patch5: mesa-6.4.2-dprintf-to-debugprintf-for-bug180122.patch
+Patch6: mesa-6.4.2-xorg-server-uses-bad-datatypes-breaking-AMD64-fdo5835.patch
 #Patch4: mesa-6.4.1-enable-osmesa.patch
 
 # General patches from upstream go here:
@@ -205,13 +212,21 @@ Group: Development/Libraries
 The mesa-source package provides the minimal source code needed to
 build DRI enabled X servers, etc.
 
+#-- glx-utils --------------------------------------------------------
+%package -n glx-utils
+Summary: GLX utilities
+Group: Development/Libraries
+
+%description -n glx-utils
+The glx-utils package provides the glxinfo and glxgears utilities.
+
 #-- prep -------------------------------------------------------------
 %prep
-%setup -q -n Mesa-%{version}
+%setup -q -n Mesa-%{version} -b1
 # Copy Red Hat Mesa build/install simplificomplication scripts into build dir.
-install -m 755 %{SOURCE1} ./
-install -m 755 %{SOURCE2} ./
-install -m 755 %{SOURCE3} ./
+install -m 755 %{SOURCE10} ./
+install -m 755 %{SOURCE11} ./
+install -m 755 %{SOURCE12} ./
 
 #%patch0 -p0 -b .makedepend
 %patch1 -p0 -b .fix-installmesa
@@ -220,6 +235,8 @@ install -m 755 %{SOURCE3} ./
 %if %{with_motif}
 %patch4 -p0 -b .libGLw-enable-motif-support
 %endif
+%patch5 -p1 -b .dprintf-to-debugprintf-for-bug180122
+%patch6 -p0 -b .xorg-server-uses-bad-datatypes-breaking-AMD64-fdo5835
 
 # NOT NEEDED NOW%patch100 -p1 -b .amd64-assyntax-fix
 
@@ -245,7 +262,7 @@ MESATARGET="$(./redhat-mesa-target %{with_dri} %{_arch})"
 
 echo -e "********************\nMESATARGET=$MESATARGET\n********************\n"
 make ${MESATARGET} %{makeopts}
-
+make -C progs/xdemos glxgears glxinfo
 
 #-- Install ----------------------------------------------------------
 %install
@@ -265,6 +282,13 @@ rm -rf $RPM_BUILD_ROOT
 export LIB_DIR=$RPM_BUILD_ROOT%{_libdir}
 export INCLUDE_DIR=$RPM_BUILD_ROOT%{_includedir}
 bin/installmesa $RPM_BUILD_ROOT/usr
+
+# Install glxgears/glxinfo
+{
+    mkdir -p $RPM_BUILD_ROOT%{_bindir}
+    install -m0755 progs/xdemos/glxgears $RPM_BUILD_ROOT%{_bindir}/
+    install -m0755 progs/xdemos/glxinfo $RPM_BUILD_ROOT%{_bindir}/
+}
 
 %if %{with_dri}
 #pushd src/mesa/drivers/dri
@@ -401,7 +425,24 @@ rm -rf $RPM_BUILD_ROOT
 %files source -f mesa-source-rpm-filelist.lst
 %defattr(-,root,root,-)
 
+%files -n glx-utils
+%defattr(-,root,root,-)
+%{_bindir}/glxgears
+%{_bindir}/glxinfo
+
 %changelog
+* Tue Feb  7 2006 Mike A. Harris <mharris@redhat.com> 6.4.2-2
+- Added new "glx-utils" subpackage with glxgears and glxinfo (#173510)
+- Added mesa-6.4.2-dprintf-to-debugprintf-for-bug180122.patch to workaround
+  a Mesa namespace conflict with GNU_SOURCE (#180122)
+- Added mesa-6.4.2-xorg-server-uses-bad-datatypes-breaking-AMD64-fdo5835.patch
+  as an attempt to fix bugs (#176976,176414,fdo#5835)
+- Enabled inclusion of the *EXPERIMENTAL UNSUPPORTED* r300 DRI driver on
+  x86, x86_64, and ppc architectures, however the 2D Radeon driver will soon
+  be modified to require the user to manually turn experimental DRI support
+  on with Option "dri" in xorg.conf to test it out and report all X bugs that
+  occur while using it directly to X.Org bugzilla.  (#179712)
+
 * Sat Feb  4 2006 Mike A. Harris <mharris@redhat.com> 6.4.2-1
 - Updated to Mesa 6.4.2
 - Use "libGLU.so.1.3.0604*" glob in file manifest, to avoid having to update it
