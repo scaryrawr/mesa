@@ -365,7 +365,7 @@ rm -rf $RPM_BUILD_ROOT
 # to me currently, but it is a change from Xorg 6.8.2's Mesa.
 #%{_libdir}/libGL.so.1.5.060400
 %{_libdir}/libOSMesa.so.6
-%{_libdir}/libOSMesa.so.6.4.060401
+%{_libdir}/libOSMesa.so.6.4.0604*
 %endif
 
 %files libGL-devel
@@ -442,6 +442,8 @@ rm -rf $RPM_BUILD_ROOT
   be modified to require the user to manually turn experimental DRI support
   on with Option "dri" in xorg.conf to test it out and report all X bugs that
   occur while using it directly to X.Org bugzilla.  (#179712)
+- Use "libOSMesa.so.6.4.0604*" glob in file manifest, to avoid having to
+  update it each upstream release.
 
 * Sat Feb  4 2006 Mike A. Harris <mharris@redhat.com> 6.4.2-1
 - Updated to Mesa 6.4.2
