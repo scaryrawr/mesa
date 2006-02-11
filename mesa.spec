@@ -53,7 +53,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 6.4.2
-Release: 2
+Release: 2.1
 License: MIT/X11
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -431,6 +431,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/glxinfo
 
 %changelog
+* Fri Feb 10 2006 Jesse Keating <jkeating@redhat.com> - 6.4.2-2.1
+- bump again for double-long bug on ppc(64)
+
 * Tue Feb  7 2006 Mike A. Harris <mharris@redhat.com> 6.4.2-2
 - Added new "glx-utils" subpackage with glxgears and glxinfo (#173510)
 - Added mesa-6.4.2-dprintf-to-debugprintf-for-bug180122.patch to workaround
