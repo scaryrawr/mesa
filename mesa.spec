@@ -53,7 +53,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 6.4.2
-Release: 2.1
+Release: 3
 License: MIT/X11
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -81,11 +81,14 @@ Patch6: mesa-6.4.2-xorg-server-uses-bad-datatypes-breaking-AMD64-fdo5835.patch
 
 # Red Hat custom patches, feature development
 Patch200: mesa-6.4.1-texture-from-drawable.patch
+Patch201: mesa-6.4.1-radeon-use-right-texture-format.patch
 
 BuildRequires: pkgconfig
 BuildRequires: libdrm-devel >= 2.0-1
 BuildRequires: libXxf86vm-devel
 BuildRequires: expat-devel
+BuildRequires: xorg-x11-proto-devel >= 7.0-3
+BuildRequires: glut-devel
 
 %if %{with_motif}
 BuildRequires: openmotif-devel
@@ -240,7 +243,11 @@ install -m 755 %{SOURCE12} ./
 
 # NOT NEEDED NOW%patch100 -p1 -b .amd64-assyntax-fix
 
-#%patch200 -p0 -b .texture-from-drawable
+%patch200 -p0 -b .texture-from-drawable
+# According to Adam, this patch makes metacity's compositing
+# manager noticeably faster, but also may be a little too big of
+# a change for post feature freeze.  Leaving off for now...
+#%patch201 -p1 -b .radeon-use-right-format
 
 # WARNING: The following files are copyright "Mark J. Kilgard" under the GLUT
 # license and are not open source/free software, so we remove them.
@@ -431,6 +438,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/glxinfo
 
 %changelog
+* Sun Feb 19 2006 Ray Strode <rstrode@redhat.com> 6.4.2-3
+- enable texture-from-drawable patch
+- add glut-devel dependency
+
 * Fri Feb 10 2006 Jesse Keating <jkeating@redhat.com> - 6.4.2-2.1
 - bump again for double-long bug on ppc(64)
 
