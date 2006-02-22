@@ -53,7 +53,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 6.4.2
-Release: 3
+Release: 4
 License: MIT/X11
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -438,6 +438,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/glxinfo
 
 %changelog
+* Wed Feb 22 2006 Adam Jackson <ajackson@redhat.com> 6.4.2-4
+- rebuilt
+
 * Sun Feb 19 2006 Ray Strode <rstrode@redhat.com> 6.4.2-3
 - enable texture-from-drawable patch
 - add glut-devel dependency
