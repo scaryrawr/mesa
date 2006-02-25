@@ -53,7 +53,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 6.4.2
-Release: 4
+Release: 5
 License: MIT/X11
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -438,6 +438,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/glxinfo
 
 %changelog
+* Sat Feb 25 2006 Mike A. Harris <mharris@redhat.com> 6.4.2-5
+- Disable the expeimental r300 DRI driver, as it has turned out to cause
+  instability and system hangs for many users.
+
 * Wed Feb 22 2006 Adam Jackson <ajackson@redhat.com> 6.4.2-4
 - rebuilt
 
