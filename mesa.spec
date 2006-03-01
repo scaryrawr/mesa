@@ -53,7 +53,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 6.4.2
-Release: 5
+Release: 6
 License: MIT/X11
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -91,6 +91,7 @@ BuildRequires: libXxf86vm-devel
 BuildRequires: expat-devel
 BuildRequires: xorg-x11-proto-devel >= 7.0-3
 BuildRequires: glut-devel
+BuildRequires: libXt-devel
 
 %if %{with_motif}
 BuildRequires: openmotif-devel
@@ -437,6 +438,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/glxinfo
 
 %changelog
+* Wed Mar 01 2006 Karsten Hopp <karsten@redhat.de> 6.4.2-6
+- Buildrequires: libXt-devel (#183479)
+
 * Sat Feb 25 2006 Mike A. Harris <mharris@redhat.com> 6.4.2-5
 - Disable the expeimental r300 DRI driver, as it has turned out to cause
   instability and system hangs for many users.
