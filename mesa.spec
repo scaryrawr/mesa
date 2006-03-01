@@ -84,7 +84,9 @@ Patch200: mesa-6.4.1-texture-from-drawable.patch
 Patch201: mesa-6.4.1-radeon-use-right-texture-format.patch
 
 BuildRequires: pkgconfig
+%if %{with_dri}
 BuildRequires: libdrm-devel >= 2.0-1
+%endif
 BuildRequires: libXxf86vm-devel
 BuildRequires: expat-devel
 BuildRequires: xorg-x11-proto-devel >= 7.0-3
@@ -274,8 +276,6 @@ make -C progs/xdemos glxgears glxinfo
 #-- Install ----------------------------------------------------------
 %install
 rm -rf $RPM_BUILD_ROOT
-# NOTE: the rpm makeinstall macro does not work for mesa
-#%%makeinstall DESTDIR=$RPM_BUILD_ROOT
 # NOTE: "make install" calls mesa's installmesa script, passing DESTDIR
 # to it as a commandline arg, but LIB_DIR and INCLUDE_DIR get hard coded in
 # that script, meaning multilib breaks.
@@ -284,8 +284,7 @@ rm -rf $RPM_BUILD_ROOT
 # NOTE: Since Mesa's install procedure doesn't work on multilib properly,
 # we fix it here, as I have patched the installmesa script to remove the
 # hard coding, and we set the variables ourself right here, and it should
-# hopefully pick them up.
-#	-- Mike A. Harris <mharris@redhat.com>
+# hopefully pick them up.  -- mharris@redhat.com
 export LIB_DIR=$RPM_BUILD_ROOT%{_libdir}
 export INCLUDE_DIR=$RPM_BUILD_ROOT%{_includedir}
 bin/installmesa $RPM_BUILD_ROOT/usr
