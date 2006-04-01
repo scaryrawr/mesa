@@ -52,8 +52,8 @@
 
 Summary: Mesa graphics libraries
 Name: mesa
-Version: 6.4.2
-Release: 6
+Version: 6.5
+Release: 1
 License: MIT/X11
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -67,20 +67,16 @@ Source1: http://internap.dl.sourceforge.net/sourceforge/mesa3d/MesaDemos-%{versi
 Source10: redhat-mesa-target
 Source11: redhat-mesa-driver-install
 Source12: redhat-mesa-source-filelist-generator
-#Patch0: mesa-6.3.2-makedepend.patch
 Patch0: mesa-6.3.2-build-configuration-v4.patch
 Patch1: mesa-6.3.2-fix-installmesa.patch
 Patch2: mesa-6.4-multilib-fix.patch
 Patch3: mesa-modular-dri-dir.patch
 Patch4: mesa-6.4.1-libGLw-enable-motif-support.patch
-Patch5: mesa-6.4.2-dprintf-to-debugprintf-for-bug180122.patch
-Patch6: mesa-6.4.2-xorg-server-uses-bad-datatypes-breaking-AMD64-fdo5835.patch
-#Patch4: mesa-6.4.1-enable-osmesa.patch
 
 # General patches from upstream go here:
 
 # Red Hat custom patches, feature development
-Patch200: mesa-6.4.1-texture-from-drawable.patch
+Patch200: mesa-6.5-texture-from-pixmap-fixes.patch
 Patch201: mesa-6.4.1-radeon-use-right-texture-format.patch
 
 BuildRequires: pkgconfig
@@ -241,16 +237,12 @@ install -m 755 %{SOURCE12} ./
 %if %{with_motif}
 %patch4 -p0 -b .libGLw-enable-motif-support
 %endif
-%patch5 -p1 -b .dprintf-to-debugprintf-for-bug180122
-%patch6 -p0 -b .xorg-server-uses-bad-datatypes-breaking-AMD64-fdo5835
 
-# NOT NEEDED NOW%patch100 -p1 -b .amd64-assyntax-fix
-
-%patch200 -p0 -b .texture-from-drawable
 # According to Adam, this patch makes metacity's compositing
 # manager noticeably faster, but also may be a little too big of
 # a change for post feature freeze.  Leaving off for now...
-#%patch201 -p1 -b .radeon-use-right-format
+%patch200 -p0 -b  texture-from-pixmap-fixes
+%patch201 -p1 -b .radeon-use-right-format
 
 # WARNING: The following files are copyright "Mark J. Kilgard" under the GLUT
 # license and are not open source/free software, so we remove them.
@@ -259,7 +251,7 @@ rm include/GL/uglglutshapes.h
 #-- Build ------------------------------------------------------------
 %build
 # Macroize this to simplify things
-%define makeopts MKDEP="gcc -M" MKDEP_OPTIONS="-MF depend"
+%define makeopts MKDEP="gcc -M" MKDEP_OPTIONS="-MF depend" ARCH_FLAGS=-DGLX_USE_TLS
 export CFLAGS="$RPM_OPT_FLAGS"
 export LIB_DIR=$RPM_BUILD_ROOT%{_libdir}
 export INCLUDE_DIR=$RPM_BUILD_ROOT%{_includedir}
@@ -438,6 +430,18 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/glxinfo
 
 %changelog
+* Sat Apr  1 2006 Kristian Høgsberg <krh@redhat.com> 6.5-1
+- Update to mesa 6.5 snapshot.
+- Drop mesa-6.4.2-dprintf-to-debugprintf-for-bug180122.patch and
+  mesa-6.4.2-xorg-server-uses-bad-datatypes-breaking-AMD64-fdo5835.patch
+  as these are upstream now.
+- Drop mesa-6.4.1-texture-from-drawable.patch and add
+  mesa-6.5-texture-from-pixmap-fixes.patch.
+- Update mesa-modular-dri-dir.patch to apply.
+
+* Fri Mar 24 2006 Kristian Høgsberg <krh@redhat.com> 6.4.2-7
+- Set ARCH_FLAGS=-DGLX_USE_TLS to enable TLS for GL contexts.
+
 * Wed Mar 01 2006 Karsten Hopp <karsten@redhat.de> 6.4.2-6
 - Buildrequires: libXt-devel (#183479)
 
