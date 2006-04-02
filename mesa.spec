@@ -402,7 +402,7 @@ rm -rf $RPM_BUILD_ROOT
 %files libGLU
 %defattr(-,root,root,-)
 %{_libdir}/libGLU.so.1
-%{_libdir}/libGLU.so.1.3.0604*
+%{_libdir}/libGLU.so.1.3.*
 
 %files libGLU-devel
 %defattr(-,root,root,-)
@@ -442,6 +442,8 @@ rm -rf $RPM_BUILD_ROOT
 - Drop mesa-6.4.1-texture-from-drawable.patch and add
   mesa-6.5-texture-from-pixmap-fixes.patch.
 - Update mesa-modular-dri-dir.patch to apply.
+- Widen libGLU glob.
+- Reenable r300 driver install.
 
 * Fri Mar 24 2006 Kristian Høgsberg <krh@redhat.com> 6.4.2-7
 - Set ARCH_FLAGS=-DGLX_USE_TLS to enable TLS for GL contexts.
