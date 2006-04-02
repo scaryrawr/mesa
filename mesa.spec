@@ -72,6 +72,7 @@ Patch1: mesa-6.3.2-fix-installmesa.patch
 Patch2: mesa-6.4-multilib-fix.patch
 Patch3: mesa-modular-dri-dir.patch
 Patch4: mesa-6.4.1-libGLw-enable-motif-support.patch
+Patch5: mesa-6.5-drop-static-inline.patch
 
 # General patches from upstream go here:
 
@@ -237,6 +238,7 @@ install -m 755 %{SOURCE12} ./
 %if %{with_motif}
 %patch4 -p0 -b .libGLw-enable-motif-support
 %endif
+%patch5 -p0 -b .drop-static-inline
 
 # According to Adam, this patch makes metacity's compositing
 # manager noticeably faster, but also may be a little too big of
