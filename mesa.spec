@@ -251,7 +251,7 @@ rm include/GL/uglglutshapes.h
 #-- Build ------------------------------------------------------------
 %build
 # Macroize this to simplify things
-%define makeopts MKDEP="gcc -M" MKDEP_OPTIONS="-MF depend" ARCH_FLAGS=-DGLX_USE_TLS
+%define makeopts MKDEP="gcc -M" MKDEP_OPTIONS="-MG depend" ARCH_FLAGS=-DGLX_USE_TLS
 export CFLAGS="$RPM_OPT_FLAGS"
 export LIB_DIR=$RPM_BUILD_ROOT%{_libdir}
 export INCLUDE_DIR=$RPM_BUILD_ROOT%{_includedir}
@@ -432,6 +432,8 @@ rm -rf $RPM_BUILD_ROOT
 %changelog
 * Sat Apr  1 2006 Kristian Høgsberg <krh@redhat.com> 6.5-1
 - Update to mesa 6.5 snapshot.
+- Use -MG for generating deps and some files aren't yet symlinked at
+  make depend time.
 - Drop mesa-6.4.2-dprintf-to-debugprintf-for-bug180122.patch and
   mesa-6.4.2-xorg-server-uses-bad-datatypes-breaking-AMD64-fdo5835.patch
   as these are upstream now.
