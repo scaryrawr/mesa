@@ -67,7 +67,7 @@ Source1: http://internap.dl.sourceforge.net/sourceforge/mesa3d/MesaDemos-%{versi
 Source10: redhat-mesa-target
 Source11: redhat-mesa-driver-install
 Source12: redhat-mesa-source-filelist-generator
-Patch0: mesa-6.3.2-build-configuration-v4.patch
+Patch0: mesa-6.5-build-config.patch
 Patch1: mesa-6.3.2-fix-installmesa.patch
 Patch2: mesa-6.4-multilib-fix.patch
 Patch3: mesa-modular-dri-dir.patch
@@ -231,7 +231,7 @@ install -m 755 %{SOURCE10} ./
 install -m 755 %{SOURCE11} ./
 install -m 755 %{SOURCE12} ./
 
-#%patch0 -p0 -b .makedepend
+%patch0 -p0 -b .build-config
 %patch1 -p0 -b .fix-installmesa
 %patch2 -p0 -b .multilib-fix
 %patch3 -p1 -b .modular
@@ -253,7 +253,6 @@ rm include/GL/uglglutshapes.h
 #-- Build ------------------------------------------------------------
 %build
 # Macroize this to simplify things
-%define makeopts MKDEP="gcc -M" MKDEP_OPTIONS="-MG depend" ARCH_FLAGS=-DGLX_USE_TLS
 export CFLAGS="$RPM_OPT_FLAGS"
 export LIB_DIR=$RPM_BUILD_ROOT%{_libdir}
 export INCLUDE_DIR=$RPM_BUILD_ROOT%{_includedir}
@@ -444,6 +443,9 @@ rm -rf $RPM_BUILD_ROOT
 - Widen libGLU glob.
 - Reenable r300 driver install.
 - Widen libOSMesa glob.
+- Go back to patching config/linux-dri, add mesa-6.5-build-config.patch,
+  drop mesa-6.3.2-build-configuration-v4.patch.
+- Disable sis dri driver for now, only builds on x86 and x86-64.
 
 * Fri Mar 24 2006 Kristian Høgsberg <krh@redhat.com> 6.4.2-7
 - Set ARCH_FLAGS=-DGLX_USE_TLS to enable TLS for GL contexts.
