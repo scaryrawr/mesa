@@ -365,8 +365,7 @@ rm -rf $RPM_BUILD_ROOT
 # NOTE: This is the software rasterizer only.  Why it is 1.5.* is not clear
 # to me currently, but it is a change from Xorg 6.8.2's Mesa.
 #%{_libdir}/libGL.so.1.5.060400
-%{_libdir}/libOSMesa.so.6
-%{_libdir}/libOSMesa.so.6.4.0604*
+%{_libdir}/libOSMesa.so.6*
 %endif
 
 %files libGL-devel
@@ -444,6 +443,7 @@ rm -rf $RPM_BUILD_ROOT
 - Update mesa-modular-dri-dir.patch to apply.
 - Widen libGLU glob.
 - Reenable r300 driver install.
+- Widen libOSMesa glob.
 
 * Fri Mar 24 2006 Kristian Høgsberg <krh@redhat.com> 6.4.2-7
 - Set ARCH_FLAGS=-DGLX_USE_TLS to enable TLS for GL contexts.
