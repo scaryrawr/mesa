@@ -264,7 +264,7 @@ MESATARGET="$(./redhat-mesa-target %{with_dri} %{_arch})"
 #DRIVER_DIRS="dri osmesa"
 
 echo -e "********************\nMESATARGET=$MESATARGET\n********************\n"
-make ${MESATARGET} %{makeopts}
+make ${MESATARGET}
 make -C progs/xdemos glxgears glxinfo
 
 #-- Install ----------------------------------------------------------
