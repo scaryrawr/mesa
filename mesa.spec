@@ -53,7 +53,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 6.5
-Release: 1
+Release: 2
 License: MIT/X11
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -82,7 +82,7 @@ Patch201: mesa-6.4.1-radeon-use-right-texture-format.patch
 
 BuildRequires: pkgconfig
 %if %{with_dri}
-BuildRequires: libdrm-devel >= 2.0-1
+BuildRequires: libdrm-devel >= 2.0.1-1
 %endif
 BuildRequires: libXxf86vm-devel
 BuildRequires: expat-devel
@@ -430,6 +430,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/glxinfo
 
 %changelog
+* Mon Apr 10 2006 Kristian Høgsberg <krh@redhat.com> 6.5-2
+- Bump for fc5 build.
+- Bump libdrm requires to 2.0.1.
+
 * Sat Apr  1 2006 Kristian Høgsberg <krh@redhat.com> 6.5-1
 - Update to mesa 6.5 snapshot.
 - Use -MG for generating deps and some files aren't yet symlinked at
