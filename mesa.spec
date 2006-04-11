@@ -53,7 +53,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 6.5
-Release: 4
+Release: 5
 License: MIT/X11
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -434,6 +434,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/glxinfo
 
 %changelog
+* Tue Apr 11 2006 Kristian Høgsberg <krh@redhat.com> 6.5-5
+- Bump for fc5 build.
+
 * Tue Apr 11 2006 Adam Jackson <ajackson@redhat.com> 6.5-4
 - Disable R300_FORCE_R300 hack for wider testing.
 
