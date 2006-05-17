@@ -53,7 +53,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 6.5
-Release: 5
+Release: 6
 License: MIT/X11
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -91,6 +91,7 @@ BuildRequires: expat-devel
 BuildRequires: xorg-x11-proto-devel >= 7.0-3
 BuildRequires: glut-devel
 BuildRequires: libXt-devel
+BuildRequires: makedepend
 
 %if %{with_motif}
 BuildRequires: openmotif-devel
@@ -434,6 +435,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/glxinfo
 
 %changelog
+* Wed May 17 2006 Mike A. Harris <mharris@redhat.com> 6.5-6
+- Add "BuildRequires: makedepend" for bug (#191967)
+
 * Tue Apr 11 2006 Kristian Høgsberg <krh@redhat.com> 6.5-5
 - Bump for fc5 build.
 
