@@ -53,7 +53,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 6.5
-Release: 7
+Release: 8
 License: MIT/X11
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
