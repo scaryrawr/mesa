@@ -53,7 +53,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 6.5
-Release: 6
+Release: 7
 License: MIT/X11
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -248,7 +248,7 @@ install -m 755 %{SOURCE12} ./
 # According to Adam, this patch makes metacity's compositing
 # manager noticeably faster, but also may be a little too big of
 # a change for post feature freeze.  Leaving off for now...
-%patch200 -p0 -b  texture-from-pixmap-fixes
+%patch200 -p0 -b .texture-from-pixmap-fixes
 %patch201 -p1 -b .radeon-use-right-format
 
 # WARNING: The following files are copyright "Mark J. Kilgard" under the GLUT
@@ -435,6 +435,11 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/glxinfo
 
 %changelog
+* Mon May 29 2006 Kristian Høgsberg <krh@redhat.com> - 6.5-6
+- Update mesa-6.5-texture-from-pixmap-fixes.patch to include new
+  tokens and change tfp functions to return void.  Yes, a new mesa
+  snapshot would be nice.
+
 * Wed May 17 2006 Mike A. Harris <mharris@redhat.com> 6.5-6
 - Add "BuildRequires: makedepend" for bug (#191967)
 
