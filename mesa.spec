@@ -435,7 +435,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/glxinfo
 
 %changelog
-* Mon May 29 2006 Kristian Høgsberg <krh@redhat.com> - 6.5-6
+* Mon May 29 2006 Kristian Høgsberg <krh@redhat.com> 6.5-8
+- Bump for rawhide build.
+
+* Mon May 29 2006 Kristian Høgsberg <krh@redhat.com> 6.5-7
 - Update mesa-6.5-texture-from-pixmap-fixes.patch to include new
   tokens and change tfp functions to return void.  Yes, a new mesa
   snapshot would be nice.
