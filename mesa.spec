@@ -53,7 +53,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 6.5
-Release: 8
+Release: 9
 License: MIT/X11
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -75,12 +75,13 @@ Patch4: mesa-6.4.1-libGLw-enable-motif-support.patch
 Patch5: mesa-6.5-drop-static-inline.patch
 Patch6: mesa-6.5-noexecstack.patch
 Patch7: mesa-6.5-force-r300.patch
-
+Patch8: mesa-6.5-fix-pbuffer-dispatch.patch
 # General patches from upstream go here:
 
 # Red Hat custom patches, feature development
 Patch200: mesa-6.5-texture-from-pixmap-fixes.patch
 Patch201: mesa-6.4.1-radeon-use-right-texture-format.patch
+Patch202: mesa-6.5-tfp-fbconfig-attribs.patch
 
 BuildRequires: pkgconfig
 %if %{with_dri}
@@ -244,12 +245,14 @@ install -m 755 %{SOURCE12} ./
 %patch5 -p0 -b .drop-static-inline
 %patch6 -p0 -b .noexecstack
 %patch7 -p0 -b .force-r300
+%patch8 -p0 -b .fix-pbuffer-dispatch
 
 # According to Adam, this patch makes metacity's compositing
 # manager noticeably faster, but also may be a little too big of
 # a change for post feature freeze.  Leaving off for now...
 %patch200 -p0 -b .texture-from-pixmap-fixes
 %patch201 -p1 -b .radeon-use-right-format
+%patch202 -p0 -b .tfp-fbconfig-attribs
 
 # WARNING: The following files are copyright "Mark J. Kilgard" under the GLUT
 # license and are not open source/free software, so we remove them.
@@ -435,6 +438,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/glxinfo
 
 %changelog
+* Mon Jun 12 2006 Kristian Høgsberg <krh@redhat.com> - 6.5-9
+- Add mesa-6.5-fix-pbuffer-dispatch.patch to fix pbuffer marshalling code.
+
 * Mon May 29 2006 Kristian Høgsberg <krh@redhat.com> 6.5-8
 - Bump for rawhide build.
 
