@@ -53,11 +53,12 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 6.5
-Release: 9
+Release: 10
 License: MIT/X11
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
-BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-buildroot
+BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
+
 Source0: http://internap.dl.sourceforge.net/sourceforge/mesa3d/MesaLib-%{version}.tar.bz2
 # MesaDemos is included here just for glxinfo and glxgears, as they were
 # previously supplied in X.Org sources, whereas the rest of the demos were not.
@@ -67,6 +68,7 @@ Source1: http://internap.dl.sourceforge.net/sourceforge/mesa3d/MesaDemos-%{versi
 Source10: redhat-mesa-target
 Source11: redhat-mesa-driver-install
 Source12: redhat-mesa-source-filelist-generator
+
 Patch0: mesa-6.5-build-config.patch
 Patch1: mesa-6.3.2-fix-installmesa.patch
 Patch2: mesa-6.4-multilib-fix.patch
@@ -78,6 +80,7 @@ Patch7: mesa-6.5-force-r300.patch
 Patch8: mesa-6.5-fix-pbuffer-dispatch.patch
 # General patches from upstream go here:
 
+
 # Red Hat custom patches, feature development
 Patch200: mesa-6.5-texture-from-pixmap-fixes.patch
 Patch201: mesa-6.4.1-radeon-use-right-texture-format.patch
@@ -85,7 +88,7 @@ Patch202: mesa-6.5-tfp-fbconfig-attribs.patch
 
 BuildRequires: pkgconfig
 %if %{with_dri}
-BuildRequires: libdrm-devel >= 2.0.1-1
+BuildRequires: libdrm-devel >= 2.0.1-4
 %endif
 BuildRequires: libXxf86vm-devel
 BuildRequires: expat-devel
@@ -105,6 +108,9 @@ Mesa
 %package libGL
 Summary: Mesa libGL runtime libraries and DRI drivers.
 Group: System Environment/Libraries
+
+Requires(post): /sbin/ldconfig
+Requires(postun): /sbin/ldconfig
 
 Provides: libGL
 
@@ -144,6 +150,9 @@ Mesa libGL development package
 Summary: Mesa libGLU runtime library
 Group: System Environment/Libraries
 
+Requires(post): /sbin/ldconfig
+Requires(postun): /sbin/ldconfig
+
 Provides: libGLU
 
 # libGLU used to be in Mesa package in RHL 6.x, 7.[0-2], RHEL 2.1
@@ -181,6 +190,9 @@ Mesa libGLU development package
 %package libGLw
 Summary: Mesa libGLw runtime library
 Group: System Environment/Libraries
+
+Requires(post): /sbin/ldconfig
+Requires(postun): /sbin/ldconfig
 
 Provides: libGLw
 
@@ -438,7 +450,12 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/glxinfo
 
 %changelog
-* Mon Jun 12 2006 Kristian Høgsberg <krh@redhat.com> - 6.5-9
+* Mon Jun 19 2006 Mike A. Harris <mharris@redhat.com> 6.5-10
+- Bump libdrm-devel dep to trigger new ExclusiveArch test with the new package.
+- Use Fedora Extras style BuildRoot tag.
+- Added "Requires(post): /sbin/ldconfig" and postun to all runtime lib packages.
+
+* Mon Jun 12 2006 Kristian Høsberg <krh@redhat.com> 6.5-9
 - Add mesa-6.5-fix-pbuffer-dispatch.patch to fix pbuffer marshalling code.
 
 * Mon May 29 2006 Kristian Høgsberg <krh@redhat.com> 6.5-8
