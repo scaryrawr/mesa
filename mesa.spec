@@ -53,7 +53,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 6.5
-Release: 11
+Release: 12%{?dist}
 License: MIT/X11
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -69,15 +69,19 @@ Source10: redhat-mesa-target
 Source11: redhat-mesa-driver-install
 Source12: redhat-mesa-source-filelist-generator
 
+# Patches 0-9 reserved for mesa Makefiles/config fixes
 Patch0: mesa-6.5-build-config.patch
-Patch1: mesa-6.3.2-fix-installmesa.patch
-Patch2: mesa-6.4-multilib-fix.patch
-Patch3: mesa-modular-dri-dir.patch
-Patch4: mesa-6.4.1-libGLw-enable-motif-support.patch
-Patch5: mesa-6.5-drop-static-inline.patch
-Patch6: mesa-6.5-noexecstack.patch
-Patch7: mesa-6.5-force-r300.patch
-Patch8: mesa-6.5-fix-pbuffer-dispatch.patch
+Patch1: mesa-6.5-glx-use-tls.patch
+
+Patch10: mesa-6.3.2-fix-installmesa.patch
+Patch11: mesa-6.4-multilib-fix.patch
+Patch12: mesa-modular-dri-dir.patch
+Patch13: mesa-6.4.1-libGLw-enable-motif-support.patch
+Patch14: mesa-6.5-drop-static-inline.patch
+Patch15: mesa-6.5-noexecstack.patch
+Patch16: mesa-6.5-force-r300.patch
+Patch17: mesa-6.5-fix-pbuffer-dispatch.patch
+
 # General patches from upstream go here:
 
 
@@ -248,16 +252,18 @@ install -m 755 %{SOURCE11} ./
 install -m 755 %{SOURCE12} ./
 
 %patch0 -p0 -b .build-config
-%patch1 -p0 -b .fix-installmesa
-%patch2 -p0 -b .multilib-fix
-%patch3 -p1 -b .modular
+%patch1 -p0 -b .glx-use-tls
+
+%patch10 -p0 -b .fix-installmesa
+%patch11 -p0 -b .multilib-fix
+%patch12 -p1 -b .modular
 %if %{with_motif}
-%patch4 -p0 -b .libGLw-enable-motif-support
+%patch13 -p0 -b .libGLw-enable-motif-support
 %endif
-%patch5 -p0 -b .drop-static-inline
-%patch6 -p0 -b .noexecstack
-%patch7 -p0 -b .force-r300
-%patch8 -p0 -b .fix-pbuffer-dispatch
+%patch14 -p0 -b .drop-static-inline
+%patch15 -p0 -b .noexecstack
+%patch16 -p0 -b .force-r300
+%patch17 -p0 -b .fix-pbuffer-dispatch
 
 # According to Adam, this patch makes metacity's compositing
 # manager noticeably faster, but also may be a little too big of
@@ -449,6 +455,11 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/glxinfo
 
 %changelog
+* Wed Jul 05 2006 Mike A. Harris <mharris@redhat.com> 6.5-12.fc6
+- Maybe actually, you know, apply the mesa-6.5-glx-use-tls.patch as that might
+  help to you know, actually solve the problem.  Duh.
+- Use {dist} tag in Release field now.
+
 * Wed Jul 05 2006 Mike A. Harris <mharris@redhat.com> 6.5-11
 - Added mesa-6.5-glx-use-tls.patch to hopefully get -DGLX_USE_TLS to really
   work this time due to broken upstream linux-dri-* configs. (#193979)
