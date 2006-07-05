@@ -53,7 +53,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 6.5
-Release: 10
+Release: 11
 License: MIT/X11
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -268,12 +268,11 @@ install -m 755 %{SOURCE12} ./
 
 # WARNING: The following files are copyright "Mark J. Kilgard" under the GLUT
 # license and are not open source/free software, so we remove them.
-rm include/GL/uglglutshapes.h
+rm -f include/GL/uglglutshapes.h
 
 #-- Build ------------------------------------------------------------
 %build
-# Macroize this to simplify things
-export CFLAGS="$RPM_OPT_FLAGS"
+export OPT_FLAGS="$RPM_OPT_FLAGS"
 export LIB_DIR=$RPM_BUILD_ROOT%{_libdir}
 export INCLUDE_DIR=$RPM_BUILD_ROOT%{_includedir}
 export DRI_DRIVER_DIR="%{_libdir}/dri"
@@ -450,6 +449,11 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/glxinfo
 
 %changelog
+* Wed Jul 05 2006 Mike A. Harris <mharris@redhat.com> 6.5-11
+- Added mesa-6.5-glx-use-tls.patch to hopefully get -DGLX_USE_TLS to really
+  work this time due to broken upstream linux-dri-* configs. (#193979)
+- Pass RPM_OPT_FLAGS via OPT_FLAGS instead of via CFLAGS also for (#193979)
+
 * Mon Jun 19 2006 Mike A. Harris <mharris@redhat.com> 6.5-10
 - Bump libdrm-devel dep to trigger new ExclusiveArch test with the new package.
 - Use Fedora Extras style BuildRoot tag.
@@ -483,9 +487,9 @@ rm -rf $RPM_BUILD_ROOT
 - Bump for fc5 build.
 - Bump libdrm requires to 2.0.1.
 
-* Sat Apr  1 2006 Kristian Høgsberg <krh@redhat.com> 6.5-1
+* Sat Apr 01 2006 Kristian Høgsberg <krh@redhat.com> 6.5-1
 - Update to mesa 6.5 snapshot.
-- Use -MG for generating deps and some files aren't yet symlinked at
+- Use -MG for generating deps and some files are not yet symlinked at
   make depend time.
 - Drop mesa-6.4.2-dprintf-to-debugprintf-for-bug180122.patch and
   mesa-6.4.2-xorg-server-uses-bad-datatypes-breaking-AMD64-fdo5835.patch
@@ -520,7 +524,7 @@ rm -rf $RPM_BUILD_ROOT
 * Fri Feb 10 2006 Jesse Keating <jkeating@redhat.com> - 6.4.2-2.1
 - bump again for double-long bug on ppc(64)
 
-* Tue Feb  7 2006 Mike A. Harris <mharris@redhat.com> 6.4.2-2
+* Tue Feb 07 2006 Mike A. Harris <mharris@redhat.com> 6.4.2-2
 - Added new "glx-utils" subpackage with glxgears and glxinfo (#173510)
 - Added mesa-6.4.2-dprintf-to-debugprintf-for-bug180122.patch to workaround
   a Mesa namespace conflict with GNU_SOURCE (#180122)
@@ -534,7 +538,7 @@ rm -rf $RPM_BUILD_ROOT
 - Use "libOSMesa.so.6.4.0604*" glob in file manifest, to avoid having to
   update it each upstream release.
 
-* Sat Feb  4 2006 Mike A. Harris <mharris@redhat.com> 6.4.2-1
+* Sat Feb 04 2006 Mike A. Harris <mharris@redhat.com> 6.4.2-1
 - Updated to Mesa 6.4.2
 - Use "libGLU.so.1.3.0604*" glob in file manifest, to avoid having to update it
   each upstream release.
@@ -578,18 +582,18 @@ rm -rf $RPM_BUILD_ROOT
 - fix directory used for loading dri modules (#173679)
 - install dri drivers as executable so they get stripped (#173292)
 
-* Thu Nov 3 2005 Mike A. Harris <mharris@redhat.com> 6.4-4
+* Thu Nov 03 2005 Mike A. Harris <mharris@redhat.com> 6.4-4
 - Wrote redhat-mesa-source-filelist-generator to dynamically generate the
   files to be included in the mesa-source subpackage, to minimize future
   maintenance.
 - Fixed detection and renaming of software mesa .so version.
 
-* Wed Nov 2 2005 Mike A. Harris <mharris@redhat.com> 6.4-3
+* Wed Nov 02 2005 Mike A. Harris <mharris@redhat.com> 6.4-3
 - Hack: autodetect if libGL was given .so.1.5* and rename it to 1.2 for
   consistency on all architectures, and to avoid upgrade problems if we
   ever disable DRI on an arch and then re-enable it later.
 
-* Wed Nov 2 2005 Mike A. Harris <mharris@redhat.com> 6.4-2
+* Wed Nov 02 2005 Mike A. Harris <mharris@redhat.com> 6.4-2
 - Added mesa-6.4-multilib-fix.patch to instrument and attempt to fix Mesa
   bin/installmesa script to work properly with multilib lib64 architectures.
 - Set and export LIB_DIR and INCLUDE_DIR in spec file 'install' section,
@@ -612,23 +616,23 @@ rm -rf $RPM_BUILD_ROOT
 - Fix redhat-mesa-driver-install and spec file to work right on multilib
   systems.
   
-* Mon Sep 5 2005 Mike A. Harris <mharris@redhat.com> 6.3.2-5
+* Mon Sep 05 2005 Mike A. Harris <mharris@redhat.com> 6.3.2-5
 - Fix mesa-libGL-devel to depend on mesa-libGL instead of mesa-libGLU.
 - Added virtual "Provides: libGL..." entries for each subpackage as relevant.
 
-* Mon Sep 5 2005 Mike A. Harris <mharris@redhat.com> 6.3.2-4
+* Mon Sep 05 2005 Mike A. Harris <mharris@redhat.com> 6.3.2-4
 - Added the mesa-source subpackage, which contains part of the Mesa source
   code needed by other packages such as the X server to build stuff.
 
-* Mon Sep 5 2005 Mike A. Harris <mharris@redhat.com> 6.3.2-3
+* Mon Sep 05 2005 Mike A. Harris <mharris@redhat.com> 6.3.2-3
 - Added Conflicts/Obsoletes lines to all of the subpackages to make upgrades
   from previous OS releases, and piecemeal upgrades work as nicely as
   possible.
 
-* Mon Sep 5 2005 Mike A. Harris <mharris@redhat.com> 6.3.2-2
+* Mon Sep 05 2005 Mike A. Harris <mharris@redhat.com> 6.3.2-2
 - Wrote redhat-mesa-target script to simplify mesa build target selection.
 - Wrote redhat-mesa-driver-install to install the DRI drivers and simplify
   per-arch conditionalization, etc.
 
-* Sun Sep 4 2005 Mike A. Harris <mharris@redhat.com> 6.3.2-1
+* Sun Sep 04 2005 Mike A. Harris <mharris@redhat.com> 6.3.2-1
 - Initial build.
