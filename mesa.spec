@@ -53,7 +53,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 6.5
-Release: 12%{?dist}
+Release: 13%{?dist}
 License: MIT/X11
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -455,6 +455,12 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/glxinfo
 
 %changelog
+* Wed Jul 05 2006 Mike A. Harris <mharris@redhat.com> 6.5-13.fc6
+- Added mesa-6.5-fix-opt-flags-bug197640.patch as 2nd attempt to fix OPT_FLAGS
+  for (#197640).
+- Ensure that redhat-mesa-driver-install creates $DRIMODULE_DESTDIR with
+  mode 0755.
+
 * Wed Jul 05 2006 Mike A. Harris <mharris@redhat.com> 6.5-12.fc6
 - Maybe actually, you know, apply the mesa-6.5-glx-use-tls.patch as that might
   help to you know, actually solve the problem.  Duh.
