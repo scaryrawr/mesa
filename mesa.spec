@@ -72,6 +72,7 @@ Source12: redhat-mesa-source-filelist-generator
 # Patches 0-9 reserved for mesa Makefiles/config fixes
 Patch0: mesa-6.5-build-config.patch
 Patch1: mesa-6.5-glx-use-tls.patch
+Patch2: mesa-6.5-fix-opt-flags-bug197640.patch
 
 Patch10: mesa-6.3.2-fix-installmesa.patch
 Patch11: mesa-6.4-multilib-fix.patch
@@ -253,6 +254,7 @@ install -m 755 %{SOURCE12} ./
 
 %patch0 -p0 -b .build-config
 %patch1 -p0 -b .glx-use-tls
+%patch2 -p1 -b .fix-opt-flags-bug197640
 
 %patch10 -p0 -b .fix-installmesa
 %patch11 -p0 -b .multilib-fix
