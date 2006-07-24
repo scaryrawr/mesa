@@ -53,7 +53,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 6.5
-Release: 14%{?dist}
+Release: 15%{?dist}
 License: MIT/X11
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -82,7 +82,8 @@ Patch14: mesa-6.5-drop-static-inline.patch
 Patch15: mesa-6.5-noexecstack.patch
 Patch16: mesa-6.5-force-r300.patch
 Patch17: mesa-6.5-fix-pbuffer-dispatch.patch
-Patch18: mesa-6.5-r300-free-gart-mem.patch
+Patch18: mesa-6.5-selinux-awareness.patch
+Patch19: mesa-6.5-r300-free-gart-mem.patch
 
 # General patches from upstream go here:
 
@@ -102,6 +103,7 @@ BuildRequires: xorg-x11-proto-devel >= 7.0-3
 BuildRequires: glut-devel
 BuildRequires: libXt-devel
 BuildRequires: makedepend
+BuildRequires: libselinux-devel
 
 %if %{with_motif}
 BuildRequires: openmotif-devel
@@ -117,6 +119,7 @@ Group: System Environment/Libraries
 
 Requires(post): /sbin/ldconfig
 Requires(postun): /sbin/ldconfig
+Requires: libselinux
 
 Provides: libGL
 
@@ -267,7 +270,8 @@ install -m 755 %{SOURCE12} ./
 %patch15 -p0 -b .noexecstack
 %patch16 -p0 -b .force-r300
 %patch17 -p0 -b .fix-pbuffer-dispatch
-%patch18 -p1 -b .r300-free-gart-mem
+%patch18 -p1 -b .selinux-awareness
+%patch19 -p1 -b .r300-free-gart-mem
 
 # According to Adam, this patch makes metacity's compositing
 # manager noticeably faster, but also may be a little too big of
@@ -459,6 +463,11 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/glxinfo
 
 %changelog
+* Mon Jul 24 2006 Adam Jackson <ajackson@redhat.com> 6.5-15.fc6
+- Attempt to add selinux awareness; check if we can map executable memory
+  and fail softly if not.  Removes the need for allow_execmem from huge
+  chunks of the desktop.
+
 * Mon Jul 24 2006 Kristian Høgsberg <krh@redhat.com> - 6.5-14.fc6
 - Add mesa-6.5-r300-free-gart-mem.patch to make r300 driver free gart
   memory on context destroy.
