@@ -53,7 +53,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 6.5
-Release: 13.1%{?dist}
+Release: 14%{?dist}
 License: MIT/X11
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -82,6 +82,7 @@ Patch14: mesa-6.5-drop-static-inline.patch
 Patch15: mesa-6.5-noexecstack.patch
 Patch16: mesa-6.5-force-r300.patch
 Patch17: mesa-6.5-fix-pbuffer-dispatch.patch
+Patch18: mesa-6.5-r300-free-gart-mem.patch
 
 # General patches from upstream go here:
 
@@ -266,6 +267,7 @@ install -m 755 %{SOURCE12} ./
 %patch15 -p0 -b .noexecstack
 %patch16 -p0 -b .force-r300
 %patch17 -p0 -b .fix-pbuffer-dispatch
+%patch18 -p1 -b .r300-free-gart-mem
 
 # According to Adam, this patch makes metacity's compositing
 # manager noticeably faster, but also may be a little too big of
@@ -457,7 +459,11 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/glxinfo
 
 %changelog
-* Wed Jul 12 2006 Jesse Keating <jkeating@redhat.com> - sh: line 0: fg: no job control
+* Mon Jul 24 2006 Kristian Høgsberg <krh@redhat.com> - 6.5-14.fc6
+- Add mesa-6.5-r300-free-gart-mem.patch to make r300 driver free gart
+  memory on context destroy.
+
+* Wed Jul 12 2006 Jesse Keating <jkeating@redhat.com> 6.5-13.1.fc6
 - rebuild
 
 * Wed Jul 05 2006 Mike A. Harris <mharris@redhat.com> 6.5-13.fc6
