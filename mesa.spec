@@ -53,7 +53,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 6.5
-Release: 15%{?dist}
+Release: 16%{?dist}
 License: MIT/X11
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -73,11 +73,12 @@ Source12: redhat-mesa-source-filelist-generator
 Patch0: mesa-6.5-build-config.patch
 Patch1: mesa-6.5-glx-use-tls.patch
 Patch2: mesa-6.5-fix-opt-flags-bug197640.patch
+Patch3: mesa-6.4.1-libGLw-enable-motif-support.patch
+Patch4: mesa-6.5-dont-libglut-me-harder-ok-thx-bye.patch
 
 Patch10: mesa-6.3.2-fix-installmesa.patch
 Patch11: mesa-6.4-multilib-fix.patch
 Patch12: mesa-modular-dri-dir.patch
-Patch13: mesa-6.4.1-libGLw-enable-motif-support.patch
 Patch14: mesa-6.5-drop-static-inline.patch
 Patch15: mesa-6.5-noexecstack.patch
 Patch16: mesa-6.5-force-r300.patch
@@ -260,12 +261,15 @@ install -m 755 %{SOURCE12} ./
 %patch1 -p0 -b .glx-use-tls
 %patch2 -p1 -b .fix-opt-flags-bug197640
 
+%if %{with_motif}
+%patch3 -p0 -b .libGLw-enable-motif-support
+%endif
+
+%patch4 -p0 -b .dont-libglut-me-harder-ok-thx-bye
+
 %patch10 -p0 -b .fix-installmesa
 %patch11 -p0 -b .multilib-fix
 %patch12 -p1 -b .modular
-%if %{with_motif}
-%patch13 -p0 -b .libGLw-enable-motif-support
-%endif
 %patch14 -p0 -b .drop-static-inline
 %patch15 -p0 -b .noexecstack
 %patch16 -p0 -b .force-r300
@@ -463,13 +467,19 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/glxinfo
 
 %changelog
+* Tue Jul 25 2006 Mike A. Harris <mharris@redhat.com> 6.5-16.fc6
+- Added mesa-6.5-dont-libglut-me-harder-ok-thx-bye.patch to prevent libglut
+  and other libs from being linked into glxgears/glxinfo even though they
+  are not actually used.  This was the final package linking to freeglut in
+  Fedora Core, blocking freeglut from being moved to Extras.
+
 * Mon Jul 24 2006 Adam Jackson <ajackson@redhat.com> 6.5-15.fc6
 - Attempt to add selinux awareness; check if we can map executable memory
   and fail softly if not.  Removes the need for allow_execmem from huge
   chunks of the desktop.
 - Disable the r300 gart fix for not compiling.
 
-* Mon Jul 24 2006 Kristian Høgsberg <krh@redhat.com> - 6.5-14.fc6
+* Mon Jul 24 2006 Kristian Høgsberg <krh@redhat.com> 6.5-14.fc6
 - Add mesa-6.5-r300-free-gart-mem.patch to make r300 driver free gart
   memory on context destroy.
 
