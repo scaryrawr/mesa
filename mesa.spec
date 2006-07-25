@@ -101,7 +101,6 @@ BuildRequires: libdrm-devel >= 2.0.1-4
 BuildRequires: libXxf86vm-devel
 BuildRequires: expat-devel
 BuildRequires: xorg-x11-proto-devel >= 7.0-3
-BuildRequires: glut-devel
 BuildRequires: libXt-devel
 BuildRequires: makedepend
 BuildRequires: libselinux-devel
@@ -515,6 +514,7 @@ rm -rf $RPM_BUILD_ROOT
 
 %changelog
 * Tue Jul 25 2006 Mike A. Harris <mharris@redhat.com> 6.5-16.fc6
+- Remove glut-devel dependency, as nothing actually uses it that we ship.
 - Added mesa-6.5-dont-libglut-me-harder-ok-thx-bye.patch to prevent libglut
   and other libs from being linked into glxgears/glxinfo even though they
   are not actually used.  This was the final package linking to freeglut in
