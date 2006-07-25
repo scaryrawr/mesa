@@ -75,7 +75,7 @@ Source12: redhat-mesa-source-filelist-generator
 
 # Patches 0-9 reserved for mesa Makefiles/config fixes
 Patch0: mesa-6.5-build-config.patch
-Patch1: mesa-6.5-glx-use-tls.patch
+#Patch1: mesa-6.5-glx-use-tls.patch
 Patch2: mesa-6.5-fix-opt-flags-bug197640.patch
 Patch3: mesa-6.4.1-libGLw-enable-motif-support.patch
 Patch4: mesa-6.5-dont-libglut-me-harder-ok-thx-bye.patch
@@ -310,7 +310,7 @@ install -m 755 %{SOURCE11} ./
 install -m 755 %{SOURCE12} ./
 
 %patch0 -p0 -b .build-config
-%patch1 -p0 -b .glx-use-tls
+#%patch1 -p0 -b .glx-use-tls
 %patch2 -p1 -b .fix-opt-flags-bug197640
 %if %{with_motif}
 %patch3 -p0 -b .libGLw-enable-motif-support
@@ -512,6 +512,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/glxinfo
 
 %changelog
+* Tue Jul 25 2006 Adam Jackson <ajackson@redhat.com> 6.5-19.fc6
+- Disable TLS dispatch, it's selinux-hostile.
+
 * Tue Jul 25 2006 Adam Jackson <ajackson@redhat.com> 6.5-18.fc6
 - mesa-6.5-fix-glxinfo-link.patch: lib64 fix.
 
