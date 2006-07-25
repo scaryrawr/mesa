@@ -39,10 +39,14 @@
 # seems next to impossible using the totally broken Mesa buildsystem to build
 # both DRI drivers and OSMesa in a single build.  If someone feels like fixing
 # all this to build on all 7 architectures, be my guest.
+#
+# DOUBLE FIXME: OSMesa is only ever built when trying to build the 'linux'
+# target, but we now only build linux-indirect.  We need a separate build pass
+# now on _all_ architectures.
 %if %{with_dri}
 %define with_OSMesa	0
 %else
-%define with_OSMesa	1
+%define with_OSMesa	0
 %endif
 
 # NOTE: This option enables motif support in libGLw for bug #175251
@@ -53,7 +57,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 6.5
-Release: 16%{?dist}
+Release: 17%{?dist}
 License: MIT/X11
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -75,6 +79,8 @@ Patch1: mesa-6.5-glx-use-tls.patch
 Patch2: mesa-6.5-fix-opt-flags-bug197640.patch
 Patch3: mesa-6.4.1-libGLw-enable-motif-support.patch
 Patch4: mesa-6.5-dont-libglut-me-harder-ok-thx-bye.patch
+Patch5: mesa-6.5-fix-linux-indirect-build.patch
+Patch6: mesa-6.5-fix-glxinfo-link.patch
 
 Patch10: mesa-6.3.2-fix-installmesa.patch
 Patch11: mesa-6.4-multilib-fix.patch
@@ -306,12 +312,12 @@ install -m 755 %{SOURCE12} ./
 %patch0 -p0 -b .build-config
 %patch1 -p0 -b .glx-use-tls
 %patch2 -p1 -b .fix-opt-flags-bug197640
-
 %if %{with_motif}
 %patch3 -p0 -b .libGLw-enable-motif-support
 %endif
-
 %patch4 -p0 -b .dont-libglut-me-harder-ok-thx-bye
+%patch5 -p1 -b .linux-indirect
+%patch6 -p1 -b .glxinfo
 
 %patch10 -p0 -b .fix-installmesa
 %patch11 -p0 -b .multilib-fix
@@ -407,14 +413,7 @@ rm -rf $RPM_BUILD_ROOT
 %files libGL
 %defattr(-,root,root,-)
 %{_libdir}/libGL.so.1
-
-# NOTE: The software libGL is OpenGL 1.5, however the DRI enabled libGL is
-# only OpenGL 1.2
-%if %{with_dri}
 %{_libdir}/libGL.so.1.2
-%else
-%{_libdir}/libGL.so.1.5.*
-%endif
 
 %if %{with_dri}
 # DRI modules
@@ -476,7 +475,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_includedir}/GL/xmesa_x.h
 %{_includedir}/GL/xmesa_xf86.h
 %{_libdir}/libGL.so
-%if ! %{with_dri}
+%if %{with_OSMesa}
 %{_libdir}/libOSMesa.so
 %endif
 
@@ -513,6 +512,15 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/glxinfo
 
 %changelog
+* Tue Jul 25 2006 Adam Jackson <ajackson@redhat.com> 6.5-17.fc6
+- mesa-6.5-fix-linux-indirect-build.patch: Added.
+- mesa-6.5-fix-glxinfo-link.patch: Added.
+- Build libOSMesa never instead of inconsistently; to be fixed later.
+- Updates to redhat-mesa-target:
+  - Always select linux-indirect when not building for DRI
+  - Enable DRI to be built on PPC64 (still disabled in the spec file though)
+  - MIT licence boilerplate
+
 * Tue Jul 25 2006 Mike A. Harris <mharris@redhat.com> 6.5-16.fc6
 - Remove glut-devel dependency, as nothing actually uses it that we ship.
 - Added mesa-6.5-dont-libglut-me-harder-ok-thx-bye.patch to prevent libglut
