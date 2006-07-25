@@ -121,7 +121,14 @@ Group: System Environment/Libraries
 Requires(post): /sbin/ldconfig
 Requires(postun): /sbin/ldconfig
 Requires: libselinux
-
+# NOTE: This libGL virtual provide is intentionally non-versioned, and is
+# intended to be used as a generic dependency in other packages which require
+# _any_ implementation and version of libGL.  If a particular software
+# package requires a specific GL feature which is unique to Mesa, or to
+# another GL implementation, then by definition that software is not OpenGL
+# implementation agnostic, and should not be using these virtual provides.
+# Instead, they should use "Requires: mesa-libGL-devel >= version-release"
+# or substitute another implementation as appropriate.
 Provides: libGL
 
 # libGL used to be in Mesa package in RHL 6.x, 7.[0-2], RHEL 2.1
@@ -144,6 +151,14 @@ Group: Development/Libraries
 Requires: mesa-libGL = %{version}-%{release}
 Requires: libX11-devel
 
+# NOTE: This libGL virtual provide is intentionally non-versioned, and is
+# intended to be used as a generic dependency in other packages which require
+# _any_ implementation and version of libGL.  If a particular software
+# package requires a specific GL feature which is unique to Mesa, or to
+# another GL implementation, then by definition that software is not OpenGL
+# implementation agnostic, and should not be using these virtual provides.
+# Instead, they should use "Requires: mesa-libGL-devel >= version-release"
+# or substitute another implementation as appropriate.
 Provides: libGL-devel
 
 # libGL devel files were in Mesa-devel package in RHL 6.x, 7.[0-2], RHEL 2.1
@@ -163,6 +178,14 @@ Group: System Environment/Libraries
 Requires(post): /sbin/ldconfig
 Requires(postun): /sbin/ldconfig
 
+# NOTE: This libGLU virtual provide is intentionally non-versioned, and is
+# intended to be used as a generic dependency in other packages which require
+# _any_ implementation and version of libGLU.  If a particular software
+# package requires a specific GLU feature which is unique to Mesa, or to
+# another GLU implementation, then by definition that software is not GLU
+# implementation agnostic, and should not be using these virtual provides.
+# Instead, they should use "Requires: mesa-libGLU-devel >= version-release"
+# or substitute another implementation as appropriate.
 Provides: libGLU
 
 # libGLU used to be in Mesa package in RHL 6.x, 7.[0-2], RHEL 2.1
@@ -185,6 +208,14 @@ Group: Development/Libraries
 Requires: mesa-libGLU = %{version}-%{release}
 Requires: libGL-devel
 
+# NOTE: This libGLU virtual provide is intentionally non-versioned, and is
+# intended to be used as a generic dependency in other packages which require
+# _any_ implementation and version of libGLU.  If a particular software
+# package requires a specific GLU feature which is unique to Mesa, or to
+# another GLU implementation, then by definition that software is not GLU
+# implementation agnostic, and should not be using these virtual provides.
+# Instead, they should use "Requires: mesa-libGLU-devel >= version-release"
+# or substitute another implementation as appropriate.
 Provides: libGLU-devel
 
 # libGLU devel files were in Mesa-devel package in RHL 6.x, 7.[0-2], RHEL 2.1
@@ -204,6 +235,14 @@ Group: System Environment/Libraries
 Requires(post): /sbin/ldconfig
 Requires(postun): /sbin/ldconfig
 
+# NOTE: This libGLw virtual provide is intentionally non-versioned, and is
+# intended to be used as a generic dependency in other packages which require
+# _any_ implementation and version of libGLw.  If a particular software
+# package requires a specific GLw feature which is unique to Mesa, or to
+# another GLw implementation, then by definition that software is not GLw
+# implementation agnostic, and should not be using these virtual provides.
+# Instead, they should use "Requires: mesa-libGLw-devel >= version-release"
+# or substitute another implementation as appropriate.
 Provides: libGLw
 
 # libGLw used to be in Mesa package in RHL 6.x, 7.[0-2], RHEL 2.1
@@ -221,6 +260,14 @@ Summary: Mesa libGLw development package
 Group: Development/Libraries
 Requires: libGLw = %{version}-%{release}
 
+# NOTE: This libGLw virtual provide is intentionally non-versioned, and is
+# intended to be used as a generic dependency in other packages which require
+# _any_ implementation and version of libGLw.  If a particular software
+# package requires a specific GLw feature which is unique to Mesa, or to
+# another GLw implementation, then by definition that software is not GLw
+# implementation agnostic, and should not be using these virtual provides.
+# Instead, they should use "Requires: mesa-libGLw-devel >= version-release"
+# or substitute another implementation as appropriate.
 Provides: libGLw-devel
 
 # libGLw devel files were in Mesa-devel package in RHL 6.x, 7.[0-2], RHEL 2.1
@@ -472,6 +519,10 @@ rm -rf $RPM_BUILD_ROOT
   and other libs from being linked into glxgears/glxinfo even though they
   are not actually used.  This was the final package linking to freeglut in
   Fedora Core, blocking freeglut from being moved to Extras.
+- Commented all of the virtual provides in the spec file to document clearly
+  how they should be used by other developers in specifying build and runtime
+  dependencies when packaging software which links to libGL, libGLU, and
+  libGLw. (#200069)
 
 * Mon Jul 24 2006 Adam Jackson <ajackson@redhat.com> 6.5-15.fc6
 - Attempt to add selinux awareness; check if we can map executable memory
