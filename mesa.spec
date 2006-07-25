@@ -57,7 +57,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 6.5
-Release: 17%{?dist}
+Release: 18%{?dist}
 License: MIT/X11
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -512,6 +512,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/glxinfo
 
 %changelog
+* Tue Jul 25 2006 Adam Jackson <ajackson@redhat.com> 6.5-18.fc6
+- mesa-6.5-fix-glxinfo-link.patch: lib64 fix.
+
 * Tue Jul 25 2006 Adam Jackson <ajackson@redhat.com> 6.5-17.fc6
 - mesa-6.5-fix-linux-indirect-build.patch: Added.
 - mesa-6.5-fix-glxinfo-link.patch: Added.
