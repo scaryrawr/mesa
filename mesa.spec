@@ -57,7 +57,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 6.5
-Release: 19.fc5.aiglx
+Release: 20%{?dist}
 License: MIT/X11
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
