@@ -57,7 +57,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 6.5
-Release: 19%{?dist}
+Release: 19.fc5.aiglx
 License: MIT/X11
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -512,6 +512,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/glxinfo
 
 %changelog
+* Wed Jul 26 2006 Kristian Høgsberg <krh@redhat.com> - 6.5-19.fc5.aiglx
+- Build for fc5 aiglx repo.
+
 * Tue Jul 25 2006 Adam Jackson <ajackson@redhat.com> 6.5-19.fc6
 - Disable TLS dispatch, it's selinux-hostile.
 
