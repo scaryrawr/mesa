@@ -49,8 +49,16 @@
 %define with_OSMesa	0
 %endif
 
+# NOTE: Allow libGLw to be disabled since nothing in Fedora Core uses it
+# anymore, and we're planning on having it moved into Fedora Extras soon.
+%define with_libGLw	1
+
+%if %{with_libGLw}
 # NOTE: This option enables motif support in libGLw for bug #175251
 %define with_motif	1
+%else
+%define with_motif	0
+%endif
 
 #-- END DRI Build Configuration ------------------------------------------
 
@@ -512,11 +520,17 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/glxinfo
 
 %changelog
-* Wed Jul 26 2006 Kristian Høgsberg <krh@redhat.com> - 6.5-19.fc5.aiglx
+* Thu Jul 27 2006 Mike A. Harris <mharris@redhat.com> 6.5-20.fc6
+- Conditionalized libGLw inclusion with new with_libGLw macro defaulting
+  to 1 (enabled) for now, however since nothing in Fedora Core uses libGLw
+  anymore, we will be transitioning libGLw to an external package maintained
+  in Fedora Extras soon.
+
+* Wed Jul 26 2006 Kristian Høgsberg <krh@redhat.com> 6.5-19.fc5.aiglx
 - Build for fc5 aiglx repo.
 
 * Tue Jul 25 2006 Adam Jackson <ajackson@redhat.com> 6.5-19.fc6
-- Disable TLS dispatch, it's selinux-hostile.
+- Disable TLS dispatch, it is selinux-hostile.
 
 * Tue Jul 25 2006 Adam Jackson <ajackson@redhat.com> 6.5-18.fc6
 - mesa-6.5-fix-glxinfo-link.patch: lib64 fix.
