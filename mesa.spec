@@ -62,21 +62,23 @@
 
 #-- END DRI Build Configuration ------------------------------------------
 
+%define snapshot 20060808
+
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 6.5
-Release: 20%{?dist}
+Release: 20.%{snapshot}cvs%{?dist}
 License: MIT/X11
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
-Source0: http://internap.dl.sourceforge.net/sourceforge/mesa3d/MesaLib-%{version}.tar.bz2
+Source0: http://internap.dl.sourceforge.net/sourceforge/mesa3d/MesaLib-cvs%{snapshot}.tar.bz2
 # MesaDemos is included here just for glxinfo and glxgears, as they were
 # previously supplied in X.Org sources, whereas the rest of the demos were not.
 # It would be in it's own separate package if there was a way of sanely building
 # it outside of Mesa.
-Source1: http://internap.dl.sourceforge.net/sourceforge/mesa3d/MesaDemos-%{version}.tar.bz2
+Source1: http://internap.dl.sourceforge.net/sourceforge/mesa3d/MesaDemos-cvs%{snapshot}.tar.bz2
 Source10: redhat-mesa-target
 Source11: redhat-mesa-driver-install
 Source12: redhat-mesa-source-filelist-generator
@@ -311,7 +313,7 @@ The glx-utils package provides the glxinfo and glxgears utilities.
 
 #-- prep -------------------------------------------------------------
 %prep
-%setup -q -n Mesa-%{version} -b1
+%setup -q -n Mesa-cvs%{snapshot} -b1
 # Copy Red Hat Mesa build/install simplificomplication scripts into build dir.
 install -m 755 %{SOURCE10} ./
 install -m 755 %{SOURCE11} ./
@@ -319,30 +321,29 @@ install -m 755 %{SOURCE12} ./
 
 %patch0 -p0 -b .build-config
 #%patch1 -p0 -b .glx-use-tls
-%patch2 -p1 -b .fix-opt-flags-bug197640
-%if %{with_motif}
-%patch3 -p0 -b .libGLw-enable-motif-support
-%endif
+#%patch2 -p1 -b .fix-opt-flags-bug197640
+#%if %{with_motif}
+#%patch3 -p0 -b .libGLw-enable-motif-support
+#%endif
 %patch4 -p0 -b .dont-libglut-me-harder-ok-thx-bye
 %patch5 -p1 -b .linux-indirect
 %patch6 -p1 -b .glxinfo
 
-%patch10 -p0 -b .fix-installmesa
+#%patch10 -p0 -b .fix-installmesa
 %patch11 -p0 -b .multilib-fix
-%patch12 -p1 -b .modular
+#%patch12 -p1 -b .modular
 %patch14 -p0 -b .drop-static-inline
-%patch15 -p0 -b .noexecstack
+#%patch15 -p0 -b .noexecstack
 %patch16 -p0 -b .force-r300
-%patch17 -p0 -b .fix-pbuffer-dispatch
-%patch18 -p1 -b .selinux-awareness
-#%patch19 -p1 -b .r300-free-gart-mem
+#%patch17 -p0 -b .fix-pbuffer-dispatch
+#%patch18 -p1 -b .selinux-awareness
 
 # According to Adam, this patch makes metacity's compositing
 # manager noticeably faster, but also may be a little too big of
 # a change for post feature freeze.  Leaving off for now...
-%patch200 -p0 -b .texture-from-pixmap-fixes
+#%patch200 -p0 -b .texture-from-pixmap-fixes
 %patch201 -p1 -b .radeon-use-right-format
-%patch202 -p0 -b .tfp-fbconfig-attribs
+#%patch202 -p0 -b .tfp-fbconfig-attribs
 
 # WARNING: The following files are copyright "Mark J. Kilgard" under the GLUT
 # license and are not open source/free software, so we remove them.
