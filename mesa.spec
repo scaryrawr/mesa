@@ -67,7 +67,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 6.5
-Release: 20.%{snapshot}cvs%{?dist}
+Release: 21.%{snapshot}cvs%{?dist}
 License: MIT/X11
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -273,7 +273,7 @@ Mesa libGLw runtime library
 %package libGLw-devel
 Summary: Mesa libGLw development package
 Group: Development/Libraries
-Requires: libGLw = %{version}-%{release}
+Requires: mesa-libGLw = %{version}-%{release}
 
 # NOTE: This libGLw virtual provide is intentionally non-versioned, and is
 # intended to be used as a generic dependency in other packages which require
@@ -521,6 +521,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/glxinfo
 
 %changelog
+* Sun Aug 13 2006 Florian La Roche <laroche@redhat.com> 6.5-21.fc6
+- fix one Requires: to use the correct mesa-libGLw name
+
 * Thu Jul 27 2006 Mike A. Harris <mharris@redhat.com> 6.5-20.fc6
 - Conditionalized libGLw inclusion with new with_libGLw macro defaulting
   to 1 (enabled) for now, however since nothing in Fedora Core uses libGLw
