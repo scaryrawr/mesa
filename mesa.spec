@@ -88,7 +88,7 @@ BuildRequires: makedepend
 BuildRequires: libselinux-devel
 %if %{with_libGLw}
 # FIXME: remove this when libGLw hits extras.
-BuildRequires: libXp-devel
+BuildRequires: libXp-devel >= 1.0.0-6
 BuildRequires: openmotif-devel
 %endif
 
