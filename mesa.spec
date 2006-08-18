@@ -86,9 +86,11 @@ BuildRequires: xorg-x11-proto-devel >= 7.0-3
 BuildRequires: libXt-devel
 BuildRequires: makedepend
 BuildRequires: libselinux-devel
-
+%if %{with_libGLw}
 # FIXME: remove this when libGLw hits extras.
+BuildRequires: libXp-devel
 BuildRequires: openmotif-devel
+%endif
 
 %description
 Mesa
@@ -532,6 +534,7 @@ rm -rf $RPM_BUILD_ROOT
 * Fri Aug 18 2006 Adam Jackson <ajackson@redhat.com> 6.5-22.20060818cvs.fc6
 - Update to pre-6.5.1 snapshot.
 - Re-add libOSMesa{,16,32}. (#186366)
+- Add BuildReq: on libXp-devel due to openmotif header insanity.
 
 * Sun Aug 13 2006 Florian La Roche <laroche@redhat.com> 6.5-21.fc6
 - fix one Requires: to use the correct mesa-libGLw name
