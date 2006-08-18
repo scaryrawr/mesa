@@ -1,0 +1,141 @@
+--- mesa-cvs/configs/linux-dri-ppc.build-config	2005-08-19 16:20:03.000000000 -0400
++++ mesa-cvs/configs/linux-dri-ppc	2006-08-14 13:44:40.000000000 -0400
+@@ -5,7 +5,7 @@
+ 
+ CONFIG_NAME = linux-dri-ppc
+ 
+-OPT_FLAGS = -Os -mcpu=603
++OPT_FLAGS ?= -Os -mcpu=603
+ PIC_FLAGS = -fPIC
+ 
+ ASM_FLAGS = -DUSE_PPC_ASM -DUSE_VMX_ASM
+--- mesa-cvs/configs/linux-dri-x86.build-config	2005-09-12 11:19:19.000000000 -0400
++++ mesa-cvs/configs/linux-dri-x86	2006-08-14 13:44:40.000000000 -0400
+@@ -6,7 +6,7 @@
+ CONFIG_NAME = linux-dri-x86
+ 
+ # Unnecessary on x86, generally.
+-PIC_FLAGS = 
++# PIC_FLAGS = 
+ 
+ # Add -m32 to CFLAGS:
+ ARCH_FLAGS = -m32
+--- mesa-cvs/configs/linux-osmesa16.build-config	2006-07-12 22:50:27.000000000 -0400
++++ mesa-cvs/configs/linux-osmesa16	2006-08-14 13:44:40.000000000 -0400
+@@ -17,7 +17,7 @@
+ 
+ 
+ # Directories
+-SRC_DIRS = mesa glu
++SRC_DIRS = mesa
+ DRIVER_DIRS = osmesa
+ PROGRAM_DIRS = 
+ 
+--- mesa-cvs/configs/linux.build-config	2005-10-28 09:11:00.000000000 -0400
++++ mesa-cvs/configs/linux	2006-08-14 13:44:40.000000000 -0400
+@@ -8,7 +8,9 @@
+ CC = gcc
+ CXX = g++
+ 
+-OPT_FLAGS  = -O3 -g
++MKDEP = true
++
++OPT_FLAGS ?= -O3 -g
+ PIC_FLAGS  = -fPIC
+ 
+ # Add '-DGLX_USE_TLS' to ARCH_FLAGS to enable TLS support.  Add -m32
+--- mesa-cvs/configs/linux-dri.build-config	2006-08-09 15:14:05.000000000 -0400
++++ mesa-cvs/configs/linux-dri	2006-08-14 13:44:40.000000000 -0400
+@@ -12,8 +12,9 @@
+ #MKDEP = /usr/X11R6/bin/makedepend
+ #MKDEP = gcc -M
+ #MKDEP_OPTIONS = -MF depend
++MKDEP = true
+ 
+-OPT_FLAGS  = -O -g
++OPT_FLAGS ?= -O -g
+ PIC_FLAGS  = -fPIC
+ 
+ # Add '-DGLX_USE_TLS' to ARCH_FLAGS to enable TLS support.
+@@ -24,8 +25,6 @@
+ 	-DPTHREADS -DUSE_EXTERNAL_DXTN_LIB=1 -DIN_DRI_DRIVER \
+ 	-DGLX_DIRECT_RENDERING -DHAVE_ALIAS
+ 
+-X11_INCLUDES = -I/usr/X11R6/include
+-
+ CFLAGS = -Wall -Wmissing-prototypes -std=c99 -ffast-math \
+ 	$(OPT_FLAGS) $(PIC_FLAGS) $(ARCH_FLAGS) $(DEFINES) $(ASM_FLAGS)
+ 
+@@ -35,7 +34,7 @@
+ ASM_SOURCES = 
+ 
+ # Library/program dependencies
+-EXTRA_LIB_PATH=-L/usr/X11R6/lib
++EXTRA_LIB_PATH =
+ 
+ LIBDRM_LIB = `pkg-config --libs libdrm`
+ DRI_LIB_DEPS  = $(EXTRA_LIB_PATH) -lm -lpthread -lexpat -ldl $(LIBDRM_LIB)
+@@ -64,4 +63,4 @@
+ # gamma are missing because they have not been converted to use the new
+ # interface.
+ DRI_DIRS = i810 i915 i965 mach64 mga r128 r200 r300 radeon s3v \
+-	savage sis tdfx trident unichrome ffb
++	savage tdfx trident unichrome ffb # sis
+--- mesa-cvs/configs/linux-osmesa32.build-config	2006-07-12 22:50:27.000000000 -0400
++++ mesa-cvs/configs/linux-osmesa32	2006-08-14 13:44:40.000000000 -0400
+@@ -17,7 +17,7 @@
+ 
+ 
+ # Directories
+-SRC_DIRS = mesa glu
++SRC_DIRS = mesa
+ DRIVER_DIRS = osmesa
+ PROGRAM_DIRS = 
+ 
+--- mesa-cvs/configs/default.build-config	2006-07-20 00:34:36.000000000 -0400
++++ mesa-cvs/configs/default	2006-08-14 13:46:03.000000000 -0400
+@@ -55,11 +55,11 @@
+ 
+ # GLw widget sources (Append "GLwMDrawA.c" here and add -lXm to GLW_LIB_DEPS in
+ # order to build the Motif widget too)
+-GLW_SOURCES = GLwDrawA.c
++GLW_SOURCES = GLwDrawA.c GLwMDrawA.c
+ 
+ 
+ # Directories to build
+-LIB_DIR = lib
++LIB_DIR ?= lib
+ SRC_DIRS = mesa glu glut/glx glw
+ GLU_DIRS = sgi
+ DRIVER_DIRS = x11 osmesa
+@@ -73,14 +73,14 @@
+ OSMESA_LIB_DEPS = -L$(TOP)/$(LIB_DIR) -l$(GL_LIB)
+ GLU_LIB_DEPS = -L$(TOP)/$(LIB_DIR) -l$(GL_LIB) -lm
+ GLUT_LIB_DEPS = -L$(TOP)/$(LIB_DIR) -l$(GLU_LIB) -l$(GL_LIB) $(EXTRA_LIB_PATH) -lX11 -lXmu -lXt -lXi -lm
+-GLW_LIB_DEPS = -L$(TOP)/$(LIB_DIR) -l$(GL_LIB) $(EXTRA_LIB_PATH) -lXt -lX11
++GLW_LIB_DEPS = -L$(TOP)/$(LIB_DIR) -l$(GL_LIB) -lXm $(EXTRA_LIB_PATH) -lXt -lX11
+ APP_LIB_DEPS = -L$(TOP)/$(LIB_DIR) -l$(GLUT_LIB) -l$(GLU_LIB) -l$(GL_LIB) -lm
+ 
+ 
+ 
+ # Installation directories (for make install)
+ INSTALL_DIR = /usr/local
+-DRI_DRIVER_INSTALL_DIR = /usr/X11R6/lib/modules/dri
++DRI_DRIVER_INSTALL_DIR = $(DRI_DRIVER_DIR)
+ 
+ # Where libGL will look for DRI hardware drivers
+ DRI_DRIVER_SEARCH_DIR = $(DRI_DRIVER_INSTALL_DIR)
+--- mesa-cvs/configs/linux-osmesa.build-config	2006-07-12 22:50:27.000000000 -0400
++++ mesa-cvs/configs/linux-osmesa	2006-08-14 13:44:40.000000000 -0400
+@@ -14,9 +14,9 @@
+ 
+ 
+ # Directories
+-SRC_DIRS = mesa glu
++SRC_DIRS = mesa
+ DRIVER_DIRS = osmesa
+-PROGRAM_DIRS = osdemos
++PROGRAM_DIRS =
+ 
+ 
+ # Dependencies

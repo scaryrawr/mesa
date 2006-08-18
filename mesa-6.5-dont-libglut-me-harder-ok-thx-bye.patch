@@ -10,7 +10,7 @@
 +	$(CC) $(CFLAGS) glxgears.c -lGL -o $@
 +
 +glxinfo:
-+	$(CC) $(CFLAGS) -I$(INCDIR) glxinfo.c -lGL -lGLU -o $@
++	$(CC) $(CFLAGS) -I$(INCDIR) glxinfo.c -L$(TOP)/lib -L$(TOP)/lib64 -lGL -lGLU -o $@
 +
  pbinfo: pbinfo.o pbutil.o
  	$(CC) $(CFLAGS) pbinfo.o pbutil.o $(APP_LIB_DEPS) -o $@

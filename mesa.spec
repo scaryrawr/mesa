@@ -35,75 +35,41 @@
 %define with_dri 0
 %endif
 
-# FIXME: libOSMesa does not build when DRI is enabled for some reason.  It
-# seems next to impossible using the totally broken Mesa buildsystem to build
-# both DRI drivers and OSMesa in a single build.  If someone feels like fixing
-# all this to build on all 7 architectures, be my guest.
-#
-# DOUBLE FIXME: OSMesa is only ever built when trying to build the 'linux'
-# target, but we now only build linux-indirect.  We need a separate build pass
-# now on _all_ architectures.
-%if %{with_dri}
-%define with_OSMesa	0
-%else
-%define with_OSMesa	0
-%endif
-
 # NOTE: Allow libGLw to be disabled since nothing in Fedora Core uses it
 # anymore, and we're planning on having it moved into Fedora Extras soon.
 %define with_libGLw	1
 
-%if %{with_libGLw}
-# NOTE: This option enables motif support in libGLw for bug #175251
-%define with_motif	1
-%else
-%define with_motif	0
-%endif
-
 #-- END DRI Build Configuration ------------------------------------------
 
-%define snapshot 20060808
+%define snapshot 20060818
 
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 6.5
-Release: 21.%{snapshot}cvs%{?dist}
+Release: 22.%{snapshot}cvs%{?dist}
 License: MIT/X11
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
-Source0: http://internap.dl.sourceforge.net/sourceforge/mesa3d/MesaLib-cvs%{snapshot}.tar.bz2
-# MesaDemos is included here just for glxinfo and glxgears, as they were
-# previously supplied in X.Org sources, whereas the rest of the demos were not.
-# It would be in it's own separate package if there was a way of sanely building
-# it outside of Mesa.
-Source1: http://internap.dl.sourceforge.net/sourceforge/mesa3d/MesaDemos-cvs%{snapshot}.tar.bz2
+#Source0: http://internap.dl.sourceforge.net/sourceforge/mesa3d/MesaLib-%{version}.tar.bz2
+#Source1: http://internap.dl.sourceforge.net/sourceforge/mesa3d/MesaDemos-%{version}.tar.bz2
+Source0: http://internap.dl.sourceforge.net/sourceforge/mesa3d/MesaLib-6.5.1.tar.bz2
+Source1: http://internap.dl.sourceforge.net/sourceforge/mesa3d/MesaDemos-6.5.1.tar.bz2
 Source10: redhat-mesa-target
 Source11: redhat-mesa-driver-install
 Source12: redhat-mesa-source-filelist-generator
 
 # Patches 0-9 reserved for mesa Makefiles/config fixes
-Patch0: mesa-6.5-build-config.patch
-#Patch1: mesa-6.5-glx-use-tls.patch
-Patch2: mesa-6.5-fix-opt-flags-bug197640.patch
-Patch3: mesa-6.4.1-libGLw-enable-motif-support.patch
+Patch0: mesa-6.5.1-build-config.patch
 Patch4: mesa-6.5-dont-libglut-me-harder-ok-thx-bye.patch
-Patch5: mesa-6.5-fix-linux-indirect-build.patch
-Patch6: mesa-6.5-fix-glxinfo-link.patch
 
-Patch10: mesa-6.3.2-fix-installmesa.patch
 Patch11: mesa-6.4-multilib-fix.patch
 Patch12: mesa-modular-dri-dir.patch
 Patch14: mesa-6.5-drop-static-inline.patch
-Patch15: mesa-6.5-noexecstack.patch
-Patch16: mesa-6.5-force-r300.patch
-Patch17: mesa-6.5-fix-pbuffer-dispatch.patch
-Patch18: mesa-6.5-selinux-awareness.patch
-Patch19: mesa-6.5-r300-free-gart-mem.patch
+Patch18: mesa-6.5.1-selinux-awareness.patch
 
 # General patches from upstream go here:
-
 
 # Red Hat custom patches, feature development
 Patch200: mesa-6.5-texture-from-pixmap-fixes.patch
@@ -121,21 +87,19 @@ BuildRequires: libXt-devel
 BuildRequires: makedepend
 BuildRequires: libselinux-devel
 
-%if %{with_motif}
+# FIXME: remove this when libGLw hits extras.
 BuildRequires: openmotif-devel
-%endif
 
 %description
 Mesa
 
 #-- libGL ------------------------------------------------------------
 %package libGL
-Summary: Mesa libGL runtime libraries and DRI drivers.
+Summary: Mesa libGL runtime libraries and DRI drivers
 Group: System Environment/Libraries
 
 Requires(post): /sbin/ldconfig
 Requires(postun): /sbin/ldconfig
-Requires: libselinux
 # NOTE: This libGL virtual provide is intentionally non-versioned, and is
 # intended to be used as a generic dependency in other packages which require
 # _any_ implementation and version of libGL.  If a particular software
@@ -294,6 +258,29 @@ Obsoletes: xorg-x11-devel
 
 %description libGLw-devel
 Mesa libGLw development package
+
+#-- libOSMesa -----------------------------------------------------------
+%package libOSMesa
+Summary: Mesa offscreen rendering libraries
+Group: System Environment/Libraries
+
+Requires(post): /sbin/ldconfig
+Requires(postun): /sbin/ldconfig
+
+Provides: libOSMesa
+
+%description libOSMesa
+Mesa offscreen rendering libraries
+
+#-- libOSMesa-devel -----------------------------------------------------
+%package libOSMesa-devel
+Summary: Mesa offscreen rendering development package
+Group: Development/Libraries
+Requires: mesa-libOSMesa = %{version}-%{release}
+
+%description libOSMesa-devel
+Mesa offscreen rendering development package
+
 #-- source -----------------------------------------------------------
 %package source
 Summary: Mesa source code required to build X server
@@ -313,30 +300,19 @@ The glx-utils package provides the glxinfo and glxgears utilities.
 
 #-- prep -------------------------------------------------------------
 %prep
-%setup -q -n Mesa-cvs%{snapshot} -b1
+# %setup -q -n Mesa-%{version} -b1
+%setup -q -n mesa-cvs -b1
 # Copy Red Hat Mesa build/install simplificomplication scripts into build dir.
 install -m 755 %{SOURCE10} ./
 install -m 755 %{SOURCE11} ./
 install -m 755 %{SOURCE12} ./
 
-%patch0 -p0 -b .build-config
-#%patch1 -p0 -b .glx-use-tls
-#%patch2 -p1 -b .fix-opt-flags-bug197640
-#%if %{with_motif}
-#%patch3 -p0 -b .libGLw-enable-motif-support
-#%endif
+%patch0 -p1 -b .build-config
 %patch4 -p0 -b .dont-libglut-me-harder-ok-thx-bye
-%patch5 -p1 -b .linux-indirect
-%patch6 -p1 -b .glxinfo
 
-#%patch10 -p0 -b .fix-installmesa
 %patch11 -p0 -b .multilib-fix
-#%patch12 -p1 -b .modular
 %patch14 -p0 -b .drop-static-inline
-#%patch15 -p0 -b .noexecstack
-%patch16 -p0 -b .force-r300
-#%patch17 -p0 -b .fix-pbuffer-dispatch
-#%patch18 -p1 -b .selinux-awareness
+%patch18 -p1 -b .selinux-awareness
 
 # According to Adam, this patch makes metacity's compositing
 # manager noticeably faster, but also may be a little too big of
@@ -361,9 +337,33 @@ export DRI_DRIVER_DIR="%{_libdir}/dri"
 MESATARGET="$(./redhat-mesa-target %{with_dri} %{_arch})"
 #DRIVER_DIRS="dri osmesa"
 
-echo -e "********************\nMESATARGET=$MESATARGET\n********************\n"
+mkdir preserve
+export LIB_DIR=$( basename %{_libdir} ) 
+
+echo "Building osmesa"
+make linux-osmesa
+mv ${LIB_DIR}/* preserve
+make -s realclean
+
+echo "Building osmesa16"
+make linux-osmesa16
+mv ${LIB_DIR}/* preserve
+make -s realclean
+
+echo "Building osmesa32"
+make linux-osmesa32
+mv ${LIB_DIR}/* preserve
+make -s realclean
+
+echo "Building $MESATARGET"
 make ${MESATARGET}
 make -C progs/xdemos glxgears glxinfo
+mv preserve/* ${LIB_DIR}
+cd ${LIB_DIR}
+ln -s libOSMesa.so.6 libOSMesa.so 
+ln -s libOSMesa16.so.6 libOSMesa16.so
+ln -s libOSMesa32.so.6 libOSMesa32.so
+cd ..
 
 #-- Install ----------------------------------------------------------
 %install
@@ -418,6 +418,8 @@ rm -rf $RPM_BUILD_ROOT
 %postun libGLU -p /sbin/ldconfig
 %post libGLw -p /sbin/ldconfig
 %postun libGLw -p /sbin/ldconfig
+%post libOSMesa -p /sbin/ldconfig
+%postun libOSMesa -p /sbin/ldconfig
 
 %files libGL
 %defattr(-,root,root,-)
@@ -451,12 +453,6 @@ rm -rf $RPM_BUILD_ROOT
 #%{_libdir}/dri/trident_dri.so
 #%{_libdir}/dri/unichrome_dri.so
 %endif
-%if %{with_OSMesa}
-# NOTE: This is the software rasterizer only.  Why it is 1.5.* is not clear
-# to me currently, but it is a change from Xorg 6.8.2's Mesa.
-#%{_libdir}/libGL.so.1.5.060400
-%{_libdir}/libOSMesa.so.6*
-%endif
 
 %files libGL-devel
 %defattr(-,root,root,-)
@@ -474,7 +470,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_includedir}/GL/glxext.h
 %{_includedir}/GL/mesa_wgl.h
 %{_includedir}/GL/mglmesa.h
-%{_includedir}/GL/osmesa.h
 %{_includedir}/GL/svgamesa.h
 #%{_includedir}/GL/uglglutshapes.h
 %{_includedir}/GL/uglmesa.h
@@ -484,9 +479,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_includedir}/GL/xmesa_x.h
 %{_includedir}/GL/xmesa_xf86.h
 %{_libdir}/libGL.so
-%if %{with_OSMesa}
-%{_libdir}/libOSMesa.so
-%endif
 
 %files libGLU
 %defattr(-,root,root,-)
@@ -512,6 +504,22 @@ rm -rf $RPM_BUILD_ROOT
 %{_includedir}/GL/GLwMDrawA.h
 %{_includedir}/GL/GLwMDrawAP.h
 
+%files libOSMesa
+%defattr(-,root,root,-)
+%{_libdir}/libOSMesa.so.6
+%{_libdir}/libOSMesa.so.6.5.1
+%{_libdir}/libOSMesa16.so.6
+%{_libdir}/libOSMesa16.so.6.5.1
+%{_libdir}/libOSMesa32.so.6
+%{_libdir}/libOSMesa32.so.6.5.1
+
+%files libOSMesa-devel
+%defattr(-,root,root,-)
+%{_includedir}/GL/osmesa.h
+%{_libdir}/libOSMesa.so
+%{_libdir}/libOSMesa16.so
+%{_libdir}/libOSMesa32.so
+
 %files source -f mesa-source-rpm-filelist.lst
 %defattr(-,root,root,-)
 
@@ -521,6 +529,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/glxinfo
 
 %changelog
+* Fri Aug 18 2006 Adam Jackson <ajackson@redhat.com> 6.5-22.20060818cvs.fc6
+- Update to pre-6.5.1 snapshot.
+- Re-add libOSMesa{,16,32}. (#186366)
+
 * Sun Aug 13 2006 Florian La Roche <laroche@redhat.com> 6.5-21.fc6
 - fix one Requires: to use the correct mesa-libGLw name
 
