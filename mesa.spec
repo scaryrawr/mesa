@@ -1,14 +1,4 @@
-#!/bin/bash
-# NOTE: Yes, this spec file is a horrible mess.  Mesa's buildsystem
-# currently leaves a lot to be desired, so we hack around it in the rpm
-# spec file with various hacks and kludges, which are further complicated
-# by needing it to build on all 7 RHEL/Fedora architectures, with and
-# without DRI enabled via conditional.  Lots of fun.  Patches to improve
-# either Mesa, or the spec file are welcome bugzilla submissions however.
-
-# NOTE: Build target macros:  For now, we will just use build_fc and
-# build_rhel to simplify things, until there is a reason to break it
-# into per-release macros.  Only 1 of these macros should be enabled.
+# Choose one and only one.
 %define build_fc	1
 %define build_rhel	0
 
@@ -46,7 +36,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 6.5
-Release: 22.%{snapshot}cvs%{?dist}
+Release: 23.%{snapshot}cvs%{?dist}
 License: MIT/X11
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -437,23 +427,6 @@ rm -rf $RPM_BUILD_ROOT
 # make our script unnecessary, we might want to change to an explicit file
 # manifest here in the future.
 %{_libdir}/dri/*_dri.so
-# NOTE: Documentive list of all DRI drivers built by default in Mesa 6.4.1
-#%{_libdir}/dri/ffb_dri.so
-#%{_libdir}/dri/i810_dri.so
-#%{_libdir}/dri/i830_dri.so
-#%{_libdir}/dri/i915_dri.so
-#%{_libdir}/dri/mach64_dri.so
-#%{_libdir}/dri/mga_dri.so
-#%{_libdir}/dri/r128_dri.so
-#%{_libdir}/dri/r200_dri.so
-#%{_libdir}/dri/r300_dri.so
-#%{_libdir}/dri/radeon_dri.so
-#%{_libdir}/dri/s3v_dri.so
-#%{_libdir}/dri/savage_dri.so
-#%{_libdir}/dri/sis_dri.so
-#%{_libdir}/dri/tdfx_dri.so
-#%{_libdir}/dri/trident_dri.so
-#%{_libdir}/dri/unichrome_dri.so
 %endif
 
 %files libGL-devel
@@ -531,6 +504,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/glxinfo
 
 %changelog
+* Mon Aug 21 2006 Adam Jackson <ajackson@redhat.com> 6.5-23.20060818cvs.fc6
+- redhat-mesa-driver-install: Reenable installing the tdfx driver. (#203295)
+
 * Fri Aug 18 2006 Adam Jackson <ajackson@redhat.com> 6.5-22.20060818cvs.fc6
 - Update to pre-6.5.1 snapshot.
 - Re-add libOSMesa{,16,32}. (#186366)
