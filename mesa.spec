@@ -36,7 +36,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 6.5
-Release: 24.%{snapshot}cvs%{?dist}
+Release: 25.%{snapshot}cvs%{?dist}
 License: MIT/X11
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -59,6 +59,9 @@ Patch12: mesa-modular-dri-dir.patch
 Patch14: mesa-6.5-drop-static-inline.patch
 Patch18: mesa-6.5.1-selinux-awareness.patch
 Patch19: mesa-6.5.1-radeon-vtxfmt-cleanup-properly.patch
+
+Patch20: mesa-6.5.1-r300-smooth-line.patch
+Patch21: mesa-6.5-force-r300.patch
 
 # General patches from upstream go here:
 
@@ -308,6 +311,9 @@ install -m 755 %{SOURCE12} ./
 %patch18 -p1 -b .selinux-awareness
 %patch19 -p1 -b .vtxfmt
 
+%patch20 -p1 -b .r300-smooth-lines
+%patch21 -p0 -b .force-r300
+
 # According to Adam, this patch makes metacity's compositing
 # manager noticeably faster, but also may be a little too big of
 # a change for post feature freeze.  Leaving off for now...
@@ -506,6 +512,11 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/glxinfo
 
 %changelog
+* Tue Aug 22 2006 Adam Jackson <ajackson@redhat.com> 6.5-25.20060818cvs.fc6
+- mesa-6.5.1-r300-smooth-line.patch: Added, fakes smooth lines with aliased
+  lines on R300+ cards, makes Google Earth tolerable.
+- mesa-6.5-force-r300.patch: Resurrect.
+
 * Tue Aug 22 2006 Adam Jackson <ajackson@redhat.com> 6.5-24.20060818cvs.fc6
 - mesa-6.5.1-radeon-vtxfmt-cleanup-properly.patch: Fix a segfault on context
   destruction when selinux is enabled.
