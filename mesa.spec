@@ -36,7 +36,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 6.5
-Release: 23.%{snapshot}cvs%{?dist}
+Release: 24.%{snapshot}cvs%{?dist}
 License: MIT/X11
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -58,6 +58,7 @@ Patch11: mesa-6.4-multilib-fix.patch
 Patch12: mesa-modular-dri-dir.patch
 Patch14: mesa-6.5-drop-static-inline.patch
 Patch18: mesa-6.5.1-selinux-awareness.patch
+Patch19: mesa-6.5.1-radeon-vtxfmt-cleanup-properly.patch
 
 # General patches from upstream go here:
 
@@ -305,6 +306,7 @@ install -m 755 %{SOURCE12} ./
 %patch11 -p0 -b .multilib-fix
 %patch14 -p0 -b .drop-static-inline
 %patch18 -p1 -b .selinux-awareness
+%patch19 -p1 -b .vtxfmt
 
 # According to Adam, this patch makes metacity's compositing
 # manager noticeably faster, but also may be a little too big of
@@ -504,6 +506,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/glxinfo
 
 %changelog
+* Tue Aug 22 2006 Adam Jackson <ajackson@redhat.com> 6.5-24.20060818cvs.fc6
+- mesa-6.5.1-radeon-vtxfmt-cleanup-properly.patch: Fix a segfault on context
+  destruction when selinux is enabled.
+
 * Mon Aug 21 2006 Adam Jackson <ajackson@redhat.com> 6.5-23.20060818cvs.fc6
 - redhat-mesa-driver-install: Reenable installing the tdfx driver. (#203295)
 
