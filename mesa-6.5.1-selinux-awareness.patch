@@ -1,17 +1,41 @@
---- mesa-cvs/configs/linux-dri.selinux-awareness	2006-08-10 16:39:55.000000000 -0400
-+++ mesa-cvs/configs/linux-dri	2006-08-10 16:39:55.000000000 -0400
-@@ -38,7 +38,8 @@
+--- ./src/mesa/x86/rtasm/x86sse.h.selinux-awareness	2006-08-09 16:05:26.000000000 -0400
++++ ./src/mesa/x86/rtasm/x86sse.h	2006-08-22 20:51:02.000000000 -0400
+@@ -80,8 +80,8 @@
+  */
  
- LIBDRM_CFLAGS = `pkg-config --cflags libdrm`
- LIBDRM_LIB = `pkg-config --libs libdrm`
--DRI_LIB_DEPS  = $(EXTRA_LIB_PATH) -lm -lpthread -lexpat -ldl $(LIBDRM_LIB)
-+DRI_LIB_DEPS  = $(EXTRA_LIB_PATH) -lm -lpthread -lexpat -ldl $(LIBDRM_LIB) \
-+		-lselinux
- GL_LIB_DEPS   = $(EXTRA_LIB_PATH) -lX11 -lXext -lXxf86vm -lm -lpthread -ldl \
-                 $(LIBDRM_LIB)
  
---- mesa-cvs/src/mesa/main/execmem.c.selinux-awareness	2006-05-10 05:00:16.000000000 -0400
-+++ mesa-cvs/src/mesa/main/execmem.c	2006-08-10 16:39:55.000000000 -0400
+-void x86_init_func( struct x86_function *p );
+-void x86_init_func_size( struct x86_function *p, GLuint code_size );
++int x86_init_func( struct x86_function *p );
++int x86_init_func_size( struct x86_function *p, GLuint code_size );
+ void x86_release_func( struct x86_function *p );
+ void (*x86_get_func( struct x86_function *p ))( void );
+ 
+--- ./src/mesa/x86/rtasm/x86sse.c.selinux-awareness	2006-08-09 16:05:26.000000000 -0400
++++ ./src/mesa/x86/rtasm/x86sse.c	2006-08-22 20:51:02.000000000 -0400
+@@ -1063,15 +1063,17 @@
+ }
+ 
+ 
+-void x86_init_func( struct x86_function *p )
++int x86_init_func( struct x86_function *p )
+ {
+-   x86_init_func_size(p, 1024);
++   return x86_init_func_size(p, 1024);
+ }
+ 
+-void x86_init_func_size( struct x86_function *p, GLuint code_size )
++int x86_init_func_size( struct x86_function *p, GLuint code_size )
+ {
+    p->store = _mesa_exec_malloc(code_size);
+    p->csr = p->store;
++
++   return (p->store != NULL);
+ }
+ 
+ void x86_release_func( struct x86_function *p )
+--- ./src/mesa/main/execmem.c.selinux-awareness	2006-05-10 05:00:16.000000000 -0400
++++ ./src/mesa/main/execmem.c	2006-08-22 20:51:02.000000000 -0400
 @@ -36,7 +36,7 @@
  
  
@@ -62,94 +86,22 @@
  
 -   init_heap();
 +   if (!init_heap())
-+       return NULL;
++      goto bail;
  
     if (exec_heap) {
        size = (size + 31) & ~31;
---- mesa-cvs/src/mesa/drivers/dri/r200/r200_context.c.selinux-awareness	2006-06-09 20:51:54.000000000 -0400
-+++ mesa-cvs/src/mesa/drivers/dri/r200/r200_context.c	2006-08-10 16:39:55.000000000 -0400
-@@ -546,8 +546,12 @@
-    }
- 
-    if (rmesa->r200Screen->chip_flags & RADEON_CHIPSET_TCL) {
--      if (tcl_mode >= DRI_CONF_TCL_VTXFMT)
--	 r200VtxfmtInit( ctx, tcl_mode >= DRI_CONF_TCL_CODEGEN );
-+      void *test = NULL;
-+      if ((test = _mesa_exec_malloc(64)))
-+         if (tcl_mode >= DRI_CONF_TCL_VTXFMT)
-+	    r200VtxfmtInit( ctx, tcl_mode >= DRI_CONF_TCL_CODEGEN );
-+      if (test)
-+         _mesa_exec_free(test);
- 
-       _tnl_need_dlist_norm_lengths( ctx, GL_FALSE );
-    }
---- mesa-cvs/src/mesa/drivers/dri/radeon/radeon_context.c.selinux-awareness	2006-04-09 13:48:28.000000000 -0400
-+++ mesa-cvs/src/mesa/drivers/dri/radeon/radeon_context.c	2006-08-10 16:39:55.000000000 -0400
-@@ -471,8 +471,12 @@
-    }
- 
-    if (rmesa->radeonScreen->chip_flags & RADEON_CHIPSET_TCL) {
--      if (tcl_mode >= DRI_CONF_TCL_VTXFMT)
--	 radeonVtxfmtInit( ctx, tcl_mode >= DRI_CONF_TCL_CODEGEN );
-+      void *test = NULL;
-+      if ((test = _mesa_exec_malloc(64)))
-+         if (tcl_mode >= DRI_CONF_TCL_VTXFMT)
-+	    radeonVtxfmtInit( ctx, tcl_mode >= DRI_CONF_TCL_CODEGEN );
-+      if (test)
-+         _mesa_exec_free(test);
- 
-       _tnl_need_dlist_norm_lengths( ctx, GL_FALSE );
-    }
---- mesa-cvs/src/mesa/shader/slang/slang_execute_x86.c.selinux-awareness	2006-08-09 16:05:26.000000000 -0400
-+++ mesa-cvs/src/mesa/shader/slang/slang_execute_x86.c	2006-08-10 16:41:07.000000000 -0400
-@@ -666,7 +666,8 @@
- 	 * The built-in library occupies 450K, so we can be safe for now.
- 	 * It is going to change in the future, when we get assembly analysis running.
- 	 */
--	x86_init_func_size (&G.f, 1048576);
-+	if (!x86_init_func_size (&G.f, 1048576))
-+	    return 0;
- 	G.r_eax = x86_make_reg (file_REG32, reg_AX);
- 	G.r_ecx = x86_make_reg (file_REG32, reg_CX);
- 	G.r_edx = x86_make_reg (file_REG32, reg_DX);
---- mesa-cvs/src/mesa/x86/rtasm/x86sse.c.selinux-awareness	2006-08-09 16:05:26.000000000 -0400
-+++ mesa-cvs/src/mesa/x86/rtasm/x86sse.c	2006-08-10 16:42:21.000000000 -0400
-@@ -1063,15 +1063,17 @@
- }
- 
- 
--void x86_init_func( struct x86_function *p )
-+int x86_init_func( struct x86_function *p )
- {
--   x86_init_func_size(p, 1024);
-+   return x86_init_func_size(p, 1024);
- }
- 
--void x86_init_func_size( struct x86_function *p, GLuint code_size )
-+int x86_init_func_size( struct x86_function *p, GLuint code_size )
- {
-    p->store = _mesa_exec_malloc(code_size);
-    p->csr = p->store;
+@@ -87,7 +98,8 @@
+       addr = exec_mem + block->ofs;
+    else 
+       _mesa_printf("_mesa_exec_malloc failed\n");
+-   
 +
-+   return (p->store != NULL);
- }
- 
- void x86_release_func( struct x86_function *p )
---- mesa-cvs/src/mesa/x86/rtasm/x86sse.h.selinux-awareness	2006-08-09 16:05:26.000000000 -0400
-+++ mesa-cvs/src/mesa/x86/rtasm/x86sse.h	2006-08-10 16:42:43.000000000 -0400
-@@ -80,8 +80,8 @@
-  */
- 
- 
--void x86_init_func( struct x86_function *p );
--void x86_init_func_size( struct x86_function *p, GLuint code_size );
-+int x86_init_func( struct x86_function *p );
-+int x86_init_func_size( struct x86_function *p, GLuint code_size );
- void x86_release_func( struct x86_function *p );
- void (*x86_get_func( struct x86_function *p ))( void );
- 
---- mesa-cvs/src/mesa/tnl/t_vb_arbprogram_sse.c.selinux-awareness	2006-06-01 18:56:40.000000000 -0400
-+++ mesa-cvs/src/mesa/tnl/t_vb_arbprogram_sse.c	2006-08-10 16:39:55.000000000 -0400
++ bail:   
+    _glthread_UNLOCK_MUTEX(exec_mutex);
+    
+    return addr;
+--- ./src/mesa/tnl/t_vb_arbprogram_sse.c.selinux-awareness	2006-06-01 18:56:40.000000000 -0400
++++ ./src/mesa/tnl/t_vb_arbprogram_sse.c	2006-08-22 20:51:02.000000000 -0400
 @@ -1298,7 +1298,8 @@
        p->compiled_func = NULL;
     }
@@ -160,8 +112,8 @@
  
     cp.fpucntl = RESTORE_FPU;
  
---- mesa-cvs/src/mesa/tnl/t_vertex_sse.c.selinux-awareness	2005-09-16 14:14:25.000000000 -0400
-+++ mesa-cvs/src/mesa/tnl/t_vertex_sse.c	2006-08-10 16:39:55.000000000 -0400
+--- ./src/mesa/tnl/t_vertex_sse.c.selinux-awareness	2005-09-16 14:14:25.000000000 -0400
++++ ./src/mesa/tnl/t_vertex_sse.c	2006-08-22 20:51:02.000000000 -0400
 @@ -348,7 +348,8 @@
     struct x86_reg vp1 = x86_make_reg(file_XMM, 2);
     GLubyte *fixup, *label;
@@ -184,3 +136,106 @@
  
     if (build_vertex_emit(&p)) {
        _tnl_register_fastpath( vtx, GL_TRUE );
+--- ./src/mesa/drivers/dri/radeon/radeon_context.c.selinux-awareness	2006-04-09 13:48:28.000000000 -0400
++++ ./src/mesa/drivers/dri/radeon/radeon_context.c	2006-08-22 20:51:02.000000000 -0400
+@@ -471,11 +471,20 @@
+    }
+ 
+    if (rmesa->radeonScreen->chip_flags & RADEON_CHIPSET_TCL) {
+-      if (tcl_mode >= DRI_CONF_TCL_VTXFMT)
+-	 radeonVtxfmtInit( ctx, tcl_mode >= DRI_CONF_TCL_CODEGEN );
++      void *test = NULL;
++      if ((test = _mesa_exec_malloc(64))) {
++         if (tcl_mode >= DRI_CONF_TCL_VTXFMT)
++	    radeonVtxfmtInit( ctx, tcl_mode >= DRI_CONF_TCL_CODEGEN );
++      } else {
++	  tcl_mode = DRI_CONF_TCL_PIPELINED;
++      }
++      if (test)
++         _mesa_exec_free(test);
+ 
+       _tnl_need_dlist_norm_lengths( ctx, GL_FALSE );
+    }
++
++   rmesa->tcl_mode = tcl_mode;
+    return GL_TRUE;
+ }
+ 
+@@ -516,8 +525,7 @@
+       }
+ 
+       if (!(rmesa->TclFallback & RADEON_TCL_FALLBACK_TCL_DISABLE)) {
+-	 int tcl_mode = driQueryOptioni(&rmesa->optionCache, "tcl_mode");
+-	 if (tcl_mode >= DRI_CONF_TCL_VTXFMT)
++	 if (rmesa->tcl_mode >= DRI_CONF_TCL_VTXFMT)
+ 	    radeonVtxfmtDestroy( rmesa->glCtx );
+       }
+ 
+--- ./src/mesa/drivers/dri/r200/r200_context.c.selinux-awareness	2006-06-09 20:51:54.000000000 -0400
++++ ./src/mesa/drivers/dri/r200/r200_context.c	2006-08-22 20:51:02.000000000 -0400
+@@ -546,11 +546,19 @@
+    }
+ 
+    if (rmesa->r200Screen->chip_flags & RADEON_CHIPSET_TCL) {
+-      if (tcl_mode >= DRI_CONF_TCL_VTXFMT)
+-	 r200VtxfmtInit( ctx, tcl_mode >= DRI_CONF_TCL_CODEGEN );
++      void *test = NULL;
++      if ((test = _mesa_exec_malloc(64))) {
++         if (tcl_mode >= DRI_CONF_TCL_VTXFMT)
++	    r200VtxfmtInit( ctx, tcl_mode >= DRI_CONF_TCL_CODEGEN );
++      } else {
++	 tcl_mode = DRI_CONF_TCL_PIPELINED;
++      }
++      if (test)
++         _mesa_exec_free(test);
+ 
+       _tnl_need_dlist_norm_lengths( ctx, GL_FALSE );
+    }
++   rmesa->tcl_mode = tcl_mode;
+    return GL_TRUE;
+ }
+ 
+@@ -592,8 +600,7 @@
+       }
+ 
+       if (!(rmesa->TclFallback & R200_TCL_FALLBACK_TCL_DISABLE)) {
+-	 int tcl_mode = driQueryOptioni(&rmesa->optionCache, "tcl_mode");
+-	 if (tcl_mode >= DRI_CONF_TCL_VTXFMT)
++	 if (rmesa->tcl_mode >= DRI_CONF_TCL_VTXFMT)
+ 	    r200VtxfmtDestroy( rmesa->glCtx );
+       }
+ 
+--- ./src/mesa/drivers/dri/r200/r200_context.h.selinux-awareness	2006-08-22 21:06:15.000000000 -0400
++++ ./src/mesa/drivers/dri/r200/r200_context.h	2006-08-22 21:06:44.000000000 -0400
+@@ -990,6 +990,7 @@
+    GLuint TexGenEnabled;
+    GLuint TexGenCompSel;
+    GLmatrix tmpmat;
++   GLint tcl_mode;
+ 
+    /* VBI / buffer swap
+     */
+--- ./src/mesa/shader/slang/slang_execute_x86.c.selinux-awareness	2006-08-09 16:05:26.000000000 -0400
++++ ./src/mesa/shader/slang/slang_execute_x86.c	2006-08-22 20:51:02.000000000 -0400
+@@ -666,7 +666,8 @@
+ 	 * The built-in library occupies 450K, so we can be safe for now.
+ 	 * It is going to change in the future, when we get assembly analysis running.
+ 	 */
+-	x86_init_func_size (&G.f, 1048576);
++	if (!x86_init_func_size (&G.f, 1048576))
++	    return 0;
+ 	G.r_eax = x86_make_reg (file_REG32, reg_AX);
+ 	G.r_ecx = x86_make_reg (file_REG32, reg_CX);
+ 	G.r_edx = x86_make_reg (file_REG32, reg_DX);
+--- ./configs/linux-dri.selinux-awareness	2006-08-22 20:51:02.000000000 -0400
++++ ./configs/linux-dri	2006-08-22 20:51:02.000000000 -0400
+@@ -38,7 +38,8 @@
+ 
+ LIBDRM_CFLAGS = `pkg-config --cflags libdrm`
+ LIBDRM_LIB = `pkg-config --libs libdrm`
+-DRI_LIB_DEPS  = $(EXTRA_LIB_PATH) -lm -lpthread -lexpat -ldl $(LIBDRM_LIB)
++DRI_LIB_DEPS  = $(EXTRA_LIB_PATH) -lm -lpthread -lexpat -ldl $(LIBDRM_LIB) \
++		-lselinux
+ GL_LIB_DEPS   = $(EXTRA_LIB_PATH) -lX11 -lXext -lXxf86vm -lm -lpthread -ldl \
+                 $(LIBDRM_LIB)
+ 
