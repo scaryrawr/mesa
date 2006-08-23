@@ -31,21 +31,17 @@
 
 #-- END DRI Build Configuration ------------------------------------------
 
-%define snapshot 20060818
-
 Summary: Mesa graphics libraries
 Name: mesa
-Version: 6.5
-Release: 26.%{snapshot}cvs%{?dist}
+Version: 6.5.1
+Release: 0.rc1%{?dist}
 License: MIT/X11
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
-#Source0: http://internap.dl.sourceforge.net/sourceforge/mesa3d/MesaLib-%{version}.tar.bz2
-#Source1: http://internap.dl.sourceforge.net/sourceforge/mesa3d/MesaDemos-%{version}.tar.bz2
-Source0: http://internap.dl.sourceforge.net/sourceforge/mesa3d/MesaLib-6.5.1.tar.bz2
-Source1: http://internap.dl.sourceforge.net/sourceforge/mesa3d/MesaDemos-6.5.1.tar.bz2
+Source0: http://internap.dl.sourceforge.net/sourceforge/mesa3d/MesaLib-6.5.1-rc1.tar.bz2
+Source1: http://internap.dl.sourceforge.net/sourceforge/mesa3d/MesaDemos-6.5.1-rc1.tar.bz2
 Source10: redhat-mesa-target
 Source11: redhat-mesa-driver-install
 Source12: redhat-mesa-source-filelist-generator
@@ -295,8 +291,7 @@ The glx-utils package provides the glxinfo and glxgears utilities.
 
 #-- prep -------------------------------------------------------------
 %prep
-# %setup -q -n Mesa-%{version} -b1
-%setup -q -n mesa-cvs -b1
+%setup -q -n Mesa-%{version} -b1
 # Copy Red Hat Mesa build/install simplificomplication scripts into build dir.
 install -m 755 %{SOURCE10} ./
 install -m 755 %{SOURCE11} ./
@@ -505,6 +500,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/glxinfo
 
 %changelog
+* Wed Aug 23 2006 Kristian Høgsberg <krh@redhat.com> - 6.5.1-0.rc1.fc6
+- Bump to 6.5.1 RC1.
+
 * Tue Aug 22 2006 Kristian Høgsberg <krh@redhat.com> 6.5-26.20060818cvs.fc6
 - Pull the vtxfmt patch into the selinux-awareness patch, handle exec
   mem heap init failure correctly by releasing mutex.
