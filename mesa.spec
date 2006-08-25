@@ -34,7 +34,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 6.5.1
-Release: 0.rc1%{?dist}
+Release: 0.rc1.1%{?dist}
 License: MIT/X11
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -500,6 +500,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/glxinfo
 
 %changelog
+* Fri Aug 25 2006 Adam Jackson <ajackson@redhat.com> - 6.5.1-0.rc1.1.fc6
+- mesa-6.5.1-build-config.patch: Add i965 to x86-64 config.
+
 * Wed Aug 23 2006 Kristian Høgsberg <krh@redhat.com> - 6.5.1-0.rc1.fc6
 - Bump to 6.5.1 RC1.
 
