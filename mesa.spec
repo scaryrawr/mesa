@@ -34,7 +34,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 6.5.1
-Release: 0.rc1.1%{?dist}
+Release: 0.rc1.2%{?dist}
 License: MIT/X11
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -61,9 +61,7 @@ Patch21: mesa-6.5-force-r300.patch
 # General patches from upstream go here:
 
 # Red Hat custom patches, feature development
-Patch200: mesa-6.5-texture-from-pixmap-fixes.patch
 Patch201: mesa-6.4.1-radeon-use-right-texture-format.patch
-Patch202: mesa-6.5-tfp-fbconfig-attribs.patch
 
 BuildRequires: pkgconfig
 %if %{with_dri}
@@ -500,6 +498,12 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/glxinfo
 
 %changelog
+* Mon Aug 28 2006 Kristian Høgsberg <krh@redhat.com> - 6.5.1-0.rc1.2.fc6
+- Drop upstreamed patches mesa-6.5-texture-from-pixmap-fixes.patch and
+  mesa-6.5-tfp-fbconfig-attribs.patch and fix
+  mesa-6.4.1-radeon-use-right-texture-format.patch to not break 16bpp
+  transparency.
+
 * Fri Aug 25 2006 Adam Jackson <ajackson@redhat.com> - 6.5.1-0.rc1.1.fc6
 - mesa-6.5.1-build-config.patch: Add i965 to x86-64 config.
 
