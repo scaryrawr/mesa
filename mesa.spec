@@ -50,13 +50,11 @@ Source12: redhat-mesa-source-filelist-generator
 Patch0: mesa-6.5.1-build-config.patch
 Patch4: mesa-6.5-dont-libglut-me-harder-ok-thx-bye.patch
 
-Patch11: mesa-6.4-multilib-fix.patch
 Patch12: mesa-modular-dri-dir.patch
 Patch14: mesa-6.5-drop-static-inline.patch
 Patch18: mesa-6.5.1-selinux-awareness.patch
 
 Patch20: mesa-6.5.1-r300-smooth-line.patch
-Patch21: mesa-6.5-force-r300.patch
 
 # General patches from upstream go here:
 
@@ -298,12 +296,10 @@ install -m 755 %{SOURCE12} ./
 %patch0 -p1 -b .build-config
 %patch4 -p0 -b .dont-libglut-me-harder-ok-thx-bye
 
-%patch11 -p0 -b .multilib-fix
 %patch14 -p0 -b .drop-static-inline
 %patch18 -p1 -b .selinux-awareness
 
 %patch20 -p1 -b .r300-smooth-lines
-%patch21 -p0 -b .force-r300
 
 %patch201 -p1 -b .radeon-use-right-format
 
@@ -314,8 +310,6 @@ rm -f include/GL/uglglutshapes.h
 #-- Build ------------------------------------------------------------
 %build
 export OPT_FLAGS="$RPM_OPT_FLAGS"
-export LIB_DIR=$RPM_BUILD_ROOT%{_libdir}
-export INCLUDE_DIR=$RPM_BUILD_ROOT%{_includedir}
 export DRI_DRIVER_DIR="%{_libdir}/dri"
 
 # NOTE: We use a custom script to determine which Mesa build target should
@@ -324,28 +318,27 @@ MESATARGET="$(./redhat-mesa-target %{with_dri} %{_arch})"
 #DRIVER_DIRS="dri osmesa"
 
 mkdir preserve
-export LIB_DIR=$( basename %{_libdir} ) 
 
 echo "Building osmesa"
 make linux-osmesa
-mv ${LIB_DIR}/* preserve
+mv %{_lib}/* preserve
 make -s realclean
 
 echo "Building osmesa16"
 make linux-osmesa16
-mv ${LIB_DIR}/* preserve
+mv %{_lib}/* preserve
 make -s realclean
 
 echo "Building osmesa32"
 make linux-osmesa32
-mv ${LIB_DIR}/* preserve
+mv %{_lib}/* preserve
 make -s realclean
 
 echo "Building $MESATARGET"
 make ${MESATARGET}
 make -C progs/xdemos glxgears glxinfo
-mv preserve/* ${LIB_DIR}
-cd ${LIB_DIR}
+mv preserve/* %{_lib}
+cd %{_lib}
 ln -s libOSMesa.so.6 libOSMesa.so 
 ln -s libOSMesa16.so.6 libOSMesa16.so
 ln -s libOSMesa32.so.6 libOSMesa32.so
@@ -354,25 +347,19 @@ cd ..
 #-- Install ----------------------------------------------------------
 %install
 rm -rf $RPM_BUILD_ROOT
-# NOTE: "make install" calls mesa's installmesa script, passing DESTDIR
-# to it as a commandline arg, but LIB_DIR and INCLUDE_DIR get hard coded in
-# that script, meaning multilib breaks.
-#make install DESTDIR=$RPM_BUILD_ROOT/usr
 
-# NOTE: Since Mesa's install procedure doesn't work on multilib properly,
-# we fix it here, as I have patched the installmesa script to remove the
-# hard coding, and we set the variables ourself right here, and it should
-# hopefully pick them up.  -- mharris@redhat.com
-export LIB_DIR=$RPM_BUILD_ROOT%{_libdir}
-export INCLUDE_DIR=$RPM_BUILD_ROOT%{_includedir}
-bin/installmesa $RPM_BUILD_ROOT/usr
+# The mesa build system is broken beyond repair.  The lines below just
+# handpick and install the parts we want.
 
-# Install glxgears/glxinfo
-{
-    mkdir -p $RPM_BUILD_ROOT%{_bindir}
-    install -m0755 progs/xdemos/glxgears $RPM_BUILD_ROOT%{_bindir}/
-    install -m0755 progs/xdemos/glxinfo $RPM_BUILD_ROOT%{_bindir}/
-}
+export INSTALL_DIR=%{_prefix}
+export LIB_DIR=%{_lib}
+
+make -C src/glw install
+make -C src/glu install
+make -C src/mesa install
+cp -d -f %{_lib}/libOSMesa* $RPM_BUILD_ROOT%{_libdir}
+install -m 0755 progs/xdemos/glxgears $RPM_BUILD_ROOT%{_bindir}
+install -m 0755 progs/xdemos/glxinfo $RPM_BUILD_ROOT%{_bindir}
 
 %if %{with_dri}
 #pushd src/mesa/drivers/dri
