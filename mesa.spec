@@ -12,17 +12,32 @@
 %if %{build_rhel}
 %define with_dri_ppc 0
 %endif
-# Define arches to make with_dri enabled by default
-%ifarch %{ix86} x86_64 ia64 alpha
+
+# Architechture specific configuration
+%ifarch %{ix86}
 %define with_dri 1
+%define dri_target linux-dri-x86
 %endif
-# Define PPC OS variant override.
+
+%ifarch x86_64
+%define with_dri 1
+%define dri_target linux-dri-x86-64
+%endif
+
+%ifarch ia64 alpha sparc sparc64
+%define with_dri 1
+%define dri_target linux-dri
+%endif
+
 %ifarch ppc
 %define with_dri %{with_dri_ppc}
+%define dri_target linux-dri-ppc
 %endif
+
 # Define arches to make with_dri disabled by default
 %ifarch ppc64 s390 s390x
 %define with_dri 0
+%define dri_target linux-indirect
 %endif
 
 # NOTE: Allow libGLw to be disabled since nothing in Fedora Core uses it
@@ -42,8 +57,6 @@ BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Source0: http://internap.dl.sourceforge.net/sourceforge/mesa3d/MesaLib-6.5.1-rc2.tar.bz2
 Source1: http://internap.dl.sourceforge.net/sourceforge/mesa3d/MesaDemos-6.5.1-rc2.tar.bz2
-Source10: redhat-mesa-target
-Source11: redhat-mesa-driver-install
 Source12: redhat-mesa-source-filelist-generator
 
 # Patches 0-9 reserved for mesa Makefiles/config fixes
@@ -289,8 +302,6 @@ The glx-utils package provides the glxinfo and glxgears utilities.
 %prep
 %setup -q -n Mesa-%{version} -b1
 # Copy Red Hat Mesa build/install simplificomplication scripts into build dir.
-install -m 755 %{SOURCE10} ./
-install -m 755 %{SOURCE11} ./
 install -m 755 %{SOURCE12} ./
 
 %patch0 -p1 -b .build-config
@@ -311,65 +322,46 @@ rm -f include/GL/uglglutshapes.h
 %build
 export OPT_FLAGS="$RPM_OPT_FLAGS"
 export DRI_DRIVER_DIR="%{_libdir}/dri"
-
-# NOTE: We use a custom script to determine which Mesa build target should
-# be used, and reduce spec file clutter.
-MESATARGET="$(./redhat-mesa-target %{with_dri} %{_arch})"
-#DRIVER_DIRS="dri osmesa"
+export LIB_DIR=%{_lib}
 
 mkdir preserve
 
-echo "Building osmesa"
-make linux-osmesa
-mv %{_lib}/* preserve
-make -s realclean
+for t in osmesa osmesa16 osmesa32; do
+    echo "Building $t"
+    make linux-$t
+    mv %{_lib}/* preserve
+    make -s realclean
+done
 
-echo "Building osmesa16"
-make linux-osmesa16
-mv %{_lib}/* preserve
-make -s realclean
-
-echo "Building osmesa32"
-make linux-osmesa32
-mv %{_lib}/* preserve
-make -s realclean
-
-echo "Building $MESATARGET"
-make ${MESATARGET}
+echo "Building %{dri_target}"
+make %{dri_target}
 make -C progs/xdemos glxgears glxinfo
 mv preserve/* %{_lib}
-cd %{_lib}
-ln -s libOSMesa.so.6 libOSMesa.so 
-ln -s libOSMesa16.so.6 libOSMesa16.so
-ln -s libOSMesa32.so.6 libOSMesa32.so
-cd ..
+ln -s libOSMesa.so.6 %{_lib}/libOSMesa.so 
+ln -s libOSMesa16.so.6 %{_lib}/libOSMesa16.so
+ln -s libOSMesa32.so.6 %{_lib}/libOSMesa32.so
 
 #-- Install ----------------------------------------------------------
 %install
 rm -rf $RPM_BUILD_ROOT
 
 # The mesa build system is broken beyond repair.  The lines below just
-# handpick and install the parts we want.
+# handpick and manually install the parts we want.
 
-export INSTALL_DIR=%{_prefix}
-export LIB_DIR=%{_lib}
-
-make -C src/glw install
-make -C src/glu install
-make -C src/mesa install
-cp -d -f %{_lib}/libOSMesa* $RPM_BUILD_ROOT%{_libdir}
+make -C src/glw install INSTALL_DIR=$RPM_BUILD_ROOT%{_prefix}
+make -C src/glu install INSTALL_DIR=$RPM_BUILD_ROOT%{_prefix}
+install -m 644 include/GL/*.h $RPM_BUILD_ROOT%{_includedir}/GL
+cp -d -f %{_lib}/lib* $RPM_BUILD_ROOT%{_libdir}
+install -d $RPM_BUILD_ROOT%{_bindir}
 install -m 0755 progs/xdemos/glxgears $RPM_BUILD_ROOT%{_bindir}
 install -m 0755 progs/xdemos/glxinfo $RPM_BUILD_ROOT%{_bindir}
 
 %if %{with_dri}
-#pushd src/mesa/drivers/dri
-#    make install DESTDIR=$RPM_BUILD_ROOT/usr %{makeopts}
-#popd
-# NOTE: Since Mesa's install target does not seem to properly install the
-# DRI modules, we install them by hand here.  -- mharris
-export DRIMODULE_SRCDIR="%{_lib}"
-export DRIMODULE_DESTDIR="$RPM_BUILD_ROOT%{_libdir}/dri"
-./redhat-mesa-driver-install %{_arch}
+install -d $RPM_BUILD_ROOT%{_libdir}/dri
+for f in i810 i915 i965 mga r128 r200 r300 radeon savage sis tdfx unichrome; do
+    so=%{_lib}/${f}_dri.so
+    test -e $so && install -m 0755 $so  $RPM_BUILD_ROOT%{_libdir}/dri
+done
 %endif
 
 # Run custom source filelist generator script, passing it a prefix
@@ -402,11 +394,8 @@ rm -rf $RPM_BUILD_ROOT
 %if %{with_dri}
 # DRI modules
 %dir %{_libdir}/dri
-# NOTE: This is a glob for now, as we explicitly determine and limit the DRI
-# drivers that are installed on a given OS/arch combo in our custom DRI
-# driver install script.  If the upstream install script improves enough to
-# make our script unnecessary, we might want to change to an explicit file
-# manifest here in the future.
+# We only install drivers that get build and are in our white list so
+# we can just glob here.
 %{_libdir}/dri/*_dri.so
 %endif
 
@@ -427,7 +416,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_includedir}/GL/mesa_wgl.h
 %{_includedir}/GL/mglmesa.h
 %{_includedir}/GL/svgamesa.h
-#%{_includedir}/GL/uglglutshapes.h
 %{_includedir}/GL/uglmesa.h
 %{_includedir}/GL/vms_x_fix.h
 %{_includedir}/GL/wmesa.h
@@ -487,6 +475,8 @@ rm -rf $RPM_BUILD_ROOT
 %changelog
 * Tue Aug 29 2006 Kristian Høgsberg <krh@redhat.com> - 6.5.1-0.rc2.fc6
 - Rebase to 6.5.1 RC2.
+- Get rid of redhat-mesa-driver-install and redhat-mesa-target helper
+  scripts and clean up specfile a bit.
 
 * Mon Aug 28 2006 Kristian Høgsberg <krh@redhat.com> - 6.5.1-0.rc1.2.fc6
 - Drop upstreamed patches mesa-6.5-texture-from-pixmap-fixes.patch and
