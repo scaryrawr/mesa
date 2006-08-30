@@ -34,14 +34,14 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 6.5.1
-Release: 0.rc1.2%{?dist}
+Release: 0.rc2%{?dist}
 License: MIT/X11
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
-Source0: http://internap.dl.sourceforge.net/sourceforge/mesa3d/MesaLib-6.5.1-rc1.tar.bz2
-Source1: http://internap.dl.sourceforge.net/sourceforge/mesa3d/MesaDemos-6.5.1-rc1.tar.bz2
+Source0: http://internap.dl.sourceforge.net/sourceforge/mesa3d/MesaLib-6.5.1-rc2.tar.bz2
+Source1: http://internap.dl.sourceforge.net/sourceforge/mesa3d/MesaDemos-6.5.1-rc2.tar.bz2
 Source10: redhat-mesa-target
 Source11: redhat-mesa-driver-install
 Source12: redhat-mesa-source-filelist-generator
@@ -498,6 +498,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/glxinfo
 
 %changelog
+* Tue Aug 29 2006 Kristian Høgsberg <krh@redhat.com> - 6.5.1-0.rc2.fc6
+- Rebase to 6.5.1 RC2.
+
 * Mon Aug 28 2006 Kristian Høgsberg <krh@redhat.com> - 6.5.1-0.rc1.2.fc6
 - Drop upstreamed patches mesa-6.5-texture-from-pixmap-fixes.patch and
   mesa-6.5-tfp-fbconfig-attribs.patch and fix
