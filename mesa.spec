@@ -348,8 +348,8 @@ rm -rf $RPM_BUILD_ROOT
 # The mesa build system is broken beyond repair.  The lines below just
 # handpick and manually install the parts we want.
 
-make -C src/glw install INSTALL_DIR=$RPM_BUILD_ROOT%{_prefix}
-make -C src/glu install INSTALL_DIR=$RPM_BUILD_ROOT%{_prefix}
+make -C src/glw install INSTALL_DIR=$RPM_BUILD_ROOT%{_prefix} LIB_DIR=%{_lib}
+make -C src/glu install INSTALL_DIR=$RPM_BUILD_ROOT%{_prefix} LIB_DIR=%{_lib}
 install -m 644 include/GL/*.h $RPM_BUILD_ROOT%{_includedir}/GL
 cp -d -f %{_lib}/lib* $RPM_BUILD_ROOT%{_libdir}
 install -d $RPM_BUILD_ROOT%{_bindir}
