@@ -63,7 +63,6 @@ Source12: redhat-mesa-source-filelist-generator
 Patch0: mesa-6.5.1-build-config.patch
 Patch4: mesa-6.5-dont-libglut-me-harder-ok-thx-bye.patch
 
-Patch12: mesa-modular-dri-dir.patch
 Patch14: mesa-6.5-drop-static-inline.patch
 Patch18: mesa-6.5.1-selinux-awareness.patch
 
@@ -473,6 +472,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/glxinfo
 
 %changelog
+* Thu Sep  7 2006 Kristian Høgsberg <krh@redhat.com>
+- Drop unused mesa-modular-dri-dir.patch.
+
 * Tue Aug 29 2006 Kristian Høgsberg <krh@redhat.com> - 6.5.1-0.rc2.fc6
 - Rebase to 6.5.1 RC2.
 - Get rid of redhat-mesa-driver-install and redhat-mesa-target helper
