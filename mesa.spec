@@ -278,9 +278,10 @@ rm -rf $RPM_BUILD_ROOT
 # handpick and manually install the parts we want.
 
 make -C src/glu install INSTALL_DIR=$RPM_BUILD_ROOT%{_prefix} LIB_DIR=%{_lib}
+install -d $RPM_BUILD_ROOT%{_includedir}/GL
+install -d $RPM_BUILD_ROOT%{_bindir}
 install -m 644 include/GL/*.h $RPM_BUILD_ROOT%{_includedir}/GL
 cp -d -f %{_lib}/lib* $RPM_BUILD_ROOT%{_libdir}
-install -d $RPM_BUILD_ROOT%{_bindir}
 install -m 0755 progs/xdemos/glxgears $RPM_BUILD_ROOT%{_bindir}
 install -m 0755 progs/xdemos/glxinfo $RPM_BUILD_ROOT%{_bindir}
 
