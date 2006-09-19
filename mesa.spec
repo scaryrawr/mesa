@@ -40,10 +40,6 @@
 %define dri_target linux-indirect
 %endif
 
-# NOTE: Allow libGLw to be disabled since nothing in Fedora Core uses it
-# anymore, and we're planning on having it moved into Fedora Extras soon.
-%define with_libGLw	1
-
 #-- END DRI Build Configuration ------------------------------------------
 
 Summary: Mesa graphics libraries
@@ -55,8 +51,8 @@ Group: System Environment/Libraries
 URL: http://www.mesa3d.org
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
-Source0: http://internap.dl.sourceforge.net/sourceforge/mesa3d/MesaLib-6.5.1-rc2.tar.bz2
-Source1: http://internap.dl.sourceforge.net/sourceforge/mesa3d/MesaDemos-6.5.1-rc2.tar.bz2
+Source0: http://internap.dl.sourceforge.net/sourceforge/mesa3d/MesaLib-6.5.1.tar.bz2
+Source1: http://internap.dl.sourceforge.net/sourceforge/mesa3d/MesaDemos-6.5.1.tar.bz2
 Source12: redhat-mesa-source-filelist-generator
 
 # Patches 0-9 reserved for mesa Makefiles/config fixes
@@ -66,12 +62,7 @@ Patch4: mesa-6.5-dont-libglut-me-harder-ok-thx-bye.patch
 Patch14: mesa-6.5-drop-static-inline.patch
 Patch18: mesa-6.5.1-selinux-awareness.patch
 
-Patch20: mesa-6.5.1-r300-smooth-line.patch
-
 # General patches from upstream go here:
-
-# Red Hat custom patches, feature development
-Patch201: mesa-6.4.1-radeon-use-right-texture-format.patch
 
 BuildRequires: pkgconfig
 %if %{with_dri}
@@ -83,11 +74,6 @@ BuildRequires: xorg-x11-proto-devel >= 7.0-3
 BuildRequires: libXt-devel
 BuildRequires: makedepend
 BuildRequires: libselinux-devel
-%if %{with_libGLw}
-# FIXME: remove this when libGLw hits extras.
-BuildRequires: libXp-devel
-BuildRequires: openmotif-devel
-%endif
 
 %description
 Mesa
@@ -205,58 +191,6 @@ Obsoletes: xorg-x11-devel
 
 %description libGLU-devel
 Mesa libGLU development package
-#-- libGLw -----------------------------------------------------------
-%package libGLw
-Summary: Mesa libGLw runtime library
-Group: System Environment/Libraries
-
-Requires(post): /sbin/ldconfig
-Requires(postun): /sbin/ldconfig
-
-# NOTE: This libGLw virtual provide is intentionally non-versioned, and is
-# intended to be used as a generic dependency in other packages which require
-# _any_ implementation and version of libGLw.  If a particular software
-# package requires a specific GLw feature which is unique to Mesa, or to
-# another GLw implementation, then by definition that software is not GLw
-# implementation agnostic, and should not be using these virtual provides.
-# Instead, they should use "Requires: mesa-libGLw-devel >= version-release"
-# or substitute another implementation as appropriate.
-Provides: libGLw
-
-# libGLw used to be in Mesa package in RHL 6.x, 7.[0-2], RHEL 2.1
-Obsoletes: Mesa
-# libGLw moved to XFree86-libs for RHL 7.3, 8, 9, FC1, RHEL 3
-Obsoletes: XFree86-libs
-# libGLw moved to xorg-x11-libs FC[2-4], RHEL4
-Obsoletes: xorg-x11-libs
-
-%description libGLw
-Mesa libGLw runtime library
-#-- libGLw-devel -----------------------------------------------------
-%package libGLw-devel
-Summary: Mesa libGLw development package
-Group: Development/Libraries
-Requires: mesa-libGLw = %{version}-%{release}
-
-# NOTE: This libGLw virtual provide is intentionally non-versioned, and is
-# intended to be used as a generic dependency in other packages which require
-# _any_ implementation and version of libGLw.  If a particular software
-# package requires a specific GLw feature which is unique to Mesa, or to
-# another GLw implementation, then by definition that software is not GLw
-# implementation agnostic, and should not be using these virtual provides.
-# Instead, they should use "Requires: mesa-libGLw-devel >= version-release"
-# or substitute another implementation as appropriate.
-Provides: libGLw-devel
-
-# libGLw devel files were in Mesa-devel package in RHL 6.x, 7.[0-2], RHEL 2.1
-Obsoletes: Mesa-devel
-# libGLw devel files moved to XFree86-devel for RHL 7.3, 8.0, 9, FC1, RHEL 3
-Obsoletes: XFree86-devel
-# libGLw devel files moved to xorg-x11-devel for FC2, FC3, FC4
-Obsoletes: xorg-x11-devel
-
-%description libGLw-devel
-Mesa libGLw development package
 
 #-- libOSMesa -----------------------------------------------------------
 %package libOSMesa
@@ -306,12 +240,8 @@ install -m 755 %{SOURCE12} ./
 %patch0 -p1 -b .build-config
 %patch4 -p0 -b .dont-libglut-me-harder-ok-thx-bye
 
-%patch14 -p0 -b .drop-static-inline
+# %patch14 -p0 -b .drop-static-inline
 %patch18 -p1 -b .selinux-awareness
-
-%patch20 -p1 -b .r300-smooth-lines
-
-%patch201 -p1 -b .radeon-use-right-format
 
 # WARNING: The following files are copyright "Mark J. Kilgard" under the GLUT
 # license and are not open source/free software, so we remove them.
@@ -347,7 +277,6 @@ rm -rf $RPM_BUILD_ROOT
 # The mesa build system is broken beyond repair.  The lines below just
 # handpick and manually install the parts we want.
 
-make -C src/glw install INSTALL_DIR=$RPM_BUILD_ROOT%{_prefix} LIB_DIR=%{_lib}
 make -C src/glu install INSTALL_DIR=$RPM_BUILD_ROOT%{_prefix} LIB_DIR=%{_lib}
 install -m 644 include/GL/*.h $RPM_BUILD_ROOT%{_includedir}/GL
 cp -d -f %{_lib}/lib* $RPM_BUILD_ROOT%{_libdir}
@@ -380,8 +309,6 @@ rm -rf $RPM_BUILD_ROOT
 %postun libGL -p /sbin/ldconfig
 %post libGLU -p /sbin/ldconfig
 %postun libGLU -p /sbin/ldconfig
-%post libGLw -p /sbin/ldconfig
-%postun libGLw -p /sbin/ldconfig
 %post libOSMesa -p /sbin/ldconfig
 %postun libOSMesa -p /sbin/ldconfig
 
@@ -434,19 +361,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_includedir}/GL/glu.h
 %{_includedir}/GL/glu_mangle.h
 
-%files libGLw
-%defattr(-,root,root,-)
-%{_libdir}/libGLw.so.1
-%{_libdir}/libGLw.so.1.0.0
-
-%files libGLw-devel
-%defattr(-,root,root,-)
-%{_libdir}/libGLw.so
-%{_includedir}/GL/GLwDrawA.h
-%{_includedir}/GL/GLwDrawAP.h
-%{_includedir}/GL/GLwMDrawA.h
-%{_includedir}/GL/GLwMDrawAP.h
-
 %files libOSMesa
 %defattr(-,root,root,-)
 %{_libdir}/libOSMesa.so.6
@@ -472,6 +386,14 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/glxinfo
 
 %changelog
+* Tue Sep 19 2006 Kristian Høgsberg <krh@redhat.com> 6.5.1
+- Bump to 6.5.1 final release.
+- Drop libGLw subpackage, it is now in Fedora Extras (#188974).
+- Drop mesa-6.5.1-r300-smooth-line.patch, the smooth line fallback can
+  now be prevented by enabling disable_lowimpact_fallback in
+  /etc/drirc.
+- Drop mesa-6.4.1-radeon-use-right-texture-format.patch, now upstream.
+
 * Thu Sep  7 2006 Kristian Høgsberg <krh@redhat.com>
 - Drop unused mesa-modular-dri-dir.patch.
 
