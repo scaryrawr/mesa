@@ -71,9 +71,9 @@ BuildRequires: libdrm-devel >= 2.0.1-4
 BuildRequires: libXxf86vm-devel
 BuildRequires: expat-devel
 BuildRequires: xorg-x11-proto-devel >= 7.0-3
-BuildRequires: libXt-devel
 BuildRequires: makedepend
 BuildRequires: libselinux-devel
+BuildRequires: libXext-devel
 
 %description
 Mesa
