@@ -277,11 +277,13 @@ rm -rf $RPM_BUILD_ROOT
 # The mesa build system is broken beyond repair.  The lines below just
 # handpick and manually install the parts we want.
 
-make -C src/glu install INSTALL_DIR=$RPM_BUILD_ROOT%{_prefix} LIB_DIR=%{_lib}
 install -d $RPM_BUILD_ROOT%{_includedir}/GL
-install -d $RPM_BUILD_ROOT%{_bindir}
 install -m 644 include/GL/*.h $RPM_BUILD_ROOT%{_includedir}/GL
+
+install -d $RPM_BUILD_ROOT%{_libdir}
 cp -d -f %{_lib}/lib* $RPM_BUILD_ROOT%{_libdir}
+
+install -d $RPM_BUILD_ROOT%{_bindir}
 install -m 0755 progs/xdemos/glxgears $RPM_BUILD_ROOT%{_bindir}
 install -m 0755 progs/xdemos/glxinfo $RPM_BUILD_ROOT%{_bindir}
 
@@ -389,7 +391,8 @@ rm -rf $RPM_BUILD_ROOT
 %changelog
 * Tue Sep 19 2006 Kristian Høgsberg <krh@redhat.com> 6.5.1-1
 - Bump to 6.5.1 final release.
-- Drop libGLw subpackage, it is now in Fedora Extras (#188974).
+- Drop libGLw subpackage, it is now in Fedora Extras (#188974) and
+  tweak mesa-6.5.1-build-config.patch to not build libGLw.
 - Drop mesa-6.5.1-r300-smooth-line.patch, the smooth line fallback can
   now be prevented by enabling disable_lowimpact_fallback in
   /etc/drirc.
