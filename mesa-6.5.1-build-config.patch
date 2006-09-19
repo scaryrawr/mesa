@@ -158,3 +158,14 @@
  
  
  # Dependencies
+--- ./configs/linux-indirect.~1.6.~	2006-08-17 10:09:02.000000000 -0400
++++ ./configs/linux-indirect	2006-09-19 18:49:30.000000000 -0400
+@@ -43,7 +43,7 @@
+ 
+ 
+ # Directories
+-SRC_DIRS = glx/x11 glu glut/glx glw
++SRC_DIRS = glx/x11 glu glut/glx
+ DRIVER_DIRS =
+ PROGRAM_DIRS = 
+ WINDOW_SYSTEM=dri
