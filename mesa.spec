@@ -45,7 +45,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 6.5.1
-Release: 1%{?dist}
+Release: 2%{?dist}
 License: MIT/X11
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -387,7 +387,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/glxinfo
 
 %changelog
-* Tue Sep 19 2006 Kristian Høgsberg <krh@redhat.com> 6.5.1-1
+* Wed Sep 20 2006 Kristian Høgsberg <krh@redhat.com> - 6.5.1-2.fc6
+- Remove mesa-6.5-drop-static-inline.patch.
+
+* Tue Sep 19 2006 Kristian Høgsberg <krh@redhat.com> 6.5.1-1.fc6
 - Bump to 6.5.1 final release.
 - Drop libGLw subpackage, it is now in Fedora Extras (#188974) and
   tweak mesa-6.5.1-build-config.patch to not build libGLw.
