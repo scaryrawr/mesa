@@ -45,7 +45,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 6.5.1
-Release: 2%{?dist}
+Release: 3%{?dist}
 License: MIT/X11
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -69,7 +69,7 @@ BuildRequires: libdrm-devel >= 2.0.1-4
 %endif
 BuildRequires: libXxf86vm-devel
 BuildRequires: expat-devel
-BuildRequires: xorg-x11-proto-devel >= 7.0-3
+BuildRequires: xorg-x11-proto-devel >= 7.1-8
 BuildRequires: makedepend
 BuildRequires: libselinux-devel
 BuildRequires: libXext-devel
@@ -387,6 +387,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/glxinfo
 
 %changelog
+* Wed Sep 20 2006 Kristian Høgsberg <krh@redhat.com> - 6.5.1-3.fc6
+- Bump xorg-x11-proto-devel BuildRequires to 7.1-8 so we pick up the
+  latest GLX_EXT_texture_from_pixmap opcodes.
+
 * Wed Sep 20 2006 Kristian Høgsberg <krh@redhat.com> - 6.5.1-2.fc6
 - Remove mesa-6.5-drop-static-inline.patch.
 
