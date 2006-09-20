@@ -59,7 +59,6 @@ Source12: redhat-mesa-source-filelist-generator
 Patch0: mesa-6.5.1-build-config.patch
 Patch4: mesa-6.5-dont-libglut-me-harder-ok-thx-bye.patch
 
-Patch14: mesa-6.5-drop-static-inline.patch
 Patch18: mesa-6.5.1-selinux-awareness.patch
 
 # General patches from upstream go here:
@@ -240,7 +239,6 @@ install -m 755 %{SOURCE12} ./
 %patch0 -p1 -b .build-config
 %patch4 -p0 -b .dont-libglut-me-harder-ok-thx-bye
 
-# %patch14 -p0 -b .drop-static-inline
 %patch18 -p1 -b .selinux-awareness
 
 # WARNING: The following files are copyright "Mark J. Kilgard" under the GLUT
@@ -397,6 +395,7 @@ rm -rf $RPM_BUILD_ROOT
   now be prevented by enabling disable_lowimpact_fallback in
   /etc/drirc.
 - Drop mesa-6.4.1-radeon-use-right-texture-format.patch, now upstream.
+- Drop mesa-6.5-drop-static-inline.patch, workaround no longer necessary.
 
 * Thu Sep  7 2006 Kristian Høgsberg <krh@redhat.com>
 - Drop unused mesa-modular-dri-dir.patch.
