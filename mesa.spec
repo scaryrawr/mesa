@@ -45,7 +45,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 6.5.1
-Release: 3%{?dist}
+Release: 4%{?dist}
 License: MIT/X11
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -238,7 +238,6 @@ install -m 755 %{SOURCE12} ./
 
 %patch0 -p1 -b .build-config
 %patch4 -p0 -b .dont-libglut-me-harder-ok-thx-bye
-
 %patch18 -p1 -b .selinux-awareness
 
 # WARNING: The following files are copyright "Mark J. Kilgard" under the GLUT
@@ -387,6 +386,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/glxinfo
 
 %changelog
+* Mon Sep 25 2006 Adam Jackson <ajackson@redhat.com> - 6.5.1-4.fc6
+- mesa-6.5.1-build-config.patch: Add -lselinux to osmesa builds.  (#207767)
+
 * Wed Sep 20 2006 Kristian Høgsberg <krh@redhat.com> - 6.5.1-3.fc6
 - Bump xorg-x11-proto-devel BuildRequires to 7.1-8 so we pick up the
   latest GLX_EXT_texture_from_pixmap opcodes.
