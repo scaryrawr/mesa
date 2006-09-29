@@ -346,7 +346,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/dri/*_dri.so
 %endif
 
-%files libGL-devel -f gl-man-pages.lst
+%files libGL-devel -f ../gl-man-pages.lst
 %defattr(-,root,root,-)
 %{_includedir}/GL/amesa.h
 %{_includedir}/GL/directfbgl.h
@@ -376,7 +376,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libGLU.so.1
 %{_libdir}/libGLU.so.1.3.*
 
-%files libGLU-devel -f glu-man-pages.lst
+%files libGLU-devel -f ../glu-man-pages.lst
 %defattr(-,root,root,-)
 %{_libdir}/libGLU.so
 %{_includedir}/GL/glu.h
@@ -408,6 +408,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/glxinfo
 
 %changelog
+* Fri Sep 29 2006 Soren Sandmann <sandamnn@redhat.com> - 6.5.1-5.fc6
+- Give the correct path for man page file lists.
+
 * Thu Sep 28 2006 Soren Sandmann <sandmann@redhat.com> - 6.5.1-5.fc6
 - Add GL man pages from X R6.9.  (#184547)
 
