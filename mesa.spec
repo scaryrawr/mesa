@@ -305,7 +305,7 @@ for y in gl-man-pages glu-man-pages glx-man-pages; do
     rm -f ../$y.lst
     for x in `ls *.3gl`; do
         gzip -c $x > $x.gz
-	echo $x.gz >> ../$y.lst
+	echo %{_mandir}/man3/$x.gz >> ../$y.lst
         install -m 0644 $x.gz $RPM_BUILD_ROOT%{_mandir}/man3
     done
 done
