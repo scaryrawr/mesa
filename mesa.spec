@@ -381,7 +381,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libGLU.so
 %{_includedir}/GL/glu.h
 %{_includedir}/GL/glu_mangle.h
-%{_mandir}/man3/*.3gl
 
 %files libOSMesa
 %defattr(-,root,root,-)
