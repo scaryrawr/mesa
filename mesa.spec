@@ -45,7 +45,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 6.5.1
-Release: 5%{?dist}
+Release: 6%{?dist}
 License: MIT/X11
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -66,6 +66,7 @@ Patch4: mesa-6.5-dont-libglut-me-harder-ok-thx-bye.patch
 Patch18: mesa-6.5.1-selinux-awareness.patch
 
 # General patches from upstream go here:
+Patch50: post-6.5.1-i965-fixes.patch
 
 BuildRequires: pkgconfig
 %if %{with_dri}
@@ -244,6 +245,7 @@ install -m 755 %{SOURCE12} ./
 %patch0 -p1 -b .build-config
 %patch4 -p0 -b .dont-libglut-me-harder-ok-thx-bye
 %patch18 -p1 -b .selinux-awareness
+%patch50 -p1 -b .post-6.5.1-i965-fixes
 
 # WARNING: The following files are copyright "Mark J. Kilgard" under the GLUT
 # license and are not open source/free software, so we remove them.
@@ -251,7 +253,11 @@ rm -f include/GL/uglglutshapes.h
 
 #-- Build ------------------------------------------------------------
 %build
-export OPT_FLAGS="$RPM_OPT_FLAGS"
+
+# The i965 DRI driver breaks if compiled with -O2.  It appears to be
+# an aliasing problem, so we add -fno-strict-aliasing to the flags.
+
+export OPT_FLAGS="$RPM_OPT_FLAGS -fno-strict-aliasing"
 export DRI_DRIVER_DIR="%{_libdir}/dri"
 export LIB_DIR=%{_lib}
 
@@ -407,6 +413,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/glxinfo
 
 %changelog
+* Fri Sep 29 2006 Kristian <krh@redhat.com> - 6.5.1-6.fc6
+- Add -fno-strict-aliasing to compiler flags for i965 driver.
+- Add post-6.5.1-i965-fixes.patch backport of i965 fixes from mesa CVS.
+
 * Fri Sep 29 2006 Soren Sandmann <sandamnn@redhat.com> - 6.5.1-5.fc6
 - Give the correct path for man page file lists.
 
