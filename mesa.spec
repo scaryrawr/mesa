@@ -53,6 +53,10 @@ BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Source0: http://internap.dl.sourceforge.net/sourceforge/mesa3d/MesaLib-6.5.1.tar.bz2
 Source1: http://internap.dl.sourceforge.net/sourceforge/mesa3d/MesaDemos-6.5.1.tar.bz2
+Source2: gl-man-pages.tar.bz2
+Source3: glu-man-pages.tar.bz2
+Source4: glx-man-pages.tar.bz2
+
 Source12: redhat-mesa-source-filelist-generator
 
 # Patches 0-9 reserved for mesa Makefiles/config fixes
@@ -232,7 +236,8 @@ The glx-utils package provides the glxinfo and glxgears utilities.
 
 #-- prep -------------------------------------------------------------
 %prep
-%setup -q -n Mesa-%{version} -b1
+%setup -q -n Mesa-%{version} -b1 -b2 -b3 -b4
+
 # Copy Red Hat Mesa build/install simplificomplication scripts into build dir.
 install -m 755 %{SOURCE12} ./
 
@@ -292,6 +297,22 @@ for f in i810 i915 i965 mga r128 r200 r300 radeon savage sis tdfx unichrome; do
 done
 %endif
 
+# Install man pages, and build lists of the installed files
+pushd .
+install -d $RPM_BUILD_ROOT%{_mandir}/man3
+for y in gl-man-pages glu-man-pages glx-man-pages; do
+    cd ../$y
+    rm -f ../$y.lst
+    for x in `ls *.3gl`; do
+        gzip -c $x > $x.gz
+	echo $x.gz >> ../$y.lst
+        install -m 0644 $x.gz $RPM_BUILD_ROOT%{_mandir}/man3
+    done
+done
+cat ../glx-man-pages.lst >> ../gl-man-pages.lst
+rm -f ../glx-man-pages.lst
+popd
+
 # Run custom source filelist generator script, passing it a prefix
 %define mesa_source_filelist mesa-source-rpm-filelist.lst
 %define mesasourcedir %{_datadir}/mesa/source
@@ -325,7 +346,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/dri/*_dri.so
 %endif
 
-%files libGL-devel
+%files libGL-devel -f gl-man-pages.lst
 %defattr(-,root,root,-)
 %{_includedir}/GL/amesa.h
 %{_includedir}/GL/directfbgl.h
@@ -355,11 +376,12 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libGLU.so.1
 %{_libdir}/libGLU.so.1.3.*
 
-%files libGLU-devel
+%files libGLU-devel -f glu-man-pages.lst
 %defattr(-,root,root,-)
 %{_libdir}/libGLU.so
 %{_includedir}/GL/glu.h
 %{_includedir}/GL/glu_mangle.h
+%{_mandir}/man3/*.3gl
 
 %files libOSMesa
 %defattr(-,root,root,-)
@@ -386,6 +408,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/glxinfo
 
 %changelog
+* Thu Sep 28 2006 Soren Sandmann <sandmann@redhat.com> - 6.5.1-5.fc6
+- Add GL man pages from X R6.9.  (#184547)
+
 * Mon Sep 25 2006 Adam Jackson <ajackson@redhat.com> - 6.5.1-4.fc6
 - mesa-6.5.1-build-config.patch: Add -lselinux to osmesa builds.  (#207767)
 
