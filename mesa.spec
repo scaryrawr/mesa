@@ -40,6 +40,8 @@
 %define dri_target linux-indirect
 %endif
 
+%define manpages gl-manpages-1.0.1
+
 #-- END DRI Build Configuration ------------------------------------------
 
 Summary: Mesa graphics libraries
@@ -53,7 +55,7 @@ BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Source0: http://internap.dl.sourceforge.net/sourceforge/mesa3d/MesaLib-6.5.1.tar.bz2
 Source1: http://internap.dl.sourceforge.net/sourceforge/mesa3d/MesaDemos-6.5.1.tar.bz2
-Source2: gl-manpages-1.0.tar.bz2
+Source2: %{manpages}.tar.bz2
 
 Source12: redhat-mesa-source-filelist-generator
 
@@ -279,7 +281,7 @@ ln -s libOSMesa32.so.6 %{_lib}/libOSMesa32.so
 # Build man pages
 pushd .
 
-cd ../gl-manpages-1.0
+cd ../%{manpages}
 %configure
 make
 
@@ -312,7 +314,7 @@ done
 
 # Install man pages
 pushd .
-cd ../gl-manpages-1.0
+cd ../%{manpages}
 make install DESTDIR=$RPM_BUILD_ROOT
 popd
 
@@ -413,6 +415,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/glxinfo
 
 %changelog
+* Sat Sep 30 2006 Soren Sandmann <sandmann@redhat.com> - 6.5.1-7.fc6
+- Update to gl-manpages-1.0.1.tar.bz2 which doesn't use symlinks. (#184547)
+
 * Sat Sep 30 2006 Soren Sandmann <sandmann@redhat.com> - 6.5.1-7.fc6
 - Remove . after popd; add .gz in %files section. (#184547)
 
