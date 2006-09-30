@@ -276,6 +276,7 @@ ln -s libOSMesa.so.6 %{_lib}/libOSMesa.so
 ln -s libOSMesa16.so.6 %{_lib}/libOSMesa16.so
 ln -s libOSMesa32.so.6 %{_lib}/libOSMesa32.so
 
+# Build man pages
 pushd .
 
 cd ../gl-manpages-1.0
@@ -309,11 +310,11 @@ for f in i810 i915 i965 mga r128 r200 r300 radeon savage sis tdfx unichrome; do
 done
 %endif
 
-# Install man pages, and build lists of the installed files
+# Install man pages
 pushd .
-cd gl-manpages-1.0
+cd ../gl-manpages-1.0
 make install DESTDIR=$RPM_BUILD_ROOT
-popd .
+popd
 
 # Run custom source filelist generator script, passing it a prefix
 %define mesa_source_filelist mesa-source-rpm-filelist.lst
@@ -372,8 +373,8 @@ rm -rf $RPM_BUILD_ROOT
 %{_includedir}/GL/xmesa_x.h
 %{_includedir}/GL/xmesa_xf86.h
 %{_libdir}/libGL.so
-%{_datadir}/man/man3/gl[^uX]*.3gl
-%{_datadir}/man/man3/glX*.3gl
+%{_datadir}/man/man3/gl[^uX]*.3gl.gz
+%{_datadir}/man/man3/glX*.3gl.gz
 
 %files libGLU
 %defattr(-,root,root,-)
@@ -385,7 +386,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libGLU.so
 %{_includedir}/GL/glu.h
 %{_includedir}/GL/glu_mangle.h
-%{_datadir}/man/man3/glu*.3gl
+%{_datadir}/man/man3/glu*.3gl.gz
 
 %files libOSMesa
 %defattr(-,root,root,-)
@@ -413,6 +414,9 @@ rm -rf $RPM_BUILD_ROOT
 
 %changelog
 * Sat Sep 30 2006 Soren Sandmann <sandmann@redhat.com> - 6.5.1-7.fc6
+- Remove . after popd; add .gz in %files section. (#184547)
+
+* Sat Sep 30 2006 Soren Sandmann <sandmann@redhat.com>
 - Use better tarball for gl man pages. (#184547)
 
 * Fri Sep 29 2006 Kristian <krh@redhat.com> - 6.5.1-6.fc6
