@@ -53,9 +53,7 @@ BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Source0: http://internap.dl.sourceforge.net/sourceforge/mesa3d/MesaLib-6.5.1.tar.bz2
 Source1: http://internap.dl.sourceforge.net/sourceforge/mesa3d/MesaDemos-6.5.1.tar.bz2
-Source2: gl-man-pages.tar.bz2
-Source3: glu-man-pages.tar.bz2
-Source4: glx-man-pages.tar.bz2
+Source2: gl-manpages-1.0.tar.bz2
 
 Source12: redhat-mesa-source-filelist-generator
 
@@ -237,7 +235,7 @@ The glx-utils package provides the glxinfo and glxgears utilities.
 
 #-- prep -------------------------------------------------------------
 %prep
-%setup -q -n Mesa-%{version} -b1 -b2 -b3 -b4
+%setup -q -n Mesa-%{version} -b1 -b2
 
 # Copy Red Hat Mesa build/install simplificomplication scripts into build dir.
 install -m 755 %{SOURCE12} ./
@@ -278,6 +276,14 @@ ln -s libOSMesa.so.6 %{_lib}/libOSMesa.so
 ln -s libOSMesa16.so.6 %{_lib}/libOSMesa16.so
 ln -s libOSMesa32.so.6 %{_lib}/libOSMesa32.so
 
+pushd .
+
+cd ../gl-manpages-1.0
+%configure
+make
+
+popd
+
 #-- Install ----------------------------------------------------------
 %install
 rm -rf $RPM_BUILD_ROOT
@@ -305,19 +311,9 @@ done
 
 # Install man pages, and build lists of the installed files
 pushd .
-install -d $RPM_BUILD_ROOT%{_mandir}/man3
-for y in gl-man-pages glu-man-pages glx-man-pages; do
-    cd ../$y
-    rm -f ../$y.lst
-    for x in `ls *.3gl`; do
-        gzip -c $x > $x.gz
-	echo %{_mandir}/man3/$x.gz >> ../$y.lst
-        install -m 0644 $x.gz $RPM_BUILD_ROOT%{_mandir}/man3
-    done
-done
-cat ../glx-man-pages.lst >> ../gl-man-pages.lst
-rm -f ../glx-man-pages.lst
-popd
+cd gl-manpages-1.0
+make install DESTDIR=$RPM_BUILD_ROOT
+popd .
 
 # Run custom source filelist generator script, passing it a prefix
 %define mesa_source_filelist mesa-source-rpm-filelist.lst
@@ -352,7 +348,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/dri/*_dri.so
 %endif
 
-%files libGL-devel -f ../gl-man-pages.lst
+%files libGL-devel
 %defattr(-,root,root,-)
 %{_includedir}/GL/amesa.h
 %{_includedir}/GL/directfbgl.h
@@ -376,17 +372,20 @@ rm -rf $RPM_BUILD_ROOT
 %{_includedir}/GL/xmesa_x.h
 %{_includedir}/GL/xmesa_xf86.h
 %{_libdir}/libGL.so
+%{_datadir}/man/man3/gl[^uX]*.3gl
+%{_datadir}/man/man3/glX*.3gl
 
 %files libGLU
 %defattr(-,root,root,-)
 %{_libdir}/libGLU.so.1
 %{_libdir}/libGLU.so.1.3.*
 
-%files libGLU-devel -f ../glu-man-pages.lst
+%files libGLU-devel
 %defattr(-,root,root,-)
 %{_libdir}/libGLU.so
 %{_includedir}/GL/glu.h
 %{_includedir}/GL/glu_mangle.h
+%{_datadir}/man/man3/glu*.3gl
 
 %files libOSMesa
 %defattr(-,root,root,-)
@@ -413,6 +412,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/glxinfo
 
 %changelog
+* Sat Sep 30 2006 Soren Sandmann <sandmann@redhat.com> - 6.5.1-7.fc6
+- Use better tarball for gl man pages. (#184547)
+
 * Fri Sep 29 2006 Kristian <krh@redhat.com> - 6.5.1-6.fc6
 - Add -fno-strict-aliasing to compiler flags for i965 driver.
 - Add post-6.5.1-i965-fixes.patch backport of i965 fixes from mesa CVS.
