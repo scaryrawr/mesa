@@ -47,7 +47,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 6.5.1
-Release: 7%{?dist}
+Release: 8%{?dist}
 License: MIT/X11
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -67,6 +67,7 @@ Patch18: mesa-6.5.1-selinux-awareness.patch
 
 # General patches from upstream go here:
 Patch50: post-6.5.1-i965-fixes.patch
+Patch51: i965-interleaved-arrays-fix.patch
 
 BuildRequires: pkgconfig
 %if %{with_dri}
@@ -246,6 +247,7 @@ install -m 755 %{SOURCE12} ./
 %patch4 -p0 -b .dont-libglut-me-harder-ok-thx-bye
 %patch18 -p1 -b .selinux-awareness
 %patch50 -p1 -b .post-6.5.1-i965-fixes
+%patch51 -p1 -b .i965-interleaved-arrays-fix
 
 # WARNING: The following files are copyright "Mark J. Kilgard" under the GLUT
 # license and are not open source/free software, so we remove them.
@@ -415,6 +417,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/glxinfo
 
 %changelog
+* Mon Oct 16 2006 Kristian <krh@redhat.com> - 6.5.1-8.fc6
+- Add i965-interleaved-arrays-fix.patch to fix (#209318).
+
 * Sat Sep 30 2006 Soren Sandmann <sandmann@redhat.com> - 6.5.1-7.fc6
 - Update to gl-manpages-1.0.1.tar.bz2 which doesn't use symlinks. (#184547)
 
