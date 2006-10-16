@@ -1,0 +1,21 @@
+From: Keith Whitwell <keith@tungstengraphics.com>
+Date: Fri, 13 Oct 2006 11:21:55 +0000 (+0000)
+Subject: Upload of interleaved arrays currently assumes that position is the
+X-Git-Url: http://gitweb.freedesktop.org/?p=users/krh/mesa.git;a=commitdiff;h=a8a86ce53490bedb43ea414ead7e9d4cf30fc1de
+
+Upload of interleaved arrays currently assumes that position is the
+first element in the interleaved group.  Add a test to catch cases
+where this isn't true and use per-array uploads instead.  Fixes compiz
+glitches on x64.
+---
+
+--- a/src/mesa/drivers/dri/i965/brw_draw_upload.c
++++ b/src/mesa/drivers/dri/i965/brw_draw_upload.c
+@@ -435,6 +435,7 @@ GLboolean brw_upload_vertices( struct br
+ 	    ptr = input->glarray->Ptr;
+ 	 }
+ 	 else if (interleave != input->glarray->StrideB ||
++		  (const char *)input->glarray->Ptr - (const char *)ptr < 0 ||
+ 		  (const char *)input->glarray->Ptr - (const char *)ptr > interleave) {
+ 	    interleave = 0;
+ 	 }
