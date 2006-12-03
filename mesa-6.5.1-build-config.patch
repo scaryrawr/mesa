@@ -121,7 +121,7 @@
 @@ -65,4 +64,4 @@
  # gamma are missing because they have not been converted to use the new
  # interface.
- DRI_DIRS = i810 i915 i965 mach64 mga r128 r200 r300 radeon s3v \
+ DRI_DIRS = i810 i915tex i915 i965 mach64 mga r128 r200 r300 radeon s3v \
 -	savage sis tdfx trident unichrome ffb
 +	savage tdfx trident unichrome ffb # sis
 --- Mesa-6.5.1/configs/linux-indirect.build-config	2006-08-17 10:09:02.000000000 -0400
@@ -176,12 +176,3 @@
 +OSMESA_LIB_DEPS = -lm -lpthread -lselinux
  GLU_LIB_DEPS = -L$(TOP)/$(LIB_DIR) -l$(OSMESA_LIB)
  APP_LIB_DEPS = -lOSMesa16
---- Mesa-6.5.1/configs/linux-dri-x86-64.build-config	2006-07-12 22:43:20.000000000 -0400
-+++ Mesa-6.5.1/configs/linux-dri-x86-64	2006-09-22 18:11:30.000000000 -0400
-@@ -20,5 +20,5 @@
- # the new interface.  i810 are missing because there is no x86-64
- # system where they could *ever* be used.
- #
--DRI_DIRS = i915 mach64 mga r128 r200 radeon tdfx unichrome savage r300
-+DRI_DIRS = i915 i965 mach64 mga r128 r200 radeon tdfx unichrome savage r300
- 

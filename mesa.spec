@@ -46,15 +46,15 @@
 
 Summary: Mesa graphics libraries
 Name: mesa
-Version: 6.5.1
-Release: 8%{?dist}
+Version: 6.5.2
+Release: 1%{?dist}
 License: MIT/X11
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
-Source0: http://internap.dl.sourceforge.net/sourceforge/mesa3d/MesaLib-6.5.1.tar.bz2
-Source1: http://internap.dl.sourceforge.net/sourceforge/mesa3d/MesaDemos-6.5.1.tar.bz2
+Source0: http://internap.dl.sourceforge.net/sourceforge/mesa3d/MesaLib-%{version}.tar.bz2
+Source1: http://internap.dl.sourceforge.net/sourceforge/mesa3d/MesaDemos-%{version}.tar.bz2
 Source2: %{manpages}.tar.bz2
 
 Source12: redhat-mesa-source-filelist-generator
@@ -64,10 +64,6 @@ Patch0: mesa-6.5.1-build-config.patch
 Patch4: mesa-6.5-dont-libglut-me-harder-ok-thx-bye.patch
 
 Patch18: mesa-6.5.1-selinux-awareness.patch
-
-# General patches from upstream go here:
-Patch50: post-6.5.1-i965-fixes.patch
-Patch51: i965-interleaved-arrays-fix.patch
 
 BuildRequires: pkgconfig
 %if %{with_dri}
@@ -246,8 +242,6 @@ install -m 755 %{SOURCE12} ./
 %patch0 -p1 -b .build-config
 %patch4 -p0 -b .dont-libglut-me-harder-ok-thx-bye
 %patch18 -p1 -b .selinux-awareness
-%patch50 -p1 -b .post-6.5.1-i965-fixes
-%patch51 -p1 -b .i965-interleaved-arrays-fix
 
 # WARNING: The following files are copyright "Mark J. Kilgard" under the GLUT
 # license and are not open source/free software, so we remove them.
@@ -417,6 +411,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/glxinfo
 
 %changelog
+* Sun Dec  3 2006 Kristian Høgsberg <krh@redhat.com> 6.5.2-1.fc6
+- Update to 6.5.2.
+
 * Mon Oct 16 2006 Kristian <krh@redhat.com> - 6.5.1-8.fc6
 - Add i965-interleaved-arrays-fix.patch to fix (#209318).
 
