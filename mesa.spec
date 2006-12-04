@@ -47,7 +47,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 6.5.2
-Release: 1%{?dist}
+Release: 2%{?dist}
 License: MIT/X11
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -350,7 +350,6 @@ rm -rf $RPM_BUILD_ROOT
 %files libGL-devel
 %defattr(-,root,root,-)
 %{_includedir}/GL/amesa.h
-%{_includedir}/GL/directfbgl.h
 %{_includedir}/GL/dmesa.h
 %{_includedir}/GL/fxmesa.h
 %{_includedir}/GL/ggimesa.h
@@ -389,11 +388,11 @@ rm -rf $RPM_BUILD_ROOT
 %files libOSMesa
 %defattr(-,root,root,-)
 %{_libdir}/libOSMesa.so.6
-%{_libdir}/libOSMesa.so.6.5.1
+%{_libdir}/libOSMesa.so.%{version}
 %{_libdir}/libOSMesa16.so.6
-%{_libdir}/libOSMesa16.so.6.5.1
+%{_libdir}/libOSMesa16.so.%{version}
 %{_libdir}/libOSMesa32.so.6
-%{_libdir}/libOSMesa32.so.6.5.1
+%{_libdir}/libOSMesa32.so.%{version}
 
 %files libOSMesa-devel
 %defattr(-,root,root,-)
@@ -411,6 +410,11 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/glxinfo
 
 %changelog
+* Mon Dec 4 2006 Adam Jackson <ajax@redhat.com> 6.5.2-2.fc6
+- Fix OSMesa file listing to use %%version for DSO number.  Note that this
+  will still break on Mesa 7; oh well.
+- Deleted file: directfbgl.h
+
 * Sun Dec  3 2006 Kristian Høgsberg <krh@redhat.com> 6.5.2-1.fc6
 - Update to 6.5.2.
 
