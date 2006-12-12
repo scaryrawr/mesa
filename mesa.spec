@@ -47,7 +47,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 6.5.2
-Release: 2%{?dist}
+Release: 3%{?dist}
 License: MIT/X11
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -62,7 +62,7 @@ Source12: redhat-mesa-source-filelist-generator
 # Patches 0-9 reserved for mesa Makefiles/config fixes
 Patch0: mesa-6.5.1-build-config.patch
 Patch4: mesa-6.5-dont-libglut-me-harder-ok-thx-bye.patch
-
+Patch5: mesa-6.5.2-xserver-1.1-source-compat.patch
 Patch18: mesa-6.5.1-selinux-awareness.patch
 
 BuildRequires: pkgconfig
@@ -241,6 +241,7 @@ install -m 755 %{SOURCE12} ./
 
 %patch0 -p1 -b .build-config
 %patch4 -p0 -b .dont-libglut-me-harder-ok-thx-bye
+%patch5 -p1 -b .xserver-1.1-compat
 %patch18 -p1 -b .selinux-awareness
 
 # WARNING: The following files are copyright "Mark J. Kilgard" under the GLUT
@@ -410,6 +411,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/glxinfo
 
 %changelog
+* Tue Dec 12 2006 Adam Jackson <ajax@redhat.com> 6.5.2-3
+- mesa-6.5.2-xserver-1.1-source-compat.patch: Add some source-compatibility
+  defines to dispatch.h so the X server will continue to build.
+
 * Mon Dec 4 2006 Adam Jackson <ajax@redhat.com> 6.5.2-2.fc6
 - Fix OSMesa file listing to use %%version for DSO number.  Note that this
   will still break on Mesa 7; oh well.
