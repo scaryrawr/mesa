@@ -47,7 +47,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 6.5.2
-Release: 3%{?dist}
+Release: 4%{?dist}
 License: MIT/X11
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -303,7 +303,7 @@ install -m 0755 progs/xdemos/glxinfo $RPM_BUILD_ROOT%{_bindir}
 
 %if %{with_dri}
 install -d $RPM_BUILD_ROOT%{_libdir}/dri
-for f in i810 i915 i965 mga r128 r200 r300 radeon savage sis tdfx unichrome; do
+for f in i810 i915 i915tex i965 mach64 mga r128 r200 r300 radeon savage sis tdfx unichrome; do
     so=%{_lib}/${f}_dri.so
     test -e $so && install -m 0755 $so  $RPM_BUILD_ROOT%{_libdir}/dri
 done
@@ -411,6 +411,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/glxinfo
 
 %changelog
+* Mon Dec 18 2006 Adam Jackson <ajax@redhat.com> 6.5.2-4
+- Add i915tex and mach64 to the install set. 
+
 * Tue Dec 12 2006 Adam Jackson <ajax@redhat.com> 6.5.2-3
 - mesa-6.5.2-xserver-1.1-source-compat.patch: Add some source-compatibility
   defines to dispatch.h so the X server will continue to build.
