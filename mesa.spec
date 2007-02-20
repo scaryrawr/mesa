@@ -1,19 +1,7 @@
-# Choose one and only one.
-%define build_fc	1
-%define build_rhel	0
-
-#-- DRI Build Configuration ------------------------------------------
-# NOTE: Enable DRI on PPC for Fedora Core Mac users, but disable on
-# RHEL for improved stability, as DRI isn't really that important
-# on server platforms.
-%if %{build_fc}
-%define with_dri_ppc 1
-%endif
-%if %{build_rhel}
-%define with_dri_ppc 0
-%endif
-
 # Architechture specific configuration
+# FIXME:  Should build with DRI support everywhere, and select target is some
+# other more pleasant fashion
+
 %ifarch %{ix86}
 %define with_dri 1
 %define dri_target linux-dri-x86
@@ -30,11 +18,11 @@
 %endif
 
 %ifarch ppc
-%define with_dri %{with_dri_ppc}
+%define with_dri 1
 %define dri_target linux-dri-ppc
 %endif
 
-# Define arches to make with_dri disabled by default
+# revert me?
 %ifarch ppc64 s390 s390x
 %define with_dri 0
 %define dri_target linux-indirect
@@ -42,13 +30,11 @@
 
 %define manpages gl-manpages-1.0.1
 
-#-- END DRI Build Configuration ------------------------------------------
-
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 6.5.2
-Release: 4%{?dist}
-License: MIT/X11
+Release: 5%{?dist}
+License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
@@ -57,17 +43,15 @@ Source0: http://internap.dl.sourceforge.net/sourceforge/mesa3d/MesaLib-%{version
 Source1: http://internap.dl.sourceforge.net/sourceforge/mesa3d/MesaDemos-%{version}.tar.bz2
 Source2: %{manpages}.tar.bz2
 
-Source12: redhat-mesa-source-filelist-generator
-
-# Patches 0-9 reserved for mesa Makefiles/config fixes
 Patch0: mesa-6.5.1-build-config.patch
 Patch4: mesa-6.5-dont-libglut-me-harder-ok-thx-bye.patch
 Patch5: mesa-6.5.2-xserver-1.1-source-compat.patch
 Patch18: mesa-6.5.1-selinux-awareness.patch
+Patch19: mesa-6.5.2-r300-parallel-build.patch
 
 BuildRequires: pkgconfig
 %if %{with_dri}
-BuildRequires: libdrm-devel >= 2.0.1-4
+BuildRequires: libdrm-devel >= 2.3.0
 %endif
 BuildRequires: libXxf86vm-devel
 BuildRequires: expat-devel
@@ -79,134 +63,67 @@ BuildRequires: libXext-devel
 %description
 Mesa
 
-#-- libGL ------------------------------------------------------------
 %package libGL
 Summary: Mesa libGL runtime libraries and DRI drivers
 Group: System Environment/Libraries
-
 Requires(post): /sbin/ldconfig
 Requires(postun): /sbin/ldconfig
-# NOTE: This libGL virtual provide is intentionally non-versioned, and is
-# intended to be used as a generic dependency in other packages which require
-# _any_ implementation and version of libGL.  If a particular software
-# package requires a specific GL feature which is unique to Mesa, or to
-# another GL implementation, then by definition that software is not OpenGL
-# implementation agnostic, and should not be using these virtual provides.
-# Instead, they should use "Requires: mesa-libGL-devel >= version-release"
-# or substitute another implementation as appropriate.
 Provides: libGL
-
-# libGL used to be in Mesa package in RHL 6.x, 7.[0-2], RHEL 2.1
-Obsoletes: Mesa
-# libGL moved to XFree86-libs for RHL 7.3
-Obsoletes: XFree86-libs
-# libGL moved to XFree86-Mesa-libGL for RHL 8.0, 9, FC1, RHEL 3
-Obsoletes: XFree86-Mesa-libGL
-# libGL moved to xorg-x11-Mesa-libGL for FC[2-4], RHEL4
-Obsoletes: xorg-x11-Mesa-libGL
-# Conflict with the xorg-x11-libs too, just to be safe for file conflicts
+Obsoletes: Mesa XFree86-libs XFree86-Mesa-libGL xorg-x11-Mesa-libGL
 Obsoletes: xorg-x11-libs
 
 %description libGL
 Mesa libGL runtime libraries and DRI drivers.
-#-- libGL ------------------------------------------------------------
+
+
 %package libGL-devel
 Summary: Mesa libGL development package
 Group: Development/Libraries
 Requires: mesa-libGL = %{version}-%{release}
 Requires: libX11-devel
-
-# NOTE: This libGL virtual provide is intentionally non-versioned, and is
-# intended to be used as a generic dependency in other packages which require
-# _any_ implementation and version of libGL.  If a particular software
-# package requires a specific GL feature which is unique to Mesa, or to
-# another GL implementation, then by definition that software is not OpenGL
-# implementation agnostic, and should not be using these virtual provides.
-# Instead, they should use "Requires: mesa-libGL-devel >= version-release"
-# or substitute another implementation as appropriate.
 Provides: libGL-devel
-
-# libGL devel files were in Mesa-devel package in RHL 6.x, 7.[0-2], RHEL 2.1
-Obsoletes: Mesa-devel
-# libGL devel files moved to XFree86-devel for RHL 7.3, 8.0, 9, FC1, RHEL 3
-Obsoletes: XFree86-devel
-# libGL devel files moved to xorg-x11-devel for FC2, FC3, FC4
-Obsoletes: xorg-x11-devel
+Obsoletes: Mesa-devel XFree86-devel xorg-x11-devel
 
 %description libGL-devel
 Mesa libGL development package
-#-- libGLU -----------------------------------------------------------
+
+
 %package libGLU
 Summary: Mesa libGLU runtime library
 Group: System Environment/Libraries
-
 Requires(post): /sbin/ldconfig
 Requires(postun): /sbin/ldconfig
-
-# NOTE: This libGLU virtual provide is intentionally non-versioned, and is
-# intended to be used as a generic dependency in other packages which require
-# _any_ implementation and version of libGLU.  If a particular software
-# package requires a specific GLU feature which is unique to Mesa, or to
-# another GLU implementation, then by definition that software is not GLU
-# implementation agnostic, and should not be using these virtual provides.
-# Instead, they should use "Requires: mesa-libGLU-devel >= version-release"
-# or substitute another implementation as appropriate.
 Provides: libGLU
-
-# libGLU used to be in Mesa package in RHL 6.x, 7.[0-2], RHEL 2.1
-Obsoletes: Mesa
-# libGLU moved to XFree86-libs for RHL 7.3
-Obsoletes: XFree86-libs
-# libGLU moved to XFree86-Mesa-libGLU for RHL 8.0, 9, FC1, RHEL 3
-Obsoletes: XFree86-Mesa-libGLU
-# libGLU moved to xorg-x11-Mesa-libGLU for FC[2-4], RHEL4
-Obsoletes: xorg-x11-Mesa-libGLU
-# Obsolete xorg-x11-libs too, just to be safe
+Obsoletes: Mesa XFree86-libs XFree86-Mesa-libGLU xorg-x11-Mesa-libGLU
 Obsoletes: xorg-x11-libs
 
 %description libGLU
 Mesa libGLU runtime library
-#-- libGLU-devel -----------------------------------------------------
+
+
 %package libGLU-devel
 Summary: Mesa libGLU development package
 Group: Development/Libraries
 Requires: mesa-libGLU = %{version}-%{release}
 Requires: libGL-devel
-
-# NOTE: This libGLU virtual provide is intentionally non-versioned, and is
-# intended to be used as a generic dependency in other packages which require
-# _any_ implementation and version of libGLU.  If a particular software
-# package requires a specific GLU feature which is unique to Mesa, or to
-# another GLU implementation, then by definition that software is not GLU
-# implementation agnostic, and should not be using these virtual provides.
-# Instead, they should use "Requires: mesa-libGLU-devel >= version-release"
-# or substitute another implementation as appropriate.
 Provides: libGLU-devel
-
-# libGLU devel files were in Mesa-devel package in RHL 6.x, 7.[0-2], RHEL 2.1
-Obsoletes: Mesa-devel
-# libGLU devel files moved to XFree86-devel for RHL 7.3, 8.0, 9, FC1, RHEL 3
-Obsoletes: XFree86-devel
-# libGLU devel files moved to xorg-x11-devel for FC2, FC3, FC4
-Obsoletes: xorg-x11-devel
+Obsoletes: Mesa-devel XFree86-devel xorg-x11-devel
 
 %description libGLU-devel
 Mesa libGLU development package
 
-#-- libOSMesa -----------------------------------------------------------
+
 %package libOSMesa
 Summary: Mesa offscreen rendering libraries
 Group: System Environment/Libraries
-
 Requires(post): /sbin/ldconfig
 Requires(postun): /sbin/ldconfig
-
 Provides: libOSMesa
 
 %description libOSMesa
 Mesa offscreen rendering libraries
 
-#-- libOSMesa-devel -----------------------------------------------------
+
 %package libOSMesa-devel
 Summary: Mesa offscreen rendering development package
 Group: Development/Libraries
@@ -215,7 +132,7 @@ Requires: mesa-libOSMesa = %{version}-%{release}
 %description libOSMesa-devel
 Mesa offscreen rendering development package
 
-#-- source -----------------------------------------------------------
+
 %package source
 Summary: Mesa source code required to build X server
 Group: Development/Libraries
@@ -224,7 +141,7 @@ Group: Development/Libraries
 The mesa-source package provides the minimal source code needed to
 build DRI enabled X servers, etc.
 
-#-- glx-utils --------------------------------------------------------
+
 %package -n glx-utils
 Summary: GLX utilities
 Group: Development/Libraries
@@ -232,29 +149,26 @@ Group: Development/Libraries
 %description -n glx-utils
 The glx-utils package provides the glxinfo and glxgears utilities.
 
-#-- prep -------------------------------------------------------------
+
 %prep
 %setup -q -n Mesa-%{version} -b1 -b2
-
-# Copy Red Hat Mesa build/install simplificomplication scripts into build dir.
-install -m 755 %{SOURCE12} ./
 
 %patch0 -p1 -b .build-config
 %patch4 -p0 -b .dont-libglut-me-harder-ok-thx-bye
 %patch5 -p1 -b .xserver-1.1-compat
 %patch18 -p1 -b .selinux-awareness
+%patch19 -p1 -b .r300-make-j
 
 # WARNING: The following files are copyright "Mark J. Kilgard" under the GLUT
 # license and are not open source/free software, so we remove them.
 rm -f include/GL/uglglutshapes.h
 
-#-- Build ------------------------------------------------------------
+
 %build
 
 # The i965 DRI driver breaks if compiled with -O2.  It appears to be
 # an aliasing problem, so we add -fno-strict-aliasing to the flags.
-
-export OPT_FLAGS="$RPM_OPT_FLAGS -fno-strict-aliasing"
+export OPT_FLAGS="$RPM_OPT_FLAGS -fno-strict-aliasing -fvisibility=hidden"
 export DRI_DRIVER_DIR="%{_libdir}/dri"
 export LIB_DIR=%{_lib}
 
@@ -262,29 +176,26 @@ mkdir preserve
 
 for t in osmesa osmesa16 osmesa32; do
     echo "Building $t"
-    make linux-$t
+    make %{?_smp_mflags} linux-$t
     mv %{_lib}/* preserve
     make -s realclean
 done
 
 echo "Building %{dri_target}"
-make %{dri_target}
+make %{?_smp_mflags} %{dri_target}
 make -C progs/xdemos glxgears glxinfo
 mv preserve/* %{_lib}
 ln -s libOSMesa.so.6 %{_lib}/libOSMesa.so 
 ln -s libOSMesa16.so.6 %{_lib}/libOSMesa16.so
 ln -s libOSMesa32.so.6 %{_lib}/libOSMesa32.so
 
-# Build man pages
 pushd .
-
 cd ../%{manpages}
 %configure
-make
-
+make %{?_smp_mflags}
 popd
 
-#-- Install ----------------------------------------------------------
+
 %install
 rm -rf $RPM_BUILD_ROOT
 
@@ -305,8 +216,8 @@ install -m 0755 progs/xdemos/glxinfo $RPM_BUILD_ROOT%{_bindir}
 install -d $RPM_BUILD_ROOT%{_libdir}/dri
 for f in i810 i915 i915tex i965 mach64 mga r128 r200 r300 radeon savage sis tdfx unichrome; do
     so=%{_lib}/${f}_dri.so
-    test -e $so && install -m 0755 $so  $RPM_BUILD_ROOT%{_libdir}/dri
-done
+    test -e $so && echo $so
+done | xargs install -m 0755 -t $RPM_BUILD_ROOT%{_libdir}/dri >& /dev/null || :
 %endif
 
 # Install man pages
@@ -315,17 +226,23 @@ cd ../%{manpages}
 make install DESTDIR=$RPM_BUILD_ROOT
 popd
 
-# Run custom source filelist generator script, passing it a prefix
-%define mesa_source_filelist mesa-source-rpm-filelist.lst
+# Install the source needed to build the X server.  The egreps are just
+# stripping out unnecessary dirs; only tricky bit is the [^c] to make sure
+# .../dri/common is included.
 %define mesasourcedir %{_datadir}/mesa/source
+mkdir -p $RPM_BUILD_ROOT/%{mesasourcedir}
+( find src -name \*.[ch] ; find include -name \*.h ) |
+    egrep -v '^src/(glu|glw)' |
+    egrep -v '^src/mesa/drivers/(directfb|dos|fbdev|glide|ggi|osmesa)' |
+    egrep -v '^src/mesa/drivers/(windows|dri/[^c])' |
+    xargs tar cf - --mode a=r |
+	(cd $RPM_BUILD_ROOT/%{mesasourcedir} && tar xf -)
 
-./redhat-mesa-source-filelist-generator $RPM_BUILD_ROOT %{mesasourcedir}
 
-#-- Clean ------------------------------------------------------------
 %clean
 rm -rf $RPM_BUILD_ROOT
 
-#-- Check ------------------------------------------------------------
+
 %check
 
 %post libGL -p /sbin/ldconfig
@@ -341,10 +258,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libGL.so.1.2
 
 %if %{with_dri}
-# DRI modules
 %dir %{_libdir}/dri
-# We only install drivers that get build and are in our white list so
-# we can just glob here.
 %{_libdir}/dri/*_dri.so
 %endif
 
@@ -402,7 +316,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libOSMesa16.so
 %{_libdir}/libOSMesa32.so
 
-%files source -f mesa-source-rpm-filelist.lst
+# We constructed this dir carefully, so just slurp in the whole thing.
+%files source
+%{mesasourcedir}
 %defattr(-,root,root,-)
 
 %files -n glx-utils
@@ -411,6 +327,13 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/glxinfo
 
 %changelog
+* Tue Feb 20 2007 Adam Jackson <ajax@redhat.com> 6.5.2-5
+- General spec cleanups
+- Require current libdrm
+- Build with -fvisibility=hidden
+- Redo the way mesa-source is generated
+- Add %%{?_smp_mflags} where appropriate
+
 * Mon Dec 18 2006 Adam Jackson <ajax@redhat.com> 6.5.2-4
 - Add i915tex and mach64 to the install set. 
 
@@ -433,7 +356,7 @@ rm -rf $RPM_BUILD_ROOT
 - Update to gl-manpages-1.0.1.tar.bz2 which doesn't use symlinks. (#184547)
 
 * Sat Sep 30 2006 Soren Sandmann <sandmann@redhat.com> - 6.5.1-7.fc6
-- Remove . after popd; add .gz in %files section. (#184547)
+- Remove . after popd; add .gz in %%files section. (#184547)
 
 * Sat Sep 30 2006 Soren Sandmann <sandmann@redhat.com>
 - Use better tarball for gl man pages. (#184547)
