@@ -1,0 +1,48 @@
+--- Mesa-6.5.2/src/glx/x11/dri_glx.c.libgl-visibility	2006-08-17 10:09:03.000000000 -0400
++++ Mesa-6.5.2/src/glx/x11/dri_glx.c	2007-02-26 11:21:01.000000000 -0500
+@@ -39,6 +39,7 @@
+ #include <X11/Xlibint.h>
+ #include <X11/extensions/Xext.h>
+ #include <X11/extensions/extutil.h>
++#include "glheader.h"
+ #include "glxclient.h"
+ #include "xf86dri.h"
+ #include "sarea.h"
+@@ -338,7 +339,7 @@
+  * The returned char pointer points to a static array that will be
+  * overwritten by subsequent calls.
+  */
+-const char *glXGetScreenDriver (Display *dpy, int scrNum) {
++PUBLIC const char *glXGetScreenDriver (Display *dpy, int scrNum) {
+    static char ret[32];
+    char *driverName;
+    if (GetDriverName(dpy, scrNum, &driverName)) {
+@@ -367,7 +368,7 @@
+  *
+  * Note: The driver remains opened after this function returns.
+  */
+-const char *glXGetDriverConfig (const char *driverName) {
++PUBLIC const char *glXGetDriverConfig (const char *driverName) {
+    __DRIdriver *driver = OpenDriver (driverName);
+    if (driver)
+       return dlsym (driver->handle, "__driConfigOptions");
+--- Mesa-6.5.2/src/glx/x11/glxext.c.libgl-visibility	2006-11-15 09:55:47.000000000 -0500
++++ Mesa-6.5.2/src/glx/x11/glxext.c	2007-02-26 11:11:57.000000000 -0500
+@@ -1417,7 +1417,7 @@
+ 
+ /************************************************************************/
+ 
+-GLXContext glXGetCurrentContext(void)
++PUBLIC GLXContext glXGetCurrentContext(void)
+ {
+     GLXContext cx = __glXGetCurrentContext();
+     
+@@ -1428,7 +1428,7 @@
+     }
+ }
+ 
+-GLXDrawable glXGetCurrentDrawable(void)
++PUBLIC GLXDrawable glXGetCurrentDrawable(void)
+ {
+     GLXContext gc = __glXGetCurrentContext();
+     return gc->currentDrawable;

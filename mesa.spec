@@ -2,30 +2,28 @@
 # FIXME:  Should build with DRI support everywhere, and select target is some
 # other more pleasant fashion
 
-%ifarch %{ix86}
+%ifarch s390 s390x
+%define with_dri 0
+%define dri_target linux-indirect
+%else
 %define with_dri 1
+%endif
+
+%ifarch %{ix86}
 %define dri_target linux-dri-x86
 %endif
 
 %ifarch x86_64
-%define with_dri 1
 %define dri_target linux-dri-x86-64
 %endif
 
-%ifarch ia64 alpha sparc sparc64
-%define with_dri 1
-%define dri_target linux-dri
-%endif
-
-%ifarch ppc
-%define with_dri 1
+%ifarch ppc ppc64
 %define dri_target linux-dri-ppc
 %endif
 
-# revert me?
-%ifarch ppc64 s390 s390x
-%define with_dri 0
-%define dri_target linux-indirect
+# rpm sure has a funny way of spelling %ifndef.  This is the default case.
+%if 0%{!?dri_target:1}
+%define dri_target linux-dri
 %endif
 
 %define manpages gl-manpages-1.0.1
@@ -33,7 +31,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 6.5.2
-Release: 5%{?dist}
+Release: 6%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -48,6 +46,7 @@ Patch4: mesa-6.5-dont-libglut-me-harder-ok-thx-bye.patch
 Patch5: mesa-6.5.2-xserver-1.1-source-compat.patch
 Patch18: mesa-6.5.1-selinux-awareness.patch
 Patch19: mesa-6.5.2-r300-parallel-build.patch
+Patch20: mesa-6.5.2-libgl-visibility.patch
 
 BuildRequires: pkgconfig
 %if %{with_dri}
@@ -71,6 +70,9 @@ Requires(postun): /sbin/ldconfig
 Provides: libGL
 Obsoletes: Mesa XFree86-libs XFree86-Mesa-libGL xorg-x11-Mesa-libGL
 Obsoletes: xorg-x11-libs
+%if %{with_dri}
+Requires: libdrm >= 2.3.0
+%endif
 
 %description libGL
 Mesa libGL runtime libraries and DRI drivers.
@@ -158,6 +160,7 @@ The glx-utils package provides the glxinfo and glxgears utilities.
 %patch5 -p1 -b .xserver-1.1-compat
 %patch18 -p1 -b .selinux-awareness
 %patch19 -p1 -b .r300-make-j
+%patch20 -p1 -b .libgl-visibility
 
 # WARNING: The following files are copyright "Mark J. Kilgard" under the GLUT
 # license and are not open source/free software, so we remove them.
@@ -318,8 +321,8 @@ rm -rf $RPM_BUILD_ROOT
 
 # We constructed this dir carefully, so just slurp in the whole thing.
 %files source
-%{mesasourcedir}
 %defattr(-,root,root,-)
+%{mesasourcedir}
 
 %files -n glx-utils
 %defattr(-,root,root,-)
@@ -327,6 +330,11 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/glxinfo
 
 %changelog
+* Mon Feb 26 2007 Adam Jackson <ajax@redhat.com> 6.5.2-6
+- mesa-6.5.2-libgl-visibility.patch: Fix non-exported GLX symbols (#229808)
+- Require a sufficiently new libdrm at runtime too
+- Make the arch macros do something sensible in the general case
+
 * Tue Feb 20 2007 Adam Jackson <ajax@redhat.com> 6.5.2-5
 - General spec cleanups
 - Require current libdrm
