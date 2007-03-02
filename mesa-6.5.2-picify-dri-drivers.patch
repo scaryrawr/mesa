@@ -1,0 +1,136 @@
+--- Mesa-6.5.2/src/mesa/x86/mmx_blend.S.picify	2006-04-17 14:58:24.000000000 -0400
++++ Mesa-6.5.2/src/mesa/x86/mmx_blend.S	2007-03-02 15:50:07.000000000 -0500
+@@ -303,7 +303,7 @@
+ #define LLTAG(x) LLBL2(x,_min)
+ 
+ #define INIT \
+-    MOVQ       ( CONTENT(const_80), MM7 )	/* 0x80| 0x80| 0x80| 0x80| 0x80| 0x80| 0x80| 0x80*/
++    MOVQ       ( CONTENT(const_80@GOTOFF(%ebx)), MM7 )	/* 0x80| 0x80| 0x80| 0x80| 0x80| 0x80| 0x80| 0x80*/
+ 
+ #define MAIN( rgba, dest ) \
+     GMB_LOAD( rgba, dest, MM1, MM2 )									;\
+@@ -327,7 +327,7 @@
+ #define LLTAG(x) LLBL2(x,_max)
+ 
+ #define INIT \
+-    MOVQ       ( CONTENT(const_80), MM7 )	/* 0x80| 0x80| 0x80| 0x80| 0x80| 0x80| 0x80| 0x80*/
++    MOVQ       ( CONTENT(const_80@GOTOFF(%ebx)), MM7 )	/* 0x80| 0x80| 0x80| 0x80| 0x80| 0x80| 0x80| 0x80*/
+ 
+ #define MAIN( rgba, dest ) \
+     GMB_LOAD( rgba, dest, MM1, MM2 )									;\
+@@ -352,7 +352,7 @@
+ 
+ #define INIT \
+     PXOR       ( MM0, MM0 )			/*   0x0000  |   0x0000  |   0x0000  |   0x0000  */	;\
+-    MOVQ       ( CONTENT(const_0080), MM7 )	/*   0x0080  |   0x0080  |   0x0080  |   0x0080  */
++    MOVQ       ( CONTENT(const_0080@GOTOFF(%ebx)), MM7 )	/*   0x0080  |   0x0080  |   0x0080  |   0x0080  */
+ 
+ #define MAIN( rgba, dest ) \
+     GMB_LOAD( rgba, dest, MM1, MM2 )									;\
+--- Mesa-6.5.2/src/mesa/x86/mmx_blendtmp.h.picify	2005-01-04 09:33:47.000000000 -0500
++++ Mesa-6.5.2/src/mesa/x86/mmx_blendtmp.h	2007-03-02 16:03:46.000000000 -0500
+@@ -26,12 +26,12 @@
+     CMP_L      ( CONST(0), ECX)
+     JE         ( LLTAG(GMB_return) )
+ 
++    INIT
++    
+     MOV_L      ( REGOFF(16, EBP), EBX )		/* mask */
+     MOV_L      ( REGOFF(20, EBP), EDI )         /* rgba */
+     MOV_L      ( REGOFF(24, EBP), ESI )         /* dest */
+ 
+-    INIT
+-    
+     TEST_L     ( CONST(4), EDI )		/* align rgba on an 8-byte boundary */
+     JZ         ( LLTAG(GMB_align_end) )
+ 
+--- Mesa-6.5.2/src/mesa/x86/read_rgba_span_x86.S.picify	2006-04-17 14:58:24.000000000 -0400
++++ Mesa-6.5.2/src/mesa/x86/read_rgba_span_x86.S	2007-03-02 15:50:07.000000000 -0500
+@@ -84,8 +84,8 @@
+ #ifdef USE_INNER_EMMS
+ 	emms
+ #endif
+-	movq	mask, %mm1
+-	movq	mask+16, %mm2
++	movq	mask@GOTOFF(%ebx), %mm1
++	movq	mask+16@GOTOFF(%ebx), %mm2
+ 
+ 	movl	8(%esp), %ebx	/* source pointer */
+ 	movl	16(%esp), %edx	/* number of pixels to copy */
+@@ -182,8 +182,8 @@
+ #ifdef USE_INNER_EMMS
+ 	emms
+ #endif
+-	movq	mask, %mm1
+-	movq	mask+16, %mm2
++	movq	mask@GOTOFF(%ebx), %mm1
++	movq	mask+16@GOTOFF(%ebx), %mm2
+ 
+ 	movl	16(%esp), %ebx	/* source pointer */
+ 	movl	24(%esp), %edx	/* number of pixels to copy */
+@@ -341,8 +341,8 @@
+ 	pushl	%esi
+ 	pushl	%ebx
+ 
+-	movdqa	mask, %xmm1
+-	movdqa	mask+16, %xmm2
++	movdqa	mask@GOTOFF(%ebx), %xmm1
++	movdqa	mask+16@GOTOFF(%ebx), %xmm2
+ 
+ 	movl	12(%esp), %ebx	/* source pointer */
+ 	movl	20(%esp), %edx	/* number of pixels to copy */
+@@ -530,9 +530,9 @@
+ 	movl	8(%esp), %edx	/* destination pointer */
+ 	movl	12(%esp), %ecx	/* number of pixels to copy */
+ 
+-	movq	mask_565, %mm5
+-	movq	prescale, %mm6
+-	movq	scale, %mm7
++	movq	mask_565@GOTOFF(%ebx), %mm5
++	movq	prescale@GOTOFF(%ebx), %mm6
++	movq	scale@GOTOFF(%ebx), %mm7
+ 
+ 	sarl	$2, %ecx
+ 	jle	.L01		/* Bail early if the count is negative. */
+@@ -581,8 +581,8 @@
+ 	/* Always set the alpha value to 0xff.
+ 	 */
+ 
+-	por	alpha, %mm0
+-	por	alpha, %mm2
++	por	alpha@GOTOFF(%ebx), %mm0
++	por	alpha@GOTOFF(%ebx), %mm2
+ 
+ 
+ 	/* Pack the 16-bit values to 8-bit values and store the converted
+@@ -609,8 +609,8 @@
+ 	pmulhuw	%mm7, %mm0
+ 	pmulhuw	%mm7, %mm2
+ 
+-	por	alpha, %mm0
+-	por	alpha, %mm2
++	por	alpha@GOTOFF(%ebx), %mm0
++	por	alpha@GOTOFF(%ebx), %mm2
+ 
+ 	packuswb	%mm2, %mm0
+ 
+@@ -647,8 +647,8 @@
+ 	pmulhuw	%mm7, %mm0
+ 	pmulhuw	%mm7, %mm2
+ 
+-	por	alpha, %mm0
+-	por	alpha, %mm2
++	por	alpha@GOTOFF(%ebx), %mm0
++	por	alpha@GOTOFF(%ebx), %mm2
+ 
+ 	packuswb	%mm2, %mm0
+ 
+@@ -675,7 +675,7 @@
+ #endif
+ 	pmulhuw	%mm7, %mm0
+ 
+-	por	alpha, %mm0
++	por	alpha@GOTOFF(%ebx), %mm0
+ 
+ 	packuswb	%mm0, %mm0
+ 

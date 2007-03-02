@@ -1,6 +1,19 @@
---- Mesa-6.5.1/configs/linux-osmesa32.build-config	2006-07-12 22:43:20.000000000 -0400
-+++ Mesa-6.5.1/configs/linux-osmesa32	2006-09-22 18:20:05.000000000 -0400
-@@ -17,12 +17,12 @@
+--- Mesa-6.5.2/configs/linux-osmesa32.build-config	2006-07-12 22:43:20.000000000 -0400
++++ Mesa-6.5.2/configs/linux-osmesa32	2007-03-02 10:22:16.000000000 -0500
+@@ -7,8 +7,10 @@
+ # Compiler and flags
+ CC = gcc
+ CXX = g++
+-CFLAGS = -O3 -ansi -pedantic -fPIC -ffast-math -D_POSIX_SOURCE -D_POSIX_C_SOURCE=199309L -D_SVID_SOURCE -D_BSD_SOURCE -DUSE_XSHM -DPTHREADS -I/usr/X11R6/include -DCHAN_BITS=32 -DDEFAULT_SOFTWARE_DEPTH_BITS=31
+-CXXFLAGS = -O3 -ansi -pedantic -fPIC -ffast-math -D_POSIX_SOURCE -D_POSIX_C_SOURCE=199309L -D_SVID_SOURCE -D_BSD_SOURCE
++DEFINES = -D_POSIX_SOURCE -D_POSIX_C_SOURCE=199309L -D_SVID_SOURCE -D_BSD_SOURCE
++OPT_FLAGS ?= -O3 -ansi -pendantic -fPIC -ffast-math
++CFLAGS = $(OPT_FLAGS) $(DEFINES) -DCHAN_BITS=32 -DDEFAULT_SOFTWARE_DEPTH_BITS=31
++CXXFLAGS = $(OPT_FLAGS) $(DEFINES) 
+ 
+ 
+ # Library names
+@@ -17,12 +19,12 @@
  
  
  # Directories
@@ -15,10 +28,19 @@
 +OSMESA_LIB_DEPS = -lm -lpthread -lselinux
  GLU_LIB_DEPS = -L$(TOP)/$(LIB_DIR) -l$(OSMESA_LIB)
  APP_LIB_DEPS = -lOSMesa32
---- Mesa-6.5.1/configs/linux-osmesa.build-config	2006-07-12 22:43:20.000000000 -0400
-+++ Mesa-6.5.1/configs/linux-osmesa	2006-09-22 18:19:52.000000000 -0400
-@@ -14,12 +14,12 @@
- 
+--- Mesa-6.5.2/configs/linux-osmesa.build-config	2006-07-12 22:43:20.000000000 -0400
++++ Mesa-6.5.2/configs/linux-osmesa	2007-03-02 10:22:16.000000000 -0500
+@@ -9,17 +9,18 @@
+ # Compiler and flags
+ CC = gcc
+ CXX = g++
+-CFLAGS = -O3 -ansi -pedantic -fPIC -ffast-math -D_POSIX_SOURCE -D_POSIX_C_SOURCE=199309L -D_SVID_SOURCE -D_BSD_SOURCE -DPTHREADS
+-CXXFLAGS = -O3 -ansi -pedantic -fPIC -ffast-math -D_POSIX_SOURCE -D_POSIX_C_SOURCE=199309L -D_SVID_SOURCE -D_BSD_SOURCE
+-
++DEFINES = -D_POSIX_SOURCE -D_POSIX_C_SOURCE=199309L -D_SVID_SOURCE -D_BSD_SOURCE
++OPT_FLAGS ?= -O3 -ansi -pendantic -fPIC -ffast-math
++CFLAGS = $(OPT_FLAGS) $(DEFINES)
++CXXFLAGS = $(OPT_FLAGS) $(DEFINES) 
  
  # Directories
 -SRC_DIRS = mesa glu
@@ -33,9 +55,9 @@
 +OSMESA_LIB_DEPS = -lm -lpthread -lselinux
  GLU_LIB_DEPS = -L$(TOP)/$(LIB_DIR) -l$(OSMESA_LIB)
  APP_LIB_DEPS = -lOSMesa -lGLU
---- Mesa-6.5.1/configs/default.build-config	2006-09-11 17:35:46.000000000 -0400
-+++ Mesa-6.5.1/configs/default	2006-09-22 18:11:30.000000000 -0400
-@@ -59,8 +59,8 @@
+--- Mesa-6.5.2/configs/default.build-config	2006-10-22 13:20:22.000000000 -0400
++++ Mesa-6.5.2/configs/default	2007-03-02 10:17:24.000000000 -0500
+@@ -58,8 +58,8 @@
  
  
  # Directories to build
@@ -46,7 +68,7 @@
  GLU_DIRS = sgi
  DRIVER_DIRS = x11 osmesa
  # Which subdirs under $(TOP)/progs/ to enter:
-@@ -73,14 +73,14 @@
+@@ -72,14 +72,14 @@
  OSMESA_LIB_DEPS = -L$(TOP)/$(LIB_DIR) -l$(GL_LIB)
  GLU_LIB_DEPS = -L$(TOP)/$(LIB_DIR) -l$(GL_LIB) -lm
  GLUT_LIB_DEPS = -L$(TOP)/$(LIB_DIR) -l$(GLU_LIB) -l$(GL_LIB) $(EXTRA_LIB_PATH) -lX11 -lXmu -lXt -lXi -lm
@@ -63,8 +85,8 @@
  
  # Where libGL will look for DRI hardware drivers
  DRI_DRIVER_SEARCH_DIR = $(DRI_DRIVER_INSTALL_DIR)
---- Mesa-6.5.1/configs/linux-dri-x86.build-config	2005-09-12 11:03:11.000000000 -0400
-+++ Mesa-6.5.1/configs/linux-dri-x86	2006-09-22 18:11:30.000000000 -0400
+--- Mesa-6.5.2/configs/linux-dri-x86.build-config	2005-09-12 11:03:11.000000000 -0400
++++ Mesa-6.5.2/configs/linux-dri-x86	2007-03-02 10:17:24.000000000 -0500
 @@ -6,7 +6,7 @@
  CONFIG_NAME = linux-dri-x86
  
@@ -74,8 +96,8 @@
  
  # Add -m32 to CFLAGS:
  ARCH_FLAGS = -m32
---- Mesa-6.5.1/configs/linux-dri.build-config	2006-08-17 10:09:02.000000000 -0400
-+++ Mesa-6.5.1/configs/linux-dri	2006-09-22 18:11:30.000000000 -0400
+--- Mesa-6.5.2/configs/linux-dri.build-config	2006-11-01 19:44:25.000000000 -0500
++++ Mesa-6.5.2/configs/linux-dri	2007-03-02 10:17:24.000000000 -0500
 @@ -12,8 +12,9 @@
  #MKDEP = /usr/X11R6/bin/makedepend
  #MKDEP = gcc -M
@@ -87,16 +109,16 @@
  PIC_FLAGS  = -fPIC
  
  # Add '-DGLX_USE_TLS' to ARCH_FLAGS to enable TLS support.
-@@ -24,8 +25,6 @@
- 	-DPTHREADS -DUSE_EXTERNAL_DXTN_LIB=1 -DIN_DRI_DRIVER \
- 	-DGLX_DIRECT_RENDERING -DHAVE_ALIAS -DHAVE_POSIX_MEMALIGN
+@@ -25,8 +26,6 @@
+ 	-DGLX_DIRECT_RENDERING -DGLX_INDIRECT_RENDERING \
+ 	-DHAVE_ALIAS -DHAVE_POSIX_MEMALIGN
  
 -X11_INCLUDES = -I/usr/X11R6/include
 -
  CFLAGS = -Wall -Wmissing-prototypes -std=c99 -ffast-math \
  	$(OPT_FLAGS) $(PIC_FLAGS) $(ARCH_FLAGS) $(DEFINES) $(ASM_FLAGS)
  
-@@ -35,7 +34,7 @@
+@@ -36,7 +35,7 @@
  ASM_SOURCES = 
  
  # Library/program dependencies
@@ -105,7 +127,7 @@
  
  LIBDRM_CFLAGS = `pkg-config --cflags libdrm`
  LIBDRM_LIB = `pkg-config --libs libdrm`
-@@ -52,10 +51,10 @@
+@@ -53,10 +52,10 @@
  
  # Directories
  ifeq ($(USING_EGL), 1)
@@ -118,15 +140,24 @@
  PROGRAM_DIRS =
  endif
  
-@@ -65,4 +64,4 @@
+@@ -66,4 +65,4 @@
  # gamma are missing because they have not been converted to use the new
  # interface.
  DRI_DIRS = i810 i915tex i915 i965 mach64 mga r128 r200 r300 radeon s3v \
 -	savage sis tdfx trident unichrome ffb
 +	savage tdfx trident unichrome ffb # sis
---- Mesa-6.5.1/configs/linux-indirect.build-config	2006-08-17 10:09:02.000000000 -0400
-+++ Mesa-6.5.1/configs/linux-indirect	2006-09-22 18:11:30.000000000 -0400
-@@ -43,7 +43,7 @@
+--- Mesa-6.5.2/configs/linux-indirect.build-config	2006-10-13 09:37:09.000000000 -0400
++++ Mesa-6.5.2/configs/linux-indirect	2007-03-02 10:22:44.000000000 -0500
+@@ -15,7 +15,7 @@
+ #MKDEP_OPTIONS = -MF depend
+ 
+ WARN_FLAGS = -Wall
+-OPT_FLAGS  = -O -g
++OPT_FLAGS  ?= -O -g
+ PIC_FLAGS  = -fPIC
+ 
+ # Add '-DGLX_USE_TLS' to ARCH_FLAGS to enable TLS support.
+@@ -44,7 +44,7 @@
  
  
  # Directories
@@ -135,8 +166,8 @@
  DRIVER_DIRS =
  PROGRAM_DIRS = 
  WINDOW_SYSTEM=dri
---- Mesa-6.5.1/configs/linux.build-config	2006-08-24 19:37:59.000000000 -0400
-+++ Mesa-6.5.1/configs/linux	2006-09-22 18:11:30.000000000 -0400
+--- Mesa-6.5.2/configs/linux.build-config	2006-09-28 21:23:11.000000000 -0400
++++ Mesa-6.5.2/configs/linux	2007-03-02 10:17:24.000000000 -0500
 @@ -8,7 +8,9 @@
  CC = gcc
  CXX = g++
@@ -148,8 +179,8 @@
  PIC_FLAGS  = -fPIC
  
  # Add '-DGLX_USE_TLS' to ARCH_FLAGS to enable TLS support.  Add -m32
---- Mesa-6.5.1/configs/linux-dri-ppc.build-config	2005-08-19 18:03:05.000000000 -0400
-+++ Mesa-6.5.1/configs/linux-dri-ppc	2006-09-22 18:11:30.000000000 -0400
+--- Mesa-6.5.2/configs/linux-dri-ppc.build-config	2005-08-19 18:03:05.000000000 -0400
++++ Mesa-6.5.2/configs/linux-dri-ppc	2007-03-02 10:17:24.000000000 -0500
 @@ -5,7 +5,7 @@
  
  CONFIG_NAME = linux-dri-ppc
@@ -159,9 +190,22 @@
  PIC_FLAGS = -fPIC
  
  ASM_FLAGS = -DUSE_PPC_ASM -DUSE_VMX_ASM
---- Mesa-6.5.1/configs/linux-osmesa16.build-config	2006-07-12 22:43:20.000000000 -0400
-+++ Mesa-6.5.1/configs/linux-osmesa16	2006-09-22 18:20:05.000000000 -0400
-@@ -17,12 +17,12 @@
+--- Mesa-6.5.2/configs/linux-osmesa16.build-config	2006-07-12 22:43:20.000000000 -0400
++++ Mesa-6.5.2/configs/linux-osmesa16	2007-03-02 10:22:16.000000000 -0500
+@@ -7,8 +7,10 @@
+ # Compiler and flags
+ CC = gcc
+ CXX = g++
+-CFLAGS = -O3 -ansi -pedantic -fPIC -ffast-math -D_POSIX_SOURCE -D_POSIX_C_SOURCE=199309L -D_SVID_SOURCE -D_BSD_SOURCE -DUSE_XSHM -DPTHREADS -I/usr/X11R6/include -DCHAN_BITS=16 -DDEFAULT_SOFTWARE_DEPTH_BITS=31
+-CXXFLAGS = -O3 -ansi -pedantic -fPIC -ffast-math -D_POSIX_SOURCE -D_POSIX_C_SOURCE=199309L -D_SVID_SOURCE -D_BSD_SOURCE
++DEFINES = -D_POSIX_SOURCE -D_POSIX_C_SOURCE=199309L -D_SVID_SOURCE -D_BSD_SOURCE
++OPT_FLAGS ?= -O3 -ansi -pendantic -fPIC -ffast-math
++CFLAGS = $(OPT_FLAGS) $(DEFINES) -DCHAN_BITS=16 -DDEFAULT_SOFTWARE_DEPTH_BITS=31
++CXXFLAGS = $(OPT_FLAGS) $(DEFINES) 
+ 
+ 
+ # Library names
+@@ -17,12 +19,12 @@
  
  
  # Directories

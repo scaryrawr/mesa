@@ -31,7 +31,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 6.5.2
-Release: 6%{?dist}
+Release: 7%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -47,6 +47,7 @@ Patch5: mesa-6.5.2-xserver-1.1-source-compat.patch
 Patch18: mesa-6.5.1-selinux-awareness.patch
 Patch19: mesa-6.5.2-r300-parallel-build.patch
 Patch20: mesa-6.5.2-libgl-visibility.patch
+Patch21: mesa-6.5.2-picify-dri-drivers.patch
 
 BuildRequires: pkgconfig
 %if %{with_dri}
@@ -161,6 +162,7 @@ The glx-utils package provides the glxinfo and glxgears utilities.
 %patch18 -p1 -b .selinux-awareness
 %patch19 -p1 -b .r300-make-j
 %patch20 -p1 -b .libgl-visibility
+%patch21 -p1 -b .picify
 
 # WARNING: The following files are copyright "Mark J. Kilgard" under the GLUT
 # license and are not open source/free software, so we remove them.
@@ -171,7 +173,7 @@ rm -f include/GL/uglglutshapes.h
 
 # The i965 DRI driver breaks if compiled with -O2.  It appears to be
 # an aliasing problem, so we add -fno-strict-aliasing to the flags.
-export OPT_FLAGS="$RPM_OPT_FLAGS -fno-strict-aliasing -fvisibility=hidden"
+export OPT_FLAGS="$RPM_OPT_FLAGS -fno-strict-aliasing -fvisibility=hidden -fPIC"
 export DRI_DRIVER_DIR="%{_libdir}/dri"
 export LIB_DIR=%{_lib}
 
@@ -330,6 +332,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/glxinfo
 
 %changelog
+* Fri Mar 02 2007 Adam Jackson <ajax@redhat.com> 6.5.2-7
+- mesa-6.5.2-picify-dri-drivers.patch: Attempt to make the DRI drivers PIC.
+- mesa-6.5.1-build-config.patch: Apply RPM_OPT_FLAGS to OSMesa too.
+
 * Mon Feb 26 2007 Adam Jackson <ajax@redhat.com> 6.5.2-6
 - mesa-6.5.2-libgl-visibility.patch: Fix non-exported GLX symbols (#229808)
 - Require a sufficiently new libdrm at runtime too
