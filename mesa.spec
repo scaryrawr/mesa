@@ -31,7 +31,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 6.5.2
-Release: 7%{?dist}
+Release: 8%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -48,10 +48,11 @@ Patch18: mesa-6.5.1-selinux-awareness.patch
 Patch19: mesa-6.5.2-r300-parallel-build.patch
 Patch20: mesa-6.5.2-libgl-visibility.patch
 Patch21: mesa-6.5.2-picify-dri-drivers.patch
+Patch22: mesa-6.5.2-hush-synthetic-visual-warning.patch
 
 BuildRequires: pkgconfig
 %if %{with_dri}
-BuildRequires: libdrm-devel >= 2.3.0
+BuildRequires: libdrm-devel >= 2.3.0-1
 %endif
 BuildRequires: libXxf86vm-devel
 BuildRequires: expat-devel
@@ -163,6 +164,7 @@ The glx-utils package provides the glxinfo and glxgears utilities.
 %patch19 -p1 -b .r300-make-j
 %patch20 -p1 -b .libgl-visibility
 %patch21 -p1 -b .picify
+%patch22 -p1 -b .visual-warning
 
 # WARNING: The following files are copyright "Mark J. Kilgard" under the GLUT
 # license and are not open source/free software, so we remove them.
@@ -332,6 +334,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/glxinfo
 
 %changelog
+* Thu Mar 08 2007 Adam Jackson <ajax@redhat.com> 6.5.2-8
+- Hush the (useless) warning about the synthetic visual not being supported.
+
 * Fri Mar 02 2007 Adam Jackson <ajax@redhat.com> 6.5.2-7
 - mesa-6.5.2-picify-dri-drivers.patch: Attempt to make the DRI drivers PIC.
 - mesa-6.5.1-build-config.patch: Apply RPM_OPT_FLAGS to OSMesa too.
