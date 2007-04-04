@@ -1,0 +1,11 @@
+--- Mesa-6.5.2/src/mesa/drivers/dri/common/dri_util.c.jx	2006-12-02 13:14:16.000000000 -0500
++++ Mesa-6.5.2/src/mesa/drivers/dri/common/dri_util.c	2007-04-04 12:41:08.000000000 -0400
+@@ -271,6 +271,8 @@
+     __DRIdrawablePrivate *prp;
+     __DRIcontextPrivate * const pcp = ctx->private;
+ 
++    if (!pcp)
++	return GL_FALSE;
+ 
+     /* Find the _DRIdrawable which corresponds to the writing drawable. */
+     pdraw = __driFindDrawable(psp->drawHash, draw);

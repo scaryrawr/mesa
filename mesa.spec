@@ -31,7 +31,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 6.5.2
-Release: 8%{?dist}
+Release: 9%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -49,6 +49,7 @@ Patch19: mesa-6.5.2-r300-parallel-build.patch
 Patch20: mesa-6.5.2-libgl-visibility.patch
 Patch21: mesa-6.5.2-picify-dri-drivers.patch
 Patch22: mesa-6.5.2-hush-synthetic-visual-warning.patch
+Patch23: mesa-6.5.2-bindcontext-paranoia.patch
 
 BuildRequires: pkgconfig
 %if %{with_dri}
@@ -165,6 +166,7 @@ The glx-utils package provides the glxinfo and glxgears utilities.
 %patch20 -p1 -b .libgl-visibility
 %patch21 -p1 -b .picify
 %patch22 -p1 -b .visual-warning
+%patch23 -p1 -b .bindcontext
 
 # WARNING: The following files are copyright "Mark J. Kilgard" under the GLUT
 # license and are not open source/free software, so we remove them.
@@ -334,6 +336,11 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/glxinfo
 
 %changelog
+* Wed Apr 04 2007 Adam Jackson <ajax@redhat.com> 6.5.2-9
+- mesa-6.5.2-bindcontext-paranoia.patch: Paper over a crash when doBindContext
+  fails, to avoid, for example, crashing the server when using tdfx but
+  without glide3 installed.
+
 * Thu Mar 08 2007 Adam Jackson <ajax@redhat.com> 6.5.2-8
 - Hush the (useless) warning about the synthetic visual not being supported.
 
