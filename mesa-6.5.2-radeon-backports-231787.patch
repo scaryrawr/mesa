@@ -1,0 +1,133 @@
+--- Mesa-6.5.2/src/mesa/main/texstore.c.radeon-231787	2006-11-02 17:57:11.000000000 -0500
++++ Mesa-6.5.2/src/mesa/main/texstore.c	2007-04-10 14:52:22.000000000 -0400
+@@ -808,7 +808,8 @@
+ 
+ /*    _mesa_printf("map %d %d %d %d\n", map[0], map[1], map[2], map[3]);  */
+ 
+-   if (srcRowStride == srcWidth * srcComponents &&
++   if (srcRowStride == dstRowStride &&
++       srcRowStride == srcWidth * srcComponents &&
+        dimensions < 3) {
+       /* 1 and 2D images only */
+       GLubyte *dstImage = (GLubyte *) dstAddr
+--- Mesa-6.5.2/src/mesa/drivers/dri/r200/r200_lock.c.radeon-231787	2006-11-15 14:54:40.000000000 -0500
++++ Mesa-6.5.2/src/mesa/drivers/dri/r200/r200_lock.c	2007-04-10 14:51:44.000000000 -0400
+@@ -98,7 +98,6 @@
+          r200SetCliprects( rmesa, GL_FRONT_LEFT );
+       r200UpdateViewportOffset( rmesa->glCtx );
+       driUpdateFramebufferSize(rmesa->glCtx, drawable);
+-      rmesa->lastStamp = drawable->lastStamp;
+    }
+ 
+    R200_STATECHANGE( rmesa, ctx );
+--- Mesa-6.5.2/src/mesa/drivers/dri/r200/r200_state.c.radeon-231787	2006-11-15 14:54:40.000000000 -0500
++++ Mesa-6.5.2/src/mesa/drivers/dri/r200/r200_state.c	2007-04-10 14:51:44.000000000 -0400
+@@ -1890,6 +1890,8 @@
+ 
+    if (rmesa->state.scissor.enabled)
+       r200RecalcScissorRects( rmesa );
++
++   rmesa->lastStamp = drawable->lastStamp;
+ }
+ 
+ 
+--- Mesa-6.5.2/src/mesa/drivers/dri/r200/r200_context.c.radeon-231787	2007-04-10 14:50:43.000000000 -0400
++++ Mesa-6.5.2/src/mesa/drivers/dri/r200/r200_context.c	2007-04-10 14:51:44.000000000 -0400
+@@ -694,11 +694,13 @@
+ 				&newCtx->vbl_seq );
+       }
+ 
++      newCtx->dri.readable = driReadPriv;
++
+       if ( newCtx->dri.drawable != driDrawPriv ||
+-           newCtx->dri.readable != driReadPriv ) {
++           newCtx->lastStamp != driDrawPriv->lastStamp ) {
+ 	 newCtx->dri.drawable = driDrawPriv;
+-	 newCtx->dri.readable = driReadPriv;
+ 
++	 r200SetCliprects(newCtx, GL_BACK_LEFT);
+ 	 r200UpdateWindow( newCtx->glCtx );
+ 	 r200UpdateViewportOffset( newCtx->glCtx );
+       }
+--- Mesa-6.5.2/src/mesa/drivers/dri/r300/radeon_context.c.radeon-231787	2006-11-15 09:55:48.000000000 -0500
++++ Mesa-6.5.2/src/mesa/drivers/dri/r300/radeon_context.c	2007-04-10 14:52:07.000000000 -0400
+@@ -51,6 +51,7 @@
+ #include "radeon_macros.h"
+ #include "radeon_reg.h"
+ 
++#include "radeon_state.h"
+ #include "r300_state.h"
+ 
+ #include "utils.h"
+@@ -279,6 +280,8 @@
+ 
+ 			r300UpdateWindow(radeon->glCtx);
+ 			r300UpdateViewportOffset(radeon->glCtx);
++
++			radeonSetCliprects(radeon);
+ 		}
+ 
+ 		_mesa_make_current(radeon->glCtx,
+--- Mesa-6.5.2/src/mesa/drivers/dri/r300/radeon_state.c.radeon-231787	2006-11-15 09:55:48.000000000 -0500
++++ Mesa-6.5.2/src/mesa/drivers/dri/r300/radeon_state.c	2007-04-10 14:52:07.000000000 -0400
+@@ -185,6 +185,8 @@
+ 
+ 	if (radeon->state.scissor.enabled)
+ 		radeonRecalcScissorRects(radeon);
++
++	radeon->lastStamp = drawable->lastStamp;
+ }
+ 
+ 
+--- Mesa-6.5.2/src/mesa/drivers/dri/r300/radeon_lock.c.radeon-231787	2006-11-01 13:52:11.000000000 -0500
++++ Mesa-6.5.2/src/mesa/drivers/dri/r300/radeon_lock.c	2007-04-10 14:52:07.000000000 -0400
+@@ -90,7 +90,6 @@
+ #else
+ 		radeonUpdateScissor(radeon->glCtx);
+ #endif
+-		radeon->lastStamp = drawable->lastStamp;
+ 	}
+ 
+ 	if (sarea->ctx_owner != radeon->dri.hwContext) {
+--- Mesa-6.5.2/src/mesa/drivers/dri/radeon/radeon_context.c.radeon-231787	2007-04-10 14:50:43.000000000 -0400
++++ Mesa-6.5.2/src/mesa/drivers/dri/radeon/radeon_context.c	2007-04-10 14:51:44.000000000 -0400
+@@ -615,12 +615,14 @@
+ 	 driDrawableInitVBlank( driDrawPriv, newCtx->vblank_flags,
+ 				&newCtx->vbl_seq );
+       }
+-      
+-      if ( (newCtx->dri.drawable != driDrawPriv)
+-	   || (newCtx->dri.readable != driReadPriv) ) {
++
++      newCtx->dri.readable = driReadPriv;
++
++      if ( (newCtx->dri.drawable != driDrawPriv) ||
++           newCtx->lastStamp != driDrawPriv->lastStamp ) {
+ 	 newCtx->dri.drawable = driDrawPriv;
+-	 newCtx->dri.readable = driReadPriv;
+ 
++	 radeonSetCliprects(newCtx);
+ 	 radeonUpdateWindow( newCtx->glCtx );
+ 	 radeonUpdateViewportOffset( newCtx->glCtx );
+       }
+--- Mesa-6.5.2/src/mesa/drivers/dri/radeon/radeon_state.c.radeon-231787	2006-11-01 13:52:11.000000000 -0500
++++ Mesa-6.5.2/src/mesa/drivers/dri/radeon/radeon_state.c	2007-04-10 14:51:44.000000000 -0400
+@@ -1676,6 +1676,8 @@
+ 
+    if (rmesa->state.scissor.enabled)
+       radeonRecalcScissorRects( rmesa );
++
++   rmesa->lastStamp = drawable->lastStamp;
+ }
+ 
+ 
+--- Mesa-6.5.2/src/mesa/drivers/dri/radeon/radeon_lock.c.radeon-231787	2006-10-19 10:32:06.000000000 -0400
++++ Mesa-6.5.2/src/mesa/drivers/dri/radeon/radeon_lock.c	2007-04-10 14:51:44.000000000 -0400
+@@ -96,7 +96,6 @@
+       radeonSetCliprects( rmesa );
+       radeonUpdateViewportOffset( rmesa->glCtx );
+       driUpdateFramebufferSize(rmesa->glCtx, drawable);
+-      rmesa->lastStamp = drawable->lastStamp;
+    }
+ 
+    RADEON_STATECHANGE( rmesa, ctx );

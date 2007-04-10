@@ -31,7 +31,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 6.5.2
-Release: 9%{?dist}
+Release: 10%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -50,6 +50,7 @@ Patch20: mesa-6.5.2-libgl-visibility.patch
 Patch21: mesa-6.5.2-picify-dri-drivers.patch
 Patch22: mesa-6.5.2-hush-synthetic-visual-warning.patch
 Patch23: mesa-6.5.2-bindcontext-paranoia.patch
+Patch24: mesa-6.5.2-radeon-backports-231787.patch
 
 BuildRequires: pkgconfig
 %if %{with_dri}
@@ -167,6 +168,7 @@ The glx-utils package provides the glxinfo and glxgears utilities.
 %patch21 -p1 -b .picify
 %patch22 -p1 -b .visual-warning
 %patch23 -p1 -b .bindcontext
+%patch24 -p1 -b .radeon-231787
 
 # WARNING: The following files are copyright "Mark J. Kilgard" under the GLUT
 # license and are not open source/free software, so we remove them.
@@ -336,6 +338,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/glxinfo
 
 %changelog
+* Tue Apr 10 2007 Adam Jackson <ajax@redhat.com> 6.5.2-10
+- mesa-6.5.2-radeon-backports-231787.patch: Backport various radeon bugfixes
+  from git. (#231787)
+
 * Wed Apr 04 2007 Adam Jackson <ajax@redhat.com> 6.5.2-9
 - mesa-6.5.2-bindcontext-paranoia.patch: Paper over a crash when doBindContext
   fails, to avoid, for example, crashing the server when using tdfx but
