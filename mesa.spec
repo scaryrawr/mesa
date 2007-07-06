@@ -31,7 +31,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 6.5.2
-Release: 10%{?dist}
+Release: 11%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -51,6 +51,7 @@ Patch21: mesa-6.5.2-picify-dri-drivers.patch
 Patch22: mesa-6.5.2-hush-synthetic-visual-warning.patch
 Patch23: mesa-6.5.2-bindcontext-paranoia.patch
 Patch24: mesa-6.5.2-radeon-backports-231787.patch
+Patch25: mesa-6.5.2-via-respect-my-cliplist.patch
 
 BuildRequires: pkgconfig
 %if %{with_dri}
@@ -169,6 +170,7 @@ The glx-utils package provides the glxinfo and glxgears utilities.
 %patch22 -p1 -b .visual-warning
 %patch23 -p1 -b .bindcontext
 %patch24 -p1 -b .radeon-231787
+%patch25 -p1 -b .via-cliplist
 
 # WARNING: The following files are copyright "Mark J. Kilgard" under the GLUT
 # license and are not open source/free software, so we remove them.
@@ -338,6 +340,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/glxinfo
 
 %changelog
+* Fri Jul 06 2007 Adam Jackson <ajax@redhat.com> 6.5.2-11
+- mesa-6.5.2-via-respect-my-cliplist.patch: Backport a via fix. (#247254)
+
 * Tue Apr 10 2007 Adam Jackson <ajax@redhat.com> 6.5.2-10
 - mesa-6.5.2-radeon-backports-231787.patch: Backport various radeon bugfixes
   from git. (#231787)
