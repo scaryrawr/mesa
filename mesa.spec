@@ -31,7 +31,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 6.5.2
-Release: 12%{?dist}
+Release: 13%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -330,6 +330,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/glxinfo
 
 %changelog
+* Mon Jul 09 2007 Adam Jackson <ajax@redhat.com> 6.5.2-13
+- mesa-6.5.2-radeon-backports-231787.patch: One more fix for r300. (#231787)
+
 * Mon Jul 09 2007 Adam Jackson <ajax@redhat.com> 6.5.2-12
 - Don't install header files for APIs that we don't provide. (#247390)
 
