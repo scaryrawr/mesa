@@ -31,7 +31,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 6.5.2
-Release: 11%{?dist}
+Release: 12%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -216,7 +216,8 @@ rm -rf $RPM_BUILD_ROOT
 # handpick and manually install the parts we want.
 
 install -d $RPM_BUILD_ROOT%{_includedir}/GL
-install -m 644 include/GL/*.h $RPM_BUILD_ROOT%{_includedir}/GL
+install -m 644 include/GL/{gl,o,x}*.h $RPM_BUILD_ROOT%{_includedir}/GL
+rm -f $RPM_BUILD_ROOT%{_includedir}/GL/glfbdev.h
 
 install -d $RPM_BUILD_ROOT%{_libdir}
 cp -d -f %{_lib}/lib* $RPM_BUILD_ROOT%{_libdir}
@@ -277,23 +278,12 @@ rm -rf $RPM_BUILD_ROOT
 
 %files libGL-devel
 %defattr(-,root,root,-)
-%{_includedir}/GL/amesa.h
-%{_includedir}/GL/dmesa.h
-%{_includedir}/GL/fxmesa.h
-%{_includedir}/GL/ggimesa.h
 %{_includedir}/GL/gl.h
 %{_includedir}/GL/gl_mangle.h
 %{_includedir}/GL/glext.h
-%{_includedir}/GL/glfbdev.h
 %{_includedir}/GL/glx.h
 %{_includedir}/GL/glx_mangle.h
 %{_includedir}/GL/glxext.h
-%{_includedir}/GL/mesa_wgl.h
-%{_includedir}/GL/mglmesa.h
-%{_includedir}/GL/svgamesa.h
-%{_includedir}/GL/uglmesa.h
-%{_includedir}/GL/vms_x_fix.h
-%{_includedir}/GL/wmesa.h
 %{_includedir}/GL/xmesa.h
 %{_includedir}/GL/xmesa_x.h
 %{_includedir}/GL/xmesa_xf86.h
@@ -340,6 +330,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/glxinfo
 
 %changelog
+* Mon Jul 09 2007 Adam Jackson <ajax@redhat.com> 6.5.2-12
+- Don't install header files for APIs that we don't provide. (#247390)
+
 * Fri Jul 06 2007 Adam Jackson <ajax@redhat.com> 6.5.2-11
 - mesa-6.5.2-via-respect-my-cliplist.patch: Backport a via fix. (#247254)
 
