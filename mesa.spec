@@ -1,6 +1,7 @@
-# Architechture specific configuration
-# FIXME:  Should build with DRI support everywhere, and select target is some
-# other more pleasant fashion
+# When bootstrapping an arch, omit the -demos subpackage.
+
+# Architechture specific configuration.  FIXME:  Should build with DRI support
+# everywhere, and select target is some other more pleasant fashion.
 
 %ifarch s390 s390x
 %define with_dri 0
@@ -31,7 +32,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 6.5.2
-Release: 13%{?dist}
+Release: 14%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -52,6 +53,7 @@ Patch22: mesa-6.5.2-hush-synthetic-visual-warning.patch
 Patch23: mesa-6.5.2-bindcontext-paranoia.patch
 Patch24: mesa-6.5.2-radeon-backports-231787.patch
 Patch25: mesa-6.5.2-via-respect-my-cliplist.patch
+Patch26: mesa-6.5.2-fix-glut-demos.patch
 
 BuildRequires: pkgconfig
 %if %{with_dri}
@@ -63,6 +65,7 @@ BuildRequires: xorg-x11-proto-devel >= 7.1-8
 BuildRequires: makedepend
 BuildRequires: libselinux-devel
 BuildRequires: libXext-devel
+BuildRequires: freeglut-devel
 
 %description
 Mesa
@@ -157,8 +160,17 @@ Group: Development/Libraries
 The glx-utils package provides the glxinfo and glxgears utilities.
 
 
+%package demos
+Summary: Mesa demos
+Group: Development/Libraries
+
+%description demos
+This package provides some demo applications for testing Mesa.
+
+
 %prep
 %setup -q -n Mesa-%{version} -b1 -b2
+chmod a-x progs/demos/glslnoise.c
 
 %patch0 -p1 -b .build-config
 %patch4 -p0 -b .dont-libglut-me-harder-ok-thx-bye
@@ -171,11 +183,17 @@ The glx-utils package provides the glxinfo and glxgears utilities.
 %patch23 -p1 -b .bindcontext
 %patch24 -p1 -b .radeon-231787
 %patch25 -p1 -b .via-cliplist
+%patch26 -p1 -b .glutinit
 
 # WARNING: The following files are copyright "Mark J. Kilgard" under the GLUT
 # license and are not open source/free software, so we remove them.
 rm -f include/GL/uglglutshapes.h
 
+# Hack the demos to use installed data files
+sed -i -e 's,../images,%{_libdir}/mesa-demos-data,' progs/demos/*.c
+sed -i -e 's,geartrain.dat,%{_libdir}/mesa-demos-data/geartrain.dat,' progs/demos/geartrain.c
+sed -i -e 's,isosurf.dat,%{_libdir}/mesa-demos-data/isosurf.dat,' progs/demos/isosurf.c
+sed -i -e 's,"terrain.dat","%{_libdir}/mesa-demos-data/terrain.dat",' progs/demos/terrain.c
 
 %build
 
@@ -197,6 +215,7 @@ done
 echo "Building %{dri_target}"
 make %{?_smp_mflags} %{dri_target}
 make -C progs/xdemos glxgears glxinfo
+make -C progs/demos
 mv preserve/* %{_lib}
 ln -s libOSMesa.so.6 %{_lib}/libOSMesa.so 
 ln -s libOSMesa16.so.6 %{_lib}/libOSMesa16.so
@@ -225,6 +244,12 @@ cp -d -f %{_lib}/lib* $RPM_BUILD_ROOT%{_libdir}
 install -d $RPM_BUILD_ROOT%{_bindir}
 install -m 0755 progs/xdemos/glxgears $RPM_BUILD_ROOT%{_bindir}
 install -m 0755 progs/xdemos/glxinfo $RPM_BUILD_ROOT%{_bindir}
+
+find progs/demos/ -type f -perm /0111 |
+    xargs install -m 0755 -t $RPM_BUILD_ROOT/%{_bindir}
+install -d $RPM_BUILD_ROOT/%{_libdir}/mesa-demos-data
+install -m 0644 progs/images/*.rgb $RPM_BUILD_ROOT/%{_libdir}/mesa-demos-data
+install -m 0644 progs/demos/*.dat $RPM_BUILD_ROOT/%{_libdir}/mesa-demos-data
 
 %if %{with_dri}
 install -d $RPM_BUILD_ROOT%{_libdir}/dri
@@ -329,7 +354,64 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/glxgears
 %{_bindir}/glxinfo
 
+%files demos
+%defattr(-,root,root,-)
+%{_bindir}/arbfplight
+%{_bindir}/arbfslight
+%{_bindir}/arbocclude
+%{_bindir}/bounce
+%{_bindir}/clearspd
+%{_bindir}/cubemap
+%{_bindir}/drawpix
+%{_bindir}/engine
+%{_bindir}/fire
+%{_bindir}/fogcoord
+%{_bindir}/fplight
+%{_bindir}/fslight
+%{_bindir}/gamma
+%{_bindir}/gearbox
+%{_bindir}/gears
+%{_bindir}/geartrain
+%{_bindir}/glinfo
+%{_bindir}/gloss
+%{_bindir}/glslnoise
+%{_bindir}/gltestperf
+%{_bindir}/glutfx
+%{_bindir}/ipers
+%{_bindir}/isosurf
+%{_bindir}/lodbias
+%{_bindir}/morph3d
+%{_bindir}/multiarb
+%{_bindir}/paltex
+%{_bindir}/pointblast
+%{_bindir}/ray
+%{_bindir}/readpix
+%{_bindir}/reflect
+%{_bindir}/renormal
+%{_bindir}/shadowtex
+%{_bindir}/singlebuffer
+%{_bindir}/spectex
+%{_bindir}/spriteblast
+%{_bindir}/stex3d
+%{_bindir}/streaming_rect
+%{_bindir}/teapot
+%{_bindir}/terrain
+%{_bindir}/tessdemo
+%{_bindir}/texcyl
+%{_bindir}/texdown
+%{_bindir}/texenv
+%{_bindir}/texobj
+%{_bindir}/trispd
+%{_bindir}/tunnel
+%{_bindir}/tunnel2
+%{_bindir}/vao_demo
+%{_bindir}/winpos
+%{_libdir}/mesa-demos-data
+
 %changelog
+* Tue Jul 10 2007 Adam Jackson <ajax@redhat.com> 6.5.2-14
+- Add mesa-demos subpackage. (#247252)
+
 * Mon Jul 09 2007 Adam Jackson <ajax@redhat.com> 6.5.2-13
 - mesa-6.5.2-radeon-backports-231787.patch: One more fix for r300. (#231787)
 
