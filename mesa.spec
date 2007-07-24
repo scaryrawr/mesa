@@ -32,7 +32,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 6.5.2
-Release: 14%{?dist}
+Release: 15%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -93,6 +93,7 @@ Requires: mesa-libGL = %{version}-%{release}
 Requires: libX11-devel
 Provides: libGL-devel
 Obsoletes: Mesa-devel XFree86-devel xorg-x11-devel
+Conflicts: xorg-x11-proto-devel <= 7.2-12
 
 %description libGL-devel
 Mesa libGL development package
@@ -236,6 +237,8 @@ rm -rf $RPM_BUILD_ROOT
 
 install -d $RPM_BUILD_ROOT%{_includedir}/GL
 install -m 644 include/GL/{gl,o,x}*.h $RPM_BUILD_ROOT%{_includedir}/GL
+install -d $RPM_BUILD_ROOT%{_includedir}/GL/internal
+install -m 644 include/GL/internal/dri_interface.h $RPM_BUILD_ROOT%{_includedir}/GL/internal
 rm -f $RPM_BUILD_ROOT%{_includedir}/GL/glfbdev.h
 
 install -d $RPM_BUILD_ROOT%{_libdir}
@@ -312,6 +315,8 @@ rm -rf $RPM_BUILD_ROOT
 %{_includedir}/GL/xmesa.h
 %{_includedir}/GL/xmesa_x.h
 %{_includedir}/GL/xmesa_xf86.h
+%dir %{_includedir}/GL/internal
+%{_includedir}/GL/internal/dri_interface.h
 %{_libdir}/libGL.so
 %{_datadir}/man/man3/gl[^uX]*.3gl.gz
 %{_datadir}/man/man3/glX*.3gl.gz
@@ -409,6 +414,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/mesa-demos-data
 
 %changelog
+* Tue Jul 24 2007 Adam Jackson <ajax@redhat.com> 6.5.2-15
+- Add dri_interface.h to mesa-libGL-devel, and conflict with
+  xorg-x11-proto-devel versions that attempted to provide it.
+
 * Tue Jul 10 2007 Adam Jackson <ajax@redhat.com> 6.5.2-14
 - Add mesa-demos subpackage. (#247252)
 
