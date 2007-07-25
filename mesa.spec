@@ -32,7 +32,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 6.5.2
-Release: 15%{?dist}
+Release: 16%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -414,6 +414,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/mesa-demos-data
 
 %changelog
+* Wed Jul 25 2007 Jesse Keating <jkeating@redhat.com> - 6.5.2-16
+- Rebuild for RH #249435
+
 * Tue Jul 24 2007 Adam Jackson <ajax@redhat.com> 6.5.2-15
 - Add dri_interface.h to mesa-libGL-devel, and conflict with
   xorg-x11-proto-devel versions that attempted to provide it.
