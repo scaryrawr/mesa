@@ -31,8 +31,8 @@
 
 Summary: Mesa graphics libraries
 Name: mesa
-Version: 6.5.2
-Release: 16%{?dist}
+Version: 7.0.1
+Release: 1%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -42,18 +42,14 @@ Source0: http://internap.dl.sourceforge.net/sourceforge/mesa3d/MesaLib-%{version
 Source1: http://internap.dl.sourceforge.net/sourceforge/mesa3d/MesaDemos-%{version}.tar.bz2
 Source2: %{manpages}.tar.bz2
 
-Patch0: mesa-6.5.1-build-config.patch
+Patch0: mesa-7.0-build-config.patch
 Patch4: mesa-6.5-dont-libglut-me-harder-ok-thx-bye.patch
 Patch5: mesa-6.5.2-xserver-1.1-source-compat.patch
-Patch18: mesa-6.5.1-selinux-awareness.patch
-Patch19: mesa-6.5.2-r300-parallel-build.patch
-Patch20: mesa-6.5.2-libgl-visibility.patch
-Patch21: mesa-6.5.2-picify-dri-drivers.patch
+Patch18: mesa-7.0-selinux-awareness.patch
 Patch22: mesa-6.5.2-hush-synthetic-visual-warning.patch
 Patch23: mesa-6.5.2-bindcontext-paranoia.patch
-Patch24: mesa-6.5.2-radeon-backports-231787.patch
-Patch25: mesa-6.5.2-via-respect-my-cliplist.patch
-Patch26: mesa-6.5.2-fix-glut-demos.patch
+Patch24: mesa-7.0-i-already-defined-glapi-you-twit.patch
+Patch25: mesa-7.0-symlinks-before-depend.patch
 
 BuildRequires: pkgconfig
 %if %{with_dri}
@@ -177,14 +173,10 @@ chmod a-x progs/demos/glslnoise.c
 %patch4 -p0 -b .dont-libglut-me-harder-ok-thx-bye
 %patch5 -p1 -b .xserver-1.1-compat
 %patch18 -p1 -b .selinux-awareness
-%patch19 -p1 -b .r300-make-j
-%patch20 -p1 -b .libgl-visibility
-%patch21 -p1 -b .picify
 %patch22 -p1 -b .visual-warning
 %patch23 -p1 -b .bindcontext
-%patch24 -p1 -b .radeon-231787
-%patch25 -p1 -b .via-cliplist
-%patch26 -p1 -b .glutinit
+%patch24 -p1 -b .glapi
+%patch25 -p1 -b .makej
 
 # WARNING: The following files are copyright "Mark J. Kilgard" under the GLUT
 # license and are not open source/free software, so we remove them.
@@ -336,11 +328,11 @@ rm -rf $RPM_BUILD_ROOT
 %files libOSMesa
 %defattr(-,root,root,-)
 %{_libdir}/libOSMesa.so.6
-%{_libdir}/libOSMesa.so.%{version}
+%{_libdir}/libOSMesa.so.6.5.3
 %{_libdir}/libOSMesa16.so.6
-%{_libdir}/libOSMesa16.so.%{version}
+%{_libdir}/libOSMesa16.so.6.5.3
 %{_libdir}/libOSMesa32.so.6
-%{_libdir}/libOSMesa32.so.%{version}
+%{_libdir}/libOSMesa32.so.6.5.3
 
 %files libOSMesa-devel
 %defattr(-,root,root,-)
@@ -414,6 +406,12 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/mesa-demos-data
 
 %changelog
+* Mon Aug 13 2007 Dave Airlie <airlied@redhat.com> - 7.0.1-1
+- Rebase to upstream 7.0.1 release
+- ajax provided patches: for updated selinux awareness, build config
+- gl visibility and picify were fixed upstream
+- OS mesa library version are 6.5.3 not 7.0.1 - spec fix
+
 * Wed Jul 25 2007 Jesse Keating <jkeating@redhat.com> - 6.5.2-16
 - Rebuild for RH #249435
 

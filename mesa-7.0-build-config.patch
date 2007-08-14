@@ -1,0 +1,231 @@
+diff -up mesa-20070725/configs/linux.build-config mesa-20070725/configs/linux
+--- mesa-20070725/configs/linux.build-config	2007-07-25 09:36:03.000000000 -0400
++++ mesa-20070725/configs/linux	2007-07-25 10:33:03.000000000 -0400
+@@ -8,7 +8,9 @@ CONFIG_NAME = linux
+ CC = gcc
+ CXX = g++
+ 
+-OPT_FLAGS  = -O3 -g
++MKDEP = true
++
++OPT_FLAGS ?= -O3 -g
+ PIC_FLAGS  = -fPIC
+ 
+ # Add '-DGLX_USE_TLS' to ARCH_FLAGS to enable TLS support.  Add -m32
+diff -up mesa-20070725/configs/linux-indirect.build-config mesa-20070725/configs/linux-indirect
+--- mesa-20070725/configs/linux-indirect.build-config	2007-07-25 09:36:03.000000000 -0400
++++ mesa-20070725/configs/linux-indirect	2007-07-25 10:34:40.000000000 -0400
+@@ -15,7 +15,7 @@ CXX = g++
+ #MKDEP_OPTIONS = -MF depend
+ 
+ WARN_FLAGS = -Wall
+-OPT_FLAGS  = -O -g
++OPT_FLAGS  ?= -O -g
+ PIC_FLAGS  = -fPIC
+ 
+ # Add '-DGLX_USE_TLS' to ARCH_FLAGS to enable TLS support.
+@@ -44,7 +44,7 @@ GL_LIB_DEPS   = $(EXTRA_LIB_PATH) -lX11 
+ 
+ 
+ # Directories
+-SRC_DIRS = glx/x11 glu glut/glx glw
++SRC_DIRS = glx/x11 glu
+ DRIVER_DIRS =
+ PROGRAM_DIRS = 
+ WINDOW_SYSTEM=dri
+diff -up mesa-20070725/configs/linux-dri.build-config mesa-20070725/configs/linux-dri
+--- mesa-20070725/configs/linux-dri.build-config	2007-07-25 09:36:03.000000000 -0400
++++ mesa-20070725/configs/linux-dri	2007-07-25 10:34:31.000000000 -0400
+@@ -12,8 +12,9 @@ CXX = g++
+ #MKDEP = /usr/X11R6/bin/makedepend
+ #MKDEP = gcc -M
+ #MKDEP_OPTIONS = -MF depend
++MKDEP = true
+ 
+-OPT_FLAGS  = -O -g
++OPT_FLAGS ?= -O -g
+ PIC_FLAGS  = -fPIC
+ 
+ # Add '-DGLX_USE_TLS' to ARCH_FLAGS to enable TLS support.
+@@ -25,8 +26,6 @@ DEFINES = -D_POSIX_SOURCE -D_POSIX_C_SOU
+ 	-DGLX_DIRECT_RENDERING -DGLX_INDIRECT_RENDERING \
+ 	-DHAVE_ALIAS -DHAVE_POSIX_MEMALIGN
+ 
+-X11_INCLUDES = -I/usr/X11R6/include
+-
+ CFLAGS = -Wall -Wmissing-prototypes -std=c99 -ffast-math \
+ 	$(OPT_FLAGS) $(PIC_FLAGS) $(ARCH_FLAGS) $(DEFINES) $(ASM_FLAGS)
+ 
+@@ -36,7 +35,7 @@ CXXFLAGS = -Wall $(OPT_FLAGS) $(PIC_FLAG
+ ASM_SOURCES = 
+ 
+ # Library/program dependencies
+-EXTRA_LIB_PATH=-L/usr/X11R6/lib
++EXTRA_LIB_PATH =
+ 
+ LIBDRM_CFLAGS = `pkg-config --cflags libdrm`
+ LIBDRM_LIB = `pkg-config --libs libdrm`
+@@ -54,10 +53,10 @@ USING_EGL=0
+ 
+ # Directories
+ ifeq ($(USING_EGL), 1)
+-SRC_DIRS = egl glx/x11 mesa glu glut/glx glw
++SRC_DIRS = egl glx/x11 mesa glu glut/glx
+ PROGRAM_DIRS = egl
+ else
+-SRC_DIRS = glx/x11 mesa glu glut/glx glw
++SRC_DIRS = glx/x11 mesa glu
+ PROGRAM_DIRS =
+ endif
+ 
+@@ -67,4 +66,4 @@ WINDOW_SYSTEM=dri
+ # gamma are missing because they have not been converted to use the new
+ # interface.
+ DRI_DIRS = i810 i915tex i915 i965 mach64 mga r128 r200 r300 radeon s3v \
+-	savage sis tdfx trident unichrome ffb
++	savage tdfx trident unichrome ffb # sis
+diff -up mesa-20070725/configs/linux-dri-x86.build-config mesa-20070725/configs/linux-dri-x86
+--- mesa-20070725/configs/linux-dri-x86.build-config	2007-07-25 09:36:03.000000000 -0400
++++ mesa-20070725/configs/linux-dri-x86	2007-07-25 10:33:03.000000000 -0400
+@@ -6,7 +6,7 @@ include $(TOP)/configs/linux-dri
+ CONFIG_NAME = linux-dri-x86
+ 
+ # Unnecessary on x86, generally.
+-PIC_FLAGS = 
++# PIC_FLAGS = 
+ 
+ # Add -m32 to CFLAGS:
+ ARCH_FLAGS = -m32
+diff -up mesa-20070725/configs/default.build-config mesa-20070725/configs/default
+--- mesa-20070725/configs/default.build-config	2007-07-25 09:36:03.000000000 -0400
++++ mesa-20070725/configs/default	2007-07-25 10:34:20.000000000 -0400
+@@ -58,8 +58,8 @@ GLW_SOURCES = GLwDrawA.c
+ 
+ 
+ # Directories to build
+-LIB_DIR = lib
+-SRC_DIRS = mesa glu glut/glx glw
++LIB_DIR ?= lib
++SRC_DIRS = mesa glu
+ GLU_DIRS = sgi
+ DRIVER_DIRS = x11 osmesa
+ # Which subdirs under $(TOP)/progs/ to enter:
+@@ -72,14 +72,14 @@ GL_LIB_DEPS = $(EXTRA_LIB_PATH) -lX11 -l
+ OSMESA_LIB_DEPS = -L$(TOP)/$(LIB_DIR) -l$(GL_LIB)
+ GLU_LIB_DEPS = -L$(TOP)/$(LIB_DIR) -l$(GL_LIB) -lm
+ GLUT_LIB_DEPS = -L$(TOP)/$(LIB_DIR) -l$(GLU_LIB) -l$(GL_LIB) $(EXTRA_LIB_PATH) -lX11 -lXmu -lXt -lXi -lm
+-GLW_LIB_DEPS = -L$(TOP)/$(LIB_DIR) -l$(GL_LIB) $(EXTRA_LIB_PATH) -lXt -lX11
++GLW_LIB_DEPS = -L$(TOP)/$(LIB_DIR) -l$(GL_LIB) -lXm $(EXTRA_LIB_PATH) -lXt -lX11
+ APP_LIB_DEPS = -L$(TOP)/$(LIB_DIR) -l$(GLUT_LIB) -l$(GLU_LIB) -l$(GL_LIB) -lm
+ 
+ 
+ 
+ # Installation directories (for make install)
+ INSTALL_DIR = /usr/local
+-DRI_DRIVER_INSTALL_DIR = /usr/X11R6/lib/modules/dri
++DRI_DRIVER_INSTALL_DIR = $(DRI_DRIVER_DIR)
+ 
+ # Where libGL will look for DRI hardware drivers
+ DRI_DRIVER_SEARCH_DIR = $(DRI_DRIVER_INSTALL_DIR)
+diff -up mesa-20070725/configs/linux-dri-ppc.build-config mesa-20070725/configs/linux-dri-ppc
+--- mesa-20070725/configs/linux-dri-ppc.build-config	2007-07-25 09:36:03.000000000 -0400
++++ mesa-20070725/configs/linux-dri-ppc	2007-07-25 10:33:03.000000000 -0400
+@@ -5,7 +5,7 @@ include $(TOP)/configs/linux-dri
+ 
+ CONFIG_NAME = linux-dri-ppc
+ 
+-OPT_FLAGS = -Os -mcpu=603
++OPT_FLAGS ?= -Os -mcpu=603
+ PIC_FLAGS = -fPIC
+ 
+ ASM_FLAGS = -DUSE_PPC_ASM -DUSE_VMX_ASM
+diff -up mesa-20070725/configs/linux-osmesa16.build-config mesa-20070725/configs/linux-osmesa16
+--- mesa-20070725/configs/linux-osmesa16.build-config	2007-07-25 09:36:03.000000000 -0400
++++ mesa-20070725/configs/linux-osmesa16	2007-07-25 10:33:03.000000000 -0400
+@@ -7,8 +7,10 @@ CONFIG_NAME = linux-osmesa16
+ # Compiler and flags
+ CC = gcc
+ CXX = g++
+-CFLAGS = -O3 -ansi -pedantic -fPIC -ffast-math -D_POSIX_SOURCE -D_POSIX_C_SOURCE=199309L -D_SVID_SOURCE -D_BSD_SOURCE -DUSE_XSHM -DPTHREADS -I/usr/X11R6/include -DCHAN_BITS=16 -DDEFAULT_SOFTWARE_DEPTH_BITS=31
+-CXXFLAGS = -O3 -ansi -pedantic -fPIC -ffast-math -D_POSIX_SOURCE -D_POSIX_C_SOURCE=199309L -D_SVID_SOURCE -D_BSD_SOURCE
++DEFINES = -D_POSIX_SOURCE -D_POSIX_C_SOURCE=199309L -D_SVID_SOURCE -D_BSD_SOURCE
++OPT_FLAGS ?= -O3 -ansi -pendantic -fPIC -ffast-math
++CFLAGS = $(OPT_FLAGS) $(DEFINES) -DCHAN_BITS=16 -DDEFAULT_SOFTWARE_DEPTH_BITS=31
++CXXFLAGS = $(OPT_FLAGS) $(DEFINES) 
+ 
+ 
+ # Library names
+@@ -17,12 +19,12 @@ OSMESA_LIB_NAME = libOSMesa16.so
+ 
+ 
+ # Directories
+-SRC_DIRS = mesa glu
++SRC_DIRS = mesa
+ DRIVER_DIRS = osmesa
+ PROGRAM_DIRS = 
+ 
+ 
+ # Dependencies
+-OSMESA_LIB_DEPS = -lm -lpthread
++OSMESA_LIB_DEPS = -lm -lpthread -lselinux
+ GLU_LIB_DEPS = -L$(TOP)/$(LIB_DIR) -l$(OSMESA_LIB)
+ APP_LIB_DEPS = -lOSMesa16
+diff -up mesa-20070725/configs/linux-osmesa32.build-config mesa-20070725/configs/linux-osmesa32
+--- mesa-20070725/configs/linux-osmesa32.build-config	2007-07-25 09:36:03.000000000 -0400
++++ mesa-20070725/configs/linux-osmesa32	2007-07-25 10:33:03.000000000 -0400
+@@ -7,8 +7,10 @@ CONFIG_NAME = linux-osmesa32
+ # Compiler and flags
+ CC = gcc
+ CXX = g++
+-CFLAGS = -O3 -ansi -pedantic -fPIC -ffast-math -D_POSIX_SOURCE -D_POSIX_C_SOURCE=199309L -D_SVID_SOURCE -D_BSD_SOURCE -DUSE_XSHM -DPTHREADS -I/usr/X11R6/include -DCHAN_BITS=32 -DDEFAULT_SOFTWARE_DEPTH_BITS=31
+-CXXFLAGS = -O3 -ansi -pedantic -fPIC -ffast-math -D_POSIX_SOURCE -D_POSIX_C_SOURCE=199309L -D_SVID_SOURCE -D_BSD_SOURCE
++DEFINES = -D_POSIX_SOURCE -D_POSIX_C_SOURCE=199309L -D_SVID_SOURCE -D_BSD_SOURCE
++OPT_FLAGS ?= -O3 -ansi -pendantic -fPIC -ffast-math
++CFLAGS = $(OPT_FLAGS) $(DEFINES) -DCHAN_BITS=32 -DDEFAULT_SOFTWARE_DEPTH_BITS=31
++CXXFLAGS = $(OPT_FLAGS) $(DEFINES) 
+ 
+ 
+ # Library names
+@@ -17,12 +19,12 @@ OSMESA_LIB_NAME = libOSMesa32.so
+ 
+ 
+ # Directories
+-SRC_DIRS = mesa glu
++SRC_DIRS = mesa
+ DRIVER_DIRS = osmesa
+ PROGRAM_DIRS = 
+ 
+ 
+ # Dependencies
+-OSMESA_LIB_DEPS = -lm -lpthread
++OSMESA_LIB_DEPS = -lm -lpthread -lselinux
+ GLU_LIB_DEPS = -L$(TOP)/$(LIB_DIR) -l$(OSMESA_LIB)
+ APP_LIB_DEPS = -lOSMesa32
+diff -up mesa-20070725/configs/linux-osmesa.build-config mesa-20070725/configs/linux-osmesa
+--- mesa-20070725/configs/linux-osmesa.build-config	2007-07-25 09:36:03.000000000 -0400
++++ mesa-20070725/configs/linux-osmesa	2007-07-25 10:33:03.000000000 -0400
+@@ -9,17 +9,18 @@ CONFIG_NAME = linux-osmesa
+ # Compiler and flags
+ CC = gcc
+ CXX = g++
+-CFLAGS = -O3 -ansi -pedantic -fPIC -ffast-math -D_POSIX_SOURCE -D_POSIX_C_SOURCE=199309L -D_SVID_SOURCE -D_BSD_SOURCE -DPTHREADS
+-CXXFLAGS = -O3 -ansi -pedantic -fPIC -ffast-math -D_POSIX_SOURCE -D_POSIX_C_SOURCE=199309L -D_SVID_SOURCE -D_BSD_SOURCE
+-
++DEFINES = -D_POSIX_SOURCE -D_POSIX_C_SOURCE=199309L -D_SVID_SOURCE -D_BSD_SOURCE
++OPT_FLAGS ?= -O3 -ansi -pendantic -fPIC -ffast-math
++CFLAGS = $(OPT_FLAGS) $(DEFINES)
++CXXFLAGS = $(OPT_FLAGS) $(DEFINES) 
+ 
+ # Directories
+-SRC_DIRS = mesa glu
++SRC_DIRS = mesa
+ DRIVER_DIRS = osmesa
+-PROGRAM_DIRS = osdemos
++PROGRAM_DIRS =
+ 
+ 
+ # Dependencies
+-OSMESA_LIB_DEPS = -lm -lpthread
++OSMESA_LIB_DEPS = -lm -lpthread -lselinux
+ GLU_LIB_DEPS = -L$(TOP)/$(LIB_DIR) -l$(OSMESA_LIB)
+ APP_LIB_DEPS = -lOSMesa -lGLU
