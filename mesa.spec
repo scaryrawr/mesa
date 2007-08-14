@@ -32,7 +32,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.0.1
-Release: 1%{?dist}
+Release: 2%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -62,6 +62,8 @@ BuildRequires: makedepend
 BuildRequires: libselinux-devel
 BuildRequires: libXext-devel
 BuildRequires: freeglut-devel
+BuildRequires: libXfixes-devel
+BuildRequires: libXdamage-devel
 
 %description
 Mesa
@@ -406,6 +408,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/mesa-demos-data
 
 %changelog
+* Tue Aug 14 2007 Dave Airlie <airlied@redhat.com> - 7.0.1-2
+- missing build requires for Xfixes-devel and Xdamage-devel
+
 * Mon Aug 13 2007 Dave Airlie <airlied@redhat.com> - 7.0.1-1
 - Rebase to upstream 7.0.1 release
 - ajax provided patches: for updated selinux awareness, build config
