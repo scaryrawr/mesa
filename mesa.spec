@@ -32,7 +32,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.0.1
-Release: 2%{?dist}
+Release: 3%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -50,6 +50,8 @@ Patch22: mesa-6.5.2-hush-synthetic-visual-warning.patch
 Patch23: mesa-6.5.2-bindcontext-paranoia.patch
 Patch24: mesa-7.0-i-already-defined-glapi-you-twit.patch
 Patch25: mesa-7.0-symlinks-before-depend.patch
+Patch26: mesa-7.0.1-stable-branch.patch
+Patch27: mesa-7.0-use_master-r300.patch
 
 BuildRequires: pkgconfig
 %if %{with_dri}
@@ -179,6 +181,8 @@ chmod a-x progs/demos/glslnoise.c
 %patch23 -p1 -b .bindcontext
 %patch24 -p1 -b .glapi
 %patch25 -p1 -b .makej
+%patch26 -p1 -b .stable
+%patch27 -p1 -b .r300
 
 # WARNING: The following files are copyright "Mark J. Kilgard" under the GLUT
 # license and are not open source/free software, so we remove them.
@@ -408,6 +412,11 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/mesa-demos-data
 
 %changelog
+* Wed Aug 15 2007 Dave Airlie <airlied@redhat.com> - 7.0.1-3
+- mesa-7.0.1-stable-branch.patch - Add patches from stable branch
+  includes support for some Intel chipsets
+- mesa-7.0-use_master-r300.patch - Add r300 driver from master
+
 * Tue Aug 14 2007 Dave Airlie <airlied@redhat.com> - 7.0.1-2
 - missing build requires for Xfixes-devel and Xdamage-devel
 
