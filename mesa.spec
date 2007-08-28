@@ -32,7 +32,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.0.1
-Release: 3%{?dist}
+Release: 4%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -58,7 +58,7 @@ BuildRequires: pkgconfig
 BuildRequires: libdrm-devel >= 2.3.0-1
 %endif
 BuildRequires: libXxf86vm-devel
-BuildRequires: expat-devel
+BuildRequires: expat-devel >= 2.0
 BuildRequires: xorg-x11-proto-devel >= 7.1-8
 BuildRequires: makedepend
 BuildRequires: libselinux-devel
@@ -412,6 +412,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/mesa-demos-data
 
 %changelog
+* Tue Aug 28 2007 Adam Jackson <ajax@redhat.com> 7.0.1-4
+- Rebuild for new libexpat.
+
 * Wed Aug 15 2007 Dave Airlie <airlied@redhat.com> - 7.0.1-3
 - mesa-7.0.1-stable-branch.patch - Add patches from stable branch
   includes support for some Intel chipsets
