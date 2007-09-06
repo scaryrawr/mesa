@@ -1,0 +1,19 @@
+commit 410d8f7cdb40889e66f5c6794878ad9a5f572ee7
+Author: Xiang, Haihao <haihao.xiang@intel.com>
+Date:   Wed Aug 29 10:13:10 2007 -0400
+
+    i965: samplers group in fours in WM_STATE. fix bug#9415
+
+diff --git a/src/mesa/drivers/dri/i965/brw_wm_state.c b/src/mesa/drivers/dri/i965/brw_wm_state.c
+index ff5cb31..5b4f2ab 100644
+--- a/src/mesa/drivers/dri/i965/brw_wm_state.c
++++ b/src/mesa/drivers/dri/i965/brw_wm_state.c
+@@ -117,7 +117,7 @@ static void upload_wm_unit(struct brw_context *brw )
+    wm.thread1.floating_point_mode = BRW_FLOATING_POINT_NON_IEEE_754;
+ 
+    /* CACHE_NEW_SAMPLER */
+-   wm.wm4.sampler_count = brw->wm.sampler_count;
++   wm.wm4.sampler_count = (brw->wm.sampler_count + 1) / 4;
+    wm.wm4.sampler_state_pointer = brw->wm.sampler_gs_offset >> 5;
+ 
+    /* BRW_NEW_FRAGMENT_PROGRAM */

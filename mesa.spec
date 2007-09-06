@@ -32,7 +32,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.0.1
-Release: 4%{?dist}
+Release: 5%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -52,6 +52,7 @@ Patch24: mesa-7.0-i-already-defined-glapi-you-twit.patch
 Patch25: mesa-7.0-symlinks-before-depend.patch
 Patch26: mesa-7.0.1-stable-branch.patch
 Patch27: mesa-7.0-use_master-r300.patch
+Patch28: mesa-7.0.1-965-sampler-crash.patch
 
 BuildRequires: pkgconfig
 %if %{with_dri}
@@ -183,6 +184,7 @@ chmod a-x progs/demos/glslnoise.c
 %patch25 -p1 -b .makej
 %patch26 -p1 -b .stable
 %patch27 -p1 -b .r300
+%patch28 -p1 -b .965-sampler
 
 # WARNING: The following files are copyright "Mark J. Kilgard" under the GLUT
 # license and are not open source/free software, so we remove them.
@@ -412,6 +414,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/mesa-demos-data
 
 %changelog
+* Thu Sep 06 2007 Adam Jackson <ajax@redhat.com> 7.0.1-5
+- mesa-7.0.1-965-sampler-crash.patch: Fix a crash with 965 in Torcs. (#262941)
+
 * Tue Aug 28 2007 Adam Jackson <ajax@redhat.com> 7.0.1-4
 - Rebuild for new libexpat.
 
