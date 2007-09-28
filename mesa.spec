@@ -32,7 +32,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.0.1
-Release: 5%{?dist}
+Release: 6%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -46,13 +46,10 @@ Patch0: mesa-7.0-build-config.patch
 Patch4: mesa-6.5-dont-libglut-me-harder-ok-thx-bye.patch
 Patch5: mesa-6.5.2-xserver-1.1-source-compat.patch
 Patch18: mesa-7.0-selinux-awareness.patch
-Patch22: mesa-6.5.2-hush-synthetic-visual-warning.patch
 Patch23: mesa-6.5.2-bindcontext-paranoia.patch
-Patch24: mesa-7.0-i-already-defined-glapi-you-twit.patch
 Patch25: mesa-7.0-symlinks-before-depend.patch
 Patch26: mesa-7.0.1-stable-branch.patch
 Patch27: mesa-7.0-use_master-r300.patch
-Patch28: mesa-7.0.1-965-sampler-crash.patch
 
 BuildRequires: pkgconfig
 %if %{with_dri}
@@ -178,13 +175,10 @@ chmod a-x progs/demos/glslnoise.c
 %patch4 -p0 -b .dont-libglut-me-harder-ok-thx-bye
 %patch5 -p1 -b .xserver-1.1-compat
 %patch18 -p1 -b .selinux-awareness
-%patch22 -p1 -b .visual-warning
 %patch23 -p1 -b .bindcontext
-%patch24 -p1 -b .glapi
 %patch25 -p1 -b .makej
 %patch26 -p1 -b .stable
 %patch27 -p1 -b .r300
-%patch28 -p1 -b .965-sampler
 
 # WARNING: The following files are copyright "Mark J. Kilgard" under the GLUT
 # license and are not open source/free software, so we remove them.
@@ -414,6 +408,15 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/mesa-demos-data
 
 %changelog
+* Fri Sep 28 2007 Dave Airlie <airlied@redhat.com> 7.0.1-6
+- mesa-7.0.1-stable-branch.patch - Updated to close to 7.0.2-rc1
+- This contains the fixes made to the upstream Mesa stable branch
+  including fixes for 965 vblank interrupt issues along with a fix
+  in the kernel - remove patches that already upstream.
+- mesa-6.5.2-hush-synthetic-visual-warning.patch - dropped
+- mesa-7.0-i-already-defined-glapi-you-twit.patch - dropped
+- mesa-7.0.1-965-sampler-crash.patch - dropped
+
 * Thu Sep 06 2007 Adam Jackson <ajax@redhat.com> 7.0.1-5
 - mesa-7.0.1-965-sampler-crash.patch: Fix a crash with 965 in Torcs. (#262941)
 
