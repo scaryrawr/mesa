@@ -32,7 +32,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.0.1
-Release: 6%{?dist}
+Release: 7%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -50,6 +50,8 @@ Patch23: mesa-6.5.2-bindcontext-paranoia.patch
 Patch25: mesa-7.0-symlinks-before-depend.patch
 Patch26: mesa-7.0.1-stable-branch.patch
 Patch27: mesa-7.0-use_master-r300.patch
+Patch28: mesa-7.0.1-r300-fix-writemask.patch
+Patch29: mesa-7.0.1-r200-settexoffset.patch
 
 BuildRequires: pkgconfig
 %if %{with_dri}
@@ -179,6 +181,8 @@ chmod a-x progs/demos/glslnoise.c
 %patch25 -p1 -b .makej
 %patch26 -p1 -b .stable
 %patch27 -p1 -b .r300
+%patch28 -p1 -b .r300-writemask
+%patch29 -p1 -b .r200-settexoffset
 
 # WARNING: The following files are copyright "Mark J. Kilgard" under the GLUT
 # license and are not open source/free software, so we remove them.
@@ -408,6 +412,11 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/mesa-demos-data
 
 %changelog
+* Thu Oct 18 2007 Dave Airlie <airlied@redhat.com> 7.0.1-7
+- mesa-7.0.1-stable-branch.patch - Updated with more fixes from stable
+- mesa-7.0.1-r300-fix-writemask.patch - fix r300 fragprog writemask
+- mesa-7.0.1-r200-settexoffset.patch - add zero-copy TFP support for r200
+
 * Fri Sep 28 2007 Dave Airlie <airlied@redhat.com> 7.0.1-6
 - mesa-7.0.1-stable-branch.patch - Updated to close to 7.0.2-rc1
 - This contains the fixes made to the upstream Mesa stable branch

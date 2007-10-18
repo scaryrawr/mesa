@@ -1,7 +1,10 @@
 Adam Jackson (1):
       Unbreak Linux builds with -fvisibility=hidden.
 
-Brian (64):
+Andreas Micheler (1):
+      faster write_rgba_span_front()
+
+Brian (69):
       added md5 sums
       fix even-sized point positioning (bug 11874)
       Merge branch 'mesa_7_0_branch' of git+ssh://brianp@git.freedesktop.org/git/mesa/mesa into mesa_7_0_branch
@@ -66,6 +69,11 @@ Brian (64):
       bump versions to 7.0.2
       for Miniglx, use git sources
       prep for 7.0.2 release
+      update the DRM/DRI instructions
+      fix VBO-split infinite loop (bug 12164)
+      updated glext.h license info (Khronos), plus other clean-ups
+      replace 'brick' with correct program name in printfs
+      fix fog, rescale_normals bugs (from gallium branch)
 
 Christoph Kubisch (1):
       updated VC7 project files
@@ -73,9 +81,11 @@ Christoph Kubisch (1):
 Colin McDonald (1):
       fixed problem with big glDrawArrays (see bug 12141)
 
-Dan Nicholson (2):
+Dan Nicholson (4):
       DESTDIR support.
       pkg-config support
+      add support for LDFLAGS env var
+      Ignore more generated files in progs/
 
 Dan Torop (1):
       fix spantmp2 READ_RGBA inline asm (#11931)
@@ -83,21 +93,29 @@ Dan Torop (1):
 Dave Airlie (1):
       i965: fix vblank on 965gm laptops by bringing in code from i915
 
-Michel Dänzer (2):
+Michel Dänzer (3):
       i915tex: Make sure pitch is aligned properly for render-to-texture.
       i915tex: Unreference texture buffers on context destruction.
+      i915tex: Work around texture pitch related performance drops on i915 at least.
+
+Mrc Gran (1):
+      fix force_s3tc_enable option
 
 Roland Bär (1):
       [i965] Bug #11812: Fix fwrite return value checks in AUB file code.
 
-Roland Scheidegger (2):
+Roland Scheidegger (6):
       suppress warning about ncon visuals (bug #6689)
       fix another occurence of movaps which might not be aligned
+      unbreak 3d textures (typo when setting tex layout)
+      make sure optimized fog params get updated
+      fog: fix issues with negative fog coords (may fix #10529)
+      minor fog calc cleanup
 
 Wang Zhenyu (1):
       i915tex: Add support for 945GME
 
-Xiang, Haihao (13):
+Xiang, Haihao (14):
       i965: flush batch buffer when getting the maximum. This makes
       i965: samplers group in fours in WM_STATE. fix bug#9415
       i965: check NULL pointer. fix bug#12193
@@ -111,6 +129,7 @@ Xiang, Haihao (13):
       i965: The cube map texture coordinates must be devided by the
       i965: handle all unfilled mode in clip stage. fix bug #12453
       mesa: make sure the gotten value isn't greater than the
+      Brian's fix for bug9829
 
 Zou Nan hai (2):
       fix a bug in 965 ARB_occlusion_query,
@@ -192,6 +211,134 @@ index 3cab262..e05e0e6 100644
  	$(TOP)/src/glut/glx/depend	\
  	$(TOP)/src/glu/sgi/depend
  
+diff --git a/bin/mklib b/bin/mklib
+index 8334595..499e789 100755
+--- a/bin/mklib
++++ b/bin/mklib
+@@ -34,6 +34,7 @@ MINOR=0
+ PATCH=""
+ DEPS=""
+ LINK=""
++LDFLAGS=""
+ CPLUSPLUS=0
+ STATIC=0
+ DLOPEN=0
+@@ -63,6 +64,7 @@ do
+ 	    echo '  -LDIR         search in DIR for library dependencies'
+ 	    echo '  -linker L     explicity specify the linker program to use (eg: gcc, g++)'
+ 	    echo '                Not observed on all systems at this time.'
++	    echo '  -ldflags OPT  specify any additional linker flags in OPT'
+ 	    echo '  -cplusplus    link with C++ runtime'
+ 	    echo '  -static       make a static library (default is dynamic/shared)'
+ 	    echo '  -dlopen       make a shared library suitable for dynamic loading'
+@@ -94,6 +96,10 @@ do
+ 	    shift 1;
+ 	    LINK=$1
+ 	    ;;
++	'-ldflags')
++	    shift 1;
++	    LDFLAGS=$1
++	    ;;
+ 	-l*)
+ 	    DEPS="$DEPS $1"
+ 	    ;;
+@@ -216,7 +222,7 @@ case $ARCH in
+ 
+             rm -f ${LIBNAME}
+             # make lib
+-            ${LINK} ${OPTS} -o ${LIBNAME} ${OBJECTS} ${DEPS}
++            ${LINK} ${OPTS} ${LDFLAGS} -o ${LIBNAME} ${OBJECTS} ${DEPS}
+             # finish up
+             FINAL_LIBS="${LIBNAME}"
+         elif [ $STATIC = 1 ] ; then
+@@ -274,7 +280,7 @@ case $ARCH in
+             rm -f ${LIBNAME}.so
+ 
+             # make lib
+-            ${LINK} ${OPTS} -o ${LIBNAME}.so.${VERSION} ${OBJECTS} ${DEPS}
++            ${LINK} ${OPTS} ${LDFLAGS} -o ${LIBNAME}.so.${VERSION} ${OBJECTS} ${DEPS}
+             # make usual symlinks
+             ln -s ${LIBNAME}.so.${VERSION} ${LIBNAME}.so.${MAJOR}
+             ln -s ${LIBNAME}.so.${MAJOR} ${LIBNAME}.so
+@@ -346,10 +352,10 @@ case $ARCH in
+ 	    #echo "mklib: linker is" ${LINK} ${OPTS}
+ 	    if [ $NOPREFIX = 1 ] ; then
+ 		rm -f ${LIBNAME}
+-		${LINK} ${OPTS} -o ${LIBNAME} ${OBJECTS} ${DEPS}
++		${LINK} ${OPTS} ${LDFLAGS} -o ${LIBNAME} ${OBJECTS} ${DEPS}
+ 	    else
+ 		rm -f ${LIBNAME}.${MAJOR} ${LIBNAME}
+-		${LINK} ${OPTS} -o ${LIBNAME}.${MAJOR} ${OBJECTS} ${DEPS}
++		${LINK} ${OPTS} ${LDFLAGS} -o ${LIBNAME}.${MAJOR} ${OBJECTS} ${DEPS}
+ 		ln -s ${LIBNAME}.${MAJOR} ${LIBNAME}
+ 	    fi
+ 	    FINAL_LIBS="${LIBNAME}.${MAJOR} ${LIBNAME}"
+@@ -373,7 +379,7 @@ case $ARCH in
+ 	    echo "mklib: Making FreeBSD shared library: " ${LIBNAME}
+ 	    OPTS="-shared"
+ 	    rm -f ${LIBNAME}
+-	    ${LINK} ${OPTS} -o ${LIBNAME} ${OBJECTS} ${DEPS}
++	    ${LINK} ${OPTS} ${LDFLAGS} -o ${LIBNAME} ${OBJECTS} ${DEPS}
+ 	    FINAL_LIBS=${LIBNAME}
+         elif [ $STATIC = 1 ] ; then
+ 	    STLIB="lib${LIBNAME}.a"
+@@ -387,7 +393,7 @@ case $ARCH in
+ 	    OPTS="-shared -Wl,-soname,${SHLIB}"
+ 	    echo "mklib: Making FreeBSD shared library: " ${SHLIB}
+ 	    rm -f ${SHLIB}
+-	    ${LINK} ${OPTS} -o ${SHLIB} ${OBJECTS} ${DEPS}
++	    ${LINK} ${OPTS} ${LDFLAGS} -o ${SHLIB} ${OBJECTS} ${DEPS}
+ 	    ln -sf ${SHLIB} "lib${LIBNAME}.so"
+ 	    FINAL_LIBS="${SHLIB} lib${LIBNAME}.so"
+ 	fi
+@@ -445,7 +451,7 @@ case $ARCH in
+ 	    fi
+ 
+ 	    echo "mklib: Making IRIX " ${ABI} " shared library: " ${LIBNAME}
+-	    ${LINK} ${OPTS} -o ${LIBNAME} ${OBJECTS} ${DEPS}
++	    ${LINK} ${OPTS} ${LDFLAGS} -o ${LIBNAME} ${OBJECTS} ${DEPS}
+ 	    FINAL_LIBS=${LIBNAME}
+ 	fi
+ 	;;
+@@ -521,9 +527,9 @@ case $ARCH in
+             # On AIX a shared library is linked differently when
+             # you want to dlopen the file
+ 	    if [ $DLOPEN = "1" ] ; then
+-		cc -G ${OPTS} -o ${LIBNAME} ${OBJECTS} ${DEPS}
++		cc -G ${OPTS} ${LDFLAGS} -o ${LIBNAME} ${OBJECTS} ${DEPS}
+ 	    else
+-		cc ${OPTS} -o ${OFILE} ${OBJECTS} ${DEPS}
++		cc ${OPTS} ${LDFLAGS} -o ${OFILE} ${OBJECTS} ${DEPS}
+ 		ar ${X64} -r ${LIBNAME} ${OFILE}
+ 	    fi
+ 
+@@ -605,7 +611,7 @@ case $ARCH in
+ 	    fi
+ 
+             echo "mklib: Making Darwin shared library: " ${LIBNAME}
+-            ${LINK} ${OPTS} -o ${LIBNAME} ${OBJECTS} ${DEPS}
++            ${LINK} ${OPTS} ${LDFLAGS} -o ${LIBNAME} ${OBJECTS} ${DEPS}
+             ln -s ${LIBNAME} ${LINKNAME}
+             FINAL_LIBS="${LIBNAME} ${LINKNAME}"
+         fi
+@@ -682,7 +688,7 @@ case $ARCH in
+             rm -f ${LIBNAME}.so.${MAJOR}
+             rm -f ${LIBNAME}.so
+             # make lib
+-            ${LINK} ${OPTS} -o ${LIBNAME}.so.${VERSION} ${OBJECTS} ${DEPS}
++            ${LINK} ${OPTS} ${LDFLAGS} -o ${LIBNAME}.so.${VERSION} ${OBJECTS} ${DEPS}
+             # make usual symlinks
+             ln -s ${LIBNAME}.so.${VERSION} ${LIBNAME}.so.${MAJOR}
+             ln -s ${LIBNAME}.so.${MAJOR} ${LIBNAME}.so
+@@ -754,7 +760,7 @@ case $ARCH in
+             rm -f ${LIBNAME}.a
+ 
+             # make lib
+-            ${LINK} ${OPTS} -o ${CYGNAME}-${MAJOR}.dll ${OBJECTS} ${DEPS}
++            ${LINK} ${OPTS} ${LDFLAGS} -o ${CYGNAME}-${MAJOR}.dll ${OBJECTS} ${DEPS}
+             # make usual symlinks
+             ln -s ${LIBNAME}-${MAJOR}.dll.a ${LIBNAME}.dll.a
+             # finish up
 diff --git a/configs/bluegene-xlc-osmesa b/configs/bluegene-xlc-osmesa
 new file mode 100644
 index 0000000..b0c762d
@@ -228,7 +375,7 @@ index 0000000..b0c762d
 +GLU_LIB_DEPS = -L$(TOP)/$(LIB_DIR) -l$(OSMESA_LIB)
 +APP_LIB_DEPS = -lOSMesa -lGLU -lm
 diff --git a/configs/default b/configs/default
-index 81f0338..275b060 100644
+index 81f0338..2a08c16 100644
 --- a/configs/default
 +++ b/configs/default
 @@ -10,7 +10,7 @@ CONFIG_NAME = default
@@ -240,6 +387,14 @@ index 81f0338..275b060 100644
  
  # external projects.  This should be useless now that we use libdrm.
  DRM_SOURCE_PATH=$(TOP)/../drm
+@@ -20,6 +20,7 @@ CC = cc
+ CXX = CC
+ CFLAGS = -O
+ CXXFLAGS = -O
++LDFLAGS =
+ GLU_CFLAGS = 
+ 
+ # Misc tools and flags
 diff --git a/docs/download.html b/docs/download.html
 index 5c3989e..84451b8 100644
 --- a/docs/download.html
@@ -271,10 +426,78 @@ index c7f59bb..0d9e52c 100644
  <h1>2. Compilation</h1>
  
 diff --git a/docs/install.html b/docs/install.html
-index 804dee5..041e27b 100644
+index 804dee5..4cd0d4c 100644
 --- a/docs/install.html
 +++ b/docs/install.html
-@@ -287,7 +287,15 @@ already installed, you'll have to choose different directories, like
+@@ -57,50 +57,31 @@ the DRI hardware drivers.
+ 
+ <li>
+ <p>
+-DRM kernel modules and header files from the
+-<a href="http://dri.sf.net/" target="_parent">DRI</a> project.
++For Mesa 7.0.2 <a href="http://dri.freedesktop.org/libdrm/">
++DRM version 2.3</a> is required.
+ </p>
+-
+ <p>
+-If you don't already have the DRM file, you can get the sources from
+-CVS by doing:
+-<pre>
+-cvs -z3 -d:pserver:anonymous@anoncvs.freedesktop.org:/cvs/dri co drm
+-</pre>
+-<p>
+-See the <a href="http://dri.freedesktop.org/wiki/Building" target="_parent">
+-DRI Building Instructions</a> for the steps to build the DRM modules.  Mesa
+-6.5 requires at least libdrm 2.0.1 or greater.
+-</p>
+-<p>
+-You can verify that the DRM files have been properly installed by
+-running <code>pkg-config --modversion libdrm</code>
+-
+-</li>
+-
+-<li>
+-Recent /usr/include/GL/glxproto.h file.
+-<p>You'll need this if you get any errors about _GLXvop_BindTexImageEXT
+-being undefined.
++To check if you already have it, run:
++<br>
++<code>pkg-config --modversion libdrm</code>
+ </p>
+ <p>
+-Download/install the
+-<a href="http://gitweb.freedesktop.org/?p=xorg/proto/glproto.git">glproto</a>
+-module from X.org git, or grab the
+-<A href="http://webcvs.freedesktop.org/*checkout*/xorg/proto/GL/glxproto.h?rev=1.9&content-type=text%2Fplain">glxproto.h file</a> and put it in the
+-Mesa/include/GL/ directory.
++You can download and install a <a href="http://dri.freedesktop.org/libdrm/">
++tarball release</a> or get the code from git with:
++<br>
++<code>git clone git://anongit.freedesktop.org/git/mesa/drm</code>
++<br>
++Then revert to the drm-2.3.0 tag with:
++<br>
++<code>git-reset --hard drm-2.3.0</code>
+ </p>
+-
+ </li>
+ 
+-<li>DRI-enabled X server.
+-<p>Visit
+-<a href="http://www.xfree86.org" target="_parent">XFree86</a>
+-or
++<li>
++Relatively recent
+ <a href="http://freedesktop.org/wiki/Software_2fXserver" target="_parent">
+-X.org</a>
+-for more information.
+-</p>
++X.org</a> release.
++Mesa depends on a number of X header and library files.
+ </li>
+ 
+ </ol>
+@@ -287,7 +268,15 @@ already installed, you'll have to choose different directories, like
  To install Mesa's headers and libraries, run <code>make install</code>.
  But first, check the Mesa/configs/default file and examine the values
  of the <b>INSTALL_DIR</b> and <b>DRI_DRIVER_INSTALL_DIR</b> variables.
@@ -291,7 +514,7 @@ index 804dee5..041e27b 100644
  </p>
  
  <p>
-@@ -298,6 +306,26 @@ This is a handy way to compare multiple OpenGL implementations.
+@@ -298,6 +287,26 @@ This is a handy way to compare multiple OpenGL implementations.
  </p>
  
  
@@ -318,6 +541,56 @@ index 804dee5..041e27b 100644
  
  <a name="windows">
  <H2>2. Windows Compilation and Installation</H1>
+diff --git a/docs/license.html b/docs/license.html
+index 944a5dd..44b980d 100644
+--- a/docs/license.html
++++ b/docs/license.html
+@@ -86,29 +86,32 @@ and their respective licenses.
+ <H1>Mesa Component Licenses</H1>
+ 
+ <pre>
+-Component         Location               Primary Author      License
+-----------------------------------------------------------------------------
+-Main Mesa code    src/mesa/              Brian Paul          Mesa (MIT)
++Component         Location               License
++------------------------------------------------------------------
++Main Mesa code    src/mesa/              Mesa (MIT)
+ 
+-Device drivers    src/mesa/drivers/*     See drivers         See drivers
++Device drivers    src/mesa/drivers/*     MIT, generally
+ 
+-Ext headers       include/GL/glext.h     SGI                 SGI Free B
++Ext headers       include/GL/glext.h     Khronos
+                   include/GL/glxext.h
+ 
+-GLUT              src/glut/              Mark Kilgard        Mark's copyright
++GLUT              src/glut/              Mark Kilgard's copyright
+ 
+-Mesa GLU library  src/glu/mesa/          Brian Paul          GNU-LGPL
++SGI GLU library   src/glu/sgi/           SGI Free B
+ 
+-SGI GLU library   src/glu/sgi/           SGI                 SGI Free B
++demo programs     progs/demos/           see source files
+ 
+-demo programs     progs/demos/           various             see source files
++X demos           progs/xdemos/          see source files
+ 
+-X demos           progs/xdemos/          Brian Paul          see source files
++SGI demos         progs/samples/         SGI license
+ 
+-SGI demos         progs/samples/         SGI                 SGI copyright
+-
+-RedBook demos     progs/redbook/         SGI                 SGI copyright
++RedBook demos     progs/redbook/         SGI license
+ </pre>
+ 
++<p>
++In general, consult the source files for license terms.
++</p>
++
++
+ </body>
+ </html>
 diff --git a/docs/modelers.html b/docs/modelers.html
 index b93f4d8..aae9686 100644
 --- a/docs/modelers.html
@@ -513,61 +786,274 @@ index d82103d..7db4b70 100644
  
  #ifdef __cplusplus
  extern "C" {
-diff --git a/progs/xdemos/Makefile b/progs/xdemos/Makefile
-index ec85464..525d556 100644
---- a/progs/xdemos/Makefile
-+++ b/progs/xdemos/Makefile
-@@ -37,7 +37,7 @@ PROGS = glthreads \
+diff --git a/progs/demos/Makefile b/progs/demos/Makefile
+index cf96828..798de25 100644
+--- a/progs/demos/Makefile
++++ b/progs/demos/Makefile
+@@ -74,7 +74,7 @@ PROGS = \
+ 
+ # make executable from .c file:
+ .c: $(LIB_DEP) readtex.o
+-	$(CC) -I$(INCDIR) $(CFLAGS) $< readtex.o $(APP_LIB_DEPS) -o $@
++	$(CC) -I$(INCDIR) $(CFLAGS) $(LDFLAGS) $< readtex.o $(APP_LIB_DEPS) -o $@
+ 
+ 
+ ##### TARGETS #####
+@@ -118,35 +118,35 @@ extfuncs.h:  $(TOP)/progs/util/extfuncs.h
+ 
+ 
+ reflect: reflect.o showbuffer.o readtex.o
+-	$(CC) reflect.o showbuffer.o readtex.o $(APP_LIB_DEPS) -o $@
++	$(CC) $(LDFLAGS) reflect.o showbuffer.o readtex.o $(APP_LIB_DEPS) -o $@
+ 
+ reflect.o: reflect.c showbuffer.h
+ 	$(CC) -c -I$(INCDIR) $(CFLAGS) reflect.c
+ 
+ 
+ shadowtex: shadowtex.o showbuffer.o
+-	$(CC) shadowtex.o showbuffer.o $(APP_LIB_DEPS) -o $@
++	$(CC) $(LDFLAGS) shadowtex.o showbuffer.o $(APP_LIB_DEPS) -o $@
+ 
+ shadowtex.o: shadowtex.c showbuffer.h
+ 	$(CC) -c -I$(INCDIR) $(CFLAGS) shadowtex.c
+ 
+ 
+ gloss: gloss.o trackball.o readtex.o
+-	$(CC) gloss.o trackball.o readtex.o $(APP_LIB_DEPS) -o $@
++	$(CC) $(LDFLAGS) gloss.o trackball.o readtex.o $(APP_LIB_DEPS) -o $@
+ 
+ gloss.o: gloss.c trackball.h
+ 	$(CC) -c -I$(INCDIR) $(CFLAGS) gloss.c
+ 
+ 
+ engine: engine.o trackball.o readtex.o
+-	$(CC) engine.o trackball.o readtex.o $(APP_LIB_DEPS) -o $@
++	$(CC) $(LDFLAGS) engine.o trackball.o readtex.o $(APP_LIB_DEPS) -o $@
+ 
+ engine.o: engine.c trackball.h
+ 	$(CC) -c -I$(INCDIR) $(CFLAGS) engine.c
+ 
+ 
+ fslight: fslight.o
+-	$(CC) fslight.o $(APP_LIB_DEPS) -o $@
++	$(CC) $(LDFLAGS) fslight.o $(APP_LIB_DEPS) -o $@
+ 
+ fslight.o: fslight.c extfuncs.h
+ 	$(CC) -c -I$(INCDIR) $(CFLAGS) fslight.c
+diff --git a/progs/fbdev/.gitignore b/progs/fbdev/.gitignore
+new file mode 100644
+index 0000000..b9ddf55
+--- /dev/null
++++ b/progs/fbdev/.gitignore
+@@ -0,0 +1 @@
++glfbdevtest
+diff --git a/progs/fbdev/Makefile b/progs/fbdev/Makefile
+index 0a0c779..92bfd04 100644
+--- a/progs/fbdev/Makefile
++++ b/progs/fbdev/Makefile
+@@ -22,7 +22,7 @@ INCLUDES = \
+ .SUFFIXES: .c
+ 
+ .c:
+-	$(CC) $(INCLUDES) $(CFLAGS) $< $(APP_LIB_DEPS) -o $@
++	$(CC) $(INCLUDES) $(CFLAGS) $(LDFLAGS) $< $(APP_LIB_DEPS) -o $@
+ 
+ .c.o:
+ 	$(CC) -c $(INCLUDES) $(CFLAGS) $< -o $@
+diff --git a/progs/glsl/Makefile b/progs/glsl/Makefile
+index 37fa312..a5ca1f3 100644
+--- a/progs/glsl/Makefile
++++ b/progs/glsl/Makefile
+@@ -25,7 +25,7 @@ PROGS = \
+ 
+ # make executable from .c file:
+ .c: $(LIB_DEP)
+-	$(CC) -I$(INCDIR) $(CFLAGS) $< $(APP_LIB_DEPS) -o $@
++	$(CC) -I$(INCDIR) $(CFLAGS) $(LDFLAGS) $< $(APP_LIB_DEPS) -o $@
+ 
+ 
+ ##### TARGETS #####
+@@ -57,7 +57,7 @@ mandelbrot.c: extfuncs.h
+ toyball.c: extfuncs.h
+ 
+ texdemo1: texdemo1.o readtex.o
+-	$(CC) -I$(INCDIR) $(CFLAGS) texdemo1.o readtex.o $(APP_LIB_DEPS) -o $@
++	$(CC) -I$(INCDIR) $(CFLAGS) $(LDFLAGS) texdemo1.o readtex.o $(APP_LIB_DEPS) -o $@
+ 
+ texdemo1.o: texdemo1.c readtex.h extfuncs.h
+ 	$(CC) -c -I$(INCDIR) $(CFLAGS) texdemo1.c
+diff --git a/progs/glsl/bump.c b/progs/glsl/bump.c
+index a6846ac..11f87ab 100644
+--- a/progs/glsl/bump.c
++++ b/progs/glsl/bump.c
+@@ -247,7 +247,7 @@ LoadAndCompileShader(GLuint shader, const char *text)
+       GLchar log[1000];
+       GLsizei len;
+       glGetShaderInfoLog_func(shader, 1000, &len, log);
+-      fprintf(stderr, "brick: problem compiling shader: %s\n", log);
++      fprintf(stderr, "bump: problem compiling shader: %s\n", log);
+       exit(1);
+    }
+    else {
+@@ -267,12 +267,12 @@ ReadShader(GLuint shader, const char *filename)
+    char *buffer = (char*) malloc(max);
+    FILE *f = fopen(filename, "r");
+    if (!f) {
+-      fprintf(stderr, "brick: Unable to open shader file %s\n", filename);
++      fprintf(stderr, "bump: Unable to open shader file %s\n", filename);
+       exit(1);
+    }
+ 
+    n = fread(buffer, 1, max, f);
+-   printf("brick: read %d bytes from shader file %s\n", n, filename);
++   printf("bump: read %d bytes from shader file %s\n", n, filename);
+    if (n > 0) {
+       buffer[n] = 0;
+       LoadAndCompileShader(shader, buffer);
+diff --git a/progs/glsl/mandelbrot.c b/progs/glsl/mandelbrot.c
+index 7a2bad6..e7b2b04 100644
+--- a/progs/glsl/mandelbrot.c
++++ b/progs/glsl/mandelbrot.c
+@@ -172,7 +172,7 @@ LoadAndCompileShader(GLuint shader, const char *text)
+       GLchar log[1000];
+       GLsizei len;
+       glGetShaderInfoLog_func(shader, 1000, &len, log);
+-      fprintf(stderr, "brick: problem compiling shader: %s\n", log);
++      fprintf(stderr, "mandelbrot: problem compiling shader: %s\n", log);
+       exit(1);
+    }
+    else {
+@@ -192,12 +192,12 @@ ReadShader(GLuint shader, const char *filename)
+    char *buffer = (char*) malloc(max);
+    FILE *f = fopen(filename, "r");
+    if (!f) {
+-      fprintf(stderr, "brick: Unable to open shader file %s\n", filename);
++      fprintf(stderr, "mandelbrot: Unable to open shader file %s\n", filename);
+       exit(1);
+    }
+ 
+    n = fread(buffer, 1, max, f);
+-   printf("brick: read %d bytes from shader file %s\n", n, filename);
++   printf("mandelbrot: read %d bytes from shader file %s\n", n, filename);
+    if (n > 0) {
+       buffer[n] = 0;
+       LoadAndCompileShader(shader, buffer);
+diff --git a/progs/glsl/noise.c b/progs/glsl/noise.c
+index a26a805..adccd1a 100644
+--- a/progs/glsl/noise.c
++++ b/progs/glsl/noise.c
+@@ -188,7 +188,7 @@ LoadAndCompileShader(GLuint shader, const char *text)
+       GLchar log[1000];
+       GLsizei len;
+       glGetShaderInfoLog_func(shader, 1000, &len, log);
+-      fprintf(stderr, "brick: problem compiling shader: %s\n", log);
++      fprintf(stderr, "noise: problem compiling shader: %s\n", log);
+       exit(1);
+    }
+    else {
+diff --git a/progs/glsl/toyball.c b/progs/glsl/toyball.c
+index cef52c0..3aa0961 100644
+--- a/progs/glsl/toyball.c
++++ b/progs/glsl/toyball.c
+@@ -185,7 +185,7 @@ LoadAndCompileShader(GLuint shader, const char *text)
+       GLchar log[1000];
+       GLsizei len;
+       glGetShaderInfoLog_func(shader, 1000, &len, log);
+-      fprintf(stderr, "brick: problem compiling shader: %s\n", log);
++      fprintf(stderr, "toyball: problem compiling shader: %s\n", log);
+       exit(1);
+    }
+    else {
+@@ -205,12 +205,12 @@ ReadShader(GLuint shader, const char *filename)
+    char *buffer = (char*) malloc(max);
+    FILE *f = fopen(filename, "r");
+    if (!f) {
+-      fprintf(stderr, "brick: Unable to open shader file %s\n", filename);
++      fprintf(stderr, "toyball: Unable to open shader file %s\n", filename);
+       exit(1);
+    }
+ 
+    n = fread(buffer, 1, max, f);
+-   printf("brick: read %d bytes from shader file %s\n", n, filename);
++   printf("toyball: read %d bytes from shader file %s\n", n, filename);
+    if (n > 0) {
+       buffer[n] = 0;
+       LoadAndCompileShader(shader, buffer);
+diff --git a/progs/miniglx/.gitignore b/progs/miniglx/.gitignore
+new file mode 100644
+index 0000000..f630f59
+--- /dev/null
++++ b/progs/miniglx/.gitignore
+@@ -0,0 +1,6 @@
++manytex
++miniglxsample
++miniglxtest
++sample_server
++sample_server2
++texline
+diff --git a/progs/osdemos/.gitignore b/progs/osdemos/.gitignore
+new file mode 100644
+index 0000000..5c78f12
+--- /dev/null
++++ b/progs/osdemos/.gitignore
+@@ -0,0 +1,8 @@
++osdemo
++osdemo16
++osdemo32
++ostest1
++readtex.c
++readtex.h
++showbuffer.c
++showbuffer.h
+diff --git a/progs/osdemos/Makefile b/progs/osdemos/Makefile
+index f8cba9e..7e65774 100644
+--- a/progs/osdemos/Makefile
++++ b/progs/osdemos/Makefile
+@@ -26,7 +26,7 @@ PROGS = \
+ 
+ # make executable from .c file:
+ .c: $(LIB_DEP) readtex.o
+-	$(CC) -I$(INCDIR) $(CFLAGS) $< readtex.o $(APP_LIB_DEPS) -o $@
++	$(CC) -I$(INCDIR) $(CFLAGS) $(LDFLAGS) $< readtex.o $(APP_LIB_DEPS) -o $@
+ 
+ 
+ ##### TARGETS #####
+@@ -56,19 +56,19 @@ showbuffer.o: showbuffer.c showbuffer.h
+ 
+ # special case: need the -lOSMesa library:
+ osdemo: osdemo.c
+-	$(CC) -I$(INCDIR) $(CFLAGS) osdemo.c $(OSMESA_LIBS) -o $@
++	$(CC) -I$(INCDIR) $(CFLAGS) $(LDFLAGS) osdemo.c $(OSMESA_LIBS) -o $@
+ 
+ # special case: need the -lOSMesa library:
+ ostest1: ostest1.c
+-	$(CC) -I$(INCDIR) $(CFLAGS) ostest1.c $(OSMESA_LIBS) -o $@
++	$(CC) -I$(INCDIR) $(CFLAGS) $(LDFLAGS) ostest1.c $(OSMESA_LIBS) -o $@
+ 
+ # another special case: need the -lOSMesa16 library:
+ osdemo16: osdemo16.c
+-	$(CC) -I$(INCDIR) $(CFLAGS) osdemo16.c $(OSMESA16_LIBS) -o $@
++	$(CC) -I$(INCDIR) $(CFLAGS) $(LDFLAGS) osdemo16.c $(OSMESA16_LIBS) -o $@
+ 
+ # another special case: need the -lOSMesa32 library:
+ osdemo32: osdemo32.c
+-	$(CC) -I$(INCDIR) $(CFLAGS) osdemo32.c $(OSMESA32_LIBS) -o $@
++	$(CC) -I$(INCDIR) $(CFLAGS) $(LDFLAGS) osdemo32.c $(OSMESA32_LIBS) -o $@
+ 
+ 
+ 
+diff --git a/progs/redbook/Makefile b/progs/redbook/Makefile
+index febc744..078f191 100644
+--- a/progs/redbook/Makefile
++++ b/progs/redbook/Makefile
+@@ -24,7 +24,7 @@ PROGS = aaindex aapoly aargb accanti accpersp alpha alpha3D anti \
  .SUFFIXES: .c
  
  .c: $(LIB_DEP)
 -	$(CC) -I$(INCDIR) $(CFLAGS) $< $(APP_LIB_DEPS) -o $@
-+	$(CC) -I$(INCDIR) $(X11_INCLUDES) $(CFLAGS) $< $(APP_LIB_DEPS) -o $@
++	$(CC) -I$(INCDIR) $(CFLAGS) $(LDFLAGS) $< $(APP_LIB_DEPS) -o $@
  
  
- ##### TARGETS #####
-@@ -52,32 +52,32 @@ clean:
- 
- # special cases
- pbinfo: pbinfo.o pbutil.o
--	$(CC) -I$(INCDIR) $(CFLAGS) pbinfo.o pbutil.o $(APP_LIB_DEPS) -o $@
-+	$(CC) pbinfo.o pbutil.o $(APP_LIB_DEPS) -o $@
- 
- pbdemo: pbdemo.o pbutil.o
--	$(CC) -I$(INCDIR) $(CFLAGS) pbdemo.o pbutil.o $(APP_LIB_DEPS) -o $@
-+	$(CC) pbdemo.o pbutil.o $(APP_LIB_DEPS) -o $@
- 
- pbinfo.o: pbinfo.c pbutil.h
--	$(CC) -c -I. -I$(INCDIR) $(CFLAGS) pbinfo.c
-+	$(CC) -c -I. -I$(INCDIR) $(X11_INCLUDES) $(CFLAGS) pbinfo.c
- 
- pbdemo.o: pbdemo.c pbutil.h
--	$(CC) -c -I. -I$(INCDIR) $(CFLAGS) pbdemo.c
-+	$(CC) -c -I. -I$(INCDIR) $(X11_INCLUDES) $(CFLAGS) pbdemo.c
- 
- pbutil.o: pbutil.c pbutil.h
--	$(CC) -c -I. -I$(INCDIR) $(CFLAGS) pbutil.c
-+	$(CC) -c -I. -I$(INCDIR) $(X11_INCLUDES) $(CFLAGS) pbutil.c
- 
- glxgears_fbconfig: glxgears_fbconfig.o pbutil.o
--	$(CC) -I$(INCDIR) $(CFLAGS) glxgears_fbconfig.o pbutil.o $(APP_LIB_DEPS) -o $@
-+	$(CC) glxgears_fbconfig.o pbutil.o $(APP_LIB_DEPS) -o $@
- 
- glxgears_fbconfig.o: glxgears_fbconfig.c pbutil.h
--	$(CC) -I$(INCDIR) $(CFLAGS) -c -I. $(CFLAGS) glxgears_fbconfig.c
-+	$(CC) -I$(INCDIR) $(X11_INCLUDES) $(CFLAGS) -c -I. $(CFLAGS) glxgears_fbconfig.c
- 
- xrotfontdemo: xrotfontdemo.o xuserotfont.o
--	$(CC) -I$(INCDIR) $(CFLAGS) xrotfontdemo.o xuserotfont.o $(APP_LIB_DEPS) -o $@
-+	$(CC) xrotfontdemo.o xuserotfont.o $(APP_LIB_DEPS) -o $@
- 
- xuserotfont.o: xuserotfont.c xuserotfont.h
--	$(CC) -c -I. -I$(INCDIR) $(CFLAGS) xuserotfont.c
-+	$(CC) -c -I. -I$(INCDIR) $(X11_INCLUDES) $(CFLAGS) xuserotfont.c
- 
- xrotfontdemo.o: xrotfontdemo.c xuserotfont.h
--	$(CC) -c -I. -I$(INCDIR) $(CFLAGS) xrotfontdemo.c
-+	$(CC) -c -I. -I$(INCDIR) $(X11_INCLUDES) $(CFLAGS) xrotfontdemo.c
  
 diff --git a/src/glu/Makefile b/src/glu/Makefile
 index 5ddc509..836baa6 100644
@@ -613,6 +1099,19 @@ index 0000000..5d6e52a
 +Version: @VERSION@
 +Libs: -L${libdir} -lGLU
 +Cflags: -I${includedir}
+diff --git a/src/glu/sgi/Makefile b/src/glu/sgi/Makefile
+index 2ce6ac0..bb1c0a8 100644
+--- a/src/glu/sgi/Makefile
++++ b/src/glu/sgi/Makefile
+@@ -136,7 +136,7 @@ $(TOP)/$(LIB_DIR):
+ 
+ # Make the library:
+ $(TOP)/$(LIB_DIR)/$(GLU_LIB_NAME): $(OBJECTS)
+-	$(TOP)/bin/mklib -o $(GLU_LIB) -linker '$(CXX)' \
++	$(TOP)/bin/mklib -o $(GLU_LIB) -linker '$(CXX)' -ldflags '$(LDFLAGS)' \
+ 		-major $(GLU_MAJOR) -minor $(GLU_MINOR) -patch $(GLU_TINY) \
+ 		-cplusplus $(MKLIB_OPTIONS) -install $(TOP)/$(LIB_DIR) \
+ 		$(GLU_LIB_DEPS) $(OBJECTS)
 diff --git a/src/glu/sgi/libutil/project.c b/src/glu/sgi/libutil/project.c
 index 2b20ad4..356b46b 100644
 --- a/src/glu/sgi/libutil/project.c
@@ -742,7 +1241,7 @@ index 2b20ad4..356b46b 100644
  
  static void __gluMultMatricesd(const GLdouble a[16], const GLdouble b[16],
 diff --git a/src/glw/Makefile b/src/glw/Makefile
-index 5228cbb..c32fc0c 100644
+index 5228cbb..727c583 100644
 --- a/src/glw/Makefile
 +++ b/src/glw/Makefile
 @@ -25,11 +25,21 @@ OBJECTS = $(GLW_SOURCES:.c=.o)
@@ -772,6 +1271,15 @@ index 5228cbb..c32fc0c 100644
  
  clean:
  	-rm depend depend.bak
+@@ -38,7 +48,7 @@ clean:
+ 
+ # Make the library
+ $(TOP)/$(LIB_DIR)/$(GLW_LIB_NAME): $(OBJECTS)
+-	$(TOP)/bin/mklib -o $(GLW_LIB) -linker '$(CC)' \
++	$(TOP)/bin/mklib -o $(GLW_LIB) -linker '$(CC)' -ldflags '$(LDFLAGS)' \
+ 		-major $(MAJOR) -minor $(MINOR) -patch $(TINY) \
+ 		$(MKLIB_OPTIONS) -install $(TOP)/$(LIB_DIR) \
+ 		$(GLW_LIB_DEPS) $(OBJECTS)
 diff --git a/src/glw/glw.pc.in b/src/glw/glw.pc.in
 new file mode 100644
 index 0000000..951e2dc
@@ -789,6 +1297,19 @@ index 0000000..951e2dc
 +Version: @VERSION@
 +Libs: -L${libdir} -lGLU
 +Cflags: -I${includedir}
+diff --git a/src/glx/x11/Makefile b/src/glx/x11/Makefile
+index 296747e..9f0943a 100644
+--- a/src/glx/x11/Makefile
++++ b/src/glx/x11/Makefile
+@@ -64,7 +64,7 @@ default: depend $(TOP)/$(LIB_DIR)/$(GL_LIB_NAME)
+ 
+ # Make libGL
+ $(TOP)/$(LIB_DIR)/$(GL_LIB_NAME):  $(OBJECTS) Makefile
+-	$(TOP)/bin/mklib -o $(GL_LIB) -linker '$(CC)' \
++	$(TOP)/bin/mklib -o $(GL_LIB) -linker '$(CC)' -ldflags '$(LDFLAGS)' \
+ 		-major 1 -minor 2 $(MKLIB_OPTIONS) \
+ 		-install $(TOP)/$(LIB_DIR) $(GL_LIB_DEPS) $(OBJECTS)
+ 
 diff --git a/src/glx/x11/glxext.c b/src/glx/x11/glxext.c
 index af3a516..8fe1033 100644
 --- a/src/glx/x11/glxext.c
@@ -877,10 +1398,51 @@ index 90ec277..120fd82 100644
  
  
 diff --git a/src/mesa/Makefile b/src/mesa/Makefile
-index eadd7f2..e31be41 100644
+index eadd7f2..9f3406a 100644
 --- a/src/mesa/Makefile
 +++ b/src/mesa/Makefile
-@@ -133,6 +133,15 @@ $(TOP)/$(LIB_DIR)/$(OSMESA_LIB_NAME): $(OSMESA_DRIVER_OBJECTS) $(OSMESA16_OBJECT
+@@ -65,7 +65,7 @@ linux-solo: depend subdirs libmesa.a
+ # Stand-alone Mesa libGL, no built-in drivers (DirectFB)
+ 
+ libgl-core: $(CORE_OBJECTS)
+-	@ $(TOP)/bin/mklib -o $(GL_LIB) -linker '$(CC)' \
++	@ $(TOP)/bin/mklib -o $(GL_LIB) -linker '$(CC)' -ldflags '$(LDFLAGS) \
+ 		-major $(MESA_MAJOR) -minor $(MESA_MINOR) -patch $(MESA_TINY) \
+ 		-install $(TOP)/$(LIB_DIR) $(MKLIB_OPTIONS) $(CORE_OBJECTS) \
+ 		$(GL_LIB_DEPS)
+@@ -78,7 +78,7 @@ directfb: depend subdirs libgl-core
+ # fbdev Mesa driver (libGL.so)
+ 
+ fbdev: $(CORE_OBJECTS) $(FBDEV_DRIVER_OBJECTS) $(COMMON_DRIVER_OBJECTS)
+-	@ $(TOP)/bin/mklib -o $(GL_LIB) -linker '$(CC)' \
++	@ $(TOP)/bin/mklib -o $(GL_LIB) -linker '$(CC)' -ldflags '$(LDFLAGS)' \
+ 		-major $(MESA_MAJOR) -minor $(MESA_MINOR) -patch $(MESA_TINY) \
+ 		-install $(TOP)/$(LIB_DIR) $(MKLIB_OPTIONS) \
+ 		$(CORE_OBJECTS) $(FBDEV_DRIVER_OBJECTS) \
+@@ -111,7 +111,7 @@ osmesa-only: depend subdirs $(TOP)/$(LIB_DIR)/$(OSMESA_LIB_NAME)
+ 
+ # Make the GL library
+ $(TOP)/$(LIB_DIR)/$(GL_LIB_NAME): $(STAND_ALONE_OBJECTS)
+-	@ $(TOP)/bin/mklib -o $(GL_LIB) -linker '$(CC)' \
++	@ $(TOP)/bin/mklib -o $(GL_LIB) -linker '$(CC)' -ldflags '$(LDFLAGS)' \
+ 		-major $(GL_MAJOR) -minor $(GL_MINOR) -patch $(GL_TINY) \
+ 		-install $(TOP)/$(LIB_DIR) \
+ 		$(MKLIB_OPTIONS) $(GL_LIB_DEPS) $(STAND_ALONE_OBJECTS)
+@@ -121,11 +121,13 @@ $(TOP)/$(LIB_DIR)/$(GL_LIB_NAME): $(STAND_ALONE_OBJECTS)
+ $(TOP)/$(LIB_DIR)/$(OSMESA_LIB_NAME): $(OSMESA_DRIVER_OBJECTS) $(OSMESA16_OBJECTS)
+ 	@ if [ "${DRIVER_DIRS}" = "osmesa" ] ; then \
+ 		$(TOP)/bin/mklib -o $(OSMESA_LIB) -linker '$(CC)' \
++			-ldflags '$(LDFLAGS)' \
+ 			-major 6 -minor 5 -patch 3 \
+ 			-install $(TOP)/$(LIB_DIR) $(MKLIB_OPTIONS) \
+ 			$(OSMESA_LIB_DEPS) $(OSMESA16_OBJECTS) ; \
+ 	else \
+ 		$(TOP)/bin/mklib -o $(OSMESA_LIB) -linker '$(CC)' \
++			-ldflags '$(LDFLAGS)' \
+ 			-major 6 -minor 5 -patch 3 \
+ 			-install $(TOP)/$(LIB_DIR) $(MKLIB_OPTIONS) \
+ 			$(OSMESA_LIB_DEPS) $(OSMESA_DRIVER_OBJECTS) ; \
+@@ -133,6 +135,15 @@ $(TOP)/$(LIB_DIR)/$(OSMESA_LIB_NAME): $(OSMESA_DRIVER_OBJECTS) $(OSMESA16_OBJECT
  
  
  ######################################################################
@@ -896,7 +1458,7 @@ index eadd7f2..e31be41 100644
  # Generic stuff
  
  depend: $(ALL_SOURCES)
-@@ -147,23 +156,25 @@ subdirs:
+@@ -147,23 +158,25 @@ subdirs:
  	@ (cd x86-64 ; $(MAKE))
  
  
@@ -930,10 +1492,33 @@ index eadd7f2..e31be41 100644
  
  
  # Emacs tags
+diff --git a/src/mesa/drivers/beos/Makefile b/src/mesa/drivers/beos/Makefile
+index 1897d6a..9c7d6af 100644
+--- a/src/mesa/drivers/beos/Makefile
++++ b/src/mesa/drivers/beos/Makefile
+@@ -179,7 +179,8 @@ $(TOP)/$(LIB_DIR):
+ 	mkdir $(TOP)/$(LIB_DIR)
+ 
+ $(TOP)/$(LIB_DIR)/$(GL_LIB_NAME): $(OBJECTS) $(MESA_MODULES) $(GLU_MODULES)
+-	@$(TOP)/bin/mklib -o $(GL_LIB) -install $(TOP)/$(LIB_DIR) -major $(MESA_MAJOR) -minor $(MESA_MINOR) -patch $(MESA_TINY) \
++	@$(TOP)/bin/mklib -o $(GL_LIB) -ldflags '$(LDFLAGS)' -install $(TOP)/$(LIB_DIR) \
++		-major $(MESA_MAJOR) -minor $(MESA_MINOR) -patch $(MESA_TINY) \
+ 		$(MKLIB_OPTIONS) $(GL_LIB_DEPS) $(OBJECTS) $(MESA_MODULES) $(GLU_MODULES)
+ 
+ # $(GLU_OBJECTS):
 diff --git a/src/mesa/drivers/dri/Makefile.template b/src/mesa/drivers/dri/Makefile.template
-index 6f2314e..b1d3cbc 100644
+index 6f2314e..9e84dbc 100644
 --- a/src/mesa/drivers/dri/Makefile.template
 +++ b/src/mesa/drivers/dri/Makefile.template
+@@ -74,7 +74,7 @@ default: depend symlinks $(LIBNAME) $(TOP)/$(LIB_DIR)/$(LIBNAME)
+ 
+ 
+ $(LIBNAME): $(OBJECTS) $(MESA_MODULES) $(WINOBJ) Makefile $(TOP)/src/mesa/drivers/dri/Makefile.template
+-	$(TOP)/bin/mklib -noprefix -o $@ \
++	$(TOP)/bin/mklib -ldflags '$(LDFLAGS)' -noprefix -o $@ \
+ 		$(OBJECTS) $(MESA_MODULES) $(WINOBJ) $(DRI_LIB_DEPS)
+ 
+ 
 @@ -100,8 +100,8 @@ clean:
  
  
@@ -958,6 +1543,20 @@ index 50f3cf5..53f5f84 100644
         ((GLuint *)rgba)[0] = p;                                         \
      } while (0)
  # elif defined( MESA_BIG_ENDIAN )
+diff --git a/src/mesa/drivers/dri/glcore/Makefile b/src/mesa/drivers/dri/glcore/Makefile
+index a9e9697..968190a 100644
+--- a/src/mesa/drivers/dri/glcore/Makefile
++++ b/src/mesa/drivers/dri/glcore/Makefile
+@@ -61,7 +61,8 @@ default: depend $(TOP)/$(LIB_DIR)/$(LIBNAME)
+ 
+ 
+ $(TOP)/$(LIB_DIR)/$(LIBNAME): $(OBJECTS) $(MESA_MODULES) $(WINOBJ) Makefile
+-	CC="$(CC)" CXX="$(CXX)" $(TOP)/bin/mklib -o $(LIBNAME) -noprefix -install $(TOP)/$(LIB_DIR) \
++	CC="$(CC)" CXX="$(CXX)" $(TOP)/bin/mklib -o $(LIBNAME) -noprefix \
++		-ldflags '$(LDFLAGS)' -install $(TOP)/$(LIB_DIR) \
+ 		$(OBJECTS) $(WINLIB) $(LIB_DEPS) $(WINOBJ) $(MESA_MODULES)
+ 
+ 
 diff --git a/src/mesa/drivers/dri/i810/i810screen.c b/src/mesa/drivers/dri/i810/i810screen.c
 index f64c10a..f8cf050 100644
 --- a/src/mesa/drivers/dri/i810/i810screen.c
@@ -1102,6 +1701,19 @@ index 3ab62bc..397ff75 100644
      */
     i915->meta.Ctx[I915_CTXREG_LIS6] &= ~S6_DEPTH_TEST_FUNC_MASK;
     i915->meta.Ctx[I915_CTXREG_LIS6] |=
+diff --git a/src/mesa/drivers/dri/i915tex/i915_tex_layout.c b/src/mesa/drivers/dri/i915tex/i915_tex_layout.c
+index 9f40706..7b761a7 100644
+--- a/src/mesa/drivers/dri/i915tex/i915_tex_layout.c
++++ b/src/mesa/drivers/dri/i915tex/i915_tex_layout.c
+@@ -113,7 +113,7 @@ i915_miptree_layout(struct intel_mipmap_tree * mt)
+           */
+          for (level = mt->first_level; level <= MAX2(8, mt->last_level);
+               level++) {
+-            intel_miptree_set_level_info(mt, level, 1, 0, mt->total_height,
++            intel_miptree_set_level_info(mt, level, depth, 0, mt->total_height,
+                                          width, height, depth);
+ 
+ 
 diff --git a/src/mesa/drivers/dri/i915tex/i915_vtbl.c b/src/mesa/drivers/dri/i915tex/i915_vtbl.c
 index ad333b4..e911fc4 100644
 --- a/src/mesa/drivers/dri/i915tex/i915_vtbl.c
@@ -1182,7 +1794,7 @@ index bcbbb12..5fc8eb3 100644
  
  /* ================================================================
 diff --git a/src/mesa/drivers/dri/i915tex/intel_mipmap_tree.c b/src/mesa/drivers/dri/i915tex/intel_mipmap_tree.c
-index 8e83028..6c28543 100644
+index 8e83028..564eb9e 100644
 --- a/src/mesa/drivers/dri/i915tex/intel_mipmap_tree.c
 +++ b/src/mesa/drivers/dri/i915tex/intel_mipmap_tree.c
 @@ -79,6 +79,10 @@ intel_miptree_create(struct intel_context *intel,
@@ -1196,7 +1808,7 @@ index 8e83028..6c28543 100644
        ok = i945_miptree_layout(mt);
        break;
     case PCI_CHIP_I915_G:
-@@ -93,9 +97,19 @@ intel_miptree_create(struct intel_context *intel,
+@@ -93,9 +97,28 @@ intel_miptree_create(struct intel_context *intel,
        break;
     }
  
@@ -1208,7 +1820,16 @@ index 8e83028..6c28543 100644
 +	  * replaced at some point by some scheme to only do this when really
 +	  * necessary.
 +	  */
-+	 mt->pitch = ((mt->pitch * cpp + 63) & ~63) / cpp;
++	 mt->pitch = (mt->pitch * cpp + 63) & ~63;
++
++	 /* XXX: At least the i915 seems very upset when the pitch is a multiple
++	  * of 1024 and sometimes 512 bytes - performance can drop by several
++	  * times. Go to the next multiple of 64 for now.
++	  */
++	 if (!(mt->pitch & 511))
++	    mt->pitch += 64;
++
++	 mt->pitch /= cpp;
 +      }
 +
        mt->region = intel_region_alloc(intel->intelScreen,
@@ -1573,7 +2194,7 @@ index d155c03..de6a867 100644
  
     /* Set state we know depends on drawable parameters:
 diff --git a/src/mesa/drivers/dri/i965/intel_context.c b/src/mesa/drivers/dri/i965/intel_context.c
-index 10eb9a2..8c304a9 100644
+index 10eb9a2..33efed4 100644
 --- a/src/mesa/drivers/dri/i965/intel_context.c
 +++ b/src/mesa/drivers/dri/i965/intel_context.c
 @@ -262,7 +262,7 @@ intelBeginQuery(GLcontext *ctx, GLenum target, struct gl_query_object *q)
@@ -1594,6 +2215,15 @@ index 10eb9a2..8c304a9 100644
  	q->Result = tmp - q->Result;
  	q->Ready = GL_TRUE;
  	intel->stats_wm--;
+@@ -487,7 +487,7 @@ GLboolean intelInitContext( struct intel_context *intel,
+       _mesa_enable_extension( ctx, "GL_EXT_texture_compression_s3tc" );
+       _mesa_enable_extension( ctx, "GL_S3_s3tc" );
+    }
+-   else if (driQueryOptionb (&intelScreen->optionCache, "force_s3tc_enable")) {
++   else if (driQueryOptionb (&intel->optionCache, "force_s3tc_enable")) {
+       _mesa_enable_extension( ctx, "GL_EXT_texture_compression_s3tc" );
+    }
+ 
 @@ -567,6 +567,10 @@ GLboolean intelMakeCurrent(__DRIcontextPrivate *driContextPriv,
     if (driContextPriv) {
        struct intel_context *intel = (struct intel_context *) driContextPriv->driverPrivate;
@@ -1772,6 +2402,112 @@ index 4d25d32..7c73877 100644
     
     switch (vmesa->glCtx->DrawBuffer->_ColorDrawBufferMask[0]) {
     case BUFFER_BIT_BACK_LEFT: 
+diff --git a/src/mesa/drivers/windows/gdi/wmesa.c b/src/mesa/drivers/windows/gdi/wmesa.c
+index 5b67439..c1d26a3 100644
+--- a/src/mesa/drivers/windows/gdi/wmesa.c
++++ b/src/mesa/drivers/windows/gdi/wmesa.c
+@@ -458,23 +458,84 @@ static void write_rgba_span_front(const GLcontext *ctx,
+ 				   const GLubyte rgba[][4], 
+ 				   const GLubyte mask[] )
+ {
+-    WMesaContext pwc = wmesa_context(ctx);
+-    GLuint i;
+-    
+-    (void) ctx;
+-    y=FLIP(y);
+-    if (mask) {
+-	for (i=0; i<n; i++)
+-	    if (mask[i])
+-		SetPixel(pwc->hDC, x+i, y, RGB(rgba[i][RCOMP], rgba[i][GCOMP], 
+-					       rgba[i][BCOMP]));
+-    }
+-    else {
+-	for (i=0; i<n; i++)
+-	    SetPixel(pwc->hDC, x+i, y, RGB(rgba[i][RCOMP], rgba[i][GCOMP], 
+-					   rgba[i][BCOMP]));
+-    }
+-    
++   WMesaContext pwc = wmesa_context(ctx);
++   WMesaFramebuffer pwfb = wmesa_lookup_framebuffer(pwc->hDC);
++   CONST BITMAPINFO bmi=
++   {
++      {
++         sizeof(BITMAPINFOHEADER),
++         n, 1, 1, 32, BI_RGB, 0, 1, 1, 0, 0
++      }
++   };
++   HBITMAP bmp=0;
++   HDC mdc=0;
++   typedef union
++   {
++      unsigned i;
++      struct {
++         unsigned b:8, g:8, r:8, a:8;
++      };
++   } BGRA;
++   BGRA *bgra, c;
++   int i;
++
++   if (n < 16) {   // the value 16 is just guessed
++      y=FLIP(y);
++      if (mask) {
++         for (i=0; i<n; i++)
++            if (mask[i])
++               SetPixel(pwc->hDC, x+i, y,
++                        RGB(rgba[i][RCOMP], rgba[i][GCOMP], rgba[i][BCOMP]));
++      }
++      else {
++         for (i=0; i<n; i++)
++            SetPixel(pwc->hDC, x+i, y,
++                     RGB(rgba[i][RCOMP], rgba[i][GCOMP], rgba[i][BCOMP]));
++      }
++   }
++   else {
++      if (!pwfb) {
++         _mesa_problem(NULL, "wmesa: write_rgba_span_front on unknown hdc");
++         return;
++      }
++      bgra=malloc(n*sizeof(BGRA));
++      if (!bgra) {
++         _mesa_problem(NULL, "wmesa: write_rgba_span_front: out of memory");
++         return;
++      }
++      c.a=0;
++      if (mask) {
++         for (i=0; i<n; i++) {
++            if (mask[i]) {
++               c.r=rgba[i][RCOMP];
++               c.g=rgba[i][GCOMP];
++               c.b=rgba[i][BCOMP];
++               c.a=rgba[i][ACOMP];
++               bgra[i]=c;
++            }
++            else
++               bgra[i].i=0;
++         }
++      }
++      else {
++         for (i=0; i<n; i++) {
++            c.r=rgba[i][RCOMP];
++            c.g=rgba[i][GCOMP];
++            c.b=rgba[i][BCOMP];
++            c.a=rgba[i][ACOMP];
++            bgra[i]=c;
++         }
++      }
++      bmp=CreateBitmap(n, 1,  1, 32, bgra);
++      mdc=CreateCompatibleDC(pwfb->hDC);
++      SelectObject(mdc, bmp);
++      y=FLIP(y);
++      BitBlt(pwfb->hDC, x, y, n, 1, mdc, 0, 0, SRCCOPY);
++      SelectObject(mdc, 0);
++      DeleteObject(bmp);
++      DeleteDC(mdc);
++      free(bgra);
++   }
+ }
+ 
+ /* Write a horizontal span of RGB color pixels with a boolean mask. */
 diff --git a/src/mesa/gl.pc.in b/src/mesa/gl.pc.in
 new file mode 100644
 index 0000000..4b144ff
@@ -2937,6 +3673,19 @@ index 96ee512..767161f 100644
  
     if (ctx->FragmentProgram._MaintainTexEnvProgram) {
        if (new_state & (_NEW_TEXTURE | _DD_NEW_SEPARATE_SPECULAR | _NEW_FOG))
+diff --git a/src/mesa/main/texenvprogram.c b/src/mesa/main/texenvprogram.c
+index 1a46c10..a6904f4 100644
+--- a/src/mesa/main/texenvprogram.c
++++ b/src/mesa/main/texenvprogram.c
+@@ -38,7 +38,7 @@
+  * According to Glean's texCombine test, no more than 21 instructions
+  * are needed.  Allow a few extra just in case.
+  */
+-#define MAX_INSTRUCTIONS 24
++#define MAX_INSTRUCTIONS ((MAX_TEXTURE_UNITS * 6) + 10) /* see bug 9829 */
+ 
+ #define DISASSEM (MESA_VERBOSE & VERBOSE_DISASSEM)
+ 
 diff --git a/src/mesa/main/texobj.c b/src/mesa/main/texobj.c
 index 56d816e..7b36154 100644
 --- a/src/mesa/main/texobj.c
@@ -3704,6 +4453,19 @@ index 4727c1a..854c911 100644
        _mesa_error(ctx, GL_INVALID_ENUM, "glSampleMapATI(swizzle)");
        return;
     }
+diff --git a/src/mesa/shader/prog_statevars.c b/src/mesa/shader/prog_statevars.c
+index 975a617..d37d7fb 100644
+--- a/src/mesa/shader/prog_statevars.c
++++ b/src/mesa/shader/prog_statevars.c
+@@ -507,6 +507,8 @@ _mesa_program_state_flags(const gl_state_index state[STATE_LENGTH])
+       switch (state[1]) {
+       case STATE_TEXRECT_SCALE:
+ 	 return _NEW_TEXTURE;
++      case STATE_FOG_PARAMS_OPTIMIZED:
++	 return _NEW_FOG;
+       default:
+          /* unknown state indexes are silently ignored and
+          *  no flag set, since it is handled by the driver.
 diff --git a/src/mesa/shader/shader_api.c b/src/mesa/shader/shader_api.c
 index b794e30..06d24b4 100644
 --- a/src/mesa/shader/shader_api.c
@@ -3812,8 +4574,149 @@ index 097d2c7..5814400 100644
     span->zStep = 0;
     span->interpMask |= SPAN_Z;
  }
+diff --git a/src/mesa/tnl/t_draw.c b/src/mesa/tnl/t_draw.c
+index 5b2b2ae..ff50d91 100644
+--- a/src/mesa/tnl/t_draw.c
++++ b/src/mesa/tnl/t_draw.c
+@@ -1,9 +1,8 @@
+-
+ /*
+  * Mesa 3-D graphics library
+- * Version:  6.5
++ * Version:  7.0.2
+  *
+- * Copyright (C) 1999-2006  Brian Paul   All Rights Reserved.
++ * Copyright (C) 1999-2007  Brian Paul   All Rights Reserved.
+  *
+  * Permission is hereby granted, free of charge, to any person obtaining a
+  * copy of this software and associated documentation files (the "Software"),
+@@ -368,7 +367,7 @@ void _tnl_draw_prims( GLcontext *ctx,
+ 			_tnl_draw_prims );
+       return;
+    }
+-   else if (max_index >= max) {
++   else if (max_index > max) {
+       /* The software TNL pipeline has a fixed amount of storage for
+        * vertices and it is necessary to split incoming drawing commands
+        * if they exceed that limit.
+diff --git a/src/mesa/tnl/t_vb_fog.c b/src/mesa/tnl/t_vb_fog.c
+index 5440ff7..d8bca38 100644
+--- a/src/mesa/tnl/t_vb_fog.c
++++ b/src/mesa/tnl/t_vb_fog.c
+@@ -41,7 +41,6 @@
+ 
+ struct fog_stage_data {
+    GLvector4f fogcoord;		/* has actual storage allocated */
+-   GLvector4f input;		/* points into VB->EyePtr Z values */
+ };
+ 
+ #define FOG_STAGE_DATA(stage) ((struct fog_stage_data *)stage->privatePtr)
+@@ -91,7 +90,8 @@ init_static_data( void )
+  * evaluating the GL_LINEAR, GL_EXP or GL_EXP2 fog function.
+  * Fog coordinates are distances from the eye (typically between the
+  * near and far clip plane distances).
+- * Note the fog (eye Z) coords may be negative so we use ABS(z) below.
++ * Note that fogcoords may be negative, if eye z is source absolute
++ * value must be taken earlier.
+  * Fog blend factors are in the range [0,1].
+  */
+ static void
+@@ -114,7 +114,7 @@ compute_fog_blend_factors(GLcontext *ctx, GLvector4f *out, const GLvector4f *in)
+       else
+          d = 1.0F / (ctx->Fog.End - ctx->Fog.Start);
+       for ( i = 0 ; i < n ; i++, STRIDE_F(v, stride)) {
+-         const GLfloat z = FABSF(*v);
++         const GLfloat z = *v;
+          GLfloat f = (end - z) * d;
+ 	 data[i][0] = CLAMP(f, 0.0F, 1.0F);
+       }
+@@ -122,14 +122,14 @@ compute_fog_blend_factors(GLcontext *ctx, GLvector4f *out, const GLvector4f *in)
+    case GL_EXP:
+       d = ctx->Fog.Density;
+       for ( i = 0 ; i < n ; i++, STRIDE_F(v,stride)) {
+-         const GLfloat z = FABSF(*v);
++         const GLfloat z = *v;
+          NEG_EXP( data[i][0], d * z );
+       }
+       break;
+    case GL_EXP2:
+       d = ctx->Fog.Density*ctx->Fog.Density;
+       for ( i = 0 ; i < n ; i++, STRIDE_F(v, stride)) {
+-         const GLfloat z = FABSF(*v);
++         const GLfloat z = *v;
+          NEG_EXP( data[i][0], d * z * z );
+       }
+       break;
+@@ -153,6 +153,8 @@ run_fog_stage(GLcontext *ctx, struct tnl_pipeline_stage *stage)
+ 
+ 
+    if (ctx->Fog.FogCoordinateSource == GL_FRAGMENT_DEPTH_EXT) {
++      GLuint i;
++      GLfloat *coord;
+       /* Fog is computed from vertex or fragment Z values */
+       /* source = VB->ObjPtr or VB->EyePtr coords */
+       /* dest = VB->AttribPtr[_TNL_ATTRIB_FOG] = fog stage private storage */
+@@ -167,11 +169,10 @@ run_fog_stage(GLcontext *ctx, struct tnl_pipeline_stage *stage)
+ 	  */
+ 	 input = &store->fogcoord;
+ 
+-         /* NOTE: negate plane here so we get positive fog coords! */
+-	 plane[0] = -m[2];
+-	 plane[1] = -m[6];
+-	 plane[2] = -m[10];
+-	 plane[3] = -m[14];
++	 plane[0] = m[2];
++	 plane[1] = m[6];
++	 plane[2] = m[10];
++	 plane[3] = m[14];
+ 	 /* Full eye coords weren't required, just calculate the
+ 	  * eye Z values.
+ 	  */
+@@ -180,18 +181,29 @@ run_fog_stage(GLcontext *ctx, struct tnl_pipeline_stage *stage)
+ 					      VB->ObjPtr, plane );
+ 
+ 	 input->count = VB->ObjPtr->count;
++
++	 /* make sure coords are really positive
++	    NOTE should avoid going through array twice */
++	 coord = input->start;
++	 for (i = 0; i < input->count; i++) {
++	    *coord = FABSF(*coord);
++	    STRIDE_F(coord, input->stride);
++	 }
+       }
+       else {
+-         /* fog coordinates = eye Z coordinates (use ABS later) */
+-	 input = &store->input;
++         /* fog coordinates = eye Z coordinates - need to copy for ABS */
++	 input = &store->fogcoord;
+ 
+ 	 if (VB->EyePtr->size < 2)
+ 	    _mesa_vector4f_clean_elem( VB->EyePtr, VB->Count, 2 );
+ 
+-	 input->data = (GLfloat (*)[4]) &(VB->EyePtr->data[0][2]);
+-	 input->start = VB->EyePtr->start+2;
+-	 input->stride = VB->EyePtr->stride;
++	 input->stride = 4 * sizeof(GLfloat);
+ 	 input->count = VB->EyePtr->count;
++	 coord = VB->EyePtr->start;
++	 for (i = 0 ; i < VB->EyePtr->count; i++) {
++	    input->data[i][0] = FABSF(coord[2]);
++	    STRIDE_F(coord, VB->EyePtr->stride);
++	 }
+       }
+    }
+    else {
+@@ -234,7 +246,6 @@ alloc_fog_data(GLcontext *ctx, struct tnl_pipeline_stage *stage)
+       return GL_FALSE;
+ 
+    _mesa_vector4f_alloc( &store->fogcoord, 0, tnl->vb.Size, 32 );
+-   _mesa_vector4f_init( &store->input, 0, NULL );
+ 
+    if (!inited)
+       init_static_data();
 diff --git a/src/mesa/tnl/t_vp_build.c b/src/mesa/tnl/t_vp_build.c
-index dff062a..63f7890 100644
+index dff062a..6a6db06 100644
 --- a/src/mesa/tnl/t_vp_build.c
 +++ b/src/mesa/tnl/t_vp_build.c
 @@ -1,8 +1,8 @@
@@ -3877,6 +4780,15 @@ index dff062a..63f7890 100644
     dst->File = reg.file;
     dst->Index = reg.idx;
     /* allow zero as a shorthand for xyzw */
+@@ -686,7 +699,7 @@ static struct ureg get_eye_normal( struct tnl_program *p )
+ 	 struct ureg rescale = register_param2(p, STATE_INTERNAL,
+ 					       STATE_NORMAL_SCALE);
+ 
+-	 emit_op2( p, OPCODE_MUL, p->eye_normal, 0, normal, 
++	 emit_op2( p, OPCODE_MUL, p->eye_normal, 0, p->eye_normal,
+ 		   swizzle1(rescale, X));
+       }
+    }
 @@ -956,13 +969,19 @@ static void build_lighting( struct tnl_program *p )
  					       STATE_POSITION); 
  	    struct ureg V = get_eye_position(p);
@@ -3907,18 +4819,16 @@ index dff062a..63f7890 100644
  	 }
  
  	 /* Calculate dot products:
-@@ -1103,7 +1123,9 @@ static void build_fog( struct tnl_program *p )
+@@ -1103,7 +1123,7 @@ static void build_fog( struct tnl_program *p )
  {
     struct ureg fog = register_output(p, VERT_RESULT_FOGC);
     struct ureg input;
 -   
-+   GLuint useabs = p->state->fog_source_is_depth && p->state->fog_mode &&
-+		   (p->state->fog_mode != FOG_EXP2);
 +
     if (p->state->fog_source_is_depth) {
        input = swizzle1(get_eye_position(p), Z);
     }
-@@ -1111,31 +1133,36 @@ static void build_fog( struct tnl_program *p )
+@@ -1111,39 +1131,48 @@ static void build_fog( struct tnl_program *p )
        input = swizzle1(register_input(p, VERT_ATTRIB_FOG), X);
     }
  
@@ -3927,11 +4837,12 @@ index dff062a..63f7890 100644
        struct ureg params = register_param2(p, STATE_INTERNAL,
  					   STATE_FOG_PARAMS_OPTIMIZED);
        struct ureg tmp = get_temp(p);
- 
++      GLboolean useabs = (p->state->fog_mode != FOG_EXP2);
++
 +      if (useabs) {
 +	 emit_op1(p, OPCODE_ABS, tmp, 0, input);
 +      }
-+
+ 
        switch (p->state->fog_mode) {
        case FOG_LINEAR: {
  	 struct ureg id = get_identity_param(p);
@@ -3961,11 +4872,14 @@ index dff062a..63f7890 100644
        release_temp(p, tmp);
     }
     else {
-@@ -1143,7 +1170,7 @@ static void build_fog( struct tnl_program *p )
+       /* results = incoming fog coords (compute fog per-fragment later) 
         *
         * KW:  Is it really necessary to do anything in this case?
++       * BP: Yes, we always need to compute the absolute value, unless
++       * we want to push that down into the fragment program...
         */
 -      emit_op1(p, OPCODE_MOV, fog, WRITEMASK_X, input);
++      GLboolean useabs = GL_TRUE;
 +      emit_op1(p, useabs ? OPCODE_ABS : OPCODE_MOV, fog, WRITEMASK_X, input);
     }
  }

@@ -1,0 +1,36 @@
+From 32699696e31234c8d4e4b08f255ba2134ec12db5 Mon Sep 17 00:00:00 2001
+From: Jerome Glisse <glisse@freedesktop.org>
+Date: Sun, 7 Oct 2007 22:49:56 +0200
+Subject: [PATCH] r300: fragprog tex instruction now take writemask into acount.
+
+---
+ src/mesa/drivers/dri/r300/r300_fragprog.c |    6 +++++-
+ 1 files changed, 5 insertions(+), 1 deletions(-)
+
+diff --git a/src/mesa/drivers/dri/r300/r300_fragprog.c b/src/mesa/drivers/dri/r300/r300_fragprog.c
+index cce8e68..78ed44b 100644
+--- a/src/mesa/drivers/dri/r300/r300_fragprog.c
++++ b/src/mesa/drivers/dri/r300/r300_fragprog.c
+@@ -951,6 +951,10 @@ static void emit_tex(struct r300_fragment_program *fp,
+ 		if (REG_GET_TYPE(dest) == REG_TYPE_OUTPUT) {
+ 			rdest = dest;
+ 			dest = get_temp_reg_tex(fp);
++		} else if (fpi->DstReg.WriteMask != WRITEMASK_XYZW) {
++			/* in case write mask isn't XYZW */
++			rdest = dest;
++			dest = get_temp_reg_tex(fp);
+ 		}
+ 		hwdest =
+ 		    t_hw_dst(fp, dest, GL_TRUE,
+@@ -1016,7 +1020,7 @@ static void emit_tex(struct r300_fragment_program *fp,
+ 
+ 	/* Copy from temp to output if needed */
+ 	if (REG_GET_VALID(rdest)) {
+-		emit_arith(fp, PFS_OP_MAD, rdest, WRITEMASK_XYZW, dest,
++		emit_arith(fp, PFS_OP_MAD, rdest, fpi->DstReg.WriteMask, dest,
+ 			   pfs_one, pfs_zero, 0);
+ 		free_temp(fp, dest);
+ 	}
+-- 
+1.5.2.4
+
