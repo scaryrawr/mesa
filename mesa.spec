@@ -31,31 +31,27 @@
 
 Summary: Mesa graphics libraries
 Name: mesa
-Version: 7.0.1
-Release: 7%{?dist}
+Version: 7.1pre
+Release: 0%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
-Source0: http://internap.dl.sourceforge.net/sourceforge/mesa3d/MesaLib-%{version}.tar.bz2
-Source1: http://internap.dl.sourceforge.net/sourceforge/mesa3d/MesaDemos-%{version}.tar.bz2
+Source0: http://internap.dl.sourceforge.net/sourceforge/mesa3d/MesaLib-7.1pre.tar.bz2
+Source1: http://internap.dl.sourceforge.net/sourceforge/mesa3d/MesaDemos-7.1pre.tar.bz2
 Source2: %{manpages}.tar.bz2
 
-Patch0: mesa-7.0-build-config.patch
+Patch1: mesa-7.1-kill-glw.patch
+Patch2: mesa-7.1pre-osmesa-version.patch
 Patch4: mesa-6.5-dont-libglut-me-harder-ok-thx-bye.patch
 Patch5: mesa-6.5.2-xserver-1.1-source-compat.patch
 Patch18: mesa-7.0-selinux-awareness.patch
-Patch23: mesa-6.5.2-bindcontext-paranoia.patch
 Patch25: mesa-7.0-symlinks-before-depend.patch
-Patch26: mesa-7.0.1-stable-branch.patch
-Patch27: mesa-7.0-use_master-r300.patch
-Patch28: mesa-7.0.1-r300-fix-writemask.patch
-Patch29: mesa-7.0.1-r200-settexoffset.patch
 
 BuildRequires: pkgconfig
 %if %{with_dri}
-BuildRequires: libdrm-devel >= 2.3.0-1
+BuildRequires: libdrm-devel >= 2.4.0-0
 %endif
 BuildRequires: libXxf86vm-devel
 BuildRequires: expat-devel >= 2.0
@@ -173,16 +169,12 @@ This package provides some demo applications for testing Mesa.
 %setup -q -n Mesa-%{version} -b1 -b2
 chmod a-x progs/demos/glslnoise.c
 
-%patch0 -p1 -b .build-config
+%patch1 -p1 -b .kill-glw
+%patch2 -p1 -b .osmesa-version
 %patch4 -p0 -b .dont-libglut-me-harder-ok-thx-bye
 %patch5 -p1 -b .xserver-1.1-compat
 %patch18 -p1 -b .selinux-awareness
-%patch23 -p1 -b .bindcontext
 %patch25 -p1 -b .makej
-%patch26 -p1 -b .stable
-%patch27 -p1 -b .r300
-%patch28 -p1 -b .r300-writemask
-%patch29 -p1 -b .r200-settexoffset
 
 # WARNING: The following files are copyright "Mark J. Kilgard" under the GLUT
 # license and are not open source/free software, so we remove them.
@@ -364,6 +356,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/arbocclude
 %{_bindir}/bounce
 %{_bindir}/clearspd
+%{_bindir}/copypix
 %{_bindir}/cubemap
 %{_bindir}/drawpix
 %{_bindir}/engine
@@ -412,6 +405,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/mesa-demos-data
 
 %changelog
+* Thu Nov 01 2007 Dave Airlie <airlied@redhat.com> 7.1pre-0
+- rebase Mesa to 7.1pre 74ced1e67f286a5e71e9877bc6844b2af5b9ab8d
+
 * Thu Oct 18 2007 Dave Airlie <airlied@redhat.com> 7.0.1-7
 - mesa-7.0.1-stable-branch.patch - Updated with more fixes from stable
 - mesa-7.0.1-r300-fix-writemask.patch - fix r300 fragprog writemask

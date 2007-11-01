@@ -1,0 +1,39 @@
+From 8a156f47fc6547d5ed0fb8031f332cbf9e16948d Mon Sep 17 00:00:00 2001
+From: Dave Airlie <airlied@redhat.com>
+Date: Thu, 1 Nov 2007 16:16:52 +1000
+Subject: [PATCH] mesa: keep OSMESA version at 6.5.3
+
+---
+ src/mesa/Makefile |    9 +++++----
+ 1 files changed, 5 insertions(+), 4 deletions(-)
+
+diff --git a/src/mesa/Makefile b/src/mesa/Makefile
+index 77bb7be..e2a09ed 100644
+--- a/src/mesa/Makefile
++++ b/src/mesa/Makefile
+@@ -117,17 +117,18 @@ $(TOP)/$(LIB_DIR)/$(GL_LIB_NAME): $(STAND_ALONE_OBJECTS)
+ 		$(MKLIB_OPTIONS) $(GL_LIB_DEPS) $(STAND_ALONE_OBJECTS)
+ 
+ # Make the OSMesa library
++# Note: version is kept at 6.5.3 to simplify app/linking issues
+ $(TOP)/$(LIB_DIR)/$(OSMESA_LIB_NAME): $(OSMESA_DRIVER_OBJECTS) $(OSMESA16_OBJECTS)
+ 	@ if [ "${DRIVER_DIRS}" = "osmesa" ] ; then \
+ 		$(TOP)/bin/mklib -o $(OSMESA_LIB) -linker '$(CC)' \
+-			-ldflags '$(LDFLAGS)' -major $(MESA_MAJOR) \
+-			-minor $(MESA_MINOR) -patch $(MESA_TINY) \
++			-ldflags '$(LDFLAGS)' -major 6 \
++			-minor 5 -patch 3 \
+ 			-install $(TOP)/$(LIB_DIR) $(MKLIB_OPTIONS) \
+ 			$(OSMESA_LIB_DEPS) $(OSMESA16_OBJECTS) ; \
+ 	else \
+ 		$(TOP)/bin/mklib -o $(OSMESA_LIB) -linker '$(CC)' \
+-			-ldflags '$(LDFLAGS)' -major $(MESA_MAJOR) \
+-			-minor $(MESA_MINOR) -patch $(GL_TINY) \
++			-ldflags '$(LDFLAGS)' -major 6 \
++			-minor 5 -patch 3 \
+ 			-install $(TOP)/$(LIB_DIR) $(MKLIB_OPTIONS) \
+ 			$(OSMESA_LIB_DEPS) $(OSMESA_DRIVER_OBJECTS) ; \
+ 	fi
+-- 
+1.5.3.4
+

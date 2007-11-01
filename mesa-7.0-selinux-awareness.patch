@@ -132,3 +132,15 @@ diff -up Mesa-7.0/configs/linux-dri.jx Mesa-7.0/configs/linux-dri
  GL_LIB_DEPS   = $(EXTRA_LIB_PATH) -lX11 -lXext -lXxf86vm -lXdamage -lXfixes \
  		-lm -lpthread -ldl \
                  $(LIBDRM_LIB)
+diff -up Mesa-7.1pre/progs/osdemos/Makefile.da Mesa-7.1pre/progs/osdemos/Makefile
+--- Mesa-7.1pre/progs/osdemos/Makefile.da	2007-11-01 15:59:52.000000000 +1000
++++ Mesa-7.1pre/progs/osdemos/Makefile	2007-11-01 15:59:57.000000000 +1000
+@@ -5,7 +5,7 @@ include $(TOP)/configs/current
+ 
+ INCDIR = $(TOP)/include
+ 
+-OSMESA_LIBS = -L$(TOP)/$(LIB_DIR) -lOSMesa $(APP_LIB_DEPS)
++OSMESA_LIBS = -L$(TOP)/$(LIB_DIR) -lOSMesa $(APP_LIB_DEPS) -l selinux
+ 
+ OSMESA16_LIBS = -L$(TOP)/$(LIB_DIR) -lglut -lOSMesa16 -lGLU -lGL $(APP_LIB_DEPS)
+ 
