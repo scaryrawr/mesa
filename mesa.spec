@@ -166,7 +166,7 @@ This package provides some demo applications for testing Mesa.
 
 
 %prep
-%setup -q -n Mesa-%{version} -b1 -b2
+%setup -q -n Mesa-%{version}pre -b1 -b2
 chmod a-x progs/demos/glslnoise.c
 
 %patch1 -p1 -b .kill-glw
@@ -407,6 +407,7 @@ rm -rf $RPM_BUILD_ROOT
 %changelog
 * Thu Nov 01 2007 Adam Jackson <ajax@redhat.com> 7.1-0.1
 - Fix EVR, 7.1pre > 7.1, that would have been bad.
+- Fix %%setup to match.
 
 * Thu Nov 01 2007 Dave Airlie <airlied@redhat.com> 7.1pre-0
 - rebase Mesa to 7.1pre 74ced1e67f286a5e71e9877bc6844b2af5b9ab8d
