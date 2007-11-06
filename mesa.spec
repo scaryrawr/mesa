@@ -32,7 +32,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.1
-Release: 0.1%{?dist}
+Release: 0.2%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -44,11 +44,11 @@ Source2: %{manpages}.tar.bz2
 
 Patch1: mesa-7.1-kill-glw.patch
 Patch2: mesa-7.1pre-osmesa-version.patch
+Patch3: mesa-7.1-dri-driver-dir.patch
 Patch4: mesa-6.5-dont-libglut-me-harder-ok-thx-bye.patch
 Patch5: mesa-6.5.2-xserver-1.1-source-compat.patch
 Patch18: mesa-7.0-selinux-awareness.patch
 Patch25: mesa-7.0-symlinks-before-depend.patch
-
 BuildRequires: pkgconfig
 %if %{with_dri}
 BuildRequires: libdrm-devel >= 2.4.0-0
@@ -171,6 +171,7 @@ chmod a-x progs/demos/glslnoise.c
 
 %patch1 -p1 -b .kill-glw
 %patch2 -p1 -b .osmesa-version
+%patch3 -p1 -b .dri-driver-dir
 %patch4 -p0 -b .dont-libglut-me-harder-ok-thx-bye
 %patch5 -p1 -b .xserver-1.1-compat
 %patch18 -p1 -b .selinux-awareness
@@ -405,6 +406,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/mesa-demos-data
 
 %changelog
+* Wed Nov 07 2007 Dave Airlie <airlied@redhat.com> 7.1-0.2
+- fix DRI driver directory
+
 * Thu Nov 01 2007 Adam Jackson <ajax@redhat.com> 7.1-0.1
 - Fix EVR, 7.1pre > 7.1, that would have been bad.
 - Fix %%setup to match.

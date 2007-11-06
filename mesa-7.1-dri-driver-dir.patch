@@ -1,0 +1,12 @@
+diff -up Mesa-7.1pre/configs/default.da Mesa-7.1pre/configs/default
+--- Mesa-7.1pre/configs/default.da	2007-11-07 08:44:17.000000000 +1000
++++ Mesa-7.1pre/configs/default	2007-11-07 08:44:28.000000000 +1000
+@@ -82,7 +82,7 @@ APP_LIB_DEPS = -lm
+ 
+ # Installation directories (for make install)
+ INSTALL_DIR = /usr/local
+-DRI_DRIVER_INSTALL_DIR = /usr/X11R6/lib/modules/dri
++DRI_DRIVER_INSTALL_DIR = $(DRI_DRIVER_DIR)
+ 
+ # Where libGL will look for DRI hardware drivers
+ DRI_DRIVER_SEARCH_DIR = $(DRI_DRIVER_INSTALL_DIR)
