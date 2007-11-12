@@ -192,21 +192,20 @@ sed -i -e 's,"terrain.dat","%{_libdir}/mesa-demos-data/terrain.dat",' progs/demo
 # an aliasing problem, so we add -fno-strict-aliasing to the flags.
 export OPT_FLAGS="$RPM_OPT_FLAGS -fno-strict-aliasing -fvisibility=hidden -fPIC"
 export DRI_DRIVER_DIR="%{_libdir}/dri"
-# export LIB_DIR=%{_lib}
 
 mkdir preserve
 
 for t in osmesa osmesa16 osmesa32; do
     echo "Building $t"
-    make %{?_smp_mflags} linux-$t OPT_FLAGS="${OPT_FLAGS}"
+    make %{?_smp_mflags} linux-$t OPT_FLAGS="${OPT_FLAGS}" LIB_DIR=lib
     mv lib/* preserve
-    make -s realclean
+    make -s realclean LIB_DIR=lib
 done
 
 echo "Building %{dri_target}"
-make %{?_smp_mflags} %{dri_target} OPT_FLAGS="${OPT_FLAGS}"
-make -C progs/xdemos glxgears glxinfo OPT_FLAGS="${OPT_FLAGS}"
-make -C progs/demos OPT_FLAGS="${OPT_FLAGS}"
+make %{?_smp_mflags} %{dri_target} OPT_FLAGS="${OPT_FLAGS}" LIB_DIR=lib
+make -C progs/xdemos glxgears glxinfo OPT_FLAGS="${OPT_FLAGS}" LIB_DIR=lib
+make -C progs/demos OPT_FLAGS="${OPT_FLAGS}" LIB_DIR=lib
 mv preserve/* lib
 ln -s libOSMesa.so.6 lib/libOSMesa.so 
 ln -s libOSMesa16.so.6 lib/libOSMesa16.so
