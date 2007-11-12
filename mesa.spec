@@ -192,14 +192,14 @@ sed -i -e 's,"terrain.dat","%{_libdir}/mesa-demos-data/terrain.dat",' progs/demo
 # an aliasing problem, so we add -fno-strict-aliasing to the flags.
 export OPT_FLAGS="$RPM_OPT_FLAGS -fno-strict-aliasing -fvisibility=hidden -fPIC"
 export DRI_DRIVER_DIR="%{_libdir}/dri"
-export LIB_DIR=%{_lib}
+# export LIB_DIR=%{_lib}
 
 mkdir preserve
 
 for t in osmesa osmesa16 osmesa32; do
     echo "Building $t"
     make %{?_smp_mflags} linux-$t
-    mv %{_lib}/* preserve
+    mv lib/* preserve
     make -s realclean
 done
 
@@ -207,10 +207,10 @@ echo "Building %{dri_target}"
 make %{?_smp_mflags} %{dri_target}
 make -C progs/xdemos glxgears glxinfo
 make -C progs/demos
-mv preserve/* %{_lib}
-ln -s libOSMesa.so.6 %{_lib}/libOSMesa.so 
-ln -s libOSMesa16.so.6 %{_lib}/libOSMesa16.so
-ln -s libOSMesa32.so.6 %{_lib}/libOSMesa32.so
+mv preserve/* lib
+ln -s libOSMesa.so.6 lib/libOSMesa.so 
+ln -s libOSMesa16.so.6 lib/libOSMesa16.so
+ln -s libOSMesa32.so.6 lib/libOSMesa32.so
 
 pushd .
 cd ../%{manpages}
@@ -232,7 +232,7 @@ install -m 644 include/GL/internal/dri_interface.h $RPM_BUILD_ROOT%{_includedir}
 rm -f $RPM_BUILD_ROOT%{_includedir}/GL/glfbdev.h
 
 install -d $RPM_BUILD_ROOT%{_libdir}
-cp -d -f %{_lib}/lib* $RPM_BUILD_ROOT%{_libdir}
+cp -d -f lib/lib* $RPM_BUILD_ROOT%{_libdir}
 
 install -d $RPM_BUILD_ROOT%{_bindir}
 install -m 0755 progs/xdemos/glxgears $RPM_BUILD_ROOT%{_bindir}
@@ -247,7 +247,7 @@ install -m 0644 progs/demos/*.dat $RPM_BUILD_ROOT/%{_libdir}/mesa-demos-data
 %if %{with_dri}
 install -d $RPM_BUILD_ROOT%{_libdir}/dri
 for f in i810 i915 i915tex i965 mach64 mga r128 r200 r300 radeon savage sis tdfx unichrome; do
-    so=%{_lib}/${f}_dri.so
+    so=lib/${f}_dri.so
     test -e $so && echo $so
 done | xargs install -m 0755 -t $RPM_BUILD_ROOT%{_libdir}/dri >& /dev/null || :
 %endif
