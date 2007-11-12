@@ -198,15 +198,15 @@ mkdir preserve
 
 for t in osmesa osmesa16 osmesa32; do
     echo "Building $t"
-    make %{?_smp_mflags} linux-$t
+    make %{?_smp_mflags} linux-$t OPT_FLAGS="${OPT_FLAGS}"
     mv lib/* preserve
     make -s realclean
 done
 
 echo "Building %{dri_target}"
-make %{?_smp_mflags} %{dri_target}
-make -C progs/xdemos glxgears glxinfo
-make -C progs/demos
+make %{?_smp_mflags} %{dri_target} OPT_FLAGS="${OPT_FLAGS}"
+make -C progs/xdemos glxgears glxinfo OPT_FLAGS="${OPT_FLAGS}"
+make -C progs/demos OPT_FLAGS="${OPT_FLAGS}"
 mv preserve/* lib
 ln -s libOSMesa.so.6 lib/libOSMesa.so 
 ln -s libOSMesa16.so.6 lib/libOSMesa16.so
