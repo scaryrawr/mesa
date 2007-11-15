@@ -32,7 +32,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.1
-Release: 0.3%{?dist}
+Release: 0.4%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -404,6 +404,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/mesa-demos-data
 
 %changelog
+* Thu Nov 15 2007 Tom "spot" Callaway <tcallawa@redhat.com> 7.1-0.4
+- link libOSMesa* against libselinux
+
 * Mon Nov 12 2007 Adam Jackson <ajax@redhat.com> 7.1-0.3
 - Drop xserver 1.1 source compatibility.
 
