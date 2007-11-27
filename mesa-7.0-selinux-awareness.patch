@@ -1,69 +1,6 @@
-diff -up Mesa-7.0/src/mesa/tnl/t_vertex_sse.c.jx Mesa-7.0/src/mesa/tnl/t_vertex_sse.c
---- Mesa-7.0/src/mesa/tnl/t_vertex_sse.c.jx	2007-06-21 18:10:54.000000000 -0400
-+++ Mesa-7.0/src/mesa/tnl/t_vertex_sse.c	2007-07-23 15:59:26.000000000 -0400
-@@ -348,7 +348,8 @@ static GLboolean build_vertex_emit( stru
-    struct x86_reg vp1 = x86_make_reg(file_XMM, 2);
-    GLubyte *fixup, *label;
- 
--   x86_init_func(&p->func);
-+   if (!x86_init_func(&p->func))
-+       return GL_FALSE;
-    
-    /* Push a few regs?
-     */
-@@ -646,7 +647,10 @@ void _tnl_generate_sse_emit( GLcontext *
-    p.identity = x86_make_reg(file_XMM, 6);
-    p.chan0 = x86_make_reg(file_XMM, 7);
- 
--   x86_init_func(&p.func);
-+   if (!x86_init_func(&p.func)) {
-+      vtx->codegen_emit = NULL;
-+      return;
-+   }
- 
-    if (build_vertex_emit(&p)) {
-       _tnl_register_fastpath( vtx, GL_TRUE );
-diff -up Mesa-7.0/src/mesa/x86/rtasm/x86sse.h.jx Mesa-7.0/src/mesa/x86/rtasm/x86sse.h
---- Mesa-7.0/src/mesa/x86/rtasm/x86sse.h.jx	2007-06-21 18:10:55.000000000 -0400
-+++ Mesa-7.0/src/mesa/x86/rtasm/x86sse.h	2007-07-23 15:59:23.000000000 -0400
-@@ -80,8 +80,8 @@ enum sse_cc {
-  */
- 
- 
--void x86_init_func( struct x86_function *p );
--void x86_init_func_size( struct x86_function *p, GLuint code_size );
-+int x86_init_func( struct x86_function *p );
-+int x86_init_func_size( struct x86_function *p, GLuint code_size );
- void x86_release_func( struct x86_function *p );
- void (*x86_get_func( struct x86_function *p ))( void );
- 
-diff -up Mesa-7.0/src/mesa/x86/rtasm/x86sse.c.jx Mesa-7.0/src/mesa/x86/rtasm/x86sse.c
---- Mesa-7.0/src/mesa/x86/rtasm/x86sse.c.jx	2007-06-21 18:10:55.000000000 -0400
-+++ Mesa-7.0/src/mesa/x86/rtasm/x86sse.c	2007-07-23 15:59:23.000000000 -0400
-@@ -1063,15 +1063,17 @@ struct x86_reg x86_fn_arg( struct x86_fu
- }
- 
- 
--void x86_init_func( struct x86_function *p )
-+int x86_init_func( struct x86_function *p )
- {
--   x86_init_func_size(p, 1024);
-+   return x86_init_func_size(p, 1024);
- }
- 
--void x86_init_func_size( struct x86_function *p, GLuint code_size )
-+int x86_init_func_size( struct x86_function *p, GLuint code_size )
- {
-    p->store = _mesa_exec_malloc(code_size);
-    p->csr = p->store;
-+
-+   return (p->store != NULL);
- }
- 
- void x86_release_func( struct x86_function *p )
-diff -up Mesa-7.0/src/mesa/main/execmem.c.jx Mesa-7.0/src/mesa/main/execmem.c
---- Mesa-7.0/src/mesa/main/execmem.c.jx	2007-06-21 18:10:54.000000000 -0400
-+++ Mesa-7.0/src/mesa/main/execmem.c	2007-07-23 16:02:30.000000000 -0400
+diff -up mesa-20071127/src/mesa/main/execmem.c.selinux-awareness mesa-20071127/src/mesa/main/execmem.c
+--- mesa-20071127/src/mesa/main/execmem.c.selinux-awareness	2007-11-27 14:33:54.000000000 -0500
++++ mesa-20071127/src/mesa/main/execmem.c	2007-11-27 14:34:34.000000000 -0500
 @@ -46,6 +46,7 @@
  #include <unistd.h>
  #include <sys/mman.h>
@@ -119,10 +56,46 @@ diff -up Mesa-7.0/src/mesa/main/execmem.c.jx Mesa-7.0/src/mesa/main/execmem.c
     _glthread_UNLOCK_MUTEX(exec_mutex);
     
     return addr;
-diff -up Mesa-7.0/configs/linux-dri.jx Mesa-7.0/configs/linux-dri
---- Mesa-7.0/configs/linux-dri.jx	2007-07-23 15:59:07.000000000 -0400
-+++ Mesa-7.0/configs/linux-dri	2007-07-23 17:37:36.000000000 -0400
-@@ -39,7 +39,8 @@ EXTRA_LIB_PATH =
+diff -up mesa-20071127/src/mesa/x86/rtasm/x86sse.c.selinux-awareness mesa-20071127/src/mesa/x86/rtasm/x86sse.c
+diff -up mesa-20071127/src/mesa/x86/rtasm/x86sse.h.selinux-awareness mesa-20071127/src/mesa/x86/rtasm/x86sse.h
+diff -up mesa-20071127/src/mesa/tnl/t_vertex_sse.c.selinux-awareness mesa-20071127/src/mesa/tnl/t_vertex_sse.c
+diff -up mesa-20071127/configs/linux-osmesa.selinux-awareness mesa-20071127/configs/linux-osmesa
+--- mesa-20071127/configs/linux-osmesa.selinux-awareness	2007-11-27 14:33:53.000000000 -0500
++++ mesa-20071127/configs/linux-osmesa	2007-11-27 14:34:34.000000000 -0500
+@@ -23,6 +23,6 @@ PROGRAM_DIRS = osdemos
+ 
+ 
+ # Dependencies
+-OSMESA_LIB_DEPS = -lm -lpthread
++OSMESA_LIB_DEPS = -lm -lpthread -lselinux
+ GLU_LIB_DEPS = -L$(TOP)/$(LIB_DIR) -l$(OSMESA_LIB)
+ APP_LIB_DEPS = -lOSMesa -lGLU
+diff -up mesa-20071127/configs/linux-osmesa32.selinux-awareness mesa-20071127/configs/linux-osmesa32
+--- mesa-20071127/configs/linux-osmesa32.selinux-awareness	2007-11-27 14:33:53.000000000 -0500
++++ mesa-20071127/configs/linux-osmesa32	2007-11-27 14:34:34.000000000 -0500
+@@ -26,6 +26,6 @@ PROGRAM_DIRS = 
+ 
+ 
+ # Dependencies
+-OSMESA_LIB_DEPS = -lm -lpthread
++OSMESA_LIB_DEPS = -lm -lpthread -lselinux
+ GLU_LIB_DEPS = -L$(TOP)/$(LIB_DIR) -l$(OSMESA_LIB)
+ APP_LIB_DEPS = -lOSMesa32
+diff -up mesa-20071127/configs/linux-osmesa16.selinux-awareness mesa-20071127/configs/linux-osmesa16
+--- mesa-20071127/configs/linux-osmesa16.selinux-awareness	2007-11-27 14:33:53.000000000 -0500
++++ mesa-20071127/configs/linux-osmesa16	2007-11-27 14:34:34.000000000 -0500
+@@ -26,6 +26,6 @@ PROGRAM_DIRS = 
+ 
+ 
+ # Dependencies
+-OSMESA_LIB_DEPS = -lm -lpthread
++OSMESA_LIB_DEPS = -lm -lpthread -lselinux
+ GLU_LIB_DEPS = -L$(TOP)/$(LIB_DIR) -l$(OSMESA_LIB)
+ APP_LIB_DEPS = -lOSMesa16
+diff -up mesa-20071127/configs/linux-dri.selinux-awareness mesa-20071127/configs/linux-dri
+--- mesa-20071127/configs/linux-dri.selinux-awareness	2007-11-27 14:34:34.000000000 -0500
++++ mesa-20071127/configs/linux-dri	2007-11-27 14:34:34.000000000 -0500
+@@ -45,7 +45,8 @@ EXTRA_LIB_PATH=-L/usr/X11R6/lib
  
  LIBDRM_CFLAGS = `pkg-config --cflags libdrm`
  LIBDRM_LIB = `pkg-config --libs libdrm`
@@ -132,36 +105,3 @@ diff -up Mesa-7.0/configs/linux-dri.jx Mesa-7.0/configs/linux-dri
  GL_LIB_DEPS   = $(EXTRA_LIB_PATH) -lX11 -lXext -lXxf86vm -lXdamage -lXfixes \
  		-lm -lpthread -ldl \
                  $(LIBDRM_LIB)
-diff -up Mesa-7.1pre/configs/linux-osmesa16.BAD Mesa-7.1pre/configs/linux-osmesa16
---- Mesa-7.1pre/configs/linux-osmesa16.BAD	2007-11-15 14:56:18.000000000 -0500
-+++ Mesa-7.1pre/configs/linux-osmesa16	2007-11-15 14:56:35.000000000 -0500
-@@ -26,6 +26,6 @@ PROGRAM_DIRS = 
- 
- 
- # Dependencies
--OSMESA_LIB_DEPS = -lm -lpthread
-+OSMESA_LIB_DEPS = -lm -lpthread -lselinux
- GLU_LIB_DEPS = -L$(TOP)/$(LIB_DIR) -l$(OSMESA_LIB)
- APP_LIB_DEPS = -lOSMesa16
-diff -up Mesa-7.1pre/configs/linux-osmesa32.BAD Mesa-7.1pre/configs/linux-osmesa32
---- Mesa-7.1pre/configs/linux-osmesa32.BAD	2007-11-15 14:55:35.000000000 -0500
-+++ Mesa-7.1pre/configs/linux-osmesa32	2007-11-15 14:55:44.000000000 -0500
-@@ -26,6 +26,6 @@ PROGRAM_DIRS = 
- 
- 
- # Dependencies
--OSMESA_LIB_DEPS = -lm -lpthread
-+OSMESA_LIB_DEPS = -lm -lpthread -lselinux
- GLU_LIB_DEPS = -L$(TOP)/$(LIB_DIR) -l$(OSMESA_LIB)
- APP_LIB_DEPS = -lOSMesa32
-diff -up Mesa-7.1pre/configs/linux-osmesa.BAD Mesa-7.1pre/configs/linux-osmesa
---- Mesa-7.1pre/configs/linux-osmesa.BAD	2007-11-15 15:00:23.000000000 -0500
-+++ Mesa-7.1pre/configs/linux-osmesa	2007-11-15 15:00:28.000000000 -0500
-@@ -23,6 +23,6 @@ PROGRAM_DIRS = osdemos
- 
- 
- # Dependencies
--OSMESA_LIB_DEPS = -lm -lpthread
-+OSMESA_LIB_DEPS = -lm -lpthread -lselinux
- GLU_LIB_DEPS = -L$(TOP)/$(LIB_DIR) -l$(OSMESA_LIB)
- APP_LIB_DEPS = -lOSMesa -lGLU

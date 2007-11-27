@@ -6,8 +6,10 @@
 %ifarch s390 s390x
 %define with_dri 0
 %define dri_target linux-indirect
+%define src_dirs SRC_DIRS="glx/x11 glu"
 %else
 %define with_dri 1
+%define src_dirs SRC_DIRS="glx/x11 mesa glu"
 %endif
 
 %ifarch %{ix86}
@@ -28,18 +30,20 @@
 %endif
 
 %define manpages gl-manpages-1.0.1
+%define gitdate 20071127
 
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.1
-Release: 0.4%{?dist}
+Release: 0.5%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
-Source0: http://internap.dl.sourceforge.net/sourceforge/mesa3d/MesaLib-7.1pre.tar.bz2
-Source1: http://internap.dl.sourceforge.net/sourceforge/mesa3d/MesaDemos-7.1pre.tar.bz2
+#Source0: http://internap.dl.sourceforge.net/sourceforge/mesa3d/MesaLib-7.1pre.tar.bz2
+#Source1: http://internap.dl.sourceforge.net/sourceforge/mesa3d/MesaDemos-7.1pre.tar.bz2
+Source0: mesa-%{gitdate}.tar.bz2
 Source2: %{manpages}.tar.bz2
 
 Patch1: mesa-7.1-kill-glw.patch
@@ -166,7 +170,8 @@ This package provides some demo applications for testing Mesa.
 
 
 %prep
-%setup -q -n Mesa-%{version}pre -b1 -b2
+#%setup -q -n Mesa-%{version}pre -b1 -b2
+%setup -q -n mesa-%{gitdate} -b2
 chmod a-x progs/demos/glslnoise.c
 
 %patch1 -p1 -b .kill-glw
@@ -203,7 +208,8 @@ for t in osmesa osmesa16 osmesa32; do
 done
 
 echo "Building %{dri_target}"
-make %{?_smp_mflags} %{dri_target} OPT_FLAGS="${OPT_FLAGS}" LIB_DIR=lib
+make %{?_smp_mflags} %{dri_target} OPT_FLAGS="${OPT_FLAGS}" LIB_DIR=lib %{src_dirs}
+# We shouldn't built this libglut, but just to make sure...
 make -C progs/xdemos glxgears glxinfo OPT_FLAGS="${OPT_FLAGS}" LIB_DIR=lib
 make -C progs/demos OPT_FLAGS="${OPT_FLAGS}" LIB_DIR=lib
 mv preserve/* lib
@@ -224,6 +230,7 @@ rm -rf $RPM_BUILD_ROOT
 # The mesa build system is broken beyond repair.  The lines below just
 # handpick and manually install the parts we want.
 
+rm include/GL/glut*.h
 install -d $RPM_BUILD_ROOT%{_includedir}/GL
 install -m 644 include/GL/{gl,o,x}*.h $RPM_BUILD_ROOT%{_includedir}/GL
 install -d $RPM_BUILD_ROOT%{_includedir}/GL/internal
@@ -404,6 +411,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/mesa-demos-data
 
 %changelog
+* Tue Nov 27 2007 Adam Jackson <ajax@redhat.com> 7.1-0.5
+- Rebase to today's git snapshot.
+- Try even harder to not build or the Mesa glut.
+
 * Thu Nov 15 2007 Tom "spot" Callaway <tcallawa@redhat.com> 7.1-0.4
 - link libOSMesa* against libselinux
 
