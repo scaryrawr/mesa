@@ -35,7 +35,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.1
-Release: 0.5%{?dist}
+Release: 0.6%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -55,7 +55,7 @@ Patch25: mesa-7.0-symlinks-before-depend.patch
 
 BuildRequires: pkgconfig
 %if %{with_dri}
-BuildRequires: libdrm-devel >= 2.4.0-0
+BuildRequires: libdrm-devel >= 2.4.0-0.2
 %endif
 BuildRequires: libXxf86vm-devel
 BuildRequires: expat-devel >= 2.0
@@ -411,6 +411,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/mesa-demos-data
 
 %changelog
+* Thu Nov 30 2007 Dave Airlie <airlied@redhat.com> 7.1-0.6
+- Rebuild against a new libdrm
+
 * Tue Nov 27 2007 Adam Jackson <ajax@redhat.com> 7.1-0.5
 - Rebase to today's git snapshot.
 - Try even harder to not build or the Mesa glut.
