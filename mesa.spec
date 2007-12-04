@@ -35,7 +35,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.1
-Release: 0.6%{?dist}
+Release: 0.7%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -52,6 +52,7 @@ Patch3: mesa-7.1-dri-driver-dir.patch
 Patch4: mesa-6.5-dont-libglut-me-harder-ok-thx-bye.patch
 Patch18: mesa-7.0-selinux-awareness.patch
 Patch25: mesa-7.0-symlinks-before-depend.patch
+Patch26: mesa-7.1-remove-getid-i915.patch
 
 BuildRequires: pkgconfig
 %if %{with_dri}
@@ -180,6 +181,7 @@ chmod a-x progs/demos/glslnoise.c
 %patch4 -p0 -b .dont-libglut-me-harder-ok-thx-bye
 %patch18 -p1 -b .selinux-awareness
 %patch25 -p1 -b .makej
+%patch26 -p1 -b .fixi915
 
 # WARNING: The following files are copyright "Mark J. Kilgard" under the GLUT
 # license and are not open source/free software, so we remove them.
@@ -411,6 +413,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/mesa-demos-data
 
 %changelog
+* Tue Dec 04 2007 Dave Airlie <airlied@redhat.com> 7.1-0.7
+- Remove references to libgl symbol from i915
+
 * Thu Nov 30 2007 Dave Airlie <airlied@redhat.com> 7.1-0.6
 - Rebuild against a new libdrm
 

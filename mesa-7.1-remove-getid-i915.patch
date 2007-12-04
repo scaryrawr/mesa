@@ -1,0 +1,24 @@
+diff -up mesa-20071127/src/mesa/drivers/dri/intel/intel_fbo.c.da mesa-20071127/src/mesa/drivers/dri/intel/intel_fbo.c
+--- mesa-20071127/src/mesa/drivers/dri/intel/intel_fbo.c.da	2007-12-04 11:20:24.000000000 +1000
++++ mesa-20071127/src/mesa/drivers/dri/intel/intel_fbo.c	2007-12-04 11:20:36.000000000 +1000
+@@ -615,11 +615,6 @@ intel_render_texture(GLcontext * ctx,
+       }
+    }
+ 
+-   DBG("Begin render texture tid %x tex=%u w=%d h=%d refcount=%d\n",
+-       _glthread_GetID(),
+-       att->Texture->Name, newImage->Width, newImage->Height,
+-       irb->Base.RefCount);
+-
+    /* point the renderbufer's region to the texture image region */
+    intel_image = intel_texture_image(newImage);
+    if (irb->region != intel_image->mt->region) {
+@@ -656,8 +651,6 @@ intel_finish_render_texture(GLcontext * 
+ {
+    struct intel_renderbuffer *irb = intel_renderbuffer(att->Renderbuffer);
+ 
+-   DBG("End render texture (tid %x) tex %u\n", _glthread_GetID(), att->Texture->Name);
+-
+    if (irb) {
+       /* just release the region */
+       intel_region_release(&irb->region);
