@@ -188,10 +188,10 @@ chmod a-x progs/demos/glslnoise.c
 rm -f include/GL/uglglutshapes.h
 
 # Hack the demos to use installed data files
-sed -i -e 's,../images,%{_libdir}/mesa-demos-data,' progs/demos/*.c
-sed -i -e 's,geartrain.dat,%{_libdir}/mesa-demos-data/geartrain.dat,' progs/demos/geartrain.c
-sed -i -e 's,isosurf.dat,%{_libdir}/mesa-demos-data/isosurf.dat,' progs/demos/isosurf.c
-sed -i -e 's,"terrain.dat","%{_libdir}/mesa-demos-data/terrain.dat",' progs/demos/terrain.c
+sed -i 's,../images,%{_libdir}/mesa-demos-data,' progs/demos/*.c
+sed -i 's,geartrain.dat,%{_libdir}/mesa-demos-data/&,' progs/demos/geartrain.c
+sed -i 's,isosurf.dat,%{_libdir}/mesa-demos-data/&,' progs/demos/isosurf.c
+sed -i 's,terrain.dat,%{_libdir}/mesa-demos-data/&,' progs/demos/terrain.c
 
 %build
 
@@ -413,6 +413,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/mesa-demos-data
 
 %changelog
+* Mon Jan 21 2008 Adam Jackson <ajax@redhat.com>
+- Make the demo seddery prettier.
+
 * Tue Dec 04 2007 Dave Airlie <airlied@redhat.com> 7.1-0.7
 - Remove references to libgl symbol from i915
 
