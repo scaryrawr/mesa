@@ -1,0 +1,35 @@
+diff -up mesa-20071127/src/mesa/drivers/dri/i915/intel_screen.c.e7221 mesa-20071127/src/mesa/drivers/dri/i915/intel_screen.c
+--- mesa-20071127/src/mesa/drivers/dri/i915/intel_screen.c.e7221	2007-11-27 14:33:54.000000000 -0500
++++ mesa-20071127/src/mesa/drivers/dri/i915/intel_screen.c	2008-01-22 13:26:07.000000000 -0500
+@@ -735,6 +735,7 @@ intelCreateContext(const __GLcontextMode
+       return i830CreateContext(mesaVis, driContextPriv, sharedContextPrivate);
+ 
+    case PCI_CHIP_I915_G:
++   case PCI_CHIP_E7221_G:
+    case PCI_CHIP_I915_GM:
+    case PCI_CHIP_I945_G:
+    case PCI_CHIP_I945_GM:
+diff -up mesa-20071127/src/mesa/drivers/dri/i915/intel_context.h.e7221 mesa-20071127/src/mesa/drivers/dri/i915/intel_context.h
+--- mesa-20071127/src/mesa/drivers/dri/i915/intel_context.h.e7221	2007-11-27 14:33:54.000000000 -0500
++++ mesa-20071127/src/mesa/drivers/dri/i915/intel_context.h	2008-01-22 13:26:07.000000000 -0500
+@@ -324,6 +324,7 @@ extern int INTEL_DEBUG;
+ #define PCI_CHIP_I855_GM		0x3582
+ #define PCI_CHIP_I865_G			0x2572
+ #define PCI_CHIP_I915_G			0x2582
++#define PCI_CHIP_E7221_G               0x258A
+ #define PCI_CHIP_I915_GM		0x2592
+ #define PCI_CHIP_I945_G			0x2772
+ #define PCI_CHIP_I945_GM		0x27A2
+diff -up mesa-20071127/src/mesa/drivers/dri/i915/intel_context.c.e7221 mesa-20071127/src/mesa/drivers/dri/i915/intel_context.c
+--- mesa-20071127/src/mesa/drivers/dri/i915/intel_context.c.e7221	2007-11-27 14:33:54.000000000 -0500
++++ mesa-20071127/src/mesa/drivers/dri/i915/intel_context.c	2008-01-22 13:27:10.000000000 -0500
+@@ -125,6 +125,9 @@ intelGetString(GLcontext * ctx, GLenum n
+       case PCI_CHIP_I915_GM:
+          chipset = "Intel(R) 915GM";
+          break;
++      case PCI_CHIP_E7221_G:
++ 	 chipset = "Intel(R) E7221G (i915)";
++	 break;
+       case PCI_CHIP_I945_G:
+          chipset = "Intel(R) 945G";
+          break;
