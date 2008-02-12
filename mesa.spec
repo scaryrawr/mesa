@@ -35,7 +35,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.1
-Release: 0.9%{?dist}
+Release: 0.10%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -55,6 +55,7 @@ Patch25: mesa-7.0-symlinks-before-depend.patch
 Patch26: mesa-7.1-remove-getid-i915.patch
 Patch27: mesa-7.1-e7221.patch
 Patch28: mesa-7.1-ia64-build-fix.patch
+Patch29: mesa-7.1-sis-ia64.patch
 
 BuildRequires: pkgconfig
 %if %{with_dri}
@@ -186,6 +187,7 @@ chmod a-x progs/demos/glslnoise.c
 %patch26 -p1 -b .fixi915
 %patch27 -p1 -b .e7221
 %patch28 -p1 -b .ia64
+%patch29 -p1 -b .sis
 
 # WARNING: The following files are copyright "Mark J. Kilgard" under the GLUT
 # license and are not open source/free software, so we remove them.
@@ -417,6 +419,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/mesa-demos-data
 
 %changelog
+* Tue Feb 12 2008 Adam Jackson <ajax@redhat.com> 7.1-0.10
+- mesa-7.1-sis-ia64.patch: Fix sis driver on ia64. (#432428)
+
 * Mon Feb 11 2008 Adam Jackson <ajax@redhat.com> 7.1-0.9
 - mesa-7.1-ia64-build-fix.patch: Fix build on ia64. (#427558)
 
