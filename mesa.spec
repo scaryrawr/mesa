@@ -1,41 +1,21 @@
 # When bootstrapping an arch, omit the -demos subpackage.
 
-# Architechture specific configuration.  FIXME:  Should build with DRI support
-# everywhere, and select target is some other more pleasant fashion.
-
+# S390 doesn't have video cards, so it's not much use building DRI there.
 %ifarch s390 s390x
 %define with_dri 0
-%define dri_target linux-indirect
-%define src_dirs SRC_DIRS="glx/x11 glu"
+%define driver xlib
 %else
 %define with_dri 1
-%define src_dirs SRC_DIRS="glx/x11 mesa glu"
-%endif
-
-%ifarch %{ix86}
-%define dri_target linux-dri-x86
-%endif
-
-%ifarch x86_64
-%define dri_target linux-dri-x86-64
-%endif
-
-%ifarch ppc ppc64
-%define dri_target linux-dri-ppc
-%endif
-
-# rpm sure has a funny way of spelling %ifndef.  This is the default case.
-%if 0%{!?dri_target:1}
-%define dri_target linux-dri
+%define driver dri
 %endif
 
 %define manpages gl-manpages-1.0.1
-%define gitdate 20071127
+%define gitdate 20080215
 
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.1
-Release: 0.10%{?dist}
+Release: 0.11%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -43,23 +23,16 @@ BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 #Source0: http://internap.dl.sourceforge.net/sourceforge/mesa3d/MesaLib-7.1pre.tar.bz2
 #Source1: http://internap.dl.sourceforge.net/sourceforge/mesa3d/MesaDemos-7.1pre.tar.bz2
-Source0: mesa-%{gitdate}.tar.bz2
+Source0: %{name}-%{gitdate}.tar.bz2
 Source2: %{manpages}.tar.bz2
+Source3: make-git-snapshot.sh
 
-Patch1: mesa-7.1-kill-glw.patch
-Patch2: mesa-7.1pre-osmesa-version.patch
-Patch3: mesa-7.1-dri-driver-dir.patch
-Patch4: mesa-6.5-dont-libglut-me-harder-ok-thx-bye.patch
-Patch18: mesa-7.0-selinux-awareness.patch
-Patch25: mesa-7.0-symlinks-before-depend.patch
-Patch26: mesa-7.1-remove-getid-i915.patch
-Patch27: mesa-7.1-e7221.patch
-Patch28: mesa-7.1-ia64-build-fix.patch
-Patch29: mesa-7.1-sis-ia64.patch
+Patch0: mesa-7.1pre-osmesa-version.patch
 
-BuildRequires: pkgconfig
+
+BuildRequires: pkgconfig autoconf
 %if %{with_dri}
-BuildRequires: libdrm-devel >= 2.4.0-0.2
+BuildRequires: libdrm-devel >= 2.4.0-0.4
 %endif
 BuildRequires: libXxf86vm-devel
 BuildRequires: expat-devel >= 2.0
@@ -176,18 +149,7 @@ This package provides some demo applications for testing Mesa.
 %prep
 #%setup -q -n Mesa-%{version}pre -b1 -b2
 %setup -q -n mesa-%{gitdate} -b2
-chmod a-x progs/demos/glslnoise.c
-
-%patch1 -p1 -b .kill-glw
-%patch2 -p1 -b .osmesa-version
-%patch3 -p1 -b .dri-driver-dir
-%patch4 -p0 -b .dont-libglut-me-harder-ok-thx-bye
-%patch18 -p1 -b .selinux-awareness
-%patch25 -p1 -b .makej
-%patch26 -p1 -b .fixi915
-%patch27 -p1 -b .e7221
-%patch28 -p1 -b .ia64
-%patch29 -p1 -b .sis
+%patch -p1 -b .osmesa
 
 # WARNING: The following files are copyright "Mark J. Kilgard" under the GLUT
 # license and are not open source/free software, so we remove them.
@@ -200,76 +162,85 @@ sed -i 's,isosurf.dat,%{_libdir}/mesa-demos-data/&,' progs/demos/isosurf.c
 sed -i 's,terrain.dat,%{_libdir}/mesa-demos-data/&,' progs/demos/terrain.c
 
 %build
+autoreconf --install
 
-# The i965 DRI driver breaks if compiled with -O2.  It appears to be
-# an aliasing problem, so we add -fno-strict-aliasing to the flags.
-export OPT_FLAGS="$RPM_OPT_FLAGS -fno-strict-aliasing -fvisibility=hidden -fPIC"
-export DRI_DRIVER_DIR="%{_libdir}/dri"
+# first, build the osmesa variants
+%configure --with-driver=osmesa --with-osmesa-bits=8
+make %{_smp_mflags} SRC_DIRS=mesa
+mv lib osmesa8
+make clean
 
-mkdir preserve
+%configure --with-driver=osmesa --with-osmesa-bits=16
+make %{_smp_mflags} SRC_DIRS=mesa
+mv lib osmesa16
+make clean
 
-for t in osmesa osmesa16 osmesa32; do
-    echo "Building $t"
-    make %{?_smp_mflags} linux-$t OPT_FLAGS="${OPT_FLAGS}" LIB_DIR=lib
-    mv lib/* preserve
-    make -s realclean LIB_DIR=lib
-done
+%configure --with-driver=osmesa --with-osmesa-bits=32
+make %{_smp_mflags} SRC_DIRS=mesa
+mv lib osmesa32
+make clean
 
-echo "Building %{dri_target}"
-make %{?_smp_mflags} %{dri_target} OPT_FLAGS="${OPT_FLAGS}" LIB_DIR=lib %{src_dirs}
-# We shouldn't built this libglut, but just to make sure...
-make -C progs/xdemos glxgears glxinfo OPT_FLAGS="${OPT_FLAGS}" LIB_DIR=lib
-make -C progs/demos OPT_FLAGS="${OPT_FLAGS}" LIB_DIR=lib
-mv preserve/* lib
-ln -s libOSMesa.so.6 lib/libOSMesa.so 
-ln -s libOSMesa16.so.6 lib/libOSMesa16.so
-ln -s libOSMesa32.so.6 lib/libOSMesa32.so
+# just to be sure...
+[ `find . -name \*.o | wc -l` -eq 0 ] || exit "make cleaner dammit"
 
-pushd .
-cd ../%{manpages}
+# now build the rest of mesa
+%configure \
+    --disable-glw \
+    --disable-glut \
+    --disable-gl-osmesa \
+    --with-driver=%{driver} \
+    --with-dri-driverdir=%{_libdir}/dri
+make %{?_smp_mflags}
+
+make -C progs/xdemos glxgears glxinfo
+make %{?_smp_mflags} -C progs/demos
+
+pushd ../%{manpages}
 %configure
 make %{?_smp_mflags}
 popd
 
-
 %install
 rm -rf $RPM_BUILD_ROOT
 
-# The mesa build system is broken beyond repair.  The lines below just
-# handpick and manually install the parts we want.
+# core libs and headers, but not drivers.
+make install DESTDIR=$RPM_BUILD_ROOT DRI_DIRS=
 
-rm include/GL/glut*.h
-install -d $RPM_BUILD_ROOT%{_includedir}/GL
-install -m 644 include/GL/{gl,o,x}*.h $RPM_BUILD_ROOT%{_includedir}/GL
-install -d $RPM_BUILD_ROOT%{_includedir}/GL/internal
-install -m 644 include/GL/internal/dri_interface.h $RPM_BUILD_ROOT%{_includedir}/GL/internal
-rm -f $RPM_BUILD_ROOT%{_includedir}/GL/glfbdev.h
+# just the DRI drivers that are sane
+%if %{with_dri}
+install -d $RPM_BUILD_ROOT%{_libdir}/dri
+for f in i810 i915 i965 mach64 mga r128 r200 r300 radeon savage sis tdfx unichrome; do
+    so=lib/${f}_dri.so
+    test -e $so && echo $so
+done | xargs install -m 0755 -t $RPM_BUILD_ROOT%{_libdir}/dri >& /dev/null || :
+%endif
 
-install -d $RPM_BUILD_ROOT%{_libdir}
-cp -d -f lib/lib* $RPM_BUILD_ROOT%{_libdir}
+# strip out undesirable headers
+pushd $RPM_BUILD_ROOT%{_includedir}/GL 
+rm [a-fh-np-wyz]*.h gg*.h glf*.h glut*.h
+popd
 
+# XXX demos, since they don't install automatically.  should fix that.
 install -d $RPM_BUILD_ROOT%{_bindir}
 install -m 0755 progs/xdemos/glxgears $RPM_BUILD_ROOT%{_bindir}
 install -m 0755 progs/xdemos/glxinfo $RPM_BUILD_ROOT%{_bindir}
-
 find progs/demos/ -type f -perm /0111 |
     xargs install -m 0755 -t $RPM_BUILD_ROOT/%{_bindir}
 install -d $RPM_BUILD_ROOT/%{_libdir}/mesa-demos-data
 install -m 0644 progs/images/*.rgb $RPM_BUILD_ROOT/%{_libdir}/mesa-demos-data
 install -m 0644 progs/demos/*.dat $RPM_BUILD_ROOT/%{_libdir}/mesa-demos-data
 
-%if %{with_dri}
-install -d $RPM_BUILD_ROOT%{_libdir}/dri
-for f in i810 i915 i915tex i965 mach64 mga r128 r200 r300 radeon savage sis tdfx unichrome; do
-    so=lib/${f}_dri.so
-    test -e $so && echo $so
-done | xargs install -m 0755 -t $RPM_BUILD_ROOT%{_libdir}/dri >& /dev/null || :
-%endif
+# and osmesa
+install -m 0755 -t $RPM_BUILD_ROOT%{_libdir} osmesa*/*.so.?
+pushd $RPM_BUILD_ROOT%{_libdir}
+for i in libOSMesa* ; do
+    ln -s $i $(basename $i .6)
+done
+popd
 
-# Install man pages
-pushd .
-cd ../%{manpages}
-make install DESTDIR=$RPM_BUILD_ROOT
+# man pages
+pushd ../%{manpages}
+make %{?_smp_mflags} install DESTDIR=$RPM_BUILD_ROOT
 popd
 
 # Install the source needed to build the X server.  The egreps are just
@@ -284,10 +255,8 @@ mkdir -p $RPM_BUILD_ROOT/%{mesasourcedir}
     xargs tar cf - --mode a=r |
 	(cd $RPM_BUILD_ROOT/%{mesasourcedir} && tar xf -)
 
-
 %clean
 rm -rf $RPM_BUILD_ROOT
-
 
 %check
 
@@ -302,7 +271,6 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 %{_libdir}/libGL.so.1
 %{_libdir}/libGL.so.1.2
-
 %if %{with_dri}
 %dir %{_libdir}/dri
 %{_libdir}/dri/*_dri.so
@@ -322,8 +290,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_includedir}/GL/internal
 %{_includedir}/GL/internal/dri_interface.h
 %{_libdir}/libGL.so
-%{_datadir}/man/man3/gl[^uX]*.3gl.gz
-%{_datadir}/man/man3/glX*.3gl.gz
+%{_libdir}/pkgconfig/gl.pc
+%{_datadir}/man/man3/gl[^uX]*.3gl*
+%{_datadir}/man/man3/glX*.3gl*
 
 %files libGLU
 %defattr(-,root,root,-)
@@ -333,18 +302,16 @@ rm -rf $RPM_BUILD_ROOT
 %files libGLU-devel
 %defattr(-,root,root,-)
 %{_libdir}/libGLU.so
+%{_libdir}/pkgconfig/glu.pc
 %{_includedir}/GL/glu.h
 %{_includedir}/GL/glu_mangle.h
-%{_datadir}/man/man3/glu*.3gl.gz
+%{_datadir}/man/man3/glu*.3gl*
 
 %files libOSMesa
 %defattr(-,root,root,-)
 %{_libdir}/libOSMesa.so.6
-%{_libdir}/libOSMesa.so.6.5.3
 %{_libdir}/libOSMesa16.so.6
-%{_libdir}/libOSMesa16.so.6.5.3
 %{_libdir}/libOSMesa32.so.6
-%{_libdir}/libOSMesa32.so.6.5.3
 
 %files libOSMesa-devel
 %defattr(-,root,root,-)
@@ -394,6 +361,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/multiarb
 %{_bindir}/paltex
 %{_bindir}/pointblast
+%{_bindir}/rain
 %{_bindir}/ray
 %{_bindir}/readpix
 %{_bindir}/reflect
@@ -419,6 +387,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/mesa-demos-data
 
 %changelog
+* Fri Feb 15 2008 Adam Jackson <ajax@redhat.com> 7.1-0.11
+- Today's git snapshot.
+- Massive spec overhaul to use new buildsystem.
+
 * Tue Feb 12 2008 Adam Jackson <ajax@redhat.com> 7.1-0.10
 - mesa-7.1-sis-ia64.patch: Fix sis driver on ia64. (#432428)
 
