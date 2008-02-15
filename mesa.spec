@@ -15,7 +15,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.1
-Release: 0.13%{?dist}
+Release: 0.14%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -169,17 +169,17 @@ autoreconf --install
 # first, build the osmesa variants
 %configure --with-driver=osmesa --with-osmesa-bits=8
 make %{_smp_mflags} SRC_DIRS=mesa
-mv lib osmesa8
+mv %{_lib} osmesa8
 make clean
 
 %configure --with-driver=osmesa --with-osmesa-bits=16
 make %{_smp_mflags} SRC_DIRS=mesa
-mv lib osmesa16
+mv %{_lib} osmesa16
 make clean
 
 %configure --with-driver=osmesa --with-osmesa-bits=32
 make %{_smp_mflags} SRC_DIRS=mesa
-mv lib osmesa32
+mv %{_lib} osmesa32
 make clean
 
 # just to be sure...
@@ -391,6 +391,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/mesa-demos-data
 
 %changelog
+* Fri Feb 15 2008 Adam Jackson <ajax@redhat.com> 7.1-0.14
+- Fix build on lib64 machines.
+
 * Fri Feb 15 2008 Adam Jackson <ajax@redhat.com> 7.1-0.13
 - Restore -fvisibility=hidden.
 - Fix autotooling.
