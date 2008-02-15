@@ -15,7 +15,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.1
-Release: 0.12%{?dist}
+Release: 0.13%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -30,7 +30,7 @@ Source3: make-git-snapshot.sh
 Patch0: mesa-7.1pre-osmesa-version.patch
 
 
-BuildRequires: pkgconfig autoconf
+BuildRequires: pkgconfig autoconf automake
 %if %{with_dri}
 BuildRequires: libdrm-devel >= 2.4.0-0.4
 %endif
@@ -162,6 +162,8 @@ sed -i 's,isosurf.dat,%{_libdir}/mesa-demos-data/&,' progs/demos/isosurf.c
 sed -i 's,terrain.dat,%{_libdir}/mesa-demos-data/&,' progs/demos/terrain.c
 
 %build
+export RPM_OPT_FLAGS="$RPM_OPT_FLAGS -fvisibility=hidden"
+
 autoreconf --install
 
 # first, build the osmesa variants
@@ -389,6 +391,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/mesa-demos-data
 
 %changelog
+* Fri Feb 15 2008 Adam Jackson <ajax@redhat.com> 7.1-0.13
+- Restore -fvisibility=hidden.
+- Fix autotooling.
+
 * Fri Feb 15 2008 Adam Jackson <ajax@redhat.com> 7.1-0.12
 - Fix file conflict with bsd-games on /usr/bin/rain.
 
