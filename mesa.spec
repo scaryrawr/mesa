@@ -15,7 +15,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.1
-Release: 0.11%{?dist}
+Release: 0.12%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -226,6 +226,8 @@ install -m 0755 progs/xdemos/glxgears $RPM_BUILD_ROOT%{_bindir}
 install -m 0755 progs/xdemos/glxinfo $RPM_BUILD_ROOT%{_bindir}
 find progs/demos/ -type f -perm /0111 |
     xargs install -m 0755 -t $RPM_BUILD_ROOT/%{_bindir}
+# bah, name conflicts
+mv $RPM_BUILD_ROOT/%{_bindir}/{rain,mesa-rain}
 install -d $RPM_BUILD_ROOT/%{_libdir}/mesa-demos-data
 install -m 0644 progs/images/*.rgb $RPM_BUILD_ROOT/%{_libdir}/mesa-demos-data
 install -m 0644 progs/demos/*.dat $RPM_BUILD_ROOT/%{_libdir}/mesa-demos-data
@@ -361,7 +363,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/multiarb
 %{_bindir}/paltex
 %{_bindir}/pointblast
-%{_bindir}/rain
+%{_bindir}/mesa-rain
 %{_bindir}/ray
 %{_bindir}/readpix
 %{_bindir}/reflect
@@ -387,6 +389,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/mesa-demos-data
 
 %changelog
+* Fri Feb 15 2008 Adam Jackson <ajax@redhat.com> 7.1-0.12
+- Fix file conflict with bsd-games on /usr/bin/rain.
+
 * Fri Feb 15 2008 Adam Jackson <ajax@redhat.com> 7.1-0.11
 - Today's git snapshot.
 - Massive spec overhaul to use new buildsystem.
