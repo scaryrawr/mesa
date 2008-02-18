@@ -10,12 +10,12 @@
 %endif
 
 %define manpages gl-manpages-1.0.1
-%define gitdate 20080215
+%define gitdate 20080218
 
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.1
-Release: 0.14%{?dist}
+Release: 0.15%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -192,6 +192,11 @@ make clean
     --disable-gl-osmesa \
     --with-driver=%{driver} \
     --with-dri-driverdir=%{_libdir}/dri
+
+echo "--- MESA CONFIGURATION ---"
+cat configs/default
+echo "--- END MESA CONFIGURATION ---"
+
 make %{?_smp_mflags}
 
 make -C progs/xdemos glxgears glxinfo
@@ -391,6 +396,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/mesa-demos-data
 
 %changelog
+* Mon Feb 18 2008 Adam Jackson <ajax@redhat.com> 7.1-0.15
+- Today's git snapshot, additional headers for DRI2 love.
+
 * Fri Feb 15 2008 Adam Jackson <ajax@redhat.com> 7.1-0.14
 - Fix build on lib64 machines.
 
