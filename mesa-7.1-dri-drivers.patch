@@ -1,7 +1,7 @@
 diff -up mesa-20080218/configure.ac.jx mesa-20080218/configure.ac
 --- mesa-20080218/configure.ac.jx	2008-02-18 12:01:51.000000000 -0500
-+++ mesa-20080218/configure.ac	2008-02-20 23:09:28.000000000 -0500
-@@ -459,12 +459,6 @@ if test "$mesa_driver" = dri; then
++++ mesa-20080218/configure.ac	2008-02-21 12:42:42.000000000 -0500
+@@ -459,15 +459,10 @@ if test "$mesa_driver" = dri; then
          PROGRAM_DIRS="egl"
      fi
  
@@ -14,7 +14,11 @@ diff -up mesa-20080218/configure.ac.jx mesa-20080218/configure.ac
      # Platform specific settings and drivers to build
      case "$host_os" in
      linux*)
-@@ -475,7 +469,7 @@ if test "$mesa_driver" = dri; then
++	echo OMG LINUX
+         DEFINES="$DEFINES -DUSE_EXTERNAL_DXTN_LIB=1 -DIN_DRI_DRIVER"
+         DEFINES="$DEFINES -DGLX_INDIRECT_RENDERING -DHAVE_ALIAS"
+         if test "x$driglx_direct" = xyes; then
+@@ -475,7 +470,7 @@ if test "$mesa_driver" = dri; then
          fi
  
          case "$host_cpu" in
@@ -23,13 +27,14 @@ diff -up mesa-20080218/configure.ac.jx mesa-20080218/configure.ac
              # ffb, gamma, and sis are missing because they have not be
              # converted to use the new interface.  i810 are missing
              # because there is no x86-64 system where they could *ever*
-@@ -484,13 +478,15 @@ if test "$mesa_driver" = dri; then
+@@ -484,13 +479,16 @@ if test "$mesa_driver" = dri; then
                  DRI_DIRS="i915 i965 mach64 mga r128 r200 r300 radeon \
                      savage tdfx unichrome"
              fi
 +	    DRI_DIRS="`echo $DRI_DIRS | sed 's/i810//g'`"
              ;;
          powerpc*)
++	    echo OMG PPC
              # Build only the drivers for cards that exist on PowerPC.
              # At some point MGA will be added, but not yet.
              if test "x$DRI_DIRS" = x; then
@@ -40,7 +45,7 @@ diff -up mesa-20080218/configure.ac.jx mesa-20080218/configure.ac
              ;;
          esac
          ;;
-@@ -513,6 +509,12 @@ if test "$mesa_driver" = dri; then
+@@ -513,6 +511,12 @@ if test "$mesa_driver" = dri; then
          fi
          ;;
      esac
