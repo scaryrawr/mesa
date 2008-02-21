@@ -195,7 +195,7 @@ make clean
     --with-dri-driverdir=%{_libdir}/dri
 
 echo "--- MESA CONFIGURATION ---"
-cat configs/default
+cat configs/current
 echo "--- END MESA CONFIGURATION ---"
 
 make %{?_smp_mflags}
@@ -218,7 +218,7 @@ make install DESTDIR=$RPM_BUILD_ROOT DRI_DIRS=
 %if %{with_dri}
 install -d $RPM_BUILD_ROOT%{_libdir}/dri
 for f in i810 i915 i965 mach64 mga r128 r200 r300 radeon savage sis tdfx unichrome; do
-    so=lib/${f}_dri.so
+    so=%{_lib}/${f}_dri.so
     test -e $so && echo $so
 done | xargs install -m 0755 -t $RPM_BUILD_ROOT%{_libdir}/dri >& /dev/null || :
 %endif
@@ -399,7 +399,7 @@ rm -rf $RPM_BUILD_ROOT
 
 %changelog
 * Wed Feb 20 2008 Adam Jackson <ajax@redhat.com> 7.1-0.16
-- Fix build on powerpc.
+- Fix build on powerpc and amd64.
 
 * Mon Feb 18 2008 Adam Jackson <ajax@redhat.com> 7.1-0.15
 - Today's git snapshot, additional headers for DRI2 love.

@@ -1,6 +1,15 @@
 diff -up mesa-20080218/configure.ac.jx mesa-20080218/configure.ac
 --- mesa-20080218/configure.ac.jx	2008-02-18 12:01:51.000000000 -0500
-+++ mesa-20080218/configure.ac	2008-02-20 20:54:55.000000000 -0500
++++ mesa-20080218/configure.ac	2008-02-20 21:30:47.000000000 -0500
+@@ -475,7 +475,7 @@ if test "$mesa_driver" = dri; then
+         fi
+ 
+         case "$host_cpu" in
+-        x86_64)
++        x86_64*)
+             # ffb, gamma, and sis are missing because they have not be
+             # converted to use the new interface.  i810 are missing
+             # because there is no x86-64 system where they could *ever*
 @@ -484,6 +484,7 @@ if test "$mesa_driver" = dri; then
                  DRI_DIRS="i915 i965 mach64 mga r128 r200 r300 radeon \
                      savage tdfx unichrome"
