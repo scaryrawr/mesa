@@ -30,7 +30,6 @@ Source3: make-git-snapshot.sh
 Patch0: mesa-7.1pre-osmesa-version.patch
 Patch1: mesa-7.1-dri-drivers.patch
 
-
 BuildRequires: pkgconfig autoconf automake
 %if %{with_dri}
 BuildRequires: libdrm-devel >= 2.4.0-0.4
@@ -185,7 +184,7 @@ mv %{_lib} osmesa32
 make clean
 
 # just to be sure...
-[ `find . -name \*.o | wc -l` -eq 0 ] || exit "make cleaner dammit"
+[ `find . -name \*.o | wc -l` -eq 0 ] || exit "make cleaner plz"
 
 # now build the rest of mesa
 %configure \
@@ -194,10 +193,6 @@ make clean
     --disable-gl-osmesa \
     --with-driver=%{driver} \
     --with-dri-driverdir=%{_libdir}/dri
-
-#echo "--- MESA CONFIGURATION ---"
-#cat configs/current
-#echo "--- END MESA CONFIGURATION ---"
 
 make #{?_smp_mflags}
 
