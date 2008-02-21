@@ -1,7 +1,16 @@
 diff -up mesa-20080218/configure.ac.jx mesa-20080218/configure.ac
 --- mesa-20080218/configure.ac.jx	2008-02-18 12:01:51.000000000 -0500
-+++ mesa-20080218/configure.ac	2008-02-21 12:42:42.000000000 -0500
-@@ -459,15 +459,10 @@ if test "$mesa_driver" = dri; then
++++ mesa-20080218/configure.ac	2008-02-21 13:09:44.000000000 -0500
+@@ -448,6 +448,8 @@ dnl Just default to no EGL for now
+ USING_EGL=0
+ AC_SUBST(USING_EGL)
+ 
++echo ajax hates ppc
++
+ dnl Set DRI_DIRS, DEFINES and LIB_DEPS
+ if test "$mesa_driver" = dri; then
+     # Use TLS in GLX?
+@@ -459,15 +461,12 @@ if test "$mesa_driver" = dri; then
          PROGRAM_DIRS="egl"
      fi
  
@@ -10,7 +19,8 @@ diff -up mesa-20080218/configure.ac.jx mesa-20080218/configure.ac
 -        DRI_DIRS="i810 i915 i965 mach64 mga r128 r200 r300 radeon s3v \
 -            savage sis tdfx trident unichrome ffb"
 -    fi
--
++    echo host_os $host_os host_cpu $host_cpu
+ 
      # Platform specific settings and drivers to build
      case "$host_os" in
      linux*)
@@ -18,7 +28,7 @@ diff -up mesa-20080218/configure.ac.jx mesa-20080218/configure.ac
          DEFINES="$DEFINES -DUSE_EXTERNAL_DXTN_LIB=1 -DIN_DRI_DRIVER"
          DEFINES="$DEFINES -DGLX_INDIRECT_RENDERING -DHAVE_ALIAS"
          if test "x$driglx_direct" = xyes; then
-@@ -475,7 +470,7 @@ if test "$mesa_driver" = dri; then
+@@ -475,7 +474,7 @@ if test "$mesa_driver" = dri; then
          fi
  
          case "$host_cpu" in
@@ -27,7 +37,7 @@ diff -up mesa-20080218/configure.ac.jx mesa-20080218/configure.ac
              # ffb, gamma, and sis are missing because they have not be
              # converted to use the new interface.  i810 are missing
              # because there is no x86-64 system where they could *ever*
-@@ -484,13 +479,16 @@ if test "$mesa_driver" = dri; then
+@@ -484,13 +483,16 @@ if test "$mesa_driver" = dri; then
                  DRI_DIRS="i915 i965 mach64 mga r128 r200 r300 radeon \
                      savage tdfx unichrome"
              fi
@@ -45,7 +55,7 @@ diff -up mesa-20080218/configure.ac.jx mesa-20080218/configure.ac
              ;;
          esac
          ;;
-@@ -513,6 +511,12 @@ if test "$mesa_driver" = dri; then
+@@ -513,6 +515,12 @@ if test "$mesa_driver" = dri; then
          fi
          ;;
      esac
