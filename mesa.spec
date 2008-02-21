@@ -198,7 +198,7 @@ echo "--- MESA CONFIGURATION ---"
 cat configs/current
 echo "--- END MESA CONFIGURATION ---"
 
-make %{?_smp_mflags}
+make #{?_smp_mflags}
 
 make -C progs/xdemos glxgears glxinfo
 make %{?_smp_mflags} -C progs/demos
@@ -398,8 +398,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/mesa-demos-data
 
 %changelog
-* Wed Feb 20 2008 Adam Jackson <ajax@redhat.com> 7.1-0.16
+* Thu Feb 21 2008 Adam Jackson <ajax@redhat.com> 7.1-0.16
 - Fix build on powerpc and amd64.
+- Disable %%_smp_mflags for DRI drivers for now.
 
 * Mon Feb 18 2008 Adam Jackson <ajax@redhat.com> 7.1-0.15
 - Today's git snapshot, additional headers for DRI2 love.
