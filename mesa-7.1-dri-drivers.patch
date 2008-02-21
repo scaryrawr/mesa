@@ -1,0 +1,19 @@
+diff -up mesa-20080218/configure.ac.jx mesa-20080218/configure.ac
+--- mesa-20080218/configure.ac.jx	2008-02-18 12:01:51.000000000 -0500
++++ mesa-20080218/configure.ac	2008-02-20 20:54:55.000000000 -0500
+@@ -484,6 +484,7 @@ if test "$mesa_driver" = dri; then
+                 DRI_DIRS="i915 i965 mach64 mga r128 r200 r300 radeon \
+                     savage tdfx unichrome"
+             fi
++	    DRI_DIRS="`echo $DRI_DIRS | sed 's/i810//g'`"
+             ;;
+         powerpc*)
+             # Build only the drivers for cards that exist on PowerPC.
+@@ -491,6 +492,7 @@ if test "$mesa_driver" = dri; then
+             if test "x$DRI_DIRS" = x; then
+                 DRI_DIRS="mach64 r128 r200 r300 radeon tdfx"
+             fi
++	    DRI_DIRS="`echo $DRI_DIRS | sed 's/i... //g'`"
+             ;;
+         esac
+         ;;

@@ -15,7 +15,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.1
-Release: 0.15%{?dist}
+Release: 0.16%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -28,6 +28,7 @@ Source2: %{manpages}.tar.bz2
 Source3: make-git-snapshot.sh
 
 Patch0: mesa-7.1pre-osmesa-version.patch
+Patch1: mesa-7.1-dri-drivers.patch
 
 
 BuildRequires: pkgconfig autoconf automake
@@ -298,6 +299,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_includedir}/GL/xmesa_xf86.h
 %dir %{_includedir}/GL/internal
 %{_includedir}/GL/internal/dri_interface.h
+%{_includedir}/GL/internal/dri_sarea.h
 %{_libdir}/libGL.so
 %{_libdir}/pkgconfig/gl.pc
 %{_datadir}/man/man3/gl[^uX]*.3gl*
@@ -396,6 +398,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/mesa-demos-data
 
 %changelog
+* Wed Feb 20 2008 Adam Jackson <ajax@redhat.com> 7.1-0.16
+- Fix build on powerpc.
+
 * Mon Feb 18 2008 Adam Jackson <ajax@redhat.com> 7.1-0.15
 - Today's git snapshot, additional headers for DRI2 love.
 
