@@ -1,7 +1,20 @@
 diff -up mesa-20080218/configure.ac.jx mesa-20080218/configure.ac
 --- mesa-20080218/configure.ac.jx	2008-02-18 12:01:51.000000000 -0500
-+++ mesa-20080218/configure.ac	2008-02-20 21:56:58.000000000 -0500
-@@ -475,7 +475,7 @@ if test "$mesa_driver" = dri; then
++++ mesa-20080218/configure.ac	2008-02-20 23:09:28.000000000 -0500
+@@ -459,12 +459,6 @@ if test "$mesa_driver" = dri; then
+         PROGRAM_DIRS="egl"
+     fi
+ 
+-    # default drivers
+-    if test "x$DRI_DIRS" = x; then
+-        DRI_DIRS="i810 i915 i965 mach64 mga r128 r200 r300 radeon s3v \
+-            savage sis tdfx trident unichrome ffb"
+-    fi
+-
+     # Platform specific settings and drivers to build
+     case "$host_os" in
+     linux*)
+@@ -475,7 +469,7 @@ if test "$mesa_driver" = dri; then
          fi
  
          case "$host_cpu" in
@@ -10,7 +23,7 @@ diff -up mesa-20080218/configure.ac.jx mesa-20080218/configure.ac
              # ffb, gamma, and sis are missing because they have not be
              # converted to use the new interface.  i810 are missing
              # because there is no x86-64 system where they could *ever*
-@@ -484,6 +484,7 @@ if test "$mesa_driver" = dri; then
+@@ -484,13 +478,15 @@ if test "$mesa_driver" = dri; then
                  DRI_DIRS="i915 i965 mach64 mga r128 r200 r300 radeon \
                      savage tdfx unichrome"
              fi
@@ -18,11 +31,25 @@ diff -up mesa-20080218/configure.ac.jx mesa-20080218/configure.ac
              ;;
          powerpc*)
              # Build only the drivers for cards that exist on PowerPC.
-@@ -491,6 +492,7 @@ if test "$mesa_driver" = dri; then
+             # At some point MGA will be added, but not yet.
              if test "x$DRI_DIRS" = x; then
-                 DRI_DIRS="mach64 r128 r200 r300 radeon tdfx"
+-                DRI_DIRS="mach64 r128 r200 r300 radeon tdfx"
++                DRI_DIRS="mach64 mga r128 r200 r300 radeon savage tdfx"
              fi
 +	    DRI_DIRS="`echo $DRI_DIRS | sed s/i810//g | sed s/i9.5//`"
              ;;
          esac
          ;;
+@@ -513,6 +509,12 @@ if test "$mesa_driver" = dri; then
+         fi
+         ;;
+     esac
++    # default drivers
++    if test "x$DRI_DIRS" = x; then
++        DRI_DIRS="i810 i915 i965 mach64 mga r128 r200 r300 radeon s3v \
++            savage sis tdfx trident unichrome ffb"
++    fi
++
+     DRI_DIRS=`echo "$DRI_DIRS" | $SED 's/  */ /g'`
+ 
+     # Check for expat
