@@ -150,7 +150,8 @@ This package provides some demo applications for testing Mesa.
 %prep
 #%setup -q -n Mesa-%{version}pre -b1 -b2
 %setup -q -n mesa-%{gitdate} -b2
-%patch -p1 -b .osmesa
+%patch0 -p1 -b .osmesa
+%patch1 -p1 -b .dri-drivers
 
 # WARNING: The following files are copyright "Mark J. Kilgard" under the GLUT
 # license and are not open source/free software, so we remove them.
@@ -194,9 +195,9 @@ make clean
     --with-driver=%{driver} \
     --with-dri-driverdir=%{_libdir}/dri
 
-echo "--- MESA CONFIGURATION ---"
-cat configs/current
-echo "--- END MESA CONFIGURATION ---"
+#echo "--- MESA CONFIGURATION ---"
+#cat configs/current
+#echo "--- END MESA CONFIGURATION ---"
 
 make #{?_smp_mflags}
 
