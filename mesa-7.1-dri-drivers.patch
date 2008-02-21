@@ -1,6 +1,6 @@
 diff -up mesa-20080218/configure.ac.jx mesa-20080218/configure.ac
 --- mesa-20080218/configure.ac.jx	2008-02-18 12:01:51.000000000 -0500
-+++ mesa-20080218/configure.ac	2008-02-20 21:30:47.000000000 -0500
++++ mesa-20080218/configure.ac	2008-02-20 21:56:58.000000000 -0500
 @@ -475,7 +475,7 @@ if test "$mesa_driver" = dri; then
          fi
  
@@ -22,7 +22,7 @@ diff -up mesa-20080218/configure.ac.jx mesa-20080218/configure.ac
              if test "x$DRI_DIRS" = x; then
                  DRI_DIRS="mach64 r128 r200 r300 radeon tdfx"
              fi
-+	    DRI_DIRS="`echo $DRI_DIRS | sed 's/i... //g'`"
++	    DRI_DIRS="`echo $DRI_DIRS | sed s/i810//g | sed s/i9.5//`"
              ;;
          esac
          ;;
