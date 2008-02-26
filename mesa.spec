@@ -15,7 +15,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.1
-Release: 0.16%{?dist}
+Release: 0.17%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -163,10 +163,11 @@ sed -i 's,isosurf.dat,%{_libdir}/mesa-demos-data/&,' progs/demos/isosurf.c
 sed -i 's,terrain.dat,%{_libdir}/mesa-demos-data/&,' progs/demos/terrain.c
 
 %build
-export RPM_OPT_FLAGS="$RPM_OPT_FLAGS -fvisibility=hidden"
 
 autoreconf --install
 
+export CFLAGS="$RPM_OPT_FLAGS -fvisibility=hidden -Os"
+export CXXFLAGS="$RPM_OPT_FLAGS -fvisibility=hidden -Os"
 # first, build the osmesa variants
 %configure --with-driver=osmesa --with-osmesa-bits=8
 make %{_smp_mflags} SRC_DIRS=mesa
@@ -185,6 +186,9 @@ make clean
 
 # just to be sure...
 [ `find . -name \*.o | wc -l` -eq 0 ] || exit "make cleaner plz"
+
+export CFLAGS="$RPM_OPT_FLAGS -fvisibility=hidden"
+export CXXFLAGS="$RPM_OPT_FLAGS -fvisibility=hidden"
 
 # now build the rest of mesa
 %configure \
@@ -237,12 +241,7 @@ install -m 0644 progs/images/*.rgb $RPM_BUILD_ROOT/%{_libdir}/mesa-demos-data
 install -m 0644 progs/demos/*.dat $RPM_BUILD_ROOT/%{_libdir}/mesa-demos-data
 
 # and osmesa
-install -m 0755 -t $RPM_BUILD_ROOT%{_libdir} osmesa*/*.so.?
-pushd $RPM_BUILD_ROOT%{_libdir}
-for i in libOSMesa* ; do
-    ln -s $i $(basename $i .6)
-done
-popd
+mv osmesa*/* $RPM_BUILD_ROOT%{_libdir}
 
 # man pages
 pushd ../%{manpages}
@@ -316,9 +315,9 @@ rm -rf $RPM_BUILD_ROOT
 
 %files libOSMesa
 %defattr(-,root,root,-)
-%{_libdir}/libOSMesa.so.6
-%{_libdir}/libOSMesa16.so.6
-%{_libdir}/libOSMesa32.so.6
+%{_libdir}/libOSMesa.so.6*
+%{_libdir}/libOSMesa16.so.6*
+%{_libdir}/libOSMesa32.so.6*
 
 %files libOSMesa-devel
 %defattr(-,root,root,-)
@@ -394,6 +393,12 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/mesa-demos-data
 
 %changelog
+* Tue Feb 26 2008 Adam Jackson <ajax@redhat.com> 7.1-0.17
+- Fix OSMesa symlink bug. (#424545)
+- Build OSMesa with -Os to be slightly less bloaty.
+- Re-add osmesa.h to libOSMesa-devel.
+- Really restore -fvisibility=hidden.
+
 * Thu Feb 21 2008 Adam Jackson <ajax@redhat.com> 7.1-0.16
 - Fix build on powerpc and amd64.
 - Disable %%_smp_mflags for DRI drivers for now.
