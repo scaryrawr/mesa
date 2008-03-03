@@ -15,7 +15,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.1
-Release: 0.17%{?dist}
+Release: 0.18%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -29,6 +29,7 @@ Source3: make-git-snapshot.sh
 
 Patch0: mesa-7.1pre-osmesa-version.patch
 Patch1: mesa-7.1-dri-drivers.patch
+Patch2: mesa-7.1pre-nukeglthread-debug.patch
 
 BuildRequires: pkgconfig autoconf automake
 %if %{with_dri}
@@ -151,6 +152,7 @@ This package provides some demo applications for testing Mesa.
 %setup -q -n mesa-%{gitdate} -b2
 %patch0 -p1 -b .osmesa
 %patch1 -p1 -b .dri-drivers
+%patch2 -p1 -b .intel-glthread
 
 # WARNING: The following files are copyright "Mark J. Kilgard" under the GLUT
 # license and are not open source/free software, so we remove them.
@@ -393,6 +395,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/mesa-demos-data
 
 %changelog
+* Mon Mar 03 2008 Dave Airlie <airlied@redhat.com> 7.1-0.18
+- fix i915 build due to symbol visibility
+
 * Tue Feb 26 2008 Adam Jackson <ajax@redhat.com> 7.1-0.17
 - Fix OSMesa symlink bug. (#424545)
 - Build OSMesa with -Os to be slightly less bloaty.
