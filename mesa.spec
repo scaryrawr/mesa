@@ -10,12 +10,12 @@
 %endif
 
 %define manpages gl-manpages-1.0.1
-%define gitdate 20080218
+%define gitdate 20080303
 
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.1
-Release: 0.18%{?dist}
+Release: 0.19%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -28,7 +28,6 @@ Source2: %{manpages}.tar.bz2
 Source3: make-git-snapshot.sh
 
 Patch0: mesa-7.1pre-osmesa-version.patch
-Patch1: mesa-7.1-dri-drivers.patch
 Patch2: mesa-7.1pre-nukeglthread-debug.patch
 
 BuildRequires: pkgconfig autoconf automake
@@ -151,7 +150,6 @@ This package provides some demo applications for testing Mesa.
 #%setup -q -n Mesa-%{version}pre -b1 -b2
 %setup -q -n mesa-%{gitdate} -b2
 %patch0 -p1 -b .osmesa
-%patch1 -p1 -b .dri-drivers
 %patch2 -p1 -b .intel-glthread
 
 # WARNING: The following files are copyright "Mark J. Kilgard" under the GLUT
@@ -395,6 +393,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/mesa-demos-data
 
 %changelog
+* Mon Mar  3 2008 Kristian Høgsberg <krh@redhat.com> - 7.1-0.19
+- Bump to latest git snapshot.
+- Drop mesa-7.1-dri-drivers.patch, it's upstream.
+
 * Mon Mar 03 2008 Dave Airlie <airlied@redhat.com> 7.1-0.18
 - fix i915 build due to symbol visibility
 
