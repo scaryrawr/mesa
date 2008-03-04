@@ -1,17 +1,22 @@
 #!/bin/sh
 
+# Usage: ./make-git-snapshot.sh [COMMIT]
+#
+# to make a snapshot of the given tag/branch.  Defaults to HEAD.
+# Point env var REF to a local mesa repo to reduce clone time.
+
 DIRNAME=mesa-$( date +%Y%m%d )
 
+echo REF ${REF:+--reference $REF}
+echo DIRNAME $DIRNAME
+echo HEAD ${1:-HEAD}
+
 rm -rf $DIRNAME
-git clone git://git.freedesktop.org/git/mesa/mesa $DIRNAME
-cd $DIRNAME
-if [ -z "$1" ]; then
-    git log | head -1
-else
-    git checkout $1
-fi
-git log | head -1 | awk '{ print $2 }' > ../commitid
-git repack -a -d
-cd ..
-tar jcf $DIRNAME.tar.bz2 $DIRNAME
-rm -rf $DIRNAME
+
+git clone ${REF:+--reference $REF} \
+	git://git.freedesktop.org/git/mesa/mesa $DIRNAME
+
+GIT_DIR=$DIRNAME/.git git archive --format=tar --prefix=$DIRNAME/ ${1:-HEAD} \
+	| bzip2 > $DIRNAME.tar.bz2
+
+# rm -rf $DIRNAME

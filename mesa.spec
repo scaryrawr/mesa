@@ -32,7 +32,7 @@ Patch2: mesa-7.1pre-nukeglthread-debug.patch
 
 BuildRequires: pkgconfig autoconf automake
 %if %{with_dri}
-BuildRequires: libdrm-devel >= 2.4.0-0.4
+BuildRequires: libdrm-devel >= 2.4.0-0.5
 %endif
 BuildRequires: libXxf86vm-devel
 BuildRequires: expat-devel >= 2.0
@@ -396,6 +396,7 @@ rm -rf $RPM_BUILD_ROOT
 * Mon Mar  3 2008 Kristian Høgsberg <krh@redhat.com> - 7.1-0.19
 - Bump to latest git snapshot.
 - Drop mesa-7.1-dri-drivers.patch, it's upstream.
+- Require libdrm-devel >= 2.4.0-0.5
 
 * Mon Mar 03 2008 Dave Airlie <airlied@redhat.com> 7.1-0.18
 - fix i915 build due to symbol visibility
