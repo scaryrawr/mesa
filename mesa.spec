@@ -10,12 +10,12 @@
 %endif
 
 %define manpages gl-manpages-1.0.1
-%define gitdate 20080303
+%define gitdate 20080311
 
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.1
-Release: 0.19%{?dist}
+Release: 0.20%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -29,6 +29,9 @@ Source3: make-git-snapshot.sh
 
 Patch0: mesa-7.1pre-osmesa-version.patch
 Patch2: mesa-7.1pre-nukeglthread-debug.patch
+
+# This doesn't work, disable for now.
+Patch3: disable-tex-offset.patch
 
 BuildRequires: pkgconfig autoconf automake
 %if %{with_dri}
@@ -151,6 +154,7 @@ This package provides some demo applications for testing Mesa.
 %setup -q -n mesa-%{gitdate} -b2
 %patch0 -p1 -b .osmesa
 %patch2 -p1 -b .intel-glthread
+%patch3 -p1 -b .disable-tex-offset
 
 # WARNING: The following files are copyright "Mark J. Kilgard" under the GLUT
 # license and are not open source/free software, so we remove them.
@@ -393,6 +397,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/mesa-demos-data
 
 %changelog
+* Tue Mar 11 2008 Kristian Høgsberg <krh@redhat.com> - 7.1-0.20
+- Looks like the TexOffset extension does not work, disable for now.
+- Bump to 20080311 snapshot to get DRI2 tfp fixes.
+
 * Mon Mar  3 2008 Kristian Høgsberg <krh@redhat.com> - 7.1-0.19
 - Bump to latest git snapshot.
 - Drop mesa-7.1-dri-drivers.patch, it's upstream.
