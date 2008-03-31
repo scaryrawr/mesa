@@ -10,12 +10,12 @@
 %endif
 
 %define manpages gl-manpages-1.0.1
-%define gitdate 20080311
+%define gitdate 20080331
 
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.1
-Release: 0.20%{?dist}
+Release: 0.21%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -39,7 +39,7 @@ BuildRequires: libdrm-devel >= 2.4.0-0.5
 %endif
 BuildRequires: libXxf86vm-devel
 BuildRequires: expat-devel >= 2.0
-BuildRequires: xorg-x11-proto-devel >= 7.1-8
+BuildRequires: xorg-x11-proto-devel >= 7.1-9
 BuildRequires: makedepend
 BuildRequires: libselinux-devel
 BuildRequires: libXext-devel
@@ -397,6 +397,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/mesa-demos-data
 
 %changelog
+* Mon Mar 31 2008 Kristian Høgsberg <krh@redhat.com> - 7.1-0.21
+- Update git snapshot to pull in DRI2 direct rendering.
+
 * Tue Mar 11 2008 Kristian Høgsberg <krh@redhat.com> - 7.1-0.20
 - Looks like the TexOffset extension does not work, disable for now.
 - Bump to 20080311 snapshot to get DRI2 tfp fixes.
