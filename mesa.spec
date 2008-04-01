@@ -39,7 +39,7 @@ BuildRequires: libdrm-devel >= 2.4.0-0.5
 %endif
 BuildRequires: libXxf86vm-devel
 BuildRequires: expat-devel >= 2.0
-BuildRequires: xorg-x11-proto-devel >= 7.1-9
+BuildRequires: xorg-x11-proto-devel >= 7.1-10
 BuildRequires: makedepend
 BuildRequires: libselinux-devel
 BuildRequires: libXext-devel
@@ -60,11 +60,11 @@ Obsoletes: Mesa XFree86-libs XFree86-Mesa-libGL xorg-x11-Mesa-libGL
 Obsoletes: xorg-x11-libs
 %if %{with_dri}
 Requires: libdrm >= 2.3.0
+Conflicts: xorg-x11-server-Xorg < 1.4.99.901-14
 %endif
 
 %description libGL
 Mesa libGL runtime libraries and DRI drivers.
-
 
 %package libGL-devel
 Summary: Mesa libGL development package
@@ -399,6 +399,8 @@ rm -rf $RPM_BUILD_ROOT
 %changelog
 * Mon Mar 31 2008 Kristian Høgsberg <krh@redhat.com> - 7.1-0.21
 - Update git snapshot to pull in DRI2 direct rendering.
+- Add conflicts for xservers that don't understand the new DRI driver
+  interface.
 
 * Tue Mar 11 2008 Kristian Høgsberg <krh@redhat.com> - 7.1-0.20
 - Looks like the TexOffset extension does not work, disable for now.
