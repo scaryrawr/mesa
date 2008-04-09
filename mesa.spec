@@ -15,7 +15,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.1
-Release: 0.21%{?dist}
+Release: 0.22%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -32,6 +32,9 @@ Patch2: mesa-7.1pre-nukeglthread-debug.patch
 
 # This doesn't work, disable for now.
 Patch3: disable-tex-offset.patch
+
+Patch4: mesa-7.1-visual-crash.patch
+Patch5: mesa-7.1-fbconfig-fix.patch
 
 BuildRequires: pkgconfig autoconf automake
 %if %{with_dri}
@@ -155,6 +158,8 @@ This package provides some demo applications for testing Mesa.
 %patch0 -p1 -b .osmesa
 %patch2 -p1 -b .intel-glthread
 %patch3 -p1 -b .disable-tex-offset
+%patch4 -p1 -b .visual-crash
+%patch5 -p1 -b .fbconfig
 
 # WARNING: The following files are copyright "Mark J. Kilgard" under the GLUT
 # license and are not open source/free software, so we remove them.
@@ -397,6 +402,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/mesa-demos-data
 
 %changelog
+* Wed Apr 09 2008 Adam Jackson <ajax@redhat.com> 7.1-0.22
+- mesa-7.1-visual-crash.patch: Fix a segfault if DRI unavailable.
+- mesa-7.1-fbconfig-fix.patch: Fix fbconfig comparisons.
+
 * Mon Mar 31 2008 Kristian Høgsberg <krh@redhat.com> - 7.1-0.21
 - Update git snapshot to pull in DRI2 direct rendering.
 - Add conflicts for xservers that don't understand the new DRI driver
