@@ -50,6 +50,7 @@ BuildRequires: libXext-devel
 BuildRequires: freeglut-devel
 BuildRequires: libXfixes-devel
 BuildRequires: libXdamage-devel
+BuildRequires: libXi-devel
 
 %description
 Mesa
