@@ -51,6 +51,7 @@ BuildRequires: freeglut-devel
 BuildRequires: libXfixes-devel
 BuildRequires: libXdamage-devel
 BuildRequires: libXi-devel
+BuildRequires: libXmu-devel
 
 %description
 Mesa
@@ -408,6 +409,8 @@ rm -rf $RPM_BUILD_ROOT
 * Wed Apr 09 2008 Adam Jackson <ajax@redhat.com> 7.1-0.22
 - mesa-7.1-visual-crash.patch: Fix a segfault if DRI unavailable.
 - mesa-7.1-fbconfig-fix.patch: Fix fbconfig comparisons.
+- mesa-7.1-dri2.patch: Fix a header path.
+- Add buildreqs for the demos that suddenly stopped compiling.
 
 * Mon Mar 31 2008 Kristian Høgsberg <krh@redhat.com> - 7.1-0.21
 - Update git snapshot to pull in DRI2 direct rendering.
