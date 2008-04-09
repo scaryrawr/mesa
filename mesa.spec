@@ -35,6 +35,7 @@ Patch3: disable-tex-offset.patch
 
 Patch4: mesa-7.1-visual-crash.patch
 Patch5: mesa-7.1-fbconfig-fix.patch
+Patch6: mesa-7.1-dri2.patch
 
 BuildRequires: pkgconfig autoconf automake
 %if %{with_dri}
@@ -160,6 +161,7 @@ This package provides some demo applications for testing Mesa.
 %patch3 -p1 -b .disable-tex-offset
 %patch4 -p1 -b .visual-crash
 %patch5 -p1 -b .fbconfig
+%patch6 -p1 -b .dri2
 
 # WARNING: The following files are copyright "Mark J. Kilgard" under the GLUT
 # license and are not open source/free software, so we remove them.
