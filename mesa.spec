@@ -15,7 +15,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.1
-Release: 0.22%{?dist}
+Release: 0.23%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -36,6 +36,7 @@ Patch3: disable-tex-offset.patch
 Patch4: mesa-7.1-visual-crash.patch
 Patch5: mesa-7.1-fbconfig-fix.patch
 Patch6: mesa-7.1-dri2.patch
+Patch7: mesa-7.1-link-shared.patch
 
 BuildRequires: pkgconfig autoconf automake
 %if %{with_dri}
@@ -164,6 +165,7 @@ This package provides some demo applications for testing Mesa.
 %patch4 -p1 -b .visual-crash
 %patch5 -p1 -b .fbconfig
 %patch6 -p1 -b .dri2
+%patch7 -p1 -b .dricore
 
 # WARNING: The following files are copyright "Mark J. Kilgard" under the GLUT
 # license and are not open source/free software, so we remove them.
@@ -181,7 +183,10 @@ autoreconf --install
 
 export CFLAGS="$RPM_OPT_FLAGS -fvisibility=hidden -Os"
 export CXXFLAGS="$RPM_OPT_FLAGS -fvisibility=hidden -Os"
-# first, build the osmesa variants
+
+# first, build the osmesa variants. XXX this is overkill.  osmesa32 is
+# sufficient to render to any of the channel sizes, according to the
+# docs.  should fix this someday.
 %configure --with-driver=osmesa --with-osmesa-bits=8
 make %{_smp_mflags} SRC_DIRS=mesa
 mv %{_lib} osmesa8
@@ -200,8 +205,9 @@ make clean
 # just to be sure...
 [ `find . -name \*.o | wc -l` -eq 0 ] || exit "make cleaner plz"
 
-export CFLAGS="$RPM_OPT_FLAGS -fvisibility=hidden"
-export CXXFLAGS="$RPM_OPT_FLAGS -fvisibility=hidden"
+# XXX should get visibility working again post-dricore.
+export CFLAGS="$RPM_OPT_FLAGS -Os"
+export CXXFLAGS="$RPM_OPT_FLAGS -Os"
 
 # now build the rest of mesa
 %configure \
@@ -230,6 +236,7 @@ make install DESTDIR=$RPM_BUILD_ROOT DRI_DIRS=
 # just the DRI drivers that are sane
 %if %{with_dri}
 install -d $RPM_BUILD_ROOT%{_libdir}/dri
+install -m 0755 -t $RPM_BUILD_ROOT%{_libdir}/dri %{_lib}/libdricore.so >& /dev/null
 for f in i810 i915 i965 mach64 mga r128 r200 r300 radeon savage sis tdfx unichrome; do
     so=%{_lib}/${f}_dri.so
     test -e $so && echo $so
@@ -291,6 +298,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libGL.so.1.2
 %if %{with_dri}
 %dir %{_libdir}/dri
+%{_libdir}/dri/libdricore.so
 %{_libdir}/dri/*_dri.so
 %endif
 
@@ -406,6 +414,13 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/mesa-demos-data
 
 %changelog
+* Thu Apr 10 2008 Adam Jackson <ajax@redhat.com> 7.1-0.23
+- mesa-7.1-link-shared.patch: Make a libdricore.so from libmesa.a, install
+  it into %%_libdir/dri, and link the DRI drivers against it.  Drops ~20M
+  from the installed system (not including debuginfo).  Inspired by a
+  similar patch in openSUSE but reworked to be compatible with the OSMesa
+  build.
+
 * Wed Apr 09 2008 Adam Jackson <ajax@redhat.com> 7.1-0.22
 - mesa-7.1-visual-crash.patch: Fix a segfault if DRI unavailable.
 - mesa-7.1-fbconfig-fix.patch: Fix fbconfig comparisons.
