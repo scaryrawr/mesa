@@ -15,7 +15,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.1
-Release: 0.23%{?dist}
+Release: 0.24%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -37,6 +37,8 @@ Patch4: mesa-7.1-visual-crash.patch
 Patch5: mesa-7.1-fbconfig-fix.patch
 Patch6: mesa-7.1-dri2.patch
 Patch7: mesa-7.1-link-shared.patch
+# lets only build drivers on sparc that are remotely useful
+Patch8: mesa-7.1-sparc.patch
 
 BuildRequires: pkgconfig autoconf automake
 %if %{with_dri}
@@ -166,6 +168,7 @@ This package provides some demo applications for testing Mesa.
 %patch5 -p1 -b .fbconfig
 %patch6 -p1 -b .dri2
 %patch7 -p1 -b .dricore
+%patch8 -p1
 
 # WARNING: The following files are copyright "Mark J. Kilgard" under the GLUT
 # license and are not open source/free software, so we remove them.
@@ -414,6 +417,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/mesa-demos-data
 
 %changelog
+* Sat Apr 12 2008 Dennis Gilmore <dennis@ausil.us> 7.1-0.24
+- add patch so that we only build dri drivers on sparc that are remotely
+  useful.  sis driver breaks the build and the intel ones will never exist
+
 * Thu Apr 10 2008 Adam Jackson <ajax@redhat.com> 7.1-0.23
 - mesa-7.1-link-shared.patch: Make a libdricore.so from libmesa.a, install
   it into %%_libdir/dri, and link the DRI drivers against it.  Drops ~20M
