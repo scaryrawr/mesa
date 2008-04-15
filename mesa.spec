@@ -10,12 +10,12 @@
 %endif
 
 %define manpages gl-manpages-1.0.1
-%define gitdate 20080331
+%define gitdate 20080415
 
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.1
-Release: 0.24%{?dist}
+Release: 0.25%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -33,9 +33,6 @@ Patch2: mesa-7.1pre-nukeglthread-debug.patch
 # This doesn't work, disable for now.
 Patch3: disable-tex-offset.patch
 
-Patch4: mesa-7.1-visual-crash.patch
-Patch5: mesa-7.1-fbconfig-fix.patch
-Patch6: mesa-7.1-dri2.patch
 Patch7: mesa-7.1-link-shared.patch
 # lets only build drivers on sparc that are remotely useful
 Patch8: mesa-7.1-sparc.patch
@@ -164,9 +161,6 @@ This package provides some demo applications for testing Mesa.
 %patch0 -p1 -b .osmesa
 %patch2 -p1 -b .intel-glthread
 %patch3 -p1 -b .disable-tex-offset
-%patch4 -p1 -b .visual-crash
-%patch5 -p1 -b .fbconfig
-%patch6 -p1 -b .dri2
 %patch7 -p1 -b .dricore
 %patch8 -p1
 
@@ -417,6 +411,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/mesa-demos-data
 
 %changelog
+* Tue Apr 15 2008 Dave Airlie <airlied@redhat.com> 7.1-0.25
+- Rebase to latest upstream - drop patches applied there.
+
 * Sat Apr 12 2008 Dennis Gilmore <dennis@ausil.us> 7.1-0.24
 - add patch so that we only build dri drivers on sparc that are remotely
   useful.  sis driver breaks the build and the intel ones will never exist
