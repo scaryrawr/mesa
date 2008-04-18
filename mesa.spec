@@ -15,7 +15,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.1
-Release: 0.26%{?dist}
+Release: 0.27%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -29,7 +29,7 @@ Source3: make-git-snapshot.sh
 
 Patch0: mesa-7.1pre-osmesa-version.patch
 Patch2: mesa-7.1pre-nukeglthread-debug.patch
-Patch3: mesa-7.1-f2a6404ef-update.patch
+Patch3: mesa-7.1-fda4895d-update.patch
 
 # This doesn't work, disable for now.
 Patch4: disable-tex-offset.patch
@@ -413,6 +413,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/mesa-demos-data
 
 %changelog
+* Fri Apr 18 2008 Dave Airlie <airlied@redhat.com> 7.1-0.27
+- why yes, that is a brown paper bag
+- fix glxgears on 965
+
 * Fri Apr 18 2008 Dave Airlie <airlied@redhat.com> 7.1-0.26
 - fix compiz alt-tab crashing on out of the box intel driver
 - some other upstream bugfixes as well
