@@ -15,7 +15,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.1
-Release: 0.27%{?dist}
+Release: 0.28%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -37,6 +37,8 @@ Patch4: disable-tex-offset.patch
 Patch7: mesa-7.1-link-shared.patch
 # lets only build drivers on sparc that are remotely useful
 Patch8: mesa-7.1-sparc.patch
+
+Patch9: mesa-fix-965-buffer-check.patch
 
 BuildRequires: pkgconfig autoconf automake
 %if %{with_dri}
@@ -165,6 +167,7 @@ This package provides some demo applications for testing Mesa.
 %patch4 -p1 -b .disable-tex-offset
 %patch7 -p1 -b .dricore
 %patch8 -p1
+%patch9 -p1 -b .965-depth
 
 # WARNING: The following files are copyright "Mark J. Kilgard" under the GLUT
 # license and are not open source/free software, so we remove them.
@@ -413,6 +416,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/mesa-demos-data
 
 %changelog
+* Fri Apr 18 2008 Dave Airlie <airlied@redhat.com> 7.1-0.28
+- okay fire me now - I swear it runs compiz really well...
+- fix more bugs on 965
+
 * Fri Apr 18 2008 Dave Airlie <airlied@redhat.com> 7.1-0.27
 - why yes, that is a brown paper bag
 - fix glxgears on 965
