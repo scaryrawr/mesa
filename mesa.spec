@@ -15,7 +15,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.1
-Release: 0.25%{?dist}
+Release: 0.26%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -29,9 +29,10 @@ Source3: make-git-snapshot.sh
 
 Patch0: mesa-7.1pre-osmesa-version.patch
 Patch2: mesa-7.1pre-nukeglthread-debug.patch
+Patch3: mesa-7.1-f2a6404ef-update.patch
 
 # This doesn't work, disable for now.
-Patch3: disable-tex-offset.patch
+Patch4: disable-tex-offset.patch
 
 Patch7: mesa-7.1-link-shared.patch
 # lets only build drivers on sparc that are remotely useful
@@ -160,7 +161,8 @@ This package provides some demo applications for testing Mesa.
 %setup -q -n mesa-%{gitdate} -b2
 %patch0 -p1 -b .osmesa
 %patch2 -p1 -b .intel-glthread
-%patch3 -p1 -b .disable-tex-offset
+%patch3 -p1 -b .git-update-fix-intel
+%patch4 -p1 -b .disable-tex-offset
 %patch7 -p1 -b .dricore
 %patch8 -p1
 
@@ -411,6 +413,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/mesa-demos-data
 
 %changelog
+* Fri Apr 18 2008 Dave Airlie <airlied@redhat.com> 7.1-0.26
+- fix compiz alt-tab crashing on out of the box intel driver
+- some other upstream bugfixes as well
+
 * Tue Apr 15 2008 Dave Airlie <airlied@redhat.com> 7.1-0.25
 - Rebase to latest upstream - drop patches applied there.
 

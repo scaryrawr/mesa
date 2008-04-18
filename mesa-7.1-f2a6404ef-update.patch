@@ -1,0 +1,2192 @@
+commit f2a6404ef39b4985788aaf9ec8b540704e5aa92b
+Author: Dave Airlie <airlied@redhat.com>
+Date:   Fri Apr 18 12:12:53 2008 +1000
+
+    i915: check for depth region before accounting its buffer size
+    
+    fd.o bz #15573
+
+commit 008653ac55776d6b1c6d1627ad20937aa1c4dbda
+Author: Dave Airlie <airlied@redhat.com>
+Date:   Thu Apr 17 17:17:23 2008 +1000
+
+    i965: initial attempt at fixing the aperture overflow
+    
+    Makes state emission into a 2 phase, prepare sets things up and accounts
+    the size of all referenced buffer objects. The emit stage then actually
+    does the batchbuffer touching for emitting the objects.
+    
+    There is an assert in dri_emit_reloc if a reloc occurs for a buffer
+    that hasn't been accounted yet.
+
+commit 08f9b190a798c9c61ae07208345d0c2b37e54d39
+Author: Xiang, Haihao <haihao.xiang@intel.com>
+Date:   Thu Apr 17 16:30:17 2008 +0800
+
+    Revert "[i965] renable regative rhw test"
+    
+    This reverts commit 3158e981f5f37768e9b04765704b9eaece8b899b.
+    rhw issue has gone away on IGD.
+
+commit 8642dd30f927a113be0dcd75e4e93e59cf099431
+Author: Andrew Randrianasulu <randrik@mail.ru>
+Date:   Thu Apr 17 02:51:02 2008 +0200
+
+    r200: accept PROGRAM_CONSTANT inputs due to mesa changes
+
+commit b64448b3e4026d3f11f366515b7544a6581403f3
+Author: Dave Airlie <airlied@panoply-rh.(none)>
+Date:   Wed Apr 16 16:49:32 2008 +1000
+
+    bufmgr_fake: disable debugging again
+
+commit 96338dd1470bb088cbbe50d629cd30175245a784
+Author: Dave Airlie <airlied@panoply-rh.(none)>
+Date:   Wed Apr 16 16:37:13 2008 +1000
+
+    intel: fix _mesa_error ctx I introduced at lsat minute
+
+commit 7cc7ff7051d427ff45b4d7d3664e2eecd13d0e13
+Author: Dave Airlie <airlied@panoply-rh.(none)>
+Date:   Wed Apr 16 16:22:05 2008 +1000
+
+    intel/fake_bufmgr: Attempt to restrict references to objects in a batchbuffer > aperture size.
+    
+    So with compiz on Intel hw with fake bufmgr, opening 4 firefox windows at 1680x1050 and hitting alt-tab, could cause the batchbuffer to try and reference more than the 32MB of RAM allocated.
+    
+    Fix 1:
+    Fix 1 is to pre-verify the list of buffers against the current batchbuffer and if it can't possibly fit in the aperture to flush the batchbuffer to the hardware
+    and try again. If the buffers still can't fit well then you are hosed as I'm not sure there is a nice way to tell anyone.
+    
+    Fix 2:
+    Next problem was that even with a simple check for total < aperture, we ran
+    into fragmentation issues, this meant that half way down a set of buffers,
+    we would fail as no blocks were available. Fix this by nuking the memory
+    manager from orbit and letting it start again and relayout the blocks in a
+    manner that fits.
+    
+    Fix 3:
+    Finally the initial problem we were seeing was a memcpy to a NULL backing store.
+    We seem to end up with a texture at some point that never gets mapped but ends up with data in it. compiz al-tab icons have this property. So I created a card dirty bit that memcpy's any buffer that is !static and is written to back to memory. This probably is wrong but it makes compiz work for now.
+    
+    Caveats:
+    965 support is still fail.
+
+commit bbb042f0b809ebb754547397b8f22a5751c275da
+Author: Brian <brian.paul@tungstengraphics.com>
+Date:   Mon Apr 14 20:54:13 2008 -0600
+
+    fix multi-draw buffer regression
+diff --git a/src/mesa/drivers/dri/common/dri_bufmgr.c b/src/mesa/drivers/dri/common/dri_bufmgr.c
+index 8413a51..4df006f 100644
+--- a/src/mesa/drivers/dri/common/dri_bufmgr.c
++++ b/src/mesa/drivers/dri/common/dri_bufmgr.c
+@@ -142,10 +142,10 @@ dri_bufmgr_destroy(dri_bufmgr *bufmgr)
+ }
+ 
+ 
+-void dri_emit_reloc(dri_bo *reloc_buf, uint64_t flags, GLuint delta,
++int dri_emit_reloc(dri_bo *reloc_buf, uint64_t flags, GLuint delta,
+ 		    GLuint offset, dri_bo *target_buf)
+ {
+-   reloc_buf->bufmgr->emit_reloc(reloc_buf, flags, delta, offset, target_buf);
++   return reloc_buf->bufmgr->emit_reloc(reloc_buf, flags, delta, offset, target_buf);
+ }
+ 
+ void *dri_process_relocs(dri_bo *batch_buf, GLuint *count)
+@@ -163,3 +163,9 @@ dri_bufmgr_set_debug(dri_bufmgr *bufmgr, GLboolean enable_debug)
+ {
+    bufmgr->debug = enable_debug;
+ }
++
++int
++dri_bufmgr_check_aperture_space(dri_bo *bo)
++{
++    return bo->bufmgr->check_aperture_space(bo);
++}
+diff --git a/src/mesa/drivers/dri/common/dri_bufmgr.h b/src/mesa/drivers/dri/common/dri_bufmgr.h
+index 08cf8ca..4593eaf 100644
+--- a/src/mesa/drivers/dri/common/dri_bufmgr.h
++++ b/src/mesa/drivers/dri/common/dri_bufmgr.h
+@@ -156,7 +156,7 @@ struct _dri_bufmgr {
+     * \param target Buffer whose offset should be written into the relocation
+     *	     entry.
+     */
+-   void (*emit_reloc)(dri_bo *reloc_buf, uint64_t flags, GLuint delta,
++   int (*emit_reloc)(dri_bo *reloc_buf, uint64_t flags, GLuint delta,
+ 		      GLuint offset, dri_bo *target);
+ 
+    /**
+@@ -176,6 +176,7 @@ struct _dri_bufmgr {
+ 
+    void (*post_submit)(dri_bo *batch_buf, dri_fence **fence);
+ 
++   int (*check_aperture_space)(dri_bo *bo);
+    GLboolean debug; /**< Enables verbose debugging printouts */
+ };
+ 
+@@ -211,9 +212,11 @@ void dri_bo_fake_disable_backing_store(dri_bo *bo,
+ 				       void *ptr);
+ void dri_bufmgr_destroy(dri_bufmgr *bufmgr);
+ 
+-void dri_emit_reloc(dri_bo *reloc_buf, uint64_t flags, GLuint delta,
+-		    GLuint offset, dri_bo *target_buf);
++int dri_emit_reloc(dri_bo *reloc_buf, uint64_t flags, GLuint delta,
++		   GLuint offset, dri_bo *target_buf);
+ void *dri_process_relocs(dri_bo *batch_buf, uint32_t *count);
+ void dri_post_process_relocs(dri_bo *batch_buf);
+ void dri_post_submit(dri_bo *batch_buf, dri_fence **last_fence);
++int dri_bufmgr_check_aperture_space(dri_bo *bo);
++
+ #endif
+diff --git a/src/mesa/drivers/dri/common/dri_bufmgr_fake.c b/src/mesa/drivers/dri/common/dri_bufmgr_fake.c
+index 9d94ca3..9bf3f34 100644
+--- a/src/mesa/drivers/dri/common/dri_bufmgr_fake.c
++++ b/src/mesa/drivers/dri/common/dri_bufmgr_fake.c
+@@ -133,6 +133,9 @@ typedef struct _bufmgr_fake {
+    GLboolean debug;
+ 
+    GLboolean performed_rendering;
++
++   /* keep track of the current total size of objects we have relocs for */
++   unsigned long current_total_size;
+ } dri_bufmgr_fake;
+ 
+ typedef struct _dri_bo_fake {
+@@ -142,6 +145,8 @@ typedef struct _dri_bo_fake {
+    const char *name;
+ 
+    unsigned dirty:1;
++   unsigned size_accounted:1; /*this buffers size has been accounted against the aperture */
++   unsigned card_dirty:1; /* has the card written to this buffer - we make need to copy it back */
+    unsigned int refcount;
+    /* Flags may consist of any of the DRM_BO flags, plus
+     * DRM_BO_NO_BACKING_STORE and BM_NO_FENCE_SUBDATA, which are the first two
+@@ -177,6 +182,8 @@ typedef struct _dri_fence_fake {
+ static int clear_fenced(dri_bufmgr_fake *bufmgr_fake,
+ 			unsigned int fence_cookie);
+ 
++static int dri_fake_check_aperture_space(dri_bo *bo);
++
+ #define MAXFENCE 0x7fffffff
+ 
+ static GLboolean FENCE_LTE( unsigned a, unsigned b )
+@@ -231,7 +238,7 @@ alloc_block(dri_bo *bo)
+    dri_bo_fake *bo_fake = (dri_bo_fake *)bo;
+    dri_bufmgr_fake *bufmgr_fake= (dri_bufmgr_fake *)bo->bufmgr;
+    struct block *block = (struct block *)calloc(sizeof *block, 1);
+-   unsigned int align_log2 = _mesa_ffs(bo_fake->alignment);
++   unsigned int align_log2 = _mesa_ffs(bo_fake->alignment) - 1;
+    GLuint sz;
+ 
+    if (!block)
+@@ -264,11 +271,19 @@ alloc_block(dri_bo *bo)
+  */
+ static void free_block(dri_bufmgr_fake *bufmgr_fake, struct block *block)
+ {
+-   DBG("free block %p\n", block);
++   dri_bo_fake *bo_fake;
++   DBG("free block %p %08x %d %d\n", block, block->mem->ofs, block->on_hardware, block->fenced);
+ 
+    if (!block)
+       return;
+ 
++   bo_fake = (dri_bo_fake *)block->bo;
++   if (!(bo_fake->flags & BM_NO_BACKING_STORE) && (bo_fake->card_dirty == 1)) {
++     memcpy(bo_fake->backing_store, block->virtual, block->bo->size);
++     bo_fake->card_dirty = 1;
++     bo_fake->dirty = 1;
++   }
++
+    if (block->on_hardware) {
+       block->bo = NULL;
+    }
+@@ -287,11 +302,15 @@ static void free_block(dri_bufmgr_fake *bufmgr_fake, struct block *block)
+ static void
+ alloc_backing_store(dri_bo *bo)
+ {
++   dri_bufmgr_fake *bufmgr_fake = (dri_bufmgr_fake *)bo->bufmgr;
+    dri_bo_fake *bo_fake = (dri_bo_fake *)bo;
+    assert(!bo_fake->backing_store);
+    assert(!(bo_fake->flags & (BM_PINNED|BM_NO_BACKING_STORE)));
+ 
+    bo_fake->backing_store = ALIGN_MALLOC(bo->size, 64);
++
++   DBG("alloc_backing - buf %d %p %d\n", bo_fake->id, bo_fake->backing_store, bo->size);
++   assert(bo_fake->backing_store);
+ }
+ 
+ static void
+@@ -408,6 +427,8 @@ static int clear_fenced(dri_bufmgr_fake *bufmgr_fake,
+ 	 /* Blocks are ordered by fence, so if one fails, all from
+ 	  * here will fail also:
+ 	  */
++	DBG("fence not passed: offset %x sz %x %d %d \n",
++	    block->mem->ofs, block->mem->size, block->fence, bufmgr_fake->last_fence);
+ 	 break;
+       }
+    }
+@@ -421,8 +442,8 @@ static void fence_blocks(dri_bufmgr_fake *bufmgr_fake, unsigned fence)
+    struct block *block, *tmp;
+ 
+    foreach_s (block, tmp, &bufmgr_fake->on_hardware) {
+-      DBG("Fence block %p (sz 0x%x buf %p) with fence %d\n", block,
+-	  block->mem->size, block->bo, fence);
++      DBG("Fence block %p (sz 0x%x ofs %x buf %p) with fence %d\n", block,
++	  block->mem->size, block->mem->ofs, block->bo, fence);
+       block->fence = fence;
+ 
+       block->on_hardware = 0;
+@@ -495,9 +516,6 @@ static GLboolean evict_and_alloc_block(dri_bo *bo)
+ 
+    DBG("%s 0x%x bytes failed\n", __FUNCTION__, bo->size);
+ 
+-   assert(is_empty_list(&bufmgr_fake->on_hardware));
+-   assert(is_empty_list(&bufmgr_fake->fenced));
+-
+    return GL_FALSE;
+ }
+ 
+@@ -784,6 +802,26 @@ dri_fake_bo_unmap(dri_bo *bo)
+    return 0;
+ }
+ 
++static void
++dri_fake_kick_all(dri_bufmgr_fake *bufmgr_fake)
++{
++   struct block *block, *tmp;
++
++   bufmgr_fake->performed_rendering = GL_FALSE;
++   /* okay for ever BO that is on the HW kick it off.
++      seriously not afraid of the POLICE right now */
++   foreach_s(block, tmp, &bufmgr_fake->on_hardware) {
++      dri_bo_fake *bo_fake = (dri_bo_fake *)block->bo;
++
++      block->on_hardware = 0;
++      free_block(bufmgr_fake, block);
++      bo_fake->block = NULL;
++      bo_fake->validated = GL_FALSE;
++      if (!(bo_fake->flags & BM_NO_BACKING_STORE))
++         bo_fake->dirty = 1;
++   }
++}
++
+ static int
+ dri_fake_bo_validate(dri_bo *bo, uint64_t flags)
+ {
+@@ -810,6 +848,9 @@ dri_fake_bo_validate(dri_bo *bo, uint64_t flags)
+       return 0;
+    }
+ 
++   /* reset size accounted */
++   bo_fake->size_accounted = 0;
++
+    /* Allocate the card memory */
+    if (!bo_fake->block && !evict_and_alloc_block(bo)) {
+       bufmgr_fake->fail = 1;
+@@ -836,10 +877,18 @@ dri_fake_bo_validate(dri_bo *bo, uint64_t flags)
+        */
+       dri_bufmgr_fake_wait_idle(bufmgr_fake);
+ 
+-      memcpy(bo_fake->block->virtual, bo_fake->backing_store, bo->size);
++      /* we may never have mapped this BO so it might not have any backing
++       * store if this happens it should be rare, but 0 the card memory
++       * in any case */
++      if (bo_fake->backing_store)
++         memcpy(bo_fake->block->virtual, bo_fake->backing_store, bo->size);
++      else
++         memset(bo_fake->block->virtual, 0, bo->size);
++
+       bo_fake->dirty = 0;
+    }
+ 
++   bo_fake->block->fenced = 0;
+    bo_fake->block->on_hardware = 1;
+    move_to_tail(&bufmgr_fake->on_hardware, bo_fake->block);
+ 
+@@ -917,17 +966,21 @@ dri_fake_destroy(dri_bufmgr *bufmgr)
+    free(bufmgr);
+ }
+ 
+-static void
++static int
+ dri_fake_emit_reloc(dri_bo *reloc_buf, uint64_t flags, GLuint delta,
+ 		    GLuint offset, dri_bo *target_buf)
+ {
+    dri_bufmgr_fake *bufmgr_fake = (dri_bufmgr_fake *)reloc_buf->bufmgr;
+    struct fake_buffer_reloc *r;
+    dri_bo_fake *reloc_fake = (dri_bo_fake *)reloc_buf;
++   dri_bo_fake *target_fake = (dri_bo_fake *)target_buf;
+    int i;
+ 
+    assert(reloc_buf);
+    assert(target_buf);
++
++   assert(target_fake->is_static || target_fake->size_accounted);
++
+    if (reloc_fake->relocs == NULL) {
+       reloc_fake->relocs = malloc(sizeof(struct fake_buffer_reloc) *
+ 				  MAX_RELOCS);
+@@ -954,7 +1007,7 @@ dri_fake_emit_reloc(dri_bo *reloc_buf, uint64_t flags, GLuint delta,
+       }
+    }
+ 
+-   return;
++   return 0;
+ }
+ 
+ /**
+@@ -1007,9 +1060,12 @@ dri_fake_reloc_and_validate_buffer(dri_bo *bo)
+ 
+       /* Validate the target buffer if that hasn't been done. */
+       if (!target_fake->validated) {
+-	 ret = dri_fake_reloc_and_validate_buffer(r->target_buf);
+-	 if (ret != 0)
+-	    return ret;
++         ret = dri_fake_reloc_and_validate_buffer(r->target_buf);
++         if (ret != 0) {
++            if (bo->virtual != NULL)
++                dri_bo_unmap(bo);
++            return ret;
++         }
+       }
+ 
+       /* Calculate the value of the relocation entry. */
+@@ -1028,8 +1084,15 @@ dri_fake_reloc_and_validate_buffer(dri_bo *bo)
+    if (bo->virtual != NULL)
+       dri_bo_unmap(bo);
+ 
+-   if (bo_fake->validate_flags & DRM_BO_FLAG_WRITE)
++   if (bo_fake->validate_flags & DRM_BO_FLAG_WRITE) {
++      if (!(bo_fake->flags & (BM_NO_BACKING_STORE|BM_PINNED))) {
++         if (bo_fake->backing_store == 0)
++            alloc_backing_store(bo);
++
++         bo_fake->card_dirty = 1;
++      }
+       bufmgr_fake->performed_rendering = GL_TRUE;
++   }
+ 
+    return dri_fake_bo_validate(bo, bo_fake->validate_flags);
+ }
+@@ -1040,17 +1103,32 @@ dri_fake_process_relocs(dri_bo *batch_buf, GLuint *count_p)
+    dri_bufmgr_fake *bufmgr_fake = (dri_bufmgr_fake *)batch_buf->bufmgr;
+    dri_bo_fake *batch_fake = (dri_bo_fake *)batch_buf;
+    int ret;
++   int retry_count = 0;
+ 
+    bufmgr_fake->performed_rendering = GL_FALSE;
+ 
+    dri_fake_calculate_validate_flags(batch_buf);
+ 
+    batch_fake->validate_flags = DRM_BO_FLAG_MEM_TT | DRM_BO_FLAG_READ;
++
++   /* we've ran out of RAM so blow the whole lot away and retry */
++ restart:
+    ret = dri_fake_reloc_and_validate_buffer(batch_buf);
++   if (bufmgr_fake->fail == 1) {
++      if (retry_count == 0) {
++         retry_count++;
++         dri_fake_kick_all(bufmgr_fake);
++         bufmgr_fake->fail = 0;
++         goto restart;
++      } else /* dump out the memory here */
++         mmDumpMemInfo(bufmgr_fake->heap);
++   }
++
+    assert(ret == 0);
+ 
+    *count_p = 0; /* junk */
+ 
++   bufmgr_fake->current_total_size = 0;
+    return NULL;
+ }
+ 
+@@ -1097,6 +1175,29 @@ dri_fake_post_submit(dri_bo *batch_buf, dri_fence **last_fence)
+    dri_bo_fake_post_submit(batch_buf);
+ }
+ 
++static int
++dri_fake_check_aperture_space(dri_bo *bo)
++{
++   dri_bufmgr_fake *bufmgr_fake = (dri_bufmgr_fake *)bo->bufmgr;
++   dri_bo_fake *bo_fake = (dri_bo_fake *)bo;
++   GLuint sz;
++
++   sz = (bo->size + bo_fake->alignment - 1) & ~(bo_fake->alignment - 1);
++
++   if (bo_fake->size_accounted || bo_fake->is_static)
++      return 0;
++
++   if (bufmgr_fake->current_total_size + sz > bufmgr_fake->size) {
++     DBG("check_space: %s bo %d %d overflowed bufmgr size %d\n", bo_fake->name, bo_fake->id, sz, bufmgr_fake->size);
++      return -1;
++   }
++
++   bufmgr_fake->current_total_size += sz;
++   bo_fake->size_accounted = 1;
++   DBG("drm_check_space: buf %d, %s %d %d\n", bo_fake->id, bo_fake->name, bo->size, bufmgr_fake->current_total_size);
++   return 0;
++}
++
+ dri_bufmgr *
+ dri_bufmgr_fake_init(unsigned long low_offset, void *low_virtual,
+ 		     unsigned long size,
+@@ -1132,6 +1233,7 @@ dri_bufmgr_fake_init(unsigned long low_offset, void *low_virtual,
+    bufmgr_fake->bufmgr.emit_reloc = dri_fake_emit_reloc;
+    bufmgr_fake->bufmgr.process_relocs = dri_fake_process_relocs;
+    bufmgr_fake->bufmgr.post_submit = dri_fake_post_submit;
++   bufmgr_fake->bufmgr.check_aperture_space = dri_fake_check_aperture_space;
+    bufmgr_fake->bufmgr.debug = GL_FALSE;
+ 
+    bufmgr_fake->fence_emit = fence_emit;
+@@ -1140,3 +1242,4 @@ dri_bufmgr_fake_init(unsigned long low_offset, void *low_virtual,
+ 
+    return &bufmgr_fake->bufmgr;
+ }
++
+diff --git a/src/mesa/drivers/dri/i915/i830_vtbl.c b/src/mesa/drivers/dri/i915/i830_vtbl.c
+index d1b07c5..c5a85fe 100644
+--- a/src/mesa/drivers/dri/i915/i830_vtbl.c
++++ b/src/mesa/drivers/dri/i915/i830_vtbl.c
+@@ -25,6 +25,7 @@
+  * 
+  **************************************************************************/
+ 
++#include "glapi.h"
+ 
+ #include "i830_context.h"
+ #include "i830_reg.h"
+@@ -418,8 +419,9 @@ i830_emit_state(struct intel_context *intel)
+ {
+    struct i830_context *i830 = i830_context(&intel->ctx);
+    struct i830_hw_state *state = i830->current;
+-   int i;
++   int i, ret, count;
+    GLuint dirty;
++   GET_CURRENT_CONTEXT(ctx);
+    BATCH_LOCALS;
+ 
+    /* We don't hold the lock at this point, so want to make sure that
+@@ -435,6 +437,34 @@ i830_emit_state(struct intel_context *intel)
+     */
+    intel_batchbuffer_require_space(intel->batch, get_state_size(state) + 8,
+ 				   LOOP_CLIPRECTS);
++   count = 0;
++ again:
++   dirty = get_dirty(state);
++
++   ret = 0;
++   if (dirty & I830_UPLOAD_BUFFERS) {
++     ret |= dri_bufmgr_check_aperture_space(state->draw_region->buffer);
++     ret |= dri_bufmgr_check_aperture_space(state->depth_region->buffer);
++   }
++   
++   for (i = 0; i < I830_TEX_UNITS; i++)
++     if (dirty & I830_UPLOAD_TEX(i)) {
++	if (state->tex_buffer[i]) {
++	  ret |= dri_bufmgr_check_aperture_space(state->tex_buffer[i]);
++	}
++     }
++
++   if (ret) {
++       if (count == 0) {
++	   count++;
++	   intel_batchbuffer_flush(intel->batch);
++	   goto again;
++       } else {
++	   _mesa_error(ctx, GL_OUT_OF_MEMORY, "i830 emit state");
++	   assert(0);
++       }
++   }
++
+ 
+    /* Do this here as we may have flushed the batchbuffer above,
+     * causing more state to be dirty!
+diff --git a/src/mesa/drivers/dri/i915/i915_vtbl.c b/src/mesa/drivers/dri/i915/i915_vtbl.c
+index 94d70be..135bfaa 100644
+--- a/src/mesa/drivers/dri/i915/i915_vtbl.c
++++ b/src/mesa/drivers/dri/i915/i915_vtbl.c
+@@ -43,6 +43,8 @@
+ #include "i915_reg.h"
+ #include "i915_context.h"
+ 
++#include "glapi.h"
++
+ static void
+ i915_render_prevalidate(struct intel_context *intel)
+ {
+@@ -295,7 +297,9 @@ i915_emit_state(struct intel_context *intel)
+    struct i915_context *i915 = i915_context(&intel->ctx);
+    struct i915_hw_state *state = i915->current;
+    int i;
++   int ret, count;
+    GLuint dirty;
++   GET_CURRENT_CONTEXT(ctx);
+    BATCH_LOCALS;
+ 
+    /* We don't hold the lock at this point, so want to make sure that
+@@ -311,7 +315,38 @@ i915_emit_state(struct intel_context *intel)
+     */
+    intel_batchbuffer_require_space(intel->batch, get_state_size(state) + 8,
+ 				   LOOP_CLIPRECTS);
++   count = 0;
++ again:
++   dirty = get_dirty(state);
++
++   ret = 0;
++   if (dirty & I915_UPLOAD_BUFFERS) {
++     ret |= dri_bufmgr_check_aperture_space(state->draw_region->buffer);
++     if (state->depth_region)
++        ret |= dri_bufmgr_check_aperture_space(state->depth_region->buffer);
++   }
++
++   if (dirty & I915_UPLOAD_TEX_ALL) {
++     for (i = 0; i < I915_TEX_UNITS; i++)
++       if (dirty & I915_UPLOAD_TEX(i)) {
++	   if (state->tex_buffer[i]) {
++	       ret |= dri_bufmgr_check_aperture_space(state->tex_buffer[i]);
++	   }
++       }
++   }
++   if (ret) {
++       if (count == 0) {
++	   count++;
++	   intel_batchbuffer_flush(intel->batch);
++	   goto again;
++       } else {
++	   _mesa_error(ctx, GL_OUT_OF_MEMORY, "i915 emit state");
++	   assert(0);
++       }
++   }
+ 
++   /* work out list of buffers to emit */
++   
+    /* Do this here as we may have flushed the batchbuffer above,
+     * causing more state to be dirty!
+     */
+diff --git a/src/mesa/drivers/dri/i965/brw_cc.c b/src/mesa/drivers/dri/i965/brw_cc.c
+index 9def04d..9d8984f 100644
+--- a/src/mesa/drivers/dri/i965/brw_cc.c
++++ b/src/mesa/drivers/dri/i965/brw_cc.c
+@@ -37,7 +37,7 @@
+ #include "macros.h"
+ #include "enums.h"
+ 
+-static void upload_cc_vp( struct brw_context *brw )
++static int upload_cc_vp( struct brw_context *brw )
+ {
+    struct brw_cc_viewport ccv;
+ 
+@@ -48,6 +48,7 @@ static void upload_cc_vp( struct brw_context *brw )
+ 
+    dri_bo_unreference(brw->cc.vp_bo);
+    brw->cc.vp_bo = brw_cache_data( &brw->cache, BRW_CC_VP, &ccv, NULL, 0 );
++   return dri_bufmgr_check_aperture_space(brw->cc.vp_bo);
+ }
+ 
+ const struct brw_tracked_state brw_cc_vp = {
+@@ -56,7 +57,7 @@ const struct brw_tracked_state brw_cc_vp = {
+       .brw = BRW_NEW_CONTEXT,
+       .cache = 0
+    },
+-   .update = upload_cc_vp
++   .prepare = upload_cc_vp
+ };
+ 
+ struct brw_cc_unit_key {
+@@ -264,7 +265,7 @@ cc_unit_create_from_key(struct brw_context *brw, struct brw_cc_unit_key *key)
+    return bo;
+ }
+ 
+-static void upload_cc_unit( struct brw_context *brw )
++static int prepare_cc_unit( struct brw_context *brw )
+ {
+    struct brw_cc_unit_key key;
+ 
+@@ -278,6 +279,7 @@ static void upload_cc_unit( struct brw_context *brw )
+ 
+    if (brw->cc.state_bo == NULL)
+       brw->cc.state_bo = cc_unit_create_from_key(brw, &key);
++   return dri_bufmgr_check_aperture_space(brw->cc.state_bo);
+ }
+ 
+ const struct brw_tracked_state brw_cc_unit = {
+@@ -286,7 +288,7 @@ const struct brw_tracked_state brw_cc_unit = {
+       .brw = 0,
+       .cache = CACHE_NEW_CC_VP
+    },
+-   .update = upload_cc_unit,
++   .prepare = prepare_cc_unit,
+ };
+ 
+ 
+diff --git a/src/mesa/drivers/dri/i965/brw_clip.c b/src/mesa/drivers/dri/i965/brw_clip.c
+index ce34da1..540108e 100644
+--- a/src/mesa/drivers/dri/i965/brw_clip.c
++++ b/src/mesa/drivers/dri/i965/brw_clip.c
+@@ -131,7 +131,7 @@ static void compile_clip_prog( struct brw_context *brw,
+ 
+ /* Calculate interpolants for triangle and line rasterization.
+  */
+-static void upload_clip_prog( struct brw_context *brw )
++static int upload_clip_prog( struct brw_context *brw )
+ {
+    GLcontext *ctx = &brw->intel.ctx;
+    struct brw_clip_prog_key key;
+@@ -242,6 +242,8 @@ static void upload_clip_prog( struct brw_context *brw )
+ 					&brw->clip.prog_data);
+    if (brw->clip.prog_bo == NULL)
+       compile_clip_prog( brw, &key );
++
++   return dri_bufmgr_check_aperture_space(brw->clip.prog_bo);
+ }
+ 
+ 
+@@ -254,5 +256,5 @@ const struct brw_tracked_state brw_clip_prog = {
+       .brw   = (BRW_NEW_REDUCED_PRIMITIVE),
+       .cache = CACHE_NEW_VS_PROG
+    },
+-   .update = upload_clip_prog
++   .prepare = upload_clip_prog
+ };
+diff --git a/src/mesa/drivers/dri/i965/brw_clip_line.c b/src/mesa/drivers/dri/i965/brw_clip_line.c
+index ab96256..7d51cdd 100644
+--- a/src/mesa/drivers/dri/i965/brw_clip_line.c
++++ b/src/mesa/drivers/dri/i965/brw_clip_line.c
+@@ -148,10 +148,12 @@ static void clip_and_emit_line( struct brw_clip_compile *c )
+    brw_clip_init_clipmask(c);
+ 
+    /* -ve rhw workaround */
+-   brw_set_conditionalmod(p, BRW_CONDITIONAL_NZ);
+-   brw_AND(p, brw_null_reg(), get_element_ud(c->reg.R0, 2),
+-		   brw_imm_ud(1<<20));
+-   brw_OR(p, c->reg.planemask, c->reg.planemask, brw_imm_ud(0x3f));
++   if (!BRW_IS_IGD(p->brw)) {
++      brw_set_conditionalmod(p, BRW_CONDITIONAL_NZ);
++      brw_AND(p, brw_null_reg(), get_element_ud(c->reg.R0, 2),
++              brw_imm_ud(1<<20));
++      brw_OR(p, c->reg.planemask, c->reg.planemask, brw_imm_ud(0x3f));
++   }
+ 
+    brw_set_predicate_control(p, BRW_PREDICATE_NONE);
+ 
+diff --git a/src/mesa/drivers/dri/i965/brw_clip_state.c b/src/mesa/drivers/dri/i965/brw_clip_state.c
+index cbf9cdc..7cb21f8 100644
+--- a/src/mesa/drivers/dri/i965/brw_clip_state.c
++++ b/src/mesa/drivers/dri/i965/brw_clip_state.c
+@@ -128,9 +128,10 @@ clip_unit_create_from_key(struct brw_context *brw,
+    return bo;
+ }
+ 
+-static void upload_clip_unit( struct brw_context *brw )
++static int upload_clip_unit( struct brw_context *brw )
+ {
+    struct brw_clip_unit_key key;
++   int ret = 0;
+ 
+    clip_unit_populate_key(brw, &key);
+ 
+@@ -142,6 +143,9 @@ static void upload_clip_unit( struct brw_context *brw )
+    if (brw->clip.state_bo == NULL) {
+       brw->clip.state_bo = clip_unit_create_from_key(brw, &key);
+    }
++
++   ret = dri_bufmgr_check_aperture_space(brw->clip.state_bo);
++   return ret;
+ }
+ 
+ const struct brw_tracked_state brw_clip_unit = {
+@@ -151,5 +155,5 @@ const struct brw_tracked_state brw_clip_unit = {
+ 		BRW_NEW_URB_FENCE),
+       .cache = CACHE_NEW_CLIP_PROG
+    },
+-   .update = upload_clip_unit,
++   .prepare = upload_clip_unit,
+ };
+diff --git a/src/mesa/drivers/dri/i965/brw_clip_tri.c b/src/mesa/drivers/dri/i965/brw_clip_tri.c
+index 9d7b3de..f1fc6e1 100644
+--- a/src/mesa/drivers/dri/i965/brw_clip_tri.c
++++ b/src/mesa/drivers/dri/i965/brw_clip_tri.c
+@@ -536,14 +536,16 @@ void brw_emit_tri_clip( struct brw_clip_compile *c )
+ 
+    /* if -ve rhw workaround bit is set, 
+       do cliptest */
+-   brw_set_conditionalmod(p, BRW_CONDITIONAL_NZ);
+-   brw_AND(p, brw_null_reg(), get_element_ud(c->reg.R0, 2), 
+-		   brw_imm_ud(1<<20));
+-   neg_rhw = brw_IF(p, BRW_EXECUTE_1); 
+-   {
+-	   brw_clip_test(c);
++   if (!BRW_IS_IGD(p->brw)) {
++      brw_set_conditionalmod(p, BRW_CONDITIONAL_NZ);
++      brw_AND(p, brw_null_reg(), get_element_ud(c->reg.R0, 2), 
++              brw_imm_ud(1<<20));
++      neg_rhw = brw_IF(p, BRW_EXECUTE_1); 
++      {
++         brw_clip_test(c);
++      }
++      brw_ENDIF(p, neg_rhw);
+    }
+-   brw_ENDIF(p, neg_rhw);
+    /* Can't push into do_clip_tri because with polygon (or quad)
+     * flatshading, need to apply the flatshade here because we don't
+     * respect the PV when converting to trifan for emit:
+diff --git a/src/mesa/drivers/dri/i965/brw_context.h b/src/mesa/drivers/dri/i965/brw_context.h
+index 56021fa..bef425f 100644
+--- a/src/mesa/drivers/dri/i965/brw_context.h
++++ b/src/mesa/drivers/dri/i965/brw_context.h
+@@ -332,7 +332,8 @@ struct brw_state_pointers {
+  */
+ struct brw_tracked_state {
+    struct brw_state_flags dirty;
+-   void (*update)( struct brw_context *brw );
++   int (*prepare)( struct brw_context *brw );
++   void (*emit)( struct brw_context *brw );
+ };
+ 
+ /* Flags for brw->state.cache.
+@@ -640,7 +641,7 @@ GLboolean brwCreateContext( const __GLcontextModes *mesaVis,
+ /*======================================================================
+  * brw_state.c
+  */
+-void brw_validate_state( struct brw_context *brw );
++int brw_validate_state( struct brw_context *brw );
+ void brw_init_state( struct brw_context *brw );
+ void brw_destroy_state( struct brw_context *brw );
+ 
+diff --git a/src/mesa/drivers/dri/i965/brw_curbe.c b/src/mesa/drivers/dri/i965/brw_curbe.c
+index f41f659..5ff4e29 100644
+--- a/src/mesa/drivers/dri/i965/brw_curbe.c
++++ b/src/mesa/drivers/dri/i965/brw_curbe.c
+@@ -46,7 +46,7 @@
+ 
+ /* Partition the CURBE between the various users of constant values:
+  */
+-static void calculate_curbe_offsets( struct brw_context *brw )
++static int calculate_curbe_offsets( struct brw_context *brw )
+ {
+    /* CACHE_NEW_WM_PROG */
+    GLuint nr_fp_regs = (brw->wm.prog_data->nr_params + 15) / 16;
+@@ -117,6 +117,7 @@ static void calculate_curbe_offsets( struct brw_context *brw )
+ 
+       brw->state.dirty.brw |= BRW_NEW_CURBE_OFFSETS;
+    }
++   return 0;
+ }
+ 
+ 
+@@ -126,7 +127,7 @@ const struct brw_tracked_state brw_curbe_offsets = {
+       .brw  = BRW_NEW_VERTEX_PROGRAM,
+       .cache = CACHE_NEW_WM_PROG
+    },
+-   .update = calculate_curbe_offsets
++   .prepare = calculate_curbe_offsets
+ };
+ 
+ 
+@@ -182,9 +183,8 @@ static GLfloat fixed_plane[6][4] = {
+  * cache mechanism, but maybe would benefit from a comparison against
+  * the current uploaded set of constants.
+  */
+-static void upload_constant_buffer(struct brw_context *brw)
++static int prepare_constant_buffer(struct brw_context *brw)
+ {
+-   struct intel_context *intel = &brw->intel;
+    GLcontext *ctx = &brw->intel.ctx;
+    struct brw_vertex_program *vp = (struct brw_vertex_program *)brw->vertex_program;
+    struct brw_fragment_program *fp = (struct brw_fragment_program *)brw->fragment_program;
+@@ -201,10 +201,6 @@ static void upload_constant_buffer(struct brw_context *brw)
+    brw->curbe.tracked_state.dirty.mesa |= fp->param_state;
+ 
+    if (sz == 0) {
+-      BEGIN_BATCH(2, IGNORE_CLIPRECTS);
+-      OUT_BATCH((CMD_CONST_BUFFER << 16) | (2 - 2));
+-      OUT_BATCH(0);
+-      ADVANCE_BATCH();
+ 
+       if (brw->curbe.last_buf) {
+ 	 free(brw->curbe.last_buf);
+@@ -212,7 +208,7 @@ static void upload_constant_buffer(struct brw_context *brw)
+ 	 brw->curbe.last_bufsz  = 0;
+       }
+        
+-      return;
++      return 0;
+    }
+ 
+    buf = (GLfloat *)malloc(bufsz);
+@@ -326,6 +322,7 @@ static void upload_constant_buffer(struct brw_context *brw)
+       dri_bo_subdata(brw->curbe.curbe_bo, brw->curbe.curbe_offset, bufsz, buf);
+    }
+ 
++
+    /* Because this provokes an action (ie copy the constants into the
+     * URB), it shouldn't be shortcircuited if identical to the
+     * previous time - because eg. the urb destination may have
+@@ -339,10 +336,26 @@ static void upload_constant_buffer(struct brw_context *brw)
+     * flushes as necessary when doublebuffering of CURBEs isn't
+     * possible.
+     */
++
++   /* check aperture space for this bo */
++   return dri_bufmgr_check_aperture_space(brw->curbe.curbe_bo);
++}
++
++
++static void emit_constant_buffer(struct brw_context *brw)
++{
++   struct intel_context *intel = &brw->intel;
++   GLuint sz = brw->curbe.total_size;
++
+    BEGIN_BATCH(2, IGNORE_CLIPRECTS);
+-   OUT_BATCH((CMD_CONST_BUFFER << 16) | (1 << 8) | (2 - 2));
+-   OUT_RELOC(brw->curbe.curbe_bo, DRM_BO_FLAG_MEM_TT | DRM_BO_FLAG_READ,
+-	     (sz - 1) + brw->curbe.curbe_offset);
++   if (sz == 0) {
++      OUT_BATCH((CMD_CONST_BUFFER << 16) | (2 - 2));
++      OUT_BATCH(0);
++   } else {
++      OUT_BATCH((CMD_CONST_BUFFER << 16) | (1 << 8) | (2 - 2));
++      OUT_RELOC(brw->curbe.curbe_bo, DRM_BO_FLAG_MEM_TT | DRM_BO_FLAG_READ,
++		(sz - 1) + brw->curbe.curbe_offset);
++   }
+    ADVANCE_BATCH();
+ }
+ 
+@@ -363,6 +376,7 @@ const struct brw_tracked_state brw_constant_buffer = {
+ 	       BRW_NEW_BATCH),
+       .cache = (CACHE_NEW_WM_PROG) 
+    },
+-   .update = upload_constant_buffer,
++   .prepare = prepare_constant_buffer,
++   .emit = emit_constant_buffer,
+ };
+ 
+diff --git a/src/mesa/drivers/dri/i965/brw_draw.c b/src/mesa/drivers/dri/i965/brw_draw.c
+index 0990dcf..6124ab6 100644
+--- a/src/mesa/drivers/dri/i965/brw_draw.c
++++ b/src/mesa/drivers/dri/i965/brw_draw.c
+@@ -83,8 +83,9 @@ static const GLenum reduced_prim[GL_POLYGON+1] = {
+  * programs be immune to the active primitive (ie. cope with all
+  * possibilities).  That may not be realistic however.
+  */
+-static GLuint brw_set_prim(struct brw_context *brw, GLenum prim)
++static GLuint brw_set_prim(struct brw_context *brw, GLenum prim, GLboolean *need_flush)
+ {
++   int ret;
+    if (INTEL_DEBUG & DEBUG_PRIMS)
+       _mesa_printf("PRIM: %s\n", _mesa_lookup_enum_by_nr(prim));
+    
+@@ -105,7 +106,9 @@ static GLuint brw_set_prim(struct brw_context *brw, GLenum prim)
+ 	 brw->state.dirty.brw |= BRW_NEW_REDUCED_PRIMITIVE;
+       }
+ 
+-      brw_validate_state(brw);
++      ret = brw_validate_state(brw);
++      if (ret)
++         *need_flush = GL_TRUE;
+    }
+ 
+    return hw_prim[prim];
+@@ -128,6 +131,7 @@ static void brw_emit_prim( struct brw_context *brw,
+ 
+ {
+    struct brw_3d_primitive prim_packet;
++   GLboolean need_flush = GL_FALSE;
+ 
+    if (INTEL_DEBUG & DEBUG_PRIMS)
+       _mesa_printf("PRIM: %s %d %d\n", _mesa_lookup_enum_by_nr(prim->mode), 
+@@ -136,7 +140,7 @@ static void brw_emit_prim( struct brw_context *brw,
+    prim_packet.header.opcode = CMD_3D_PRIM;
+    prim_packet.header.length = sizeof(prim_packet)/4 - 2;
+    prim_packet.header.pad = 0;
+-   prim_packet.header.topology = brw_set_prim(brw, prim->mode);
++   prim_packet.header.topology = brw_set_prim(brw, prim->mode, &need_flush);
+    prim_packet.header.indexed = prim->indexed;
+ 
+    prim_packet.verts_per_instance = trim(prim->mode, prim->count);
+@@ -149,6 +153,8 @@ static void brw_emit_prim( struct brw_context *brw,
+       intel_batchbuffer_data( brw->intel.batch, &prim_packet,
+ 			      sizeof(prim_packet), LOOP_CLIPRECTS);
+    }
++
++   assert(need_flush == GL_FALSE);
+ }
+ 
+ static void brw_merge_inputs( struct brw_context *brw,
+@@ -251,8 +257,10 @@ static GLboolean brw_try_draw_prims( GLcontext *ctx,
+    struct intel_context *intel = intel_context(ctx);
+    struct brw_context *brw = brw_context(ctx);
+    GLboolean retval = GL_FALSE;
+-   GLuint i;
+-
++   GLuint i, ret;
++   GLuint ib_offset;
++   dri_bo *ib_bo;
++   GLboolean force_flush = GL_FALSE;
+    if (ctx->NewState)
+       _mesa_update_state( ctx );
+ 
+@@ -284,20 +292,49 @@ static GLboolean brw_try_draw_prims( GLcontext *ctx,
+        * an upper bound of how much we might emit in a single
+        * brw_try_draw_prims().
+        */
++   flush:
++      if (force_flush)
++         brw->no_batch_wrap = GL_FALSE;
++
+       if (intel->batch->ptr - intel->batch->map > intel->batch->size * 3 / 4
+ 	/* brw_emit_prim may change the cliprect_mode to LOOP_CLIPRECTS */
+-	|| intel->batch->cliprect_mode != LOOP_CLIPRECTS) 
++	  || intel->batch->cliprect_mode != LOOP_CLIPRECTS || (force_flush == GL_TRUE))
+ 	      intel_batchbuffer_flush(intel->batch);
+ 
++      force_flush = GL_FALSE;
+       brw->no_batch_wrap = GL_TRUE;
+ 
+       /* Set the first primitive early, ahead of validate_state:
+        */
+-      brw_set_prim(brw, prim[0].mode);
++      brw_set_prim(brw, prim[0].mode, &force_flush);
+ 
+       /* XXX:  Need to separate validate and upload of state.  
+        */
+-      brw_validate_state( brw );
++      ret = brw_validate_state( brw );
++      if (ret) {
++         force_flush = GL_TRUE;
++         goto flush;
++      }
++
++      /* need to account for index buffer and vertex buffer */
++      if (ib) {
++         ret = brw_prepare_indices( brw, ib , &ib_bo, &ib_offset);
++         if (ret) {
++            force_flush = GL_TRUE;
++            goto flush;
++         }
++      }
++
++      ret = brw_prepare_vertices( brw, min_index, max_index);
++      if (ret < 0)
++         goto out;
++
++      if (ret > 0) {
++         force_flush = GL_TRUE;
++         goto flush;
++      }
++
++
+ 
+       /* Various fallback checks:
+        */
+@@ -310,11 +347,9 @@ static GLboolean brw_try_draw_prims( GLcontext *ctx,
+       /* Upload index, vertex data: 
+        */
+       if (ib)
+-	 brw_upload_indices( brw, ib );
++	brw_emit_indices( brw, ib, ib_bo, ib_offset);
+ 
+-      if (!brw_upload_vertices( brw, min_index, max_index)) {
+-	 goto out;
+-      }
++      brw_emit_vertices( brw, min_index, max_index);
+ 
+       for (i = 0; i < nr_prims; i++) {
+ 	 brw_emit_prim(brw, &prim[i]);
+diff --git a/src/mesa/drivers/dri/i965/brw_draw.h b/src/mesa/drivers/dri/i965/brw_draw.h
+index 0f7b738..b354740 100644
+--- a/src/mesa/drivers/dri/i965/brw_draw.h
++++ b/src/mesa/drivers/dri/i965/brw_draw.h
+@@ -31,6 +31,7 @@
+ #include "mtypes.h"		/* for GLcontext... */
+ #include "vbo/vbo.h"
+ 
++#include "dri_bufmgr.h"
+ struct brw_context;
+ 
+ 
+@@ -53,10 +54,21 @@ void brw_init_current_values(GLcontext *ctx,
+ 
+ /* brw_draw_upload.c
+  */
+-void brw_upload_indices( struct brw_context *brw,
+-			 const struct _mesa_index_buffer *index_buffer);
++int brw_prepare_indices( struct brw_context *brw,
++			 const struct _mesa_index_buffer *index_buffer,
++			 dri_bo **bo_return,
++			 GLuint *offset_return);
+ 
+-GLboolean brw_upload_vertices( struct brw_context *brw,
++void brw_emit_indices( struct brw_context *brw,
++		       const struct _mesa_index_buffer *index_buffer,
++		       dri_bo *bo,
++		       GLuint offset);
++
++int brw_prepare_vertices( struct brw_context *brw,
++			       GLuint min_index,
++			       GLuint max_index );
++
++void brw_emit_vertices( struct brw_context *brw,
+ 			       GLuint min_index,
+ 			       GLuint max_index );
+ 
+diff --git a/src/mesa/drivers/dri/i965/brw_draw_upload.c b/src/mesa/drivers/dri/i965/brw_draw_upload.c
+index 839735d..9f780bc 100644
+--- a/src/mesa/drivers/dri/i965/brw_draw_upload.c
++++ b/src/mesa/drivers/dri/i965/brw_draw_upload.c
+@@ -255,8 +255,10 @@ static void wrap_buffers( struct brw_context *brw,
+    /* Set the internal VBO\ to no-backing-store.  We only use them as a
+     * temporary within a brw_try_draw_prims while the lock is held.
+     */
+-   if (!brw->intel.ttm)
+-      dri_bo_fake_disable_backing_store(brw->vb.upload.bo, NULL, NULL);
++   /* DON'T DO THIS AS IF WE HAVE TO RE-ORG MEMORY WE NEED SOMEWHERE WITH
++      FAKE TO PUSH THIS STUFF */
++//   if (!brw->intel.ttm)
++//      dri_bo_fake_disable_backing_store(brw->vb.upload.bo, NULL, NULL);
+ }
+ 
+ static void get_space( struct brw_context *brw,
+@@ -303,7 +305,7 @@ copy_array_to_vbo_array( struct brw_context *brw,
+    dri_bo_unmap(element->bo);
+ }
+ 
+-GLboolean brw_upload_vertices( struct brw_context *brw,
++int brw_prepare_vertices( struct brw_context *brw,
+ 			       GLuint min_index,
+ 			       GLuint max_index )
+ {
+@@ -313,6 +315,7 @@ GLboolean brw_upload_vertices( struct brw_context *brw,
+    GLuint i;
+    const unsigned char *ptr = NULL;
+    GLuint interleave = 0;
++   int ret;
+ 
+    struct brw_vertex_element *enabled[VERT_ATTRIB_MAX];
+    GLuint nr_enabled = 0;
+@@ -341,7 +344,7 @@ GLboolean brw_upload_vertices( struct brw_context *brw,
+     * isn't an issue at this point.
+     */
+    if (nr_enabled >= BRW_VEP_MAX)
+-	 return GL_FALSE;
++       return -1;
+ 
+    for (i = 0; i < nr_enabled; i++) {
+       struct brw_vertex_element *input = enabled[i];
+@@ -367,7 +370,7 @@ GLboolean brw_upload_vertices( struct brw_context *brw,
+ 	    /* Position array not properly enabled:
+ 	     */
+ 	    if (input->glarray->StrideB == 0)
+-	       return GL_FALSE;
++	      return -1;
+ 
+ 	    interleave = input->glarray->StrideB;
+ 	    ptr = input->glarray->Ptr;
+@@ -415,6 +418,34 @@ GLboolean brw_upload_vertices( struct brw_context *brw,
+       }
+    }
+ 
++   ret = dri_bufmgr_check_aperture_space(brw->vb.upload.bo);
++   if (ret)
++     return 1;
++
++   return 0;
++}
++
++void brw_emit_vertices( struct brw_context *brw,
++                        GLuint min_index,
++                        GLuint max_index )
++{
++   GLcontext *ctx = &brw->intel.ctx;
++   struct intel_context *intel = intel_context(ctx);
++   GLuint tmp = brw->vs.prog_data->inputs_read;
++   struct brw_vertex_element *enabled[VERT_ATTRIB_MAX];
++   GLuint i;
++   GLuint nr_enabled = 0;
++
++  /* Accumulate the list of enabled arrays. */
++   while (tmp) {
++      i = _mesa_ffsll(tmp)-1;
++      struct brw_vertex_element *input = &brw->vb.inputs[i];
++
++      tmp &= ~(1<<i);
++      enabled[nr_enabled++] = input;
++   }
++
++
+    /* Now emit VB and VEP state packets.
+     *
+     * This still defines a hardware VB for each input, even if they
+@@ -476,12 +507,12 @@ GLboolean brw_upload_vertices( struct brw_context *brw,
+ 		((i * 4) << BRW_VE1_DST_OFFSET_SHIFT));
+    }
+    ADVANCE_BATCH();
+-
+-   return GL_TRUE;
+ }
+ 
+-void brw_upload_indices( struct brw_context *brw,
+-			 const struct _mesa_index_buffer *index_buffer )
++int brw_prepare_indices( struct brw_context *brw,
++			 const struct _mesa_index_buffer *index_buffer,
++			 dri_bo **bo_return,
++			 GLuint *offset_return)
+ {
+    GLcontext *ctx = &brw->intel.ctx;
+    struct intel_context *intel = &brw->intel;
+@@ -489,6 +520,7 @@ void brw_upload_indices( struct brw_context *brw,
+    dri_bo *bo;
+    struct gl_buffer_object *bufferobj = index_buffer->obj;
+    GLuint offset = (GLuint)index_buffer->ptr;
++   int ret;
+ 
+    /* Turn into a proper VBO:
+     */
+@@ -524,6 +556,19 @@ void brw_upload_indices( struct brw_context *brw,
+        }
+    }
+ 
++   *bo_return = bo;
++   *offset_return = offset;
++   ret = dri_bufmgr_check_aperture_space(bo);
++   return ret;
++}
++
++void brw_emit_indices(struct brw_context *brw,
++                      const struct _mesa_index_buffer *index_buffer,
++                      dri_bo *bo,
++                      GLuint offset)
++{
++   struct intel_context *intel = &brw->intel;
++   GLuint ib_size = get_size(index_buffer->type) * index_buffer->count;
+    /* Emit the indexbuffer packet:
+     */
+    {
+@@ -548,3 +593,4 @@ void brw_upload_indices( struct brw_context *brw,
+       dri_bo_unreference(bo);
+    }
+ }
++
+diff --git a/src/mesa/drivers/dri/i965/brw_fallback.c b/src/mesa/drivers/dri/i965/brw_fallback.c
+index ce0df03..2cf29cc 100644
+--- a/src/mesa/drivers/dri/i965/brw_fallback.c
++++ b/src/mesa/drivers/dri/i965/brw_fallback.c
+@@ -93,9 +93,10 @@ static GLboolean do_check_fallback(struct brw_context *brw)
+    return GL_FALSE;
+ }
+ 
+-static void check_fallback(struct brw_context *brw)
++static int check_fallback(struct brw_context *brw)
+ {
+    brw->intel.Fallback = do_check_fallback(brw);
++   return 0;
+ }
+ 
+ const struct brw_tracked_state brw_check_fallback = {
+@@ -104,7 +105,7 @@ const struct brw_tracked_state brw_check_fallback = {
+       .brw  = BRW_NEW_METAOPS,
+       .cache = 0
+    },
+-   .update = check_fallback
++   .prepare = check_fallback
+ };
+ 
+ 
+diff --git a/src/mesa/drivers/dri/i965/brw_gs.c b/src/mesa/drivers/dri/i965/brw_gs.c
+index 922a3ba..8ad2762 100644
+--- a/src/mesa/drivers/dri/i965/brw_gs.c
++++ b/src/mesa/drivers/dri/i965/brw_gs.c
+@@ -162,7 +162,7 @@ static void populate_key( struct brw_context *brw,
+ 
+ /* Calculate interpolants for triangle and line rasterization.
+  */
+-static void upload_gs_prog( struct brw_context *brw )
++static int prepare_gs_prog( struct brw_context *brw )
+ {
+    struct brw_gs_prog_key key;
+ 
+@@ -184,6 +184,8 @@ static void upload_gs_prog( struct brw_context *brw )
+       if (brw->gs.prog_bo == NULL)
+ 	 compile_gs_prog( brw, &key );
+    }
++
++   return dri_bufmgr_check_aperture_space(brw->gs.prog_bo);
+ }
+ 
+ 
+@@ -193,5 +195,5 @@ const struct brw_tracked_state brw_gs_prog = {
+       .brw   = BRW_NEW_PRIMITIVE,
+       .cache = CACHE_NEW_VS_PROG
+    },
+-   .update = upload_gs_prog
++   .prepare = prepare_gs_prog
+ };
+diff --git a/src/mesa/drivers/dri/i965/brw_gs_state.c b/src/mesa/drivers/dri/i965/brw_gs_state.c
+index bf38fd7..f1f9e01 100644
+--- a/src/mesa/drivers/dri/i965/brw_gs_state.c
++++ b/src/mesa/drivers/dri/i965/brw_gs_state.c
+@@ -116,7 +116,7 @@ gs_unit_create_from_key(struct brw_context *brw, struct brw_gs_unit_key *key)
+    return bo;
+ }
+ 
+-static void upload_gs_unit( struct brw_context *brw )
++static int prepare_gs_unit( struct brw_context *brw )
+ {
+    struct brw_gs_unit_key key;
+ 
+@@ -130,6 +130,7 @@ static void upload_gs_unit( struct brw_context *brw )
+    if (brw->gs.state_bo == NULL) {
+       brw->gs.state_bo = gs_unit_create_from_key(brw, &key);
+    }
++   return dri_bufmgr_check_aperture_space(brw->gs.state_bo);
+ }
+ 
+ const struct brw_tracked_state brw_gs_unit = {
+@@ -139,5 +140,5 @@ const struct brw_tracked_state brw_gs_unit = {
+ 		BRW_NEW_URB_FENCE),
+       .cache = CACHE_NEW_GS_PROG
+    },
+-   .update = upload_gs_unit,
++   .prepare = prepare_gs_unit,
+ };
+diff --git a/src/mesa/drivers/dri/i965/brw_misc_state.c b/src/mesa/drivers/dri/i965/brw_misc_state.c
+index ba90496..ec0bd6b 100644
+--- a/src/mesa/drivers/dri/i965/brw_misc_state.c
++++ b/src/mesa/drivers/dri/i965/brw_misc_state.c
+@@ -68,7 +68,7 @@ const struct brw_tracked_state brw_blend_constant_color = {
+       .brw = 0,
+       .cache = 0
+    },
+-   .update = upload_blend_constant_color
++   .emit = upload_blend_constant_color
+ };
+ 
+ /**
+@@ -98,7 +98,7 @@ const struct brw_tracked_state brw_binding_table_pointers = {
+       .brw = BRW_NEW_BATCH,
+       .cache = CACHE_NEW_SURF_BIND,
+    },
+-   .update = upload_binding_table_pointers,
++   .emit = upload_binding_table_pointers,
+ };
+ 
+ 
+@@ -145,7 +145,7 @@ const struct brw_tracked_state brw_pipelined_state_pointers = {
+ 		CACHE_NEW_WM_UNIT | 
+ 		CACHE_NEW_CC_UNIT)
+    },
+-   .update = upload_pipelined_state_pointers
++   .emit = upload_pipelined_state_pointers
+ };
+ #endif
+ 
+@@ -169,7 +169,7 @@ const struct brw_tracked_state brw_psp_urb_cbs = {
+ 		CACHE_NEW_WM_UNIT | 
+ 		CACHE_NEW_CC_UNIT)
+    },
+-   .update = upload_psp_urb_cbs,
++   .emit = upload_psp_urb_cbs,
+ };
+ 
+ /**
+@@ -178,7 +178,17 @@ const struct brw_tracked_state brw_psp_urb_cbs = {
+  * We have to do this per state validation as we need to emit the relocation
+  * in the batch buffer.
+  */
+-static void upload_depthbuffer(struct brw_context *brw)
++
++static int prepare_depthbuffer(struct brw_context *brw)
++{
++   struct intel_region *region = brw->state.depth_region;
++
++   if (region->buffer)
++      return 0;
++   return dri_bufmgr_check_aperture_space(region->buffer);
++}
++
++static void emit_depthbuffer(struct brw_context *brw)
+ {
+    struct intel_context *intel = &brw->intel;
+    struct intel_region *region = brw->state.depth_region;
+@@ -242,7 +252,8 @@ const struct brw_tracked_state brw_depthbuffer = {
+       .brw = BRW_NEW_DEPTH_BUFFER | BRW_NEW_BATCH,
+       .cache = 0,
+    },
+-   .update = upload_depthbuffer,
++   .prepare = prepare_depthbuffer,
++   .emit = emit_depthbuffer,
+ };
+ 
+ 
+@@ -272,7 +283,7 @@ const struct brw_tracked_state brw_polygon_stipple = {
+       .brw = 0,
+       .cache = 0
+    },
+-   .update = upload_polygon_stipple
++   .emit = upload_polygon_stipple
+ };
+ 
+ 
+@@ -303,7 +314,7 @@ const struct brw_tracked_state brw_polygon_stipple_offset = {
+       .brw = 0,
+       .cache = 0
+    },
+-   .update = upload_polygon_stipple_offset
++   .emit = upload_polygon_stipple_offset
+ };
+ 
+ /**********************************************************************
+@@ -330,7 +341,7 @@ const struct brw_tracked_state brw_aa_line_parameters = {
+       .brw = BRW_NEW_CONTEXT,
+       .cache = 0
+    },
+-   .update = upload_aa_line_parameters
++   .emit = upload_aa_line_parameters
+ };
+ 
+ /***********************************************************************
+@@ -365,7 +376,7 @@ const struct brw_tracked_state brw_line_stipple = {
+       .brw = 0,
+       .cache = 0
+    },
+-   .update = upload_line_stipple
++   .emit = upload_line_stipple
+ };
+ 
+ 
+@@ -399,7 +410,7 @@ const struct brw_tracked_state brw_pipe_control = {
+       .brw = BRW_NEW_BATCH,
+       .cache = 0
+    },
+-   .update = upload_pipe_control
++   .emit = upload_pipe_control
+ };
+ 
+ 
+@@ -465,7 +476,7 @@ const struct brw_tracked_state brw_invarient_state = {
+       .brw = BRW_NEW_CONTEXT,
+       .cache = 0
+    },
+-   .update = upload_invarient_state
++   .emit = upload_invarient_state
+ };
+ 
+ /**
+@@ -499,5 +510,5 @@ const struct brw_tracked_state brw_state_base_address = {
+       .brw = BRW_NEW_CONTEXT,
+       .cache = 0,
+    },
+-   .update = upload_state_base_address
++   .emit = upload_state_base_address
+ };
+diff --git a/src/mesa/drivers/dri/i965/brw_sf.c b/src/mesa/drivers/dri/i965/brw_sf.c
+index 18285be..0b61748 100644
+--- a/src/mesa/drivers/dri/i965/brw_sf.c
++++ b/src/mesa/drivers/dri/i965/brw_sf.c
+@@ -125,7 +125,7 @@ static void compile_sf_prog( struct brw_context *brw,
+ 
+ /* Calculate interpolants for triangle and line rasterization.
+  */
+-static void upload_sf_prog( struct brw_context *brw )
++static int upload_sf_prog( struct brw_context *brw )
+ {
+    struct brw_sf_prog_key key;
+ 
+@@ -174,6 +174,7 @@ static void upload_sf_prog( struct brw_context *brw )
+ 				      &brw->sf.prog_data);
+    if (brw->sf.prog_bo == NULL)
+       compile_sf_prog( brw, &key );
++   return dri_bufmgr_check_aperture_space(brw->sf.prog_bo);
+ }
+ 
+ 
+@@ -183,6 +184,6 @@ const struct brw_tracked_state brw_sf_prog = {
+       .brw   = (BRW_NEW_REDUCED_PRIMITIVE),
+       .cache = CACHE_NEW_VS_PROG
+    },
+-   .update = upload_sf_prog
++   .prepare = upload_sf_prog
+ };
+ 
+diff --git a/src/mesa/drivers/dri/i965/brw_sf_state.c b/src/mesa/drivers/dri/i965/brw_sf_state.c
+index 3980484..24388b7 100644
+--- a/src/mesa/drivers/dri/i965/brw_sf_state.c
++++ b/src/mesa/drivers/dri/i965/brw_sf_state.c
+@@ -37,7 +37,7 @@
+ #include "macros.h"
+ #include "intel_fbo.h"
+ 
+-static void upload_sf_vp(struct brw_context *brw)
++static int upload_sf_vp(struct brw_context *brw)
+ {
+    GLcontext *ctx = &brw->intel.ctx;
+    const GLfloat depth_scale = 1.0F / ctx->DrawBuffer->_DepthMaxF;
+@@ -98,6 +98,8 @@ static void upload_sf_vp(struct brw_context *brw)
+ 
+    dri_bo_unreference(brw->sf.vp_bo);
+    brw->sf.vp_bo = brw_cache_data( &brw->cache, BRW_SF_VP, &sfv, NULL, 0 );
++
++   return dri_bufmgr_check_aperture_space(brw->sf.vp_bo);
+ }
+ 
+ const struct brw_tracked_state brw_sf_vp = {
+@@ -107,7 +109,7 @@ const struct brw_tracked_state brw_sf_vp = {
+       .brw   = BRW_NEW_METAOPS,
+       .cache = 0
+    },
+-   .update = upload_sf_vp
++   .prepare = upload_sf_vp
+ };
+ 
+ struct brw_sf_unit_key {
+@@ -267,10 +269,11 @@ sf_unit_create_from_key(struct brw_context *brw, struct brw_sf_unit_key *key,
+    return bo;
+ }
+ 
+-static void upload_sf_unit( struct brw_context *brw )
++static int upload_sf_unit( struct brw_context *brw )
+ {
+    struct brw_sf_unit_key key;
+    dri_bo *reloc_bufs[2];
++   int ret = 0;
+ 
+    sf_unit_populate_key(brw, &key);
+ 
+@@ -285,6 +288,15 @@ static void upload_sf_unit( struct brw_context *brw )
+    if (brw->sf.state_bo == NULL) {
+       brw->sf.state_bo = sf_unit_create_from_key(brw, &key, reloc_bufs);
+    }
++
++   if (reloc_bufs[0])
++     ret |= dri_bufmgr_check_aperture_space(reloc_bufs[0]);
++
++   if (reloc_bufs[1])
++     ret |= dri_bufmgr_check_aperture_space(reloc_bufs[1]);
++
++   ret |= dri_bufmgr_check_aperture_space(brw->sf.state_bo);
++   return ret;
+ }
+ 
+ const struct brw_tracked_state brw_sf_unit = {
+@@ -298,5 +310,5 @@ const struct brw_tracked_state brw_sf_unit = {
+       .cache = (CACHE_NEW_SF_VP |
+ 		CACHE_NEW_SF_PROG)
+    },
+-   .update = upload_sf_unit,
++   .prepare = upload_sf_unit,
+ };
+diff --git a/src/mesa/drivers/dri/i965/brw_state_upload.c b/src/mesa/drivers/dri/i965/brw_state_upload.c
+index 106a54a..3b2ccd4 100644
+--- a/src/mesa/drivers/dri/i965/brw_state_upload.c
++++ b/src/mesa/drivers/dri/i965/brw_state_upload.c
+@@ -173,10 +173,10 @@ static void xor_states( struct brw_state_flags *result,
+ /***********************************************************************
+  * Emit all state:
+  */
+-void brw_validate_state( struct brw_context *brw )
++int brw_validate_state( struct brw_context *brw )
+ {
+    struct brw_state_flags *state = &brw->state.dirty;
+-   GLuint i;
++   GLuint i, ret, count;
+ 
+    state->mesa |= brw->intel.NewGLState;
+    brw->intel.NewGLState = 0;
+@@ -202,13 +202,34 @@ void brw_validate_state( struct brw_context *brw )
+    if (state->mesa == 0 &&
+        state->cache == 0 &&
+        state->brw == 0)
+-      return;
++      return 0;
+ 
+    if (brw->state.dirty.brw & BRW_NEW_CONTEXT)
+       brw_clear_batch_cache_flush(brw);
+ 
+    brw->intel.Fallback = 0;
+ 
++   count = 0;
++
++   /* do prepare stage for all atoms */
++   for (i = 0; i < Elements(atoms); i++) {
++      const struct brw_tracked_state *atom = brw->state.atoms[i];
++
++      if (brw->intel.Fallback)
++         break;
++
++      if (check_state(state, &atom->dirty)) {
++         if (atom->prepare) {
++            ret = atom->prepare(brw);
++            if (ret)
++               return ret;
++        }
++      }
++   }
++
++   if (brw->intel.Fallback)
++      return 0;
++
+    if (INTEL_DEBUG) {
+       /* Debug version which enforces various sanity checks on the
+        * state flags which are generated and checked to help ensure
+@@ -225,15 +246,13 @@ void brw_validate_state( struct brw_context *brw )
+ 	 assert(atom->dirty.mesa ||
+ 		atom->dirty.brw ||
+ 		atom->dirty.cache);
+-	 assert(atom->update);
+ 
+ 	 if (brw->intel.Fallback)
+ 	    break;
+ 
+ 	 if (check_state(state, &atom->dirty)) {
+-	    atom->update( brw );
+-	    
+-/* 	    emit_foo(brw); */
++	    if (atom->emit)
++	       atom->emit( brw );
+ 	 }
+ 
+ 	 accumulate_state(&examined, &atom->dirty);
+@@ -254,11 +273,14 @@ void brw_validate_state( struct brw_context *brw )
+ 	 if (brw->intel.Fallback)
+ 	    break;
+ 
+-	 if (check_state(state, &atom->dirty))
+-	    atom->update( brw );
++	 if (check_state(state, &atom->dirty)) {
++	    if (atom->emit)
++	       atom->emit( brw );
++	 }
+       }
+    }
+ 
+    if (!brw->intel.Fallback)
+       memset(state, 0, sizeof(*state));
++   return 0;
+ }
+diff --git a/src/mesa/drivers/dri/i965/brw_urb.c b/src/mesa/drivers/dri/i965/brw_urb.c
+index cf805ce..4b03838 100644
+--- a/src/mesa/drivers/dri/i965/brw_urb.c
++++ b/src/mesa/drivers/dri/i965/brw_urb.c
+@@ -74,7 +74,7 @@ static GLboolean check_urb_layout( struct brw_context *brw )
+ /* Most minimal update, forces re-emit of URB fence packet after GS
+  * unit turned on/off.
+  */
+-static void recalculate_urb_fence( struct brw_context *brw )
++static int recalculate_urb_fence( struct brw_context *brw )
+ {
+    GLuint csize = brw->curbe.total_size;
+    GLuint vsize = brw->vs.prog_data->urb_entry_size;
+@@ -142,6 +142,7 @@ static void recalculate_urb_fence( struct brw_context *brw )
+       
+       brw->state.dirty.brw |= BRW_NEW_URB_FENCE;
+    }
++   return 0;
+ }
+ 
+ 
+@@ -152,7 +153,7 @@ const struct brw_tracked_state brw_recalculate_urb_fence = {
+       .cache = (CACHE_NEW_VS_PROG |
+ 		CACHE_NEW_SF_PROG)
+    },
+-   .update = recalculate_urb_fence
++   .prepare = recalculate_urb_fence
+ };
+ 
+ 
+diff --git a/src/mesa/drivers/dri/i965/brw_vs.c b/src/mesa/drivers/dri/i965/brw_vs.c
+index 656fa2e..f89b0e1 100644
+--- a/src/mesa/drivers/dri/i965/brw_vs.c
++++ b/src/mesa/drivers/dri/i965/brw_vs.c
+@@ -83,7 +83,7 @@ static void do_vs_prog( struct brw_context *brw,
+ }
+ 
+ 
+-static void brw_upload_vs_prog( struct brw_context *brw )
++static int brw_upload_vs_prog( struct brw_context *brw )
+ {
+    struct brw_vs_prog_key key;
+    struct brw_vertex_program *vp = 
+@@ -115,6 +115,7 @@ static void brw_upload_vs_prog( struct brw_context *brw )
+ 				      &brw->vs.prog_data);
+    if (brw->vs.prog_bo == NULL)
+       do_vs_prog(brw, vp, &key);
++   return dri_bufmgr_check_aperture_space(brw->vs.prog_bo);
+ }
+ 
+ 
+@@ -126,5 +127,5 @@ const struct brw_tracked_state brw_vs_prog = {
+       .brw   = BRW_NEW_VERTEX_PROGRAM | BRW_NEW_METAOPS,
+       .cache = 0
+    },
+-   .update = brw_upload_vs_prog
++   .prepare = brw_upload_vs_prog
+ };
+diff --git a/src/mesa/drivers/dri/i965/brw_vs_constval.c b/src/mesa/drivers/dri/i965/brw_vs_constval.c
+index caef042..a0106b8 100644
+--- a/src/mesa/drivers/dri/i965/brw_vs_constval.c
++++ b/src/mesa/drivers/dri/i965/brw_vs_constval.c
+@@ -166,7 +166,7 @@ static GLuint get_input_size(struct brw_context *brw,
+ /* Calculate sizes of vertex program outputs.  Size is the largest
+  * component index which might vary from [0,0,0,1]
+  */
+-static void calc_wm_input_sizes( struct brw_context *brw )
++static int calc_wm_input_sizes( struct brw_context *brw )
+ {
+    /* BRW_NEW_VERTEX_PROGRAM */
+    struct brw_vertex_program *vp = 
+@@ -210,6 +210,7 @@ static void calc_wm_input_sizes( struct brw_context *brw )
+       memcpy(brw->wm.input_size_masks, t.size_masks, sizeof(t.size_masks));
+       brw->state.dirty.brw |= BRW_NEW_WM_INPUT_DIMENSIONS;
+    }
++   return 0;
+ }
+ 
+ const struct brw_tracked_state brw_wm_input_sizes = {
+@@ -218,6 +219,6 @@ const struct brw_tracked_state brw_wm_input_sizes = {
+       .brw   = BRW_NEW_VERTEX_PROGRAM | BRW_NEW_INPUT_DIMENSIONS,
+       .cache = 0
+    },
+-   .update = calc_wm_input_sizes
++   .prepare = calc_wm_input_sizes
+ };
+ 
+diff --git a/src/mesa/drivers/dri/i965/brw_vs_emit.c b/src/mesa/drivers/dri/i965/brw_vs_emit.c
+index 447e118..3cac97c 100644
+--- a/src/mesa/drivers/dri/i965/brw_vs_emit.c
++++ b/src/mesa/drivers/dri/i965/brw_vs_emit.c
+@@ -867,7 +867,7 @@ static void emit_vertex_write( struct brw_vs_compile *c)
+        * Later, clipping will detect ucp[6] and ensure the primitive is
+        * clipped against all fixed planes.
+        */
+-      if (!c->key.know_w_is_one) {
++      if (!BRW_IS_IGD(p->brw) && !c->key.know_w_is_one) {
+ 	 brw_CMP(p,
+ 		 vec8(brw_null_reg()),
+ 		 BRW_CONDITIONAL_L,
+diff --git a/src/mesa/drivers/dri/i965/brw_vs_state.c b/src/mesa/drivers/dri/i965/brw_vs_state.c
+index 573be01..2a64f3d 100644
+--- a/src/mesa/drivers/dri/i965/brw_vs_state.c
++++ b/src/mesa/drivers/dri/i965/brw_vs_state.c
+@@ -124,7 +124,7 @@ vs_unit_create_from_key(struct brw_context *brw, struct brw_vs_unit_key *key)
+    return bo;
+ }
+ 
+-static void upload_vs_unit( struct brw_context *brw )
++static int prepare_vs_unit( struct brw_context *brw )
+ {
+    struct brw_vs_unit_key key;
+ 
+@@ -138,6 +138,7 @@ static void upload_vs_unit( struct brw_context *brw )
+    if (brw->vs.state_bo == NULL) {
+       brw->vs.state_bo = vs_unit_create_from_key(brw, &key);
+    }
++   return dri_bufmgr_check_aperture_space(brw->vs.state_bo);
+ }
+ 
+ const struct brw_tracked_state brw_vs_unit = {
+@@ -147,5 +148,5 @@ const struct brw_tracked_state brw_vs_unit = {
+ 		BRW_NEW_URB_FENCE),
+       .cache = CACHE_NEW_VS_PROG
+    },
+-   .update = upload_vs_unit,
++   .prepare = prepare_vs_unit,
+ };
+diff --git a/src/mesa/drivers/dri/i965/brw_vs_tnl.c b/src/mesa/drivers/dri/i965/brw_vs_tnl.c
+index 160fc34..e409620 100644
+--- a/src/mesa/drivers/dri/i965/brw_vs_tnl.c
++++ b/src/mesa/drivers/dri/i965/brw_vs_tnl.c
+@@ -1581,7 +1581,7 @@ static GLuint hash_key( struct state_key *key )
+    return hash;
+ }
+ 
+-static void update_tnl_program( struct brw_context *brw )
++static int prepare_tnl_program( struct brw_context *brw )
+ {
+    GLcontext *ctx = &brw->intel.ctx;
+    struct state_key key;
+@@ -1590,7 +1590,7 @@ static void update_tnl_program( struct brw_context *brw )
+ 
+    /* _NEW_PROGRAM */
+    if (brw->attribs.VertexProgram->_Current) 
+-      return;
++      return 0;
+       
+    /* Grab all the relevent state and put it in a single structure:
+     */
+@@ -1623,6 +1623,7 @@ static void update_tnl_program( struct brw_context *brw )
+ 
+    if (old != brw->tnl_program)
+       brw->state.dirty.brw |= BRW_NEW_TNL_PROGRAM;
++   return 0;
+ }
+ 
+ /* Note: See brw_draw.c - the vertex program must not rely on
+@@ -1642,13 +1643,13 @@ const struct brw_tracked_state brw_tnl_vertprog = {
+ 	      BRW_NEW_INPUT_VARYING),
+       .cache = 0
+    },
+-   .update = update_tnl_program
++   .prepare = prepare_tnl_program
+ };
+ 
+ 
+ 
+ 
+-static void update_active_vertprog( struct brw_context *brw )
++static int prepare_active_vertprog( struct brw_context *brw )
+ {
+    const struct gl_vertex_program *prev = brw->vertex_program;
+ 
+@@ -1663,6 +1664,8 @@ static void update_active_vertprog( struct brw_context *brw )
+ 
+    if (brw->vertex_program != prev) 
+       brw->state.dirty.brw |= BRW_NEW_VERTEX_PROGRAM;
++
++   return 0;
+ }
+ 
+ 
+@@ -1673,7 +1676,7 @@ const struct brw_tracked_state brw_active_vertprog = {
+       .brw = BRW_NEW_TNL_PROGRAM,
+       .cache = 0
+    },
+-   .update = update_active_vertprog
++   .prepare = prepare_active_vertprog
+ };
+ 
+ 
+diff --git a/src/mesa/drivers/dri/i965/brw_wm.c b/src/mesa/drivers/dri/i965/brw_wm.c
+index abdc92b..acbaf17 100644
+--- a/src/mesa/drivers/dri/i965/brw_wm.c
++++ b/src/mesa/drivers/dri/i965/brw_wm.c
+@@ -325,7 +325,7 @@ static void brw_wm_populate_key( struct brw_context *brw,
+ }
+ 
+ 
+-static void brw_upload_wm_prog( struct brw_context *brw )
++static int brw_prepare_wm_prog( struct brw_context *brw )
+ {
+    struct brw_wm_prog_key key;
+    struct brw_fragment_program *fp = (struct brw_fragment_program *)
+@@ -342,6 +342,8 @@ static void brw_upload_wm_prog( struct brw_context *brw )
+ 				      &brw->wm.prog_data);
+    if (brw->wm.prog_bo == NULL)
+       do_wm_prog(brw, fp, &key);
++
++   return dri_bufmgr_check_aperture_space(brw->wm.prog_bo);
+ }
+ 
+ 
+@@ -362,6 +364,6 @@ const struct brw_tracked_state brw_wm_prog = {
+ 		BRW_NEW_REDUCED_PRIMITIVE),
+       .cache = 0
+    },
+-   .update = brw_upload_wm_prog
++   .prepare = brw_prepare_wm_prog
+ };
+ 
+diff --git a/src/mesa/drivers/dri/i965/brw_wm_sampler_state.c b/src/mesa/drivers/dri/i965/brw_wm_sampler_state.c
+index 6ca7709..d40332e 100644
+--- a/src/mesa/drivers/dri/i965/brw_wm_sampler_state.c
++++ b/src/mesa/drivers/dri/i965/brw_wm_sampler_state.c
+@@ -255,10 +255,11 @@ brw_wm_sampler_populate_key(struct brw_context *brw,
+  * complicates various things.  However, this is still too confusing -
+  * FIXME: simplify all the different new texture state flags.
+  */
+-static void upload_wm_samplers( struct brw_context *brw )
++static int upload_wm_samplers( struct brw_context *brw )
+ {
+    struct wm_sampler_key key;
+    int i;
++   int ret = 0;
+ 
+    brw_wm_sampler_populate_key(brw, &key);
+ 
+@@ -270,7 +271,7 @@ static void upload_wm_samplers( struct brw_context *brw )
+    dri_bo_unreference(brw->wm.sampler_bo);
+    brw->wm.sampler_bo = NULL;
+    if (brw->wm.sampler_count == 0)
+-      return;
++      return 0;
+ 
+    brw->wm.sampler_bo = brw_search_cache(&brw->cache, BRW_SAMPLER,
+ 					 &key, sizeof(key),
+@@ -303,6 +304,7 @@ static void upload_wm_samplers( struct brw_context *brw )
+ 	 if (!brw->attribs.Texture->Unit[i]._ReallyEnabled)
+ 	    continue;
+ 
++	 ret |= dri_bufmgr_check_aperture_space(brw->wm.sdc_bo[i]);
+ 	 dri_emit_reloc(brw->wm.sampler_bo,
+ 			DRM_BO_FLAG_MEM_TT | DRM_BO_FLAG_READ,
+ 			0,
+@@ -311,6 +313,10 @@ static void upload_wm_samplers( struct brw_context *brw )
+ 			brw->wm.sdc_bo[i]);
+       }
+    }
++
++   ret |= dri_bufmgr_check_aperture_space(brw->wm.sampler_bo);
++   return ret;
++
+ }
+ 
+ const struct brw_tracked_state brw_wm_samplers = {
+@@ -319,7 +325,7 @@ const struct brw_tracked_state brw_wm_samplers = {
+       .brw = 0,
+       .cache = 0
+    },
+-   .update = upload_wm_samplers,
++   .prepare = upload_wm_samplers,
+ };
+ 
+ 
+diff --git a/src/mesa/drivers/dri/i965/brw_wm_state.c b/src/mesa/drivers/dri/i965/brw_wm_state.c
+index 4b9d7aa..f4da0f2 100644
+--- a/src/mesa/drivers/dri/i965/brw_wm_state.c
++++ b/src/mesa/drivers/dri/i965/brw_wm_state.c
+@@ -227,12 +227,12 @@ wm_unit_create_from_key(struct brw_context *brw, struct brw_wm_unit_key *key,
+ }
+ 
+ 
+-static void upload_wm_unit( struct brw_context *brw )
++static int upload_wm_unit( struct brw_context *brw )
+ {
+    struct intel_context *intel = &brw->intel;
+    struct brw_wm_unit_key key;
+    dri_bo *reloc_bufs[3];
+-
++   int ret = 0, i;
+    wm_unit_populate_key(brw, &key);
+ 
+    /* Allocate the necessary scratch space if we haven't already.  Don't
+@@ -267,6 +267,12 @@ static void upload_wm_unit( struct brw_context *brw )
+    if (brw->wm.state_bo == NULL) {
+       brw->wm.state_bo = wm_unit_create_from_key(brw, &key, reloc_bufs);
+    }
++
++   for (i = 0; i < 3; i++)
++     if (reloc_bufs[i])
++       ret |= dri_bufmgr_check_aperture_space(reloc_bufs[i]);
++   ret |= dri_bufmgr_check_aperture_space(brw->wm.state_bo);
++   return ret;
+ }
+ 
+ const struct brw_tracked_state brw_wm_unit = {
+@@ -284,6 +290,6 @@ const struct brw_tracked_state brw_wm_unit = {
+ 		CACHE_NEW_WM_PROG | 
+ 		CACHE_NEW_SAMPLER)
+    },
+-   .update = upload_wm_unit,
++   .prepare = upload_wm_unit,
+ };
+ 
+diff --git a/src/mesa/drivers/dri/i965/brw_wm_surface_state.c b/src/mesa/drivers/dri/i965/brw_wm_surface_state.c
+index c5c944f..eff4555 100644
+--- a/src/mesa/drivers/dri/i965/brw_wm_surface_state.c
++++ b/src/mesa/drivers/dri/i965/brw_wm_surface_state.c
+@@ -207,7 +207,7 @@ brw_create_texture_surface( struct brw_context *brw,
+    return bo;
+ }
+ 
+-static void
++static int
+ brw_update_texture_surface( GLcontext *ctx, GLuint unit )
+ {
+    struct brw_context *brw = brw_context(ctx);
+@@ -215,6 +215,7 @@ brw_update_texture_surface( GLcontext *ctx, GLuint unit )
+    struct intel_texture_object *intelObj = intel_texture_object(tObj);
+    struct gl_texture_image *firstImage = tObj->Image[0][intelObj->firstLevel];
+    struct brw_wm_surface_key key;
++   int ret = 0;
+ 
+    memset(&key, 0, sizeof(key));
+    key.target = tObj->Target;
+@@ -229,13 +230,19 @@ brw_update_texture_surface( GLcontext *ctx, GLuint unit )
+    key.depth = firstImage->Depth;
+    key.tiled = intelObj->mt->region->tiled;
+ 
++   ret |= dri_bufmgr_check_aperture_space(key.bo);
++
+    dri_bo_unreference(brw->wm.surf_bo[unit + MAX_DRAW_BUFFERS]);
+    brw->wm.surf_bo[unit + MAX_DRAW_BUFFERS] = brw_search_cache(&brw->cache, BRW_SS_SURFACE,
+ 						&key, sizeof(key),
+ 						&key.bo, 1,
+ 						NULL);
+-   if (brw->wm.surf_bo[unit + MAX_DRAW_BUFFERS] == NULL)
++   if (brw->wm.surf_bo[unit + MAX_DRAW_BUFFERS] == NULL) {
+       brw->wm.surf_bo[unit + MAX_DRAW_BUFFERS] = brw_create_texture_surface(brw, &key);
++   }
++
++   ret |= dri_bufmgr_check_aperture_space(brw->wm.surf_bo[unit + MAX_DRAW_BUFFERS]);
++   return ret;
+ }
+ 
+ /**
+@@ -243,12 +250,12 @@ brw_update_texture_surface( GLcontext *ctx, GLuint unit )
+  * While it is only used for the front/back buffer currently, it should be
+  * usable for further buffers when doing ARB_draw_buffer support.
+  */
+-static void
++static int
+ brw_update_region_surface(struct brw_context *brw, struct intel_region *region,
+ 			  unsigned int unit, GLboolean cached)
+ {
+    dri_bo *region_bo = NULL;
+-
++   int ret = 0;
+    struct {
+       unsigned int surface_type;
+       unsigned int surface_format;
+@@ -271,6 +278,8 @@ brw_update_region_surface(struct brw_context *brw, struct intel_region *region,
+       key.width = region->pitch; /* XXX: not really! */
+       key.height = region->height;
+       key.cpp = region->cpp;
++
++      ret |= dri_bufmgr_check_aperture_space(region->buffer);
+    } else {
+       key.surface_type = BRW_SURFACE_NULL;
+       key.surface_format = BRW_SURFACEFORMAT_B8G8R8A8_UNORM;
+@@ -331,6 +340,10 @@ brw_update_region_surface(struct brw_context *brw, struct intel_region *region,
+ 			region_bo);
+       }
+    }
++
++   ret |= dri_bufmgr_check_aperture_space(brw->wm.surf_bo[unit]);
++
++   return ret;
+ }
+ 
+ 
+@@ -384,17 +397,24 @@ brw_wm_get_binding_table(struct brw_context *brw)
+    return bind_bo;
+ }
+ 
+-static void upload_wm_surfaces(struct brw_context *brw )
++static int prepare_wm_surfaces(struct brw_context *brw )
+ {
+    GLcontext *ctx = &brw->intel.ctx;
+    struct intel_context *intel = &brw->intel;
+-   GLuint i;
++   GLuint i, ret;
++
+    if (brw->state.nr_draw_regions  > 1) {
+-       for (i = 0; i < brw->state.nr_draw_regions; i++) 
+-	   brw_update_region_surface(brw, brw->state.draw_regions[i], i, 
+-		GL_FALSE);
+-   }else
+-       brw_update_region_surface(brw, brw->state.draw_regions[0], 0, GL_TRUE);
++      for (i = 0; i < brw->state.nr_draw_regions; i++) {
++         ret = brw_update_region_surface(brw, brw->state.draw_regions[i], i,
++                                         GL_FALSE);
++         if (ret)
++            return ret;
++      }
++   }else {
++      ret = brw_update_region_surface(brw, brw->state.draw_regions[0], 0, GL_TRUE);
++      if (ret)
++         return ret;
++   }
+ 
+    brw->wm.nr_surfaces = MAX_DRAW_BUFFERS;
+ 
+@@ -402,33 +422,40 @@ static void upload_wm_surfaces(struct brw_context *brw )
+       struct gl_texture_unit *texUnit = &brw->attribs.Texture->Unit[i];
+ 
+       /* _NEW_TEXTURE, BRW_NEW_TEXDATA */
+-      if(texUnit->_ReallyEnabled &&
+-	 texUnit->_Current == intel->frame_buffer_texobj)
+-      {
+-	 dri_bo_unreference(brw->wm.surf_bo[i+MAX_DRAW_BUFFERS]);
+-	 brw->wm.surf_bo[i+MAX_DRAW_BUFFERS] = brw->wm.surf_bo[0];
+-	 dri_bo_reference(brw->wm.surf_bo[i+MAX_DRAW_BUFFERS]);
+-	 brw->wm.nr_surfaces = i + MAX_DRAW_BUFFERS + 1;
+-      } else if (texUnit->_ReallyEnabled) {
+-	 brw_update_texture_surface(ctx, i);
+-	 brw->wm.nr_surfaces = i + MAX_DRAW_BUFFERS + 1;
++      if(texUnit->_ReallyEnabled) {
++         if (texUnit->_Current == intel->frame_buffer_texobj) {
++            dri_bo_unreference(brw->wm.surf_bo[i+MAX_DRAW_BUFFERS]);
++            brw->wm.surf_bo[i+MAX_DRAW_BUFFERS] = brw->wm.surf_bo[0];
++            dri_bo_reference(brw->wm.surf_bo[i+MAX_DRAW_BUFFERS]);
++            brw->wm.nr_surfaces = i + MAX_DRAW_BUFFERS + 1;
++         } else {
++            ret = brw_update_texture_surface(ctx, i);
++            brw->wm.nr_surfaces = i + MAX_DRAW_BUFFERS + 1;
++
++            if (ret)
++               return ret;
++         }
+       } else {
+-	 dri_bo_unreference(brw->wm.surf_bo[i+MAX_DRAW_BUFFERS]);
+-	 brw->wm.surf_bo[i+MAX_DRAW_BUFFERS] = NULL;
++         dri_bo_unreference(brw->wm.surf_bo[i+MAX_DRAW_BUFFERS]);
++         brw->wm.surf_bo[i+MAX_DRAW_BUFFERS] = NULL;
+       }
++
+    }
+ 
+    dri_bo_unreference(brw->wm.bind_bo);
+    brw->wm.bind_bo = brw_wm_get_binding_table(brw);
++
++   return dri_bufmgr_check_aperture_space(brw->wm.bind_bo);
+ }
+ 
++
+ const struct brw_tracked_state brw_wm_surfaces = {
+    .dirty = {
+       .mesa = _NEW_COLOR | _NEW_TEXTURE | _NEW_BUFFERS,
+       .brw = BRW_NEW_CONTEXT,
+       .cache = 0
+    },
+-   .update = upload_wm_surfaces,
++   .prepare = prepare_wm_surfaces,
+ };
+ 
+ 
+diff --git a/src/mesa/drivers/dri/intel/intel_batchbuffer.c b/src/mesa/drivers/dri/intel/intel_batchbuffer.c
+index c1701f0..d4abbb0 100644
+--- a/src/mesa/drivers/dri/intel/intel_batchbuffer.c
++++ b/src/mesa/drivers/dri/intel/intel_batchbuffer.c
+@@ -87,6 +87,10 @@ intel_batchbuffer_reset(struct intel_batchbuffer *batch)
+    batch->ptr = batch->map;
+    batch->dirty_state = ~0;
+    batch->cliprect_mode = IGNORE_CLIPRECTS;
++
++   /* account batchbuffer in aperture */
++   dri_bufmgr_check_aperture_space(batch->buf);
++
+ }
+ 
+ struct intel_batchbuffer *
+@@ -264,7 +268,11 @@ intel_batchbuffer_emit_reloc(struct intel_batchbuffer *batch,
+                              dri_bo *buffer,
+                              GLuint flags, GLuint delta)
+ {
+-   dri_emit_reloc(batch->buf, flags, delta, batch->ptr - batch->map, buffer);
++   int ret;
++   int count = 0;
++
++   ret = dri_emit_reloc(batch->buf, flags, delta, batch->ptr - batch->map, buffer);
++
+    /*
+     * Using the old buffer offset, write in what the right data would be, in case
+     * the buffer doesn't move and we can short-circuit the relocation processing
+diff --git a/src/mesa/drivers/dri/intel/intel_blit.c b/src/mesa/drivers/dri/intel/intel_blit.c
+index f4358bb..4890826 100644
+--- a/src/mesa/drivers/dri/intel/intel_blit.c
++++ b/src/mesa/drivers/dri/intel/intel_blit.c
+@@ -54,6 +54,7 @@ intelCopyBuffer(const __DRIdrawablePrivate * dPriv,
+ 
+    struct intel_context *intel;
+    const intelScreenPrivate *intelScreen;
++   int ret;
+ 
+    DBG("%s\n", __FUNCTION__);
+ 
+@@ -123,6 +124,15 @@ intelCopyBuffer(const __DRIdrawablePrivate * dPriv,
+       }
+ #endif
+ 
++   again:
++      ret = dri_bufmgr_check_aperture_space(dst->buffer);
++      ret |= dri_bufmgr_check_aperture_space(src->buffer);
++      
++      if (ret) {
++	intel_batchbuffer_flush(intel->batch);
++	goto again;
++      }
++      
+       for (i = 0; i < nbox; i++, pbox++) {
+ 	 drm_clip_rect_t box = *pbox;
+ 
+@@ -265,8 +275,16 @@ intelEmitCopyBlit(struct intel_context *intel,
+    GLuint CMD, BR13;
+    int dst_y2 = dst_y + h;
+    int dst_x2 = dst_x + w;
++   int ret;
+    BATCH_LOCALS;
+ 
++ again:
++   ret = dri_bufmgr_check_aperture_space(dst_buffer);
++   ret |= dri_bufmgr_check_aperture_space(src_buffer);
++   if (ret) {
++     intel_batchbuffer_flush(intel->batch);
++     goto again;
++   }
+ 
+    DBG("%s src:buf(%p)/%d+%d %d,%d dst:buf(%p)/%d+%d %d,%d sz:%dx%d\n",
+        __FUNCTION__,
+diff --git a/src/mesa/drivers/dri/intel/intel_bufmgr_ttm.c b/src/mesa/drivers/dri/intel/intel_bufmgr_ttm.c
+index f164b48..6828425 100644
+--- a/src/mesa/drivers/dri/intel/intel_bufmgr_ttm.c
++++ b/src/mesa/drivers/dri/intel/intel_bufmgr_ttm.c
+@@ -817,7 +817,7 @@ dri_bufmgr_ttm_destroy(dri_bufmgr *bufmgr)
+  * the relocation entry write when the buffer hasn't moved from the
+  * last known offset in target_buf.
+  */
+-static void
++static int
+ dri_ttm_emit_reloc(dri_bo *reloc_buf, uint64_t flags, GLuint delta,
+ 		   GLuint offset, dri_bo *target_buf)
+ {
+@@ -851,6 +851,7 @@ dri_ttm_emit_reloc(dri_bo *reloc_buf, uint64_t flags, GLuint delta,
+     reloc_buf_ttm->reloc_buf_data[0]++; /* Increment relocation count */
+     /* Check wraparound */
+     assert(reloc_buf_ttm->reloc_buf_data[0] != 0);
++    return 0;
+ }
+ 
+ /**
+@@ -1039,6 +1040,15 @@ intel_ttm_enable_bo_reuse(dri_bufmgr *bufmgr)
+     }
+ }
+ 
++/*
++ *
++ */
++static int
++dri_ttm_check_aperture_space(dri_bo *bo)
++{
++    return 0;
++}
++
+ /**
+  * Initializes the TTM buffer manager, which uses the kernel to allocate, map,
+  * and manage map buffer objections.
+@@ -1082,7 +1092,7 @@ intel_bufmgr_ttm_init(int fd, unsigned int fence_type,
+     bufmgr_ttm->bufmgr.process_relocs = dri_ttm_process_reloc;
+     bufmgr_ttm->bufmgr.post_submit = dri_ttm_post_submit;
+     bufmgr_ttm->bufmgr.debug = GL_FALSE;
+-
++    bufmgr_ttm->bufmgr.check_aperture_space = dri_ttm_check_aperture_space;
+     /* Initialize the linked lists for BO reuse cache. */
+     for (i = 0; i < INTEL_TTM_BO_BUCKETS; i++)
+ 	bufmgr_ttm->cache_bucket[i].tail = &bufmgr_ttm->cache_bucket[i].head;
+diff --git a/src/mesa/drivers/dri/r200/r200_vertprog.c b/src/mesa/drivers/dri/r200/r200_vertprog.c
+index b1e027d..4be0344 100644
+--- a/src/mesa/drivers/dri/r200/r200_vertprog.c
++++ b/src/mesa/drivers/dri/r200/r200_vertprog.c
+@@ -215,6 +215,7 @@ static unsigned long t_src_class(enum register_file file)
+    case PROGRAM_LOCAL_PARAM:
+    case PROGRAM_ENV_PARAM:
+    case PROGRAM_NAMED_PARAM:
++   case PROGRAM_CONSTANT:
+    case PROGRAM_STATE_VAR:
+       return VSF_IN_CLASS_PARAM;
+    /*
+diff --git a/src/mesa/swrast/s_span.c b/src/mesa/swrast/s_span.c
+index 864f77a..656a90a 100644
+--- a/src/mesa/swrast/s_span.c
++++ b/src/mesa/swrast/s_span.c
+@@ -1402,9 +1402,8 @@ _swrast_write_rgba_span( GLcontext *ctx, SWspan *span)
+     */
+    {
+       const struct gl_fragment_program *fp = ctx->FragmentProgram._Current;
+-      const GLboolean multiFragOutputs
+-         = fp && fp->Base.InputsRead >= (1 << FRAG_RESULT_DATA0);
+       const GLuint numBuffers = fb->_NumColorDrawBuffers;
++      const GLboolean multiFragOutputs = numBuffers > 1;
+       GLuint buf;
+ 
+       for (buf = 0; buf < numBuffers; buf++) {
