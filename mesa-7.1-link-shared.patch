@@ -1,6 +1,72 @@
-diff -up mesa-20080331/src/mesa/x86/read_rgba_span_x86.S.jx mesa-20080331/src/mesa/x86/read_rgba_span_x86.S
---- mesa-20080331/src/mesa/x86/read_rgba_span_x86.S.jx	2008-03-31 16:58:48.000000000 -0400
-+++ mesa-20080331/src/mesa/x86/read_rgba_span_x86.S	2008-04-10 12:11:31.000000000 -0400
+diff -up mesa-20080612/src/mesa/drivers/dri/Makefile.dricore mesa-20080612/src/mesa/drivers/dri/Makefile
+--- mesa-20080612/src/mesa/drivers/dri/Makefile.dricore	2008-06-12 12:06:50.000000000 +1000
++++ mesa-20080612/src/mesa/drivers/dri/Makefile	2008-06-12 13:25:58.000000000 +1000
+@@ -6,12 +6,17 @@ include $(TOP)/configs/current
+ 
+ 
+ 
+-default: $(TOP)/$(LIB_DIR) subdirs
++default: $(TOP)/$(LIB_DIR) $(TOP)/$(LIB_DIR)/libdricore.so subdirs
+ 
+ 
+ $(TOP)/$(LIB_DIR):
+ 	-mkdir $(TOP)/$(LIB_DIR)
+ 
++libdricore.so:
++	gcc -shared -o libdricore.so -Wl,--whole-archive ../../libmesa.a -Wl,--no-whole-archive -lm -lpthread -lc
++
++$(TOP)/$(LIB_DIR)/libdricore.so: $(TOP)/$(LIB_DIR) libdricore.so
++	$(INSTALL) libdricore.so $(TOP)/$(LIB_DIR) 
+ 
+ subdirs:
+ 	@for dir in $(DRI_DIRS) ; do \
+@@ -21,12 +26,14 @@ subdirs:
+ 	done
+ 
+ 
+-install:
++install: $(TOP)/$(LIB_DIR)/libdricore.so
+ 	@for dir in $(DRI_DIRS) ; do \
+ 		if [ -d $$dir ] ; then \
+ 			(cd $$dir && $(MAKE) install) || exit 1 ; \
+ 		fi \
+ 	done
++	$(INSTALL) -d $(DESTDIR)$(DRI_DRIVER_INSTALL_DIR)
++	$(INSTALL) -m 755 $(TOP)/$(LIB_DIR)/libdricore.so $(DESTDIR)$(DRI_DRIVER_INSTALL_DIR)
+ 	$(INSTALL) -d $(DESTDIR)$(INSTALL_DIR)/include/GL/internal
+ 	$(INSTALL) -m 0644 $(TOP)/include/GL/internal/dri_interface.h $(DESTDIR)$(INSTALL_DIR)/include/GL/internal
+ 	$(INSTALL) -m 0644 $(TOP)/include/GL/internal/dri_sarea.h $(DESTDIR)$(INSTALL_DIR)/include/GL/internal
+@@ -38,4 +45,5 @@ clean:
+ 			(cd $$dir && $(MAKE) clean) ; \
+ 		fi \
+ 	done
++	-rm -f libdricore.so $(TOP)/$(LIB_DIR)/libdricore.so
+ 	-rm -f common/*.o
+diff -up mesa-20080612/src/mesa/drivers/dri/Makefile.template.dricore mesa-20080612/src/mesa/drivers/dri/Makefile.template
+--- mesa-20080612/src/mesa/drivers/dri/Makefile.template.dricore	2008-06-12 12:06:50.000000000 +1000
++++ mesa-20080612/src/mesa/drivers/dri/Makefile.template	2008-06-12 13:15:34.000000000 +1000
+@@ -1,6 +1,6 @@
+ # -*-makefile-*-
+ 
+-MESA_MODULES = $(TOP)/src/mesa/libmesa.a
++MESA_MODULES = $(TOP)/$(LIB_DIR)/libdricore.so
+ 
+ COMMON_SOURCES = \
+         ../common/utils.c \
+@@ -69,7 +69,9 @@ default: symlinks depend $(LIBNAME) $(TO
+ 
+ $(LIBNAME): $(OBJECTS) $(MESA_MODULES) $(WINOBJ) Makefile $(TOP)/src/mesa/drivers/dri/Makefile.template
+ 	$(TOP)/bin/mklib -ldflags '$(LDFLAGS)' -noprefix -o $@ \
+-		$(OBJECTS) $(MESA_MODULES) $(WINOBJ) $(DRI_LIB_DEPS)
++		$(OBJECTS) $(WINOBJ) \
++		-L$(TOP)/$(LIB_DIR) -Wl,-R$(DRI_DRIVER_INSTALL_DIR) -ldricore \
++		$(DRI_LIB_DEPS)
+ 
+ 
+ $(TOP)/$(LIB_DIR)/$(LIBNAME): $(LIBNAME)
+diff -up mesa-20080612/src/mesa/x86/read_rgba_span_x86.S.dricore mesa-20080612/src/mesa/x86/read_rgba_span_x86.S
+--- mesa-20080612/src/mesa/x86/read_rgba_span_x86.S.dricore	2008-06-12 12:06:50.000000000 +1000
++++ mesa-20080612/src/mesa/x86/read_rgba_span_x86.S	2008-06-12 13:15:34.000000000 +1000
 @@ -77,7 +77,6 @@
   */
  
@@ -25,7 +91,7 @@ diff -up mesa-20080331/src/mesa/x86/read_rgba_span_x86.S.jx mesa-20080331/src/me
  	.type	_generic_read_RGBA_span_BGRA8888_REV_SSE2, @function
  _generic_read_RGBA_span_BGRA8888_REV_SSE2:
  	pushl	%esi
-@@ -492,7 +489,6 @@ _generic_read_RGBA_span_BGRA8888_REV_SSE
+@@ -494,7 +491,6 @@ _generic_read_RGBA_span_BGRA8888_REV_SSE
  
  	.text
  	.globl	_generic_read_RGBA_span_RGB565_MMX
@@ -33,69 +99,3 @@ diff -up mesa-20080331/src/mesa/x86/read_rgba_span_x86.S.jx mesa-20080331/src/me
  	.type	_generic_read_RGBA_span_RGB565_MMX, @function
  
  _generic_read_RGBA_span_RGB565_MMX:
-diff -up mesa-20080331/src/mesa/drivers/dri/Makefile.jx mesa-20080331/src/mesa/drivers/dri/Makefile
---- mesa-20080331/src/mesa/drivers/dri/Makefile.jx	2008-03-31 16:58:48.000000000 -0400
-+++ mesa-20080331/src/mesa/drivers/dri/Makefile	2008-04-10 12:02:30.000000000 -0400
-@@ -6,12 +6,17 @@ include $(TOP)/configs/current
- 
- 
- 
--default: $(TOP)/$(LIB_DIR) subdirs
-+default: $(TOP)/$(LIB_DIR) $(TOP)/$(LIB_DIR)/libdricore.so subdirs
- 
- 
- $(TOP)/$(LIB_DIR):
- 	-mkdir $(TOP)/$(LIB_DIR)
- 
-+libdricore.so:
-+	ld -shared -o libdricore.so --whole-archive ../../libmesa.a --no-whole-archive -lm -lpthread -lc
-+
-+$(TOP)/$(LIB_DIR)/libdricore.so: $(TOP)/$(LIB_DIR) libdricore.so
-+	$(INSTALL) libdricore.so $(TOP)/$(LIB_DIR) 
- 
- subdirs:
- 	@for dir in $(DRI_DIRS) ; do \
-@@ -21,12 +26,14 @@ subdirs:
- 	done
- 
- 
--install:
-+install: $(TOP)/$(LIB_DIR)/libdricore.so
- 	@for dir in $(DRI_DIRS) ; do \
- 		if [ -d $$dir ] ; then \
- 			(cd $$dir && $(MAKE) install) || exit 1 ; \
- 		fi \
- 	done
-+	$(INSTALL) -d $(DESTDIR)$(DRI_DRIVER_INSTALL_DIR)
-+	$(INSTALL) -m 755 $(TOP)/$(LIB_DIR)/libdricore.so $(DESTDIR)$(DRI_DRIVER_INSTALL_DIR)
- 	$(TOP)/bin/minstall -d $(DESTDIR)$(INSTALL_DIR)/include/GL/internal
- 	$(TOP)/bin/minstall -m 0644 $(TOP)/include/GL/internal/dri_interface.h $(DESTDIR)$(INSTALL_DIR)/include/GL/internal
- 	$(TOP)/bin/minstall -m 0644 $(TOP)/include/GL/internal/dri_sarea.h $(DESTDIR)$(INSTALL_DIR)/include/GL/internal
-@@ -38,4 +45,5 @@ clean:
- 			(cd $$dir && $(MAKE) clean) ; \
- 		fi \
- 	done
-+	-rm -f libdricore.so $(TOP)/$(LIB_DIR)/libdricore.so
- 	-rm -f common/*.o
-diff -up mesa-20080331/src/mesa/drivers/dri/Makefile.template.jx mesa-20080331/src/mesa/drivers/dri/Makefile.template
---- mesa-20080331/src/mesa/drivers/dri/Makefile.template.jx	2008-03-31 16:58:48.000000000 -0400
-+++ mesa-20080331/src/mesa/drivers/dri/Makefile.template	2008-04-10 12:02:30.000000000 -0400
-@@ -1,6 +1,6 @@
- # -*-makefile-*-
- 
--MESA_MODULES = $(TOP)/src/mesa/libmesa.a
-+MESA_MODULES = $(TOP)/$(LIB_DIR)/libdricore.so
- 
- COMMON_SOURCES = \
-         ../../common/driverfuncs.c \
-@@ -70,7 +70,9 @@ default: symlinks depend $(LIBNAME) $(TO
- 
- $(LIBNAME): $(OBJECTS) $(MESA_MODULES) $(WINOBJ) Makefile $(TOP)/src/mesa/drivers/dri/Makefile.template
- 	$(TOP)/bin/mklib -ldflags '$(LDFLAGS)' -noprefix -o $@ \
--		$(OBJECTS) $(MESA_MODULES) $(WINOBJ) $(DRI_LIB_DEPS)
-+		$(OBJECTS) $(WINOBJ) \
-+		-L$(TOP)/$(LIB_DIR) -Wl,-R$(DRI_DRIVER_INSTALL_DIR) -ldricore \
-+		$(DRI_LIB_DEPS)
- 
- 
- $(TOP)/$(LIB_DIR)/$(LIBNAME): $(LIBNAME)

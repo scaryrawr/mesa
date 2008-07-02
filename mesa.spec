@@ -10,12 +10,12 @@
 %endif
 
 %define manpages gl-manpages-1.0.1
-%define gitdate 20080415
+%define gitdate 20080627
 
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.1
-Release: 0.28%{?dist}
+Release: 0.37%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -29,24 +29,22 @@ Source3: make-git-snapshot.sh
 
 Patch0: mesa-7.1pre-osmesa-version.patch
 Patch2: mesa-7.1pre-nukeglthread-debug.patch
-Patch3: mesa-7.1-fda4895d-update.patch
 
 # This doesn't work, disable for now.
 Patch4: disable-tex-offset.patch
 
 Patch7: mesa-7.1-link-shared.patch
-# lets only build drivers on sparc that are remotely useful
-Patch8: mesa-7.1-sparc.patch
 
-Patch9: mesa-fix-965-buffer-check.patch
+Patch12: mesa-7.1-disable-intel-classic-warn.patch
 
 BuildRequires: pkgconfig autoconf automake
 %if %{with_dri}
-BuildRequires: libdrm-devel >= 2.4.0-0.5
+BuildRequires: libdrm-devel >= 2.4.0-0.12
 %endif
 BuildRequires: libXxf86vm-devel
 BuildRequires: expat-devel >= 2.0
 BuildRequires: xorg-x11-proto-devel >= 7.1-10
+BuildRequires: dri2proto >= 1.1
 BuildRequires: makedepend
 BuildRequires: libselinux-devel
 BuildRequires: libXext-devel
@@ -69,11 +67,22 @@ Obsoletes: Mesa XFree86-libs XFree86-Mesa-libGL xorg-x11-Mesa-libGL
 Obsoletes: xorg-x11-libs
 %if %{with_dri}
 Requires: libdrm >= 2.3.0
+Requires: mesa-dri-drivers = %{version}-%{release}
 Conflicts: xorg-x11-server-Xorg < 1.4.99.901-14
 %endif
 
 %description libGL
-Mesa libGL runtime libraries and DRI drivers.
+Mesa libGL runtime library.
+
+
+%if %{with_dri}
+%package dri-drivers
+Summary: Mesa-based DRI drivers.
+Group: User Interface/X Hardware Support
+%description dri-drivers
+Mesa-based DRI drivers.
+%endif
+
 
 %package libGL-devel
 Summary: Mesa libGL development package
@@ -133,15 +142,6 @@ Requires: mesa-libOSMesa = %{version}-%{release}
 Mesa offscreen rendering development package
 
 
-%package source
-Summary: Mesa source code required to build X server
-Group: Development/Libraries
-
-%description source
-The mesa-source package provides the minimal source code needed to
-build DRI enabled X servers, etc.
-
-
 %package -n glx-utils
 Summary: GLX utilities
 Group: Development/Libraries
@@ -163,11 +163,9 @@ This package provides some demo applications for testing Mesa.
 %setup -q -n mesa-%{gitdate} -b2
 %patch0 -p1 -b .osmesa
 %patch2 -p1 -b .intel-glthread
-%patch3 -p1 -b .git-update-fix-intel
 %patch4 -p1 -b .disable-tex-offset
 %patch7 -p1 -b .dricore
-%patch8 -p1
-%patch9 -p1 -b .965-depth
+%patch12 -p1 -b .intel-nowarn
 
 # WARNING: The following files are copyright "Mark J. Kilgard" under the GLUT
 # license and are not open source/free software, so we remove them.
@@ -239,7 +237,7 @@ make install DESTDIR=$RPM_BUILD_ROOT DRI_DIRS=
 %if %{with_dri}
 install -d $RPM_BUILD_ROOT%{_libdir}/dri
 install -m 0755 -t $RPM_BUILD_ROOT%{_libdir}/dri %{_lib}/libdricore.so >& /dev/null
-for f in i810 i915 i965 mach64 mga r128 r200 r300 radeon savage sis tdfx unichrome; do
+for f in i810 i915 i965 mach64 mga r128 r200 r300 radeon savage sis swrast tdfx unichrome; do
     so=%{_lib}/${f}_dri.so
     test -e $so && echo $so
 done | xargs install -m 0755 -t $RPM_BUILD_ROOT%{_libdir}/dri >& /dev/null || :
@@ -270,18 +268,6 @@ pushd ../%{manpages}
 make %{?_smp_mflags} install DESTDIR=$RPM_BUILD_ROOT
 popd
 
-# Install the source needed to build the X server.  The egreps are just
-# stripping out unnecessary dirs; only tricky bit is the [^c] to make sure
-# .../dri/common is included.
-%define mesasourcedir %{_datadir}/mesa/source
-mkdir -p $RPM_BUILD_ROOT/%{mesasourcedir}
-( find src -name \*.[ch] ; find include -name \*.h ) |
-    egrep -v '^src/(glu|glw)' |
-    egrep -v '^src/mesa/drivers/(directfb|dos|fbdev|glide|ggi|osmesa)' |
-    egrep -v '^src/mesa/drivers/(windows|dri/[^c])' |
-    xargs tar cf - --mode a=r |
-	(cd $RPM_BUILD_ROOT/%{mesasourcedir} && tar xf -)
-
 %clean
 rm -rf $RPM_BUILD_ROOT
 
@@ -298,7 +284,9 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 %{_libdir}/libGL.so.1
 %{_libdir}/libGL.so.1.2
+
 %if %{with_dri}
+%files dri-drivers
 %dir %{_libdir}/dri
 %{_libdir}/dri/libdricore.so
 %{_libdir}/dri/*_dri.so
@@ -348,11 +336,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libOSMesa.so
 %{_libdir}/libOSMesa16.so
 %{_libdir}/libOSMesa32.so
-
-# We constructed this dir carefully, so just slurp in the whole thing.
-%files source
-%defattr(-,root,root,-)
-%{mesasourcedir}
 
 %files -n glx-utils
 %defattr(-,root,root,-)
@@ -416,6 +399,41 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/mesa-demos-data
 
 %changelog
+* Fri Jun 27 2008 Adam Jackson <ajax@redhat.com> 7.1-0.37
+- Drop mesa-source subpackage.  Man that feels good.
+
+* Fri Jun 27 2008 Adam Jackson <ajax@redhat.com> 7.1-0.36
+- Today's snapshot.
+- Package swrast_dri for the new X world order.
+- Split DRI drivers to their own subpackage.
+
+* Thu Jun 12 2008 Dave Airlie <airlied@redhat.com> 7.1-0.35
+- Update mesa to latest git snapshot - drop patches merged upstream
+
+* Wed Jun 04 2008 Adam Jackson <ajax@redhat.com> 7.1-0.34
+- Link libdricore with gcc instead of ld, so we automagically pick up the
+  ld --build-id flags.
+
+* Wed May 28 2008 Dave Airlie <airlied@redhat.com> 7.1-0.33
+- Add initial r500 3D driver
+
+* Tue May 13 2008 Adam Jackson <ajax@redhat.com> 7.1-0.32
+- Update dri2proto requirement.  (#446166)
+
+* Sat May 10 2008 Dave Airlie <airlied@redhat.com> 7.1-0.31
+- Bring in a bunch of fixes from upstream, missing rs690 pci id,
+- DRI2 + modeset + 965 + compiz + alt-tab fixed.
+
+* Wed May 07 2008 Dave Airlie <airlied@redhat.com> 7.1-0.30
+- fix googleearth on Intel 965 (#443930)
+- disable classic warning to avoid people reporting it.
+
+* Mon May 05 2008 Dave Airlie <airlied@redhat.com> 7.1-0.29
+- mesa-7.1-f9-intel-and-radeon-fixes.patch - Update mesa 
+  package with cherrypicked fixes from master.
+- Fixes numerous i965 3D issues
+- Fixes compiz on rs48x and rs690 radeon chipsets
+
 * Fri Apr 18 2008 Dave Airlie <airlied@redhat.com> 7.1-0.28
 - okay fire me now - I swear it runs compiz really well...
 - fix more bugs on 965
