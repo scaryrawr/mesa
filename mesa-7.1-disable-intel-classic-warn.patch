@@ -1,14 +1,13 @@
-diff -up mesa-20080415/src/mesa/drivers/dri/intel/intel_context.c.nowarn mesa-20080415/src/mesa/drivers/dri/intel/intel_context.c
---- mesa-20080415/src/mesa/drivers/dri/intel/intel_context.c.nowarn	2008-05-07 10:11:10.000000000 +1000
-+++ mesa-20080415/src/mesa/drivers/dri/intel/intel_context.c	2008-05-07 10:11:21.000000000 +1000
-@@ -479,8 +479,8 @@ intel_init_bufmgr(struct intel_context *
-       if (ttm_disable) {
- 	 fprintf(stderr, "TTM buffer manager disabled.  Using classic.\n");
-       } else {
--	 fprintf(stderr, "Failed to initialize TTM buffer manager.  "
+diff -up mesa-20080814/src/mesa/drivers/dri/intel/intel_context.c.intel-nowarn mesa-20080814/src/mesa/drivers/dri/intel/intel_context.c
+--- mesa-20080814/src/mesa/drivers/dri/intel/intel_context.c.intel-nowarn	2008-08-14 02:28:38.000000000 +1000
++++ mesa-20080814/src/mesa/drivers/dri/intel/intel_context.c	2008-08-14 16:25:23.000000000 +1000
+@@ -506,9 +506,6 @@ intel_init_bufmgr(struct intel_context *
+    if (intel->bufmgr == NULL) {
+       if (gem_disable) {
+ 	 fprintf(stderr, "GEM disabled.  Using classic.\n");
+-      } else {
+-	 fprintf(stderr, "Failed to initialize GEM.  "
 -		 "Falling back to classic.\n");
-+	 //fprintf(stderr, "Failed to initialize TTM buffer manager.  "
-+	 //	 "Falling back to classic.\n");
        }
  
        if (intelScreen->tex.size == 0) {

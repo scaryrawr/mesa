@@ -10,12 +10,12 @@
 %endif
 
 %define manpages gl-manpages-1.0.1
-%define gitdate 20080627
+%define gitdate 20080814
 
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.1
-Release: 0.37%{?dist}
+Release: 0.38%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -30,8 +30,7 @@ Source3: make-git-snapshot.sh
 Patch0: mesa-7.1pre-osmesa-version.patch
 Patch2: mesa-7.1pre-nukeglthread-debug.patch
 
-# This doesn't work, disable for now.
-Patch4: disable-tex-offset.patch
+Patch5: r300-cmdbuf.patch
 
 Patch7: mesa-7.1-link-shared.patch
 
@@ -39,7 +38,7 @@ Patch12: mesa-7.1-disable-intel-classic-warn.patch
 
 BuildRequires: pkgconfig autoconf automake
 %if %{with_dri}
-BuildRequires: libdrm-devel >= 2.4.0-0.12
+BuildRequires: libdrm-devel >= 2.4.0-0.19
 %endif
 BuildRequires: libXxf86vm-devel
 BuildRequires: expat-devel >= 2.0
@@ -161,9 +160,9 @@ This package provides some demo applications for testing Mesa.
 %prep
 #%setup -q -n Mesa-%{version}pre -b1 -b2
 %setup -q -n mesa-%{gitdate} -b2
-%patch0 -p1 -b .osmesa
+#patch0 -p1 -b .osmesa
 %patch2 -p1 -b .intel-glthread
-%patch4 -p1 -b .disable-tex-offset
+%patch5 -p1 -b .r300cmdbuf
 %patch7 -p1 -b .dricore
 %patch12 -p1 -b .intel-nowarn
 
@@ -399,6 +398,11 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/mesa-demos-data
 
 %changelog
+* Thu Aug 14 2008 Dave Airlie <airlied@redhat.com> 7.1-0.38
+- latest Mesa snapshot - re-enable tex offset
+- add r300 command buffer support on top of snapshot
+- disable osmesa version patch -- (ajax???)
+
 * Fri Jun 27 2008 Adam Jackson <ajax@redhat.com> 7.1-0.37
 - Drop mesa-source subpackage.  Man that feels good.
 
