@@ -28,6 +28,7 @@ Source2: %{manpages}.tar.bz2
 Source3: make-git-snapshot.sh
 
 Patch0: mesa-7.1pre-osmesa-version.patch
+Patch1: mesa-fixes.patch
 Patch2: mesa-7.1pre-nukeglthread-debug.patch
 
 Patch5: r300-cmdbuf.patch
@@ -161,6 +162,7 @@ This package provides some demo applications for testing Mesa.
 #%setup -q -n Mesa-%{version}pre -b1 -b2
 %setup -q -n mesa-%{gitdate} -b2
 #patch0 -p1 -b .osmesa
+%patch1 -p1 -b .fixes
 %patch2 -p1 -b .intel-glthread
 %patch5 -p1 -b .r300cmdbuf
 %patch7 -p1 -b .dricore
@@ -402,6 +404,7 @@ rm -rf $RPM_BUILD_ROOT
 - latest Mesa snapshot - re-enable tex offset
 - add r300 command buffer support on top of snapshot
 - disable osmesa version patch -- (ajax???)
+- fix mesa build on intel driver
 
 * Fri Jun 27 2008 Adam Jackson <ajax@redhat.com> 7.1-0.37
 - Drop mesa-source subpackage.  Man that feels good.
