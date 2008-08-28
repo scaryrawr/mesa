@@ -163,7 +163,7 @@ This package provides some demo applications for testing Mesa.
 %prep
 #%setup -q -n Mesa-%{version}pre -b1 -b2
 %setup -q -n mesa-%{gitdate} -b2
-#patch0 -p1 -b .osmesa
+%patch0 -p1 -b .osmesa
 %patch1 -p1 -b .fixes
 %patch2 -p1 -b .intel-glthread
 %patch5 -p1 -b .r300cmdbuf
@@ -402,10 +402,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/mesa-demos-data
 
 %changelog
-* Thu Aug 14 2008 Dave Airlie <airlied@redhat.com> 7.1-0.38
+* Thu Aug 28 2008 Dave Airlie <airlied@redhat.com> 7.1-0.38
 - latest Mesa snapshot - re-enable tex offset
 - add r300 command buffer support on top of snapshot
-- disable osmesa version patch -- (ajax???)
 - fix mesa build on intel driver
 
 * Fri Jun 27 2008 Adam Jackson <ajax@redhat.com> 7.1-0.37
