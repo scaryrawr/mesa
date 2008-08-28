@@ -9,6 +9,8 @@
 %define driver dri
 %endif
 
+%define _default_patch_fuzz 2
+
 %define manpages gl-manpages-1.0.1
 %define gitdate 20080814
 
