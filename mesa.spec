@@ -12,12 +12,12 @@
 %define _default_patch_fuzz 2
 
 %define manpages gl-manpages-1.0.1
-%define gitdate 20080814
+%define gitdate 20080905
 
 Summary: Mesa graphics libraries
 Name: mesa
-Version: 7.1
-Release: 0.38%{?dist}
+Version: 7.2
+Release: 0.1%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -29,13 +29,14 @@ Source0: %{name}-%{gitdate}.tar.bz2
 Source2: %{manpages}.tar.bz2
 Source3: make-git-snapshot.sh
 
-Patch0: mesa-7.1pre-osmesa-version.patch
-Patch1: mesa-fixes.patch
-Patch2: mesa-7.1pre-nukeglthread-debug.patch
+Patch0: mesa-7.1-osmesa-version.patch
+Patch2: mesa-7.1-nukeglthread-debug.patch
+Patch3: mesa-no-mach64.patch
 
-Patch5: r300-cmdbuf.patch
+Patch5: r300-bufmgr.patch
 
 Patch7: mesa-7.1-link-shared.patch
+Patch8: intel-mmio-fix.patch
 
 Patch12: mesa-7.1-disable-intel-classic-warn.patch
 
@@ -164,10 +165,11 @@ This package provides some demo applications for testing Mesa.
 #%setup -q -n Mesa-%{version}pre -b1 -b2
 %setup -q -n mesa-%{gitdate} -b2
 %patch0 -p1 -b .osmesa
-%patch1 -p1 -b .fixes
 %patch2 -p1 -b .intel-glthread
-%patch5 -p1 -b .r300cmdbuf
+%patch3 -p0 -b .no-mach64
+%patch5 -p1 -b .r300-bufmgr
 %patch7 -p1 -b .dricore
+%patch8 -p1 -b .intel-mmio
 %patch12 -p1 -b .intel-nowarn
 
 # WARNING: The following files are copyright "Mark J. Kilgard" under the GLUT
@@ -240,7 +242,7 @@ make install DESTDIR=$RPM_BUILD_ROOT DRI_DIRS=
 %if %{with_dri}
 install -d $RPM_BUILD_ROOT%{_libdir}/dri
 install -m 0755 -t $RPM_BUILD_ROOT%{_libdir}/dri %{_lib}/libdricore.so >& /dev/null
-for f in i810 i915 i965 mach64 mga r128 r200 r300 radeon savage sis swrast tdfx unichrome; do
+for f in i810 i915 i965 mga r128 r200 r300 radeon savage sis swrast tdfx unichrome; do
     so=%{_lib}/${f}_dri.so
     test -e $so && echo $so
 done | xargs install -m 0755 -t $RPM_BUILD_ROOT%{_libdir}/dri >& /dev/null || :
@@ -308,8 +310,8 @@ rm -rf $RPM_BUILD_ROOT
 %{_includedir}/GL/xmesa_xf86.h
 %dir %{_includedir}/GL/internal
 %{_includedir}/GL/internal/dri_interface.h
-%{_includedir}/GL/internal/dri_sarea.h
 %{_libdir}/libGL.so
+%{_libdir}/pkgconfig/dri.pc
 %{_libdir}/pkgconfig/gl.pc
 %{_datadir}/man/man3/gl[^uX]*.3gl*
 %{_datadir}/man/man3/glX*.3gl*
@@ -356,6 +358,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/cubemap
 %{_bindir}/drawpix
 %{_bindir}/engine
+%{_bindir}/fbo_firecube
 %{_bindir}/fire
 %{_bindir}/fogcoord
 %{_bindir}/fplight
@@ -402,6 +405,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/mesa-demos-data
 
 %changelog
+* Fri Sep 05 2008 Dave Airlie <airlied@redhat.com> 7.2-0.1
+- latest snapshot - r300 bufmgr code
+- stop building mach64, patch around some intel issues
+
 * Thu Aug 28 2008 Dave Airlie <airlied@redhat.com> 7.1-0.38
 - latest Mesa snapshot - re-enable tex offset
 - add r300 command buffer support on top of snapshot
