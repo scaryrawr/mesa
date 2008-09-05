@@ -43,6 +43,7 @@ Patch12: mesa-7.1-disable-intel-classic-warn.patch
 BuildRequires: pkgconfig autoconf automake
 %if %{with_dri}
 BuildRequires: libdrm-devel >= 2.4.0-0.19
+BuildRequires: kernel-headers >= 2.6.27-0.305.rc5.git6
 %endif
 BuildRequires: libXxf86vm-devel
 BuildRequires: expat-devel >= 2.0
