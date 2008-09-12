@@ -17,7 +17,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.2
-Release: 0.1%{?dist}
+Release: 0.2%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -37,6 +37,7 @@ Patch5: r300-bufmgr.patch
 
 Patch7: mesa-7.1-link-shared.patch
 Patch8: intel-mmio-fix.patch
+Patch9: intel-revert-vbl.patch
 
 Patch12: mesa-7.1-disable-intel-classic-warn.patch
 
@@ -171,6 +172,7 @@ This package provides some demo applications for testing Mesa.
 %patch5 -p1 -b .r300-bufmgr
 %patch7 -p1 -b .dricore
 %patch8 -p1 -b .intel-mmio
+%patch9 -p1 -b .intel-vbl
 %patch12 -p1 -b .intel-nowarn
 
 # WARNING: The following files are copyright "Mark J. Kilgard" under the GLUT
@@ -406,6 +408,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/mesa-demos-data
 
 %changelog
+* Fri Sep 12 2008 Dave Airlie <airlied@redhat.com> 7.2-0.2
+- intel stop vbl default for now
+
 * Fri Sep 05 2008 Dave Airlie <airlied@redhat.com> 7.2-0.1
 - latest snapshot - r300 bufmgr code
 - stop building mach64, patch around some intel issues
