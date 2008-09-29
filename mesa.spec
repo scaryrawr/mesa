@@ -12,12 +12,13 @@
 %define _default_patch_fuzz 2
 
 %define manpages gl-manpages-1.0.1
+%define xdriinfo xdriinfo-1.0.2
 %define gitdate 20080905
 
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.2
-Release: 0.2%{?dist}
+Release: 0.3%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -28,6 +29,8 @@ BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Source0: %{name}-%{gitdate}.tar.bz2
 Source2: %{manpages}.tar.bz2
 Source3: make-git-snapshot.sh
+
+Source5: http://www.x.org/pub/individual/app/%{xdriinfo}.tar.bz2
 
 Patch0: mesa-7.1-osmesa-version.patch
 Patch2: mesa-7.1-nukeglthread-debug.patch
@@ -165,7 +168,7 @@ This package provides some demo applications for testing Mesa.
 
 %prep
 #%setup -q -n Mesa-%{version}pre -b1 -b2
-%setup -q -n mesa-%{gitdate} -b2
+%setup -q -n mesa-%{gitdate} -b2 -b5
 %patch0 -p1 -b .osmesa
 %patch2 -p1 -b .intel-glthread
 %patch3 -p0 -b .no-mach64
@@ -230,6 +233,11 @@ make #{?_smp_mflags}
 make -C progs/xdemos glxgears glxinfo
 make %{?_smp_mflags} -C progs/demos
 
+pushd ../%{xdriinfo}
+%configure
+make %{?_smp_mflags}
+popd
+
 pushd ../%{manpages}
 %configure
 make %{?_smp_mflags}
@@ -270,6 +278,10 @@ install -m 0644 progs/demos/*.dat $RPM_BUILD_ROOT/%{_libdir}/mesa-demos-data
 
 # and osmesa
 mv osmesa*/* $RPM_BUILD_ROOT%{_libdir}
+
+pushd ../%{xdriinfo}
+make %{?_smp_mflags} install DESTDIR=$RPM_BUILD_ROOT
+popd
 
 # man pages
 pushd ../%{manpages}
@@ -349,6 +361,8 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 %{_bindir}/glxgears
 %{_bindir}/glxinfo
+%{_bindir}/xdriinfo
+%{_datadir}/man/man1/xdriinfo.1*
 
 %files demos
 %defattr(-,root,root,-)
@@ -408,6 +422,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/mesa-demos-data
 
 %changelog
+* Mon Sep 29 2008 Adam Jackson <ajax@redhat.com> 7.2-0.3
+- Add xdriinfo. (#464388)
+
 * Fri Sep 12 2008 Dave Airlie <airlied@redhat.com> 7.2-0.2
 - intel stop vbl default for now
 
