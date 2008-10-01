@@ -18,7 +18,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.2
-Release: 0.4%{?dist}
+Release: 0.5%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -73,7 +73,7 @@ Provides: libGL
 Obsoletes: Mesa XFree86-libs XFree86-Mesa-libGL xorg-x11-Mesa-libGL
 Obsoletes: xorg-x11-libs
 %if %{with_dri}
-Requires: libdrm >= 2.3.0
+Requires: libdrm >= 2.4.0-0.21
 Requires: mesa-dri-drivers = %{version}-%{release}
 Conflicts: xorg-x11-server-Xorg < 1.4.99.901-14
 %endif
@@ -420,6 +420,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/mesa-demos-data
 
 %changelog
+* Wed Oct 01 2008 Dave Airlie <airlied@redhat.com> 7.2-0.5
+- fix drm requires
+
 * Wed Oct 01 2008 Dave Airlie <airlied@redhat.com> 7.2-0.4
 - rebase to new upstream + r300 bufmgr code - openarena under kms works now
 
