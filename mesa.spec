@@ -13,12 +13,12 @@
 
 %define manpages gl-manpages-1.0.1
 %define xdriinfo xdriinfo-1.0.2
-%define gitdate 20080905
+%define gitdate 20081001
 
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.2
-Release: 0.3%{?dist}
+Release: 0.4%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -39,14 +39,13 @@ Patch3: mesa-no-mach64.patch
 Patch5: r300-bufmgr.patch
 
 Patch7: mesa-7.1-link-shared.patch
-Patch8: intel-mmio-fix.patch
 Patch9: intel-revert-vbl.patch
 
 Patch12: mesa-7.1-disable-intel-classic-warn.patch
 
 BuildRequires: pkgconfig autoconf automake
 %if %{with_dri}
-BuildRequires: libdrm-devel >= 2.4.0-0.19
+BuildRequires: libdrm-devel >= 2.4.0-0.21
 BuildRequires: kernel-headers >= 2.6.27-0.305.rc5.git6
 %endif
 BuildRequires: libXxf86vm-devel
@@ -174,7 +173,6 @@ This package provides some demo applications for testing Mesa.
 %patch3 -p0 -b .no-mach64
 %patch5 -p1 -b .r300-bufmgr
 %patch7 -p1 -b .dricore
-%patch8 -p1 -b .intel-mmio
 %patch9 -p1 -b .intel-vbl
 %patch12 -p1 -b .intel-nowarn
 
@@ -422,6 +420,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/mesa-demos-data
 
 %changelog
+* Wed Oct 01 2008 Dave Airlie <airlied@redhat.com> 7.2-0.4
+- rebase to new upstream + r300 bufmgr code - openarena under kms works now
+
 * Mon Sep 29 2008 Adam Jackson <ajax@redhat.com> 7.2-0.3
 - Add xdriinfo. (#464388)
 

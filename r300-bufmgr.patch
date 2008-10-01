@@ -1,19 +1,434 @@
+commit c41a002914ab9cfd8f49199e4a4612a6aeecf0b5
+Author: Dave Airlie <airlied@redhat.com>
+Date:   Tue Sep 30 16:51:04 2008 +1000
+
+    r300: make work again
+    
+    Conflicts:
+    
+    	src/mesa/drivers/dri/r300/r300_mem.c
+    	src/mesa/drivers/dri/r300/r300_mem.h
+    	src/mesa/drivers/dri/r300/r300_texstate.c
+    	src/mesa/drivers/dri/r300/radeon_context.c
+    	src/mesa/drivers/dri/radeon/radeon_buffer.h
+
+commit 289b38b16b9e0aae4d51bac8c745359a36c0d54e
+Author: Dave Airlie <airlied@redhat.com>
+Date:   Fri Sep 5 14:11:25 2008 +1000
+
+    drop r300 use of ttm flags
+
+commit 1ca0e2ac03b4fd95ee9cd2dbe82bb7a0e9c1614d
+Author: Nicolai Haehnle <nhaehnle@gmail.com>
+Date:   Mon Sep 29 09:40:50 2008 +0200
+
+    r300: Fix crash in r300ClearBuffer
+    
+    That function can currently be called without a radeon_renderbuffer
+    when only Z/stencil needs clearing.
+
+commit 4d19a9b9ac84a972d0807ff931df596418d9a7f4
+Author: Nicolai Haehnle <nhaehnle@gmail.com>
+Date:   Sun Sep 28 19:37:52 2008 +0200
+
+    r300_mem: Prefer using screen structures over context structures
+    
+    Eventually, bufmgr will have to live with only screen structures for
+    correctness.
+
+commit 8d42990244a196b85ceb1439ad2b5eef6c559d61
+Author: Nicolai Haehnle <nhaehnle@gmail.com>
+Date:   Sun Sep 28 19:20:40 2008 +0200
+
+    r300: Remove radeon_bufmgr
+    
+    Since the bufmgr is now driver-specific anyway, there's no point in having
+    the additional indirection around.
+
+commit 3dba9178ec5dbf8183a5ceee701c9a36606ad464
+Merge: 857362e... 2e5d717...
+Author: Nicolai Haehnle <nhaehnle@gmail.com>
+Date:   Sun Sep 28 18:28:05 2008 +0200
+
+    Merge branch 'master' into develop
+    
+    Conflicts:
+    
+    	src/mesa/drivers/dri/r300/r300_tex.c
+    	src/mesa/drivers/dri/r300/r300_texstate.c
+    	src/mesa/drivers/dri/r300/radeon_context.c
+    	src/mesa/drivers/dri/r300/radeon_context.h
+
+commit 857362ef14fc4f175a9d425a74f9ca2b691971d6
+Author: Nicolai Haehnle <nhaehnle@gmail.com>
+Date:   Tue Aug 19 22:02:41 2008 +0200
+
+    r300: Reasonably hacked up texture images
+
+commit b3153fc6f7823b434ab82faec4e966c3311f8ce8
+Author: Nicolai Haehnle <nhaehnle@gmail.com>
+Date:   Fri Aug 29 17:55:37 2008 +0200
+
+    Call FreeTexImageData unconditionally during mipmap generation.
+    
+    When drivers override texture image storage, Data may be null even though
+    storage has been reserved, e.g. when the data is currently in video memory
+    but not mapped into CPU-accessible memory.
+
+commit d8d306220c19f0cc60d14876021543fe6e542775
+Author: Nicolai Haehnle <nhaehnle@gmail.com>
+Date:   Fri Aug 29 18:40:05 2008 +0200
+
+    r300: Remove some debug messages
+
+commit b179525a87b5bf510628918406e3562e2d138ce7
+Author: Nicolai Haehnle <nhaehnle@gmail.com>
+Date:   Tue Aug 26 23:21:24 2008 +0200
+
+    r300: Fix various software fallback regressions
+    
+    Renderbuffers are now mapped and unmapped properly for software rendering,
+    and various assorted fixes.
+
+commit ebf556644058c748c7c621b1e5ae12dc900a2dd0
+Author: Nicolai Haehnle <nhaehnle@gmail.com>
+Date:   Fri Aug 15 19:55:59 2008 +0200
+
+    r300: Remove unused field pitch in r300_tex_obj
+
+commit 7db556b55baa392a951f92074c058868ead2edb5
+Author: Nicolai Haehnle <nhaehnle@gmail.com>
+Date:   Tue Aug 26 19:02:14 2008 +0200
+
+    radeon: Add missing header radeon_buffer.h
+
+commit 093023518b81c11d0c3242a27b90def9a7e2e1c0
+Author: Adam Jackson <ajax@redhat.com>
+Date:   Sun Aug 24 18:47:53 2008 +1000
+
+    r300: move color/depth buffers to using fake buffers
+    
+    Emit state for color/depth properly
+    
+    This also moves the bufmgr into the radeon struct, as we
+    need it from make current. It won't affect the other chips yet.
+    
+    can probably move fbLocation into the bufmgr soon
+
+commit 004100f123ca3ea4b35e16ae5d91911ad02b327f
+Author: Dave Airlie <airlied@linux.ie>
+Date:   Sun Aug 24 18:33:06 2008 +1000
+
+    r300: add static BO alloc to classic bufmgr
+
+commit 6827a4d742cf2b815d2651dd7ffe002f46a07b1b
+Author: Nicolai Haehnle <nhaehnle@gmail.com>
+Date:   Fri Aug 8 18:37:37 2008 +0200
+
+    r300: Fix regression when redefining texture images
+    
+    We obviously have to destroy and recreate the miptree when incompatible
+    changes to the texture objects are made.
+
+commit b3b221caefbcbb749fea9dc1040e4313fc9ea717
+Author: Nicolai Haehnle <nhaehnle@gmail.com>
+Date:   Mon Aug 4 01:04:15 2008 +0200
+
+    r300: Texture memory managed by bufmgr
+    
+    The bufmgr makes use of the texture heap by wrapping the old texmem.c code.
+    
+    There are currently three copies of each texture image:
+    - Mesa's storage
+    - bufmgr backing store
+    - VRAM (if the texture has recently been used)
+    The first one should eventually be eliminated by making changes along the
+    lines of the Intel driver.
+
+commit 7eed94472049bba4e41bf7e51c51d0cc418cfc87
+Author: Nicolai Haehnle <nhaehnle@gmail.com>
+Date:   Sun Aug 3 21:59:52 2008 +0200
+
+    r300: Introduce r300_mipmap_tree
+
+commit 6d8ee45f31c11cae2424e987a0577f9b7e26762d
+Author: Nicolai Haehnle <nhaehnle@gmail.com>
+Date:   Sun Aug 3 17:23:50 2008 +0200
+
+    r300: Start pushing driTextureObject down
+
+commit f403a51e2aedfb04f845d03c1aa1023c7e518e45
+Author: Nicolai Haehnle <nhaehnle@gmail.com>
+Date:   Sun Aug 3 15:59:04 2008 +0200
+
+    r300: Remove unused texture object variables
+
+commit 4e432ffb0a403c44898ea608a7a1d7a515b59a73
+Author: Nicolai Haehnle <nhaehnle@gmail.com>
+Date:   Sun Aug 3 14:28:59 2008 +0200
+
+    r300: Remove bo_use
+    
+    Validating buffers and marking them as pending is now done automatically
+    based on relocations.
+
+commit 604515f17698572be3a2ae61b6843b4acef02f2e
+Author: Nicolai Haehnle <nhaehnle@gmail.com>
+Date:   Sun Aug 3 14:27:05 2008 +0200
+
+    r300: Remove last traces of r300_dma_region
+
+commit 656a1df66fbf5d2f748babf6be58524ee4b65bcc
+Author: Nicolai Haehnle <nhaehnle@gmail.com>
+Date:   Sun Aug 3 14:18:42 2008 +0200
+
+    r300: No longer use r300_dma_region for dma.current buffer
+
+commit b1267a2c7b144f7286ae901cea02c4e81cb435ab
+Author: Nicolai Haehnle <nhaehnle@gmail.com>
+Date:   Sun Aug 3 13:41:12 2008 +0200
+
+    r300: Stop using r300_dma_region for elt_dma
+
+commit 0ff9bcf22b7fc0c8a0fa55ec15c3c3ba176f2afd
+Author: Nicolai Haehnle <nhaehnle@gmail.com>
+Date:   Sun Aug 3 12:37:51 2008 +0200
+
+    r300: Remove unused variable r300_state.Elts
+
+commit 723af37157ffa8be9be710c8e168386f02035909
+Author: Nicolai Haehnle <nhaehnle@gmail.com>
+Date:   Sun Aug 3 12:26:28 2008 +0200
+
+    r300: Fix interaction of ClearState emits with swtcl
+
+commit ecedb19db194721c6d2030287e346ca6b3d50168
+Author: Nicolai Haehnle <nhaehnle@gmail.com>
+Date:   Sun Aug 3 11:18:48 2008 +0200
+
+    r300: Fix Clear state emission
+
+commit e1bdd637c0740c8e3c00874ff3301a361df9c5b3
+Author: Nicolai Haehnle <nhaehnle@gmail.com>
+Date:   Sun Aug 3 10:41:17 2008 +0200
+
+    r300: Use explicit r300_aos structure instead of overloaded r300_dma_region
+
+commit fa63e5eea06d6ac709465ef2cfef4e1760ce0a62
+Author: Nicolai Haehnle <nhaehnle@gmail.com>
+Date:   Sun Aug 3 00:23:06 2008 +0200
+
+    r300: Remove unused variable
+
+commit 168b082ec48cb6aedb3d7a45538e65fa24d07f1a
+Author: Nicolai Haehnle <nhaehnle@gmail.com>
+Date:   Sat Aug 2 23:50:15 2008 +0200
+
+    r300: Use relocations in texture blits
+
+commit 723a451b5ecc2862701f0b1f7c518902c4675fe1
+Author: Nicolai Haehnle <nhaehnle@gmail.com>
+Date:   Sat Aug 2 23:29:36 2008 +0200
+
+    r300: Remove old emit helpers
+
+commit 511a071823e58a5861f0afb9af086411fc3aa7eb
+Author: Nicolai Haehnle <nhaehnle@gmail.com>
+Date:   Sat Aug 2 23:28:14 2008 +0200
+
+    r300: Convert swtcl to new emit system
+
+commit 4288e01990c66299830088942094772bb938e597
+Author: Nicolai Haehnle <nhaehnle@gmail.com>
+Date:   Sat Aug 2 23:27:18 2008 +0200
+
+    r300: Complete copnversion of r300ClearBuffer
+
+commit 3acc8c5ac2c8aed11a4196387db2016a399ef12a
+Author: Nicolai Haehnle <nhaehnle@gmail.com>
+Date:   Sat Aug 2 23:15:23 2008 +0200
+
+    r300: Continue convering ClearState to new emit
+
+commit 5e49bf6abf82bee702b51248dea65404267b1856
+Author: Nicolai Haehnle <nhaehnle@gmail.com>
+Date:   Sat Aug 2 23:13:58 2008 +0200
+
+    r300: Continue convering ClearState to new emit
+
+commit b94bad12c3bc000e93e139cceaf761e0cb9805f6
+Author: Nicolai Haehnle <nhaehnle@gmail.com>
+Date:   Sat Aug 2 23:10:35 2008 +0200
+
+    r300: Convert ClearState to new emit
+
+commit 8937fcc3c100bdd16a26a3a91953e8bfded6a17b
+Author: Nicolai Haehnle <nhaehnle@gmail.com>
+Date:   Sat Aug 2 23:07:33 2008 +0200
+
+    r300: Use new style emit in r300ClearBuffer
+
+commit e231031ece3ee08618b781cf4b9c29b60258a8c4
+Author: Nicolai Haehnle <nhaehnle@gmail.com>
+Date:   Sat Aug 2 23:05:15 2008 +0200
+
+    r300: Prepare Clear implementation for new style emit
+
+commit ed54357c566d7c7ed84cca33d45388d9986e1a75
+Author: Nicolai Haehnle <nhaehnle@gmail.com>
+Date:   Sat Aug 2 23:02:38 2008 +0200
+
+    r300: Rewrite cp_delay and cp_wait using new emit
+
+commit 8ab20decadddac4f16a906a8411d1ff64be2a03f
+Author: Nicolai Haehnle <nhaehnle@gmail.com>
+Date:   Sat Aug 2 23:01:30 2008 +0200
+
+    r300: Rewrite end_3d using new emit
+
+commit 7316a87cb95375cc79bb957695fc39668c55ca26
+Author: Nicolai Haehnle <nhaehnle@gmail.com>
+Date:   Sat Aug 2 22:56:29 2008 +0200
+
+    r300: Use new emit for r300EmitBlit and get rid of redundant r300EmitWait
+
+commit e2e3062864f5fd7332e0ba3356f5047b66608ba6
+Author: Nicolai Haehnle <nhaehnle@gmail.com>
+Date:   Sat Aug 2 22:55:15 2008 +0200
+
+    r300: Use new emit in r300EmitCacheFlush
+
+commit 021d49403d259bb43982235f8e47f04f104545cd
+Author: Nicolai Haehnle <nhaehnle@gmail.com>
+Date:   Sat Aug 2 22:54:01 2008 +0200
+
+    r300: Prepare texture blitting for new emit style
+
+commit e3640e75a22e1647b8a4237212fd9091516cc0d0
+Author: Nicolai Haehnle <nhaehnle@gmail.com>
+Date:   Sat Aug 2 22:48:59 2008 +0200
+
+    r300: Use new emit style for memory fencing
+
+commit 887c24496910df9d4efbb597a4e7abb3ad655f54
+Author: Nicolai Haehnle <nhaehnle@gmail.com>
+Date:   Sat Aug 2 22:46:48 2008 +0200
+
+    r300: Use new emit style in r300_render
+
+commit 196a156ed067f00a38ef24cd89084392dbe58e95
+Author: Nicolai Haehnle <nhaehnle@gmail.com>
+Date:   Sat Aug 2 22:41:31 2008 +0200
+
+    r300: Add additional helper macros for emit
+
+commit dad24c477db1db583cddfb407937e0f749e3a063
+Author: Nicolai Haehnle <nhaehnle@gmail.com>
+Date:   Sat Aug 2 22:39:52 2008 +0200
+
+    r300: Use new emit style for r300EmitAtoms
+
+commit ebb3329c089ad8db18998e85135fb0eabe3f547c
+Author: Nicolai Haehnle <nhaehnle@gmail.com>
+Date:   Sat Aug 2 22:34:23 2008 +0200
+
+    r300: Start moving cmdbuf towards an emit system that is closer to DRM and DDX
+
+commit 296d81a420e0831b2c795a050442acf7e5eaa4d6
+Author: Nicolai Haehnle <nhaehnle@gmail.com>
+Date:   Sat Aug 2 20:01:27 2008 +0200
+
+    r300: Move r300EmitWait and r300EmitBlit to r300_emit.c
+    
+    These functions don't really fit into r300_cmdbuf.c.
+
+commit 3c7b7b60f5736698b0c68d1100baa3feba7dfa14
+Author: Nicolai Haehnle <nhaehnle@gmail.com>
+Date:   Sat Aug 2 19:15:19 2008 +0200
+
+    r300: Remove unused variable buf0_address
+
+commit 1a25eb30d6f7567946b920fa58d760959db6726d
+Author: Nicolai Haehnle <nhaehnle@gmail.com>
+Date:   Sat Aug 2 19:12:50 2008 +0200
+
+    r300: Be more conservative about command buffer space allocation
+    
+    Having the main rendering sequence split up into separate command buffer is
+    probably one of the worst offenders for hardware lockups, so this might help.
+    It can't hurt in any case.
+
+commit 88d3539f3a6cc6d81ec91b901bbd1b76bf38ba67
+Author: Nicolai Haehnle <nhaehnle@gmail.com>
+Date:   Sat Aug 2 18:55:19 2008 +0200
+
+    r300: Manage cmdbuf via the r300_mem dri_bufmgr
+    
+    Relocation code isn't actually used yet.
+
+commit bab989ab8aba252b6a8a041a517308aeb22ed897
+Author: Nicolai Haehnle <nhaehnle@gmail.com>
+Date:   Sat Aug 2 15:43:07 2008 +0200
+
+    r300: Remove more GART-related legacy code
+
+commit ccd0bf4dbabeb57fc6a496a76aa7258d4451b190
+Author: Nicolai Haehnle <nhaehnle@gmail.com>
+Date:   Sat Aug 2 15:31:46 2008 +0200
+
+    r300: Eliminate Gart- and ClientStorage-related functions
+    
+    These functions will be incorrect with a new memory manager. Furthermore,
+    they seem to be no-ops right now, judging from the comments and a cursory
+    inspection.
+    
+    Actually, it's possible that applications out there have been using the
+    client_storage extension successfully, who knows - but they should continue
+    to work, just with client_storage turned into a no-op.
+
+commit 9fb9931fa7e4fe0d82d73b00f6347ea07f9afa32
+Author: Nicolai Haehnle <nhaehnle@gmail.com>
+Date:   Sat Aug 2 15:17:44 2008 +0200
+
+    r300: Start turning r300_mem into a dri_bufmgr-style manager
+    
+    This is only for DMA memory right now, textures do not go through this
+    manager yet.
+
+commit 990a685e1191b875ec7c7d2d481def37554877db
+Author: Nicolai Haehnle <nhaehnle@gmail.com>
+Date:   Sat Aug 2 12:15:22 2008 +0200
+
+    r300: Remove unused variable r300_state.swtcl_dma
+
+commit 50ad5c9a8f1da5fdf51b1ca17259369f0a7dbab6
+Author: Nicolai Haehnle <nhaehnle@gmail.com>
+Date:   Sat Aug 2 11:30:42 2008 +0200
+
+    r300: Remove unused or ineffective and untested variables
+
+commit 8f71ab684448f5caa0c649e52bb6ea1d0bb86077
+Author: Nicolai Haehnle <nhaehnle@gmail.com>
+Date:   Sat Aug 2 11:09:36 2008 +0200
+
+    r300: Get rid of USER_BUFFERS define
 diff --git a/src/mesa/drivers/dri/r200/Makefile b/src/mesa/drivers/dri/r200/Makefile
-index e9144ac..b6ed58b 100644
+index e9144ac..c26c43b 100644
 --- a/src/mesa/drivers/dri/r200/Makefile
 +++ b/src/mesa/drivers/dri/r200/Makefile
-@@ -48,7 +48,8 @@ SYMLINKS = \
+@@ -48,7 +48,9 @@ SYMLINKS = \
  COMMON_SYMLINKS = \
  	radeon_chipset.h \
  	radeon_screen.c \
 -	radeon_screen.h
 +	radeon_screen.h \
-+	radeon_buffer.h
++	radeon_buffer.h \
++	radeon_dri_bufmgr.h
  
  ##### TARGETS #####
  
 diff --git a/src/mesa/drivers/dri/r300/Makefile b/src/mesa/drivers/dri/r300/Makefile
-index 6ca9342..3bb1ff4 100644
+index 6ca9342..acadf1e 100644
 --- a/src/mesa/drivers/dri/r300/Makefile
 +++ b/src/mesa/drivers/dri/r300/Makefile
 @@ -11,15 +11,6 @@ ifeq ($(USING_EGL), 1)
@@ -40,8 +455,11 @@ index 6ca9342..3bb1ff4 100644
  		 radeon_program.c \
  		 radeon_program_alu.c \
  		 radeon_program_pair.c \
-@@ -51,7 +43,7 @@ DRIVER_SOURCES = \
+@@ -49,9 +41,10 @@ DRIVER_SOURCES = \
+ 		 r300_shader.c \
+ 		 r300_emit.c \
  		 r300_swtcl.c \
++		 radeon_dri_bufmgr.c \
  		 $(EGL_SOURCES)
  
 -C_SOURCES = $(COMMON_SOURCES) $(DRIVER_SOURCES)
@@ -49,21 +467,31 @@ index 6ca9342..3bb1ff4 100644
  
  DRIVER_DEFINES = -DCOMPILE_R300 -DR200_MERGED=0 \
  	-DRADEON_COMMON=1 -DRADEON_COMMON_FOR_R300
-@@ -68,7 +60,8 @@ COMMON_SYMLINKS = \
+@@ -68,7 +61,10 @@ COMMON_SYMLINKS = \
  	radeon_chipset.h \
  	radeon_screen.c \
  	radeon_screen.h \
 -	radeon_span.h
 +	radeon_span.h \
-+	radeon_buffer.h
++	radeon_buffer.h \
++	radeon_dri_bufmgr.h \
++	radeon_dri_bufmgr.c
  
  ##### TARGETS #####
  
 diff --git a/src/mesa/drivers/dri/r300/r300_cmdbuf.c b/src/mesa/drivers/dri/r300/r300_cmdbuf.c
-index c069660..dd42bf8 100644
+index c9e1dfe..421cb81 100644
 --- a/src/mesa/drivers/dri/r300/r300_cmdbuf.c
 +++ b/src/mesa/drivers/dri/r300/r300_cmdbuf.c
-@@ -51,11 +51,18 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+@@ -44,6 +44,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ #include "drm.h"
+ #include "radeon_drm.h"
+ 
++#include "radeon_buffer.h"
+ #include "radeon_ioctl.h"
+ #include "r300_context.h"
+ #include "r300_ioctl.h"
+@@ -51,11 +52,18 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  #include "r300_reg.h"
  #include "r300_cmdbuf.h"
  #include "r300_emit.h"
@@ -82,7 +510,7 @@ index c069660..dd42bf8 100644
  /**
   * Send the current command buffer via ioctl to the hardware.
   */
-@@ -66,24 +73,42 @@ int r300FlushCmdBufLocked(r300ContextPtr r300, const char *caller)
+@@ -66,24 +74,42 @@ int r300FlushCmdBufLocked(r300ContextPtr r300, const char *caller)
  	drm_radeon_cmd_buffer_t cmd;
  	int start;
  
@@ -124,25 +552,25 @@ index c069660..dd42bf8 100644
 +	}
 +
 +	dri_bo_unmap(r300->cmdbuf.buf);
-+	dri_process_relocs(r300->cmdbuf.buf);
++	dri_process_relocs(r300->cmdbuf.buf, 1);
 +
 +	cmd.buf = (char *)r300->cmdbuf.buf->virtual + 4*start;
 +	cmd.bufsz = (r300->cmdbuf.committed - start) * 4;
  
  	if (r300->radeon.state.scissor.enabled) {
  		cmd.nbox = r300->radeon.state.scissor.numClipRects;
-@@ -103,9 +128,19 @@ int r300FlushCmdBufLocked(r300ContextPtr r300, const char *caller)
+@@ -103,9 +129,19 @@ int r300FlushCmdBufLocked(r300ContextPtr r300, const char *caller)
  		radeonWaitForIdleLocked(&r300->radeon);
  	}
  
-+	dri_post_submit(r300->cmdbuf.buf);
++	dri_post_submit(r300->cmdbuf.buf, 0);
 +	dri_bo_unreference(r300->cmdbuf.buf);
 +
  	r300->dma.nr_released_bufs = 0;
 -	r300->cmdbuf.count_used = 0;
 -	r300->cmdbuf.count_reemit = 0;
-+	r300->cmdbuf.buf = radeon_bufmgr_classic_bo_alloc(&r300->radeon.bufmgr->base, "cmdbuf",
-+							r300->cmdbuf.size*4, 16, DRM_BO_MEM_CMDBUF);
++	r300->cmdbuf.buf = dri_bo_alloc(r300->radeon.bufmgr, "cmdbuf",
++		r300->cmdbuf.size*4, 16, DRM_BO_MEM_CMDBUF);
 +	r300->cmdbuf.written = 0;
 +	r300->cmdbuf.reserved = 0;
 +	r300->cmdbuf.committed = 0;
@@ -153,7 +581,7 @@ index c069660..dd42bf8 100644
  
  	return ret;
  }
-@@ -115,9 +150,7 @@ int r300FlushCmdBuf(r300ContextPtr r300, const char *caller)
+@@ -115,9 +151,7 @@ int r300FlushCmdBuf(r300ContextPtr r300, const char *caller)
  	int ret;
  
  	LOCK_HARDWARE(&r300->radeon);
@@ -163,7 +591,7 @@ index c069660..dd42bf8 100644
  	UNLOCK_HARDWARE(&r300->radeon);
  
  	if (ret) {
-@@ -128,6 +161,44 @@ int r300FlushCmdBuf(r300ContextPtr r300, const char *caller)
+@@ -128,6 +162,44 @@ int r300FlushCmdBuf(r300ContextPtr r300, const char *caller)
  	return ret;
  }
  
@@ -208,7 +636,7 @@ index c069660..dd42bf8 100644
  static void r300PrintStateAtom(r300ContextPtr r300, struct r300_state_atom *state)
  {
  	int i;
-@@ -152,33 +223,18 @@ static void r300PrintStateAtom(r300ContextPtr r300, struct r300_state_atom *stat
+@@ -152,33 +224,18 @@ static void r300PrintStateAtom(r300ContextPtr r300, struct r300_state_atom *stat
   */
  static INLINE void r300EmitAtoms(r300ContextPtr r300, GLboolean dirty)
  {
@@ -249,7 +677,7 @@ index c069660..dd42bf8 100644
  	foreach(atom, &r300->hw.atomlist) {
  		if ((atom->dirty || r300->hw.all_dirty) == dirty) {
  			dwords = (*atom->check) (r300, atom);
-@@ -186,9 +242,13 @@ static INLINE void r300EmitAtoms(r300ContextPtr r300, GLboolean dirty)
+@@ -186,9 +243,13 @@ static INLINE void r300EmitAtoms(r300ContextPtr r300, GLboolean dirty)
  				if (DEBUG_CMDBUF && RADEON_DEBUG & DEBUG_STATE) {
  					r300PrintStateAtom(r300, atom);
  				}
@@ -266,7 +694,7 @@ index c069660..dd42bf8 100644
  				atom->dirty = GL_FALSE;
  			} else {
  				if (DEBUG_CMDBUF && RADEON_DEBUG & DEBUG_STATE) {
-@@ -198,6 +258,8 @@ static INLINE void r300EmitAtoms(r300ContextPtr r300, GLboolean dirty)
+@@ -198,6 +259,8 @@ static INLINE void r300EmitAtoms(r300ContextPtr r300, GLboolean dirty)
  			}
  		}
  	}
@@ -275,7 +703,7 @@ index c069660..dd42bf8 100644
  }
  
  /**
-@@ -211,22 +273,21 @@ void r300EmitState(r300ContextPtr r300)
+@@ -211,22 +274,21 @@ void r300EmitState(r300ContextPtr r300)
  	if (RADEON_DEBUG & (DEBUG_STATE | DEBUG_PRIMS))
  		fprintf(stderr, "%s\n", __FUNCTION__);
  
@@ -302,7 +730,7 @@ index c069660..dd42bf8 100644
  	}
  
  	if (RADEON_DEBUG & DEBUG_STATE)
-@@ -234,7 +295,7 @@ void r300EmitState(r300ContextPtr r300)
+@@ -234,7 +296,7 @@ void r300EmitState(r300ContextPtr r300)
  
  	r300EmitAtoms(r300, GL_TRUE);
  
@@ -311,7 +739,7 @@ index c069660..dd42bf8 100644
  
  	r300->hw.is_dirty = GL_FALSE;
  	r300->hw.all_dirty = GL_FALSE;
-@@ -244,6 +305,79 @@ void r300EmitState(r300ContextPtr r300)
+@@ -244,6 +306,79 @@ void r300EmitState(r300ContextPtr r300)
  #define vpu_count(ptr) (((drm_r300_cmd_header_t*)(ptr))->vpu.count)
  #define r500fp_count(ptr) (((drm_r300_cmd_header_t*)(ptr))->r500fp.count)
  
@@ -391,7 +819,7 @@ index c069660..dd42bf8 100644
  static int check_always(r300ContextPtr r300, struct r300_state_atom *atom)
  {
  	return atom->cmd_size;
-@@ -480,8 +614,7 @@ void r300InitCmdBuf(r300ContextPtr r300)
+@@ -480,8 +615,7 @@ void r300InitCmdBuf(r300ContextPtr r300)
  	ALLOC_STATE(rop, always, 2, 0);
  	r300->hw.rop.cmd[0] = cmdpacket0(R300_RB3D_ROPCNTL, 1);
  	ALLOC_STATE(cb, always, R300_CB_CMDSIZE, 0);
@@ -401,7 +829,7 @@ index c069660..dd42bf8 100644
  	ALLOC_STATE(rb3d_dither_ctl, always, 10, 0);
  	r300->hw.rb3d_dither_ctl.cmd[0] = cmdpacket0(R300_RB3D_DITHER_CTL, 9);
  	ALLOC_STATE(rb3d_aaresolve_ctl, always, 2, 0);
-@@ -495,7 +628,7 @@ void r300InitCmdBuf(r300ContextPtr r300)
+@@ -495,7 +629,7 @@ void r300InitCmdBuf(r300ContextPtr r300)
  	r300->hw.zstencil_format.cmd[0] =
  	    cmdpacket0(R300_ZB_FORMAT, 4);
  	ALLOC_STATE(zb, always, R300_ZB_CMDSIZE, 0);
@@ -410,7 +838,7 @@ index c069660..dd42bf8 100644
  	ALLOC_STATE(zb_depthclearvalue, always, 2, 0);
  	r300->hw.zb_depthclearvalue.cmd[0] = cmdpacket0(R300_ZB_DEPTHCLEARVALUE, 1);
  	ALLOC_STATE(unk4F30, always, 3, 0);
-@@ -562,9 +695,10 @@ void r300InitCmdBuf(r300ContextPtr r300)
+@@ -562,9 +696,10 @@ void r300InitCmdBuf(r300ContextPtr r300)
  	ALLOC_STATE(tex.pitch, variable, mtu + 1, 0);
  	r300->hw.tex.pitch.cmd[R300_TEX_CMD_0] = cmdpacket0(R300_TX_FORMAT2_0, 0);
  
@@ -422,11 +850,11 @@ index c069660..dd42bf8 100644
  
  	ALLOC_STATE(tex.chroma_key, variable, mtu + 1, 0);
  	r300->hw.tex.chroma_key.cmd[R300_TEX_CMD_0] =
-@@ -597,10 +731,14 @@ void r300InitCmdBuf(r300ContextPtr r300)
+@@ -597,10 +732,14 @@ void r300InitCmdBuf(r300ContextPtr r300)
  			size * 4, r300->hw.max_state_size * 4);
  	}
  
-+	r300->cmdbuf.buf = radeon_bufmgr_classic_bo_alloc(&r300->radeon.bufmgr->base, "cmdbuf",
++	r300->cmdbuf.buf = dri_bo_alloc(r300->radeon.bufmgr, "cmdbuf",
 +		size*4, 16, DRM_BO_MEM_CMDBUF);
  	r300->cmdbuf.size = size;
 -	r300->cmdbuf.cmd_buf = (uint32_t *) CALLOC(size * 4);
@@ -440,7 +868,7 @@ index c069660..dd42bf8 100644
  }
  
  /**
-@@ -610,66 +748,10 @@ void r300DestroyCmdBuf(r300ContextPtr r300)
+@@ -610,66 +749,10 @@ void r300DestroyCmdBuf(r300ContextPtr r300)
  {
  	struct r300_state_atom *atom;
  
@@ -510,7 +938,7 @@ index c069660..dd42bf8 100644
 -	cmd[0].wait.flags = flags;
 -}
 diff --git a/src/mesa/drivers/dri/r300/r300_cmdbuf.h b/src/mesa/drivers/dri/r300/r300_cmdbuf.h
-index a8eaa58..5c84b67 100644
+index a8eaa58..4708a4c 100644
 --- a/src/mesa/drivers/dri/r300/r300_cmdbuf.h
 +++ b/src/mesa/drivers/dri/r300/r300_cmdbuf.h
 @@ -45,29 +45,88 @@ extern void r300EmitState(r300ContextPtr r300);
@@ -573,7 +1001,7 @@ index a8eaa58..5c84b67 100644
 +#define OUT_BATCH_RELOC(data, bo, offset, flags) \
 +	do { \
 +		if (b_l_r300->cmdbuf.written < b_l_r300->cmdbuf.reserved) { \
-+		        radeon_bufmgr_classic_emit_reloc(b_l_r300->cmdbuf.buf, flags, offset, 4*b_l_r300->cmdbuf.written, bo); \
++			dri_emit_reloc(b_l_r300->cmdbuf.buf, flags, offset, 4*b_l_r300->cmdbuf.written, bo); \
 +			((uint32_t*)b_l_r300->cmdbuf.buf->virtual)[b_l_r300->cmdbuf.written++] = data; \
 +		} else { \
 +			_mesa_problem(b_l_r300->radeon.glCtx, "%s:%i: OUT_BATCH mismatch", __FUNCTION__, __LINE__); \
@@ -666,7 +1094,7 @@ index a8eaa58..5c84b67 100644
 -
  #endif				/* __R300_CMDBUF_H__ */
 diff --git a/src/mesa/drivers/dri/r300/r300_context.c b/src/mesa/drivers/dri/r300/r300_context.c
-index fcf571d..6c6b5ba 100644
+index ee4a69d..75cbebe 100644
 --- a/src/mesa/drivers/dri/r300/r300_context.c
 +++ b/src/mesa/drivers/dri/r300/r300_context.c
 @@ -59,15 +59,14 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
@@ -830,7 +1258,7 @@ index fcf571d..6c6b5ba 100644
  /* Destroy the device specific context.
   */
  void r300DestroyContext(__DRIcontextPrivate * driContextPriv)
-@@ -496,24 +398,17 @@ void r300DestroyContext(__DRIcontextPrivate * driContextPriv)
+@@ -496,23 +398,16 @@ void r300DestroyContext(__DRIcontextPrivate * driContextPriv)
  	assert(r300);		/* should never be null */
  
  	if (r300) {
@@ -839,7 +1267,6 @@ index fcf571d..6c6b5ba 100644
 -		release_texture_heaps =
 -		    (r300->radeon.glCtx->Shared->RefCount == 1);
  		_swsetup_DestroyContext(r300->radeon.glCtx);
- 		_tnl_ProgramCacheDestroy(r300->radeon.glCtx);
  		_tnl_DestroyContext(r300->radeon.glCtx);
  		_vbo_DestroyContext(r300->radeon.glCtx);
  		_swrast_DestroyContext(r300->radeon.glCtx);
@@ -859,7 +1286,7 @@ index fcf571d..6c6b5ba 100644
  		r300DestroyCmdBuf(r300);
  
  		if (radeon->state.scissor.pClipRects) {
-@@ -521,29 +416,14 @@ void r300DestroyContext(__DRIcontextPrivate * driContextPriv)
+@@ -520,28 +415,13 @@ void r300DestroyContext(__DRIcontextPrivate * driContextPriv)
  			radeon->state.scissor.pClipRects = NULL;
  		}
  
@@ -880,46 +1307,38 @@ index fcf571d..6c6b5ba 100644
  		radeonCleanupContext(&r300->radeon);
  
 -#ifdef USER_BUFFERS
--		/* the memory manager might be accessed when Mesa frees the shared
--		 * state, so don't destroy it earlier
--		 */
+ 		/* the memory manager might be accessed when Mesa frees the shared
+ 		 * state, so don't destroy it earlier
+ 		 */
 -		r300_mem_destroy(r300);
 -#endif
- 
-+   		/* the memory manager might be accessed when Mesa frees the shared
-+    		 * state, so don't destroy it earlier
-+    		 */
-+   		dri_bufmgr_destroy(&r300->radeon.bufmgr->base);
++		dri_bufmgr_destroy(r300->radeon.bufmgr);
 +		r300->radeon.bufmgr = 0;
+ 
  		/* free the option cache */
  		driDestroyOptionCache(&r300->radeon.optionCache);
- 
 diff --git a/src/mesa/drivers/dri/r300/r300_context.h b/src/mesa/drivers/dri/r300/r300_context.h
-index d2017f8..047caae 100644
+index c15e9fa..037d0e6 100644
 --- a/src/mesa/drivers/dri/r300/r300_context.h
 +++ b/src/mesa/drivers/dri/r300/r300_context.h
 @@ -40,6 +40,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  #include "tnl/t_vertex.h"
  #include "drm.h"
  #include "radeon_drm.h"
-+#include "dri_bufmgr.h"
++#include "radeon_dri_bufmgr.h"
  #include "dri_util.h"
  #include "texmem.h"
  
-@@ -47,11 +48,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- #include "mtypes.h"
- #include "colormac.h"
+@@ -47,8 +48,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ #include "main/mtypes.h"
+ #include "main/colormac.h"
  
 -#define USER_BUFFERS
 -
  struct r300_context;
  typedef struct r300_context r300ContextRec;
  typedef struct r300_context *r300ContextPtr;
-+typedef struct radeon_bufmgr radeon_bufmgr;
- 
- #include "radeon_lock.h"
- #include "mm.h"
-@@ -122,44 +122,22 @@ static INLINE uint32_t r300PackFloat24(float f)
+@@ -122,68 +121,71 @@ static INLINE uint32_t r300PackFloat24(float f)
  
  /************ DMA BUFFERS **************/
  
@@ -972,20 +1391,56 @@ index d2017f8..047caae 100644
  	/* Number of "in-flight" DMA buffers, i.e. the number of buffers
  	 * for which a DISCARD command is currently queued in the command buffer.
  	 */
-@@ -173,17 +151,13 @@ typedef struct r300_tex_obj r300TexObj, *r300TexObjPtr;
+ 	GLuint nr_released_bufs;
+ };
+ 
+-       /* Texture related */
+-
++/* Texture related */
+ typedef struct r300_tex_obj r300TexObj, *r300TexObjPtr;
++typedef struct _r300_texture_image r300_texture_image;
++
++
++struct _r300_texture_image {
++	struct gl_texture_image base;
++
++	/**
++	 * If mt != 0, the image is stored in hardware format in the
++	 * given mipmap tree. In this case, base.Data may point into the
++	 * mapping of the buffer object that contains the mipmap tree.
++	 *
++	 * If mt == 0, the image is stored in normal memory pointed to
++	 * by base.Data.
++	 */
++	struct _r300_mipmap_tree *mt;
++
++	int mtlevel; /** if mt != 0, this is the image's level in the mipmap tree */
++	int mtface; /** if mt != 0, this is the image's face in the mipmap tree */
++};
++
++static INLINE r300_texture_image *get_r300_texture_image(struct gl_texture_image *image)
++{
++	return (r300_texture_image*)image;
++}
++
+ 
  /* Texture object in locally shared texture space.
   */
  struct r300_tex_obj {
 -	driTextureObject base;
--
++	struct gl_texture_object base;
++	struct _r300_mipmap_tree *mt;
+ 
 -	GLuint bufAddr;		/* Offset to start of locally
 -				   shared texture block */
 -
 -	drm_radeon_tex_image_t image[6][RADEON_MAX_TEXTURE_LEVELS];
 -	/* Six, for the cube faces */
-+	struct gl_texture_object base;
-+	struct _r300_mipmap_tree *mt;
-+	GLuint dirty_images[6];
++	/**
++	 * This is true if we've verified that the mipmap tree above is complete
++	 * and so on.
++	 */
++	GLboolean validated;
  
  	GLboolean image_override;	/* Image overridden by GLX_EXT_tfp */
 +	GLuint override_offset;
@@ -994,7 +1449,7 @@ index d2017f8..047caae 100644
  	/* hardware register values */
  	/* Note that R200 has 8 registers per texture and R300 only 7 */
  	GLuint filter;
-@@ -191,30 +165,16 @@ struct r300_tex_obj {
+@@ -191,30 +193,16 @@ struct r300_tex_obj {
  	GLuint pitch_reg;
  	GLuint size;		/* npot only */
  	GLuint format;
@@ -1030,7 +1485,7 @@ index d2017f8..047caae 100644
  
  /* The blit width for texture uploads
   */
-@@ -222,7 +182,6 @@ struct r300_texture_env_state {
+@@ -222,7 +210,6 @@ struct r300_texture_env_state {
  #define R300_MAX_TEXTURE_UNITS 8
  
  struct r300_texture_state {
@@ -1038,7 +1493,7 @@ index d2017f8..047caae 100644
  	int tc_count;		/* number of incoming texture coordinates from VAP */
  };
  
-@@ -242,6 +201,7 @@ struct r300_state_atom {
+@@ -242,6 +229,7 @@ struct r300_state_atom {
  	GLboolean dirty;
  
  	int (*check) (r300ContextPtr, struct r300_state_atom * atom);
@@ -1046,7 +1501,7 @@ index d2017f8..047caae 100644
  };
  
  #define R300_VPT_CMD_0		0
-@@ -549,6 +509,8 @@ struct r300_hw_state {
+@@ -549,6 +537,8 @@ struct r300_hw_state {
  		struct r300_state_atom border_color;
  	} tex;
  	struct r300_state_atom txe;	/* tex enable (4104) */
@@ -1055,7 +1510,7 @@ index d2017f8..047caae 100644
  };
  
  /**
-@@ -559,10 +521,14 @@ struct r300_hw_state {
+@@ -559,10 +549,14 @@ struct r300_hw_state {
   * otherwise.
   */
  struct r300_cmdbuf {
@@ -1074,7 +1529,7 @@ index d2017f8..047caae 100644
  };
  
  /**
-@@ -811,18 +777,25 @@ struct r500_fragment_program {
+@@ -811,18 +805,25 @@ struct r500_fragment_program {
  #define REG_COLOR0	1
  #define REG_TEX0	2
  
@@ -1104,7 +1559,7 @@ index d2017f8..047caae 100644
  	DECLARE_RENDERINPUTS(render_inputs_bitset);	/* actual render inputs that R300 was configured for.
  							   They are the same as tnl->render_inputs for fixed pipeline */
  
-@@ -880,13 +853,6 @@ struct r300_swtcl_info {
+@@ -880,13 +881,6 @@ struct r300_swtcl_info {
      * Offset of the 3UB specular color data within a hardware (swtcl) vertex.
      */
     GLuint specoffset;
@@ -1118,7 +1573,7 @@ index d2017f8..047caae 100644
  };
  
  
-@@ -905,25 +871,11 @@ struct r300_context {
+@@ -905,25 +899,11 @@ struct r300_context {
  	/* Vertex buffers
  	 */
  	struct r300_dma dma;
@@ -1145,7 +1600,7 @@ index d2017f8..047caae 100644
  	GLvector4f *temp_attrib[_TNL_ATTRIB_MAX];
  
 diff --git a/src/mesa/drivers/dri/r300/r300_emit.c b/src/mesa/drivers/dri/r300/r300_emit.c
-index 2ea17ad..5e2afd5 100644
+index 80bd338..6ed2638 100644
 --- a/src/mesa/drivers/dri/r300/r300_emit.c
 +++ b/src/mesa/drivers/dri/r300/r300_emit.c
 @@ -51,9 +51,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
@@ -1430,7 +1885,7 @@ index 2ea17ad..5e2afd5 100644
 +	END_BATCH();
  }
 diff --git a/src/mesa/drivers/dri/r300/r300_emit.h b/src/mesa/drivers/dri/r300/r300_emit.h
-index 5950539..179983d 100644
+index 89d7383..7e11604 100644
 --- a/src/mesa/drivers/dri/r300/r300_emit.h
 +++ b/src/mesa/drivers/dri/r300/r300_emit.h
 @@ -127,130 +127,62 @@ static INLINE uint32_t cmdpacify(void)
@@ -1610,10 +2065,18 @@ index 5950539..179983d 100644
 +
  #endif
 diff --git a/src/mesa/drivers/dri/r300/r300_ioctl.c b/src/mesa/drivers/dri/r300/r300_ioctl.c
-index bd7f060..2b8b266 100644
+index ee85e22..c3d0d72 100644
 --- a/src/mesa/drivers/dri/r300/r300_ioctl.c
 +++ b/src/mesa/drivers/dri/r300/r300_ioctl.c
-@@ -55,6 +55,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+@@ -46,6 +46,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ #include "main/context.h"
+ #include "swrast/swrast.h"
+ 
++#include "radeon_buffer.h"
+ #include "r300_context.h"
+ #include "radeon_ioctl.h"
+ #include "r300_ioctl.h"
+@@ -55,6 +56,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  #include "radeon_reg.h"
  #include "r300_emit.h"
  #include "r300_fragprog.h"
@@ -1621,7 +2084,7 @@ index bd7f060..2b8b266 100644
  
  #include "vblank.h"
  
-@@ -62,64 +63,51 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+@@ -62,64 +64,56 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  #define CLEARBUFFER_DEPTH	0x2
  #define CLEARBUFFER_STENCIL	0x4
  
@@ -1689,11 +2152,16 @@ index bd7f060..2b8b266 100644
 -
 -	R300_STATECHANGE(r300, cmk);
 -	reg_start(RB3D_COLOR_CHANNEL_MASK, 0);
-+	BEGIN_BATCH(19);
-+	OUT_BATCH_REGSEQ(R300_RB3D_COLOROFFSET0, 1);
-+	OUT_BATCH_RELOC(0, rrb->bo, 0, DRM_RELOC_TXOFFSET);
-+	OUT_BATCH_REGVAL(R300_RB3D_COLORPITCH0, cbpitch);
++	if (flags & CLEARBUFFER_COLOR) {
++		assert(rrb != 0);
++		BEGIN_BATCH(4);
++		OUT_BATCH_REGSEQ(R300_RB3D_COLOROFFSET0, 1);
++		OUT_BATCH_RELOC(0, rrb->bo, 0, DRM_RELOC_TXOFFSET);
++		OUT_BATCH_REGVAL(R300_RB3D_COLORPITCH0, cbpitch);
++		END_BATCH();
++	}
  
++	BEGIN_BATCH(15);
 +	OUT_BATCH_REGSEQ(RB3D_COLOR_CHANNEL_MASK, 1);
  	if (flags & CLEARBUFFER_COLOR) {
 -		e32((ctx->Color.ColorMask[BCOMP] ? RB3D_COLOR_CHANNEL_MASK_BLUE_MASK0 : 0) |
@@ -1715,7 +2183,7 @@ index bd7f060..2b8b266 100644
  
  	{
  		uint32_t t1, t2;
-@@ -146,37 +134,37 @@ static void r300ClearBuffer(r300ContextPtr r300, int flags, int buffer)
+@@ -146,37 +140,37 @@ static void r300ClearBuffer(r300ContextPtr r300, int flags, int buffer)
  			     R300_S_FRONT_ZFAIL_OP_SHIFT);
  		}
  
@@ -1772,16 +2240,16 @@ index bd7f060..2b8b266 100644
  	int has_tcl = 1;
  	int is_r500 = 0;
  	GLuint vap_cntl;
-@@ -184,35 +172,37 @@ static void r300EmitClearState(GLcontext * ctx)
+@@ -184,35 +178,37 @@ static void r300EmitClearState(GLcontext * ctx)
  	if (!(r300->radeon.radeonScreen->chip_flags & RADEON_CHIPSET_TCL))
  		has_tcl = 0;
  
 -        if (r300->radeon.radeonScreen->chip_family >= CHIP_FAMILY_RV515)
 -                is_r500 = 1;
--
 +	if (r300->radeon.radeonScreen->chip_family >= CHIP_FAMILY_RV515)
 +		is_r500 = 1;
  
+-
 -	/* FIXME: the values written to R300_VAP_INPUT_ROUTE_0_0 and
 -	 * R300_VAP_INPUT_ROUTE_0_1 are in fact known, however, the values are
 -	 * quite complex; see the functions in r300_emit.c.
@@ -1831,7 +2299,7 @@ index bd7f060..2b8b266 100644
  	       (R300_SWIZZLE_SELECT_Y << R300_SWIZZLE_SELECT_Y_SHIFT) |
  	       (R300_SWIZZLE_SELECT_Z << R300_SWIZZLE_SELECT_Z_SHIFT) |
  	       (R300_SWIZZLE_SELECT_W << R300_SWIZZLE_SELECT_W_SHIFT) |
-@@ -226,238 +216,246 @@ static void r300EmitClearState(GLcontext * ctx)
+@@ -226,238 +222,246 @@ static void r300EmitClearState(GLcontext * ctx)
  	      << R300_SWIZZLE1_SHIFT)));
  
  	/* R300_VAP_INPUT_CNTL_0, R300_VAP_INPUT_CNTL_1 */
@@ -1897,12 +2365,12 @@ index bd7f060..2b8b266 100644
 -	reg_start(R300_FG_ALPHA_FUNC, 0);
 -	e32(0x0);
 +	OUT_BATCH_REGVAL(R300_FG_ALPHA_FUNC, 0);
-+
+ 
 +	OUT_BATCH_REGSEQ(R300_RB3D_CBLEND, 2);
 +	OUT_BATCH(0x0);
 +	OUT_BATCH(0x0);
 +	END_BATCH();
- 
++
 +	R300_STATECHANGE(r300, vir[0]);
 +	R300_STATECHANGE(r300, fogs);
 +	R300_STATECHANGE(r300, vir[1]);
@@ -2196,12 +2664,12 @@ index bd7f060..2b8b266 100644
  	else
 -	    vap_cntl |= (4 << R300_PVS_NUM_FPUS_SHIFT);
 +		vap_cntl |= (4 << R300_PVS_NUM_FPUS_SHIFT);
-+
-+	R300_STATECHANGE(r300, vap_cntl);
  
 -	R300_STATECHANGE(rmesa, vap_cntl);
 -	reg_start(R300_VAP_CNTL, 0);
 -	e32(vap_cntl);
++	R300_STATECHANGE(r300, vap_cntl);
++
 +	BEGIN_BATCH(2);
 +	OUT_BATCH_REGVAL(R300_VAP_CNTL, vap_cntl);
 +	END_BATCH();
@@ -2219,12 +2687,12 @@ index bd7f060..2b8b266 100644
 -
  		R300_STATECHANGE(r300, vpi);
 -		vsf_start_fragment(0x0, 8);
--
+ 
 -		e32(PVS_OP_DST_OPERAND(VE_ADD, GL_FALSE, GL_FALSE, 0, 0xf, PVS_DST_REG_OUT));
 -		e32(PVS_SRC_OPERAND(0, PVS_SRC_SELECT_X, PVS_SRC_SELECT_Y, PVS_SRC_SELECT_Z, PVS_SRC_SELECT_W, PVS_SRC_REG_INPUT, VSF_FLAG_NONE));
 -		e32(PVS_SRC_OPERAND(0, PVS_SRC_SELECT_FORCE_0, PVS_SRC_SELECT_FORCE_0, PVS_SRC_SELECT_FORCE_0, PVS_SRC_SELECT_FORCE_0, PVS_SRC_REG_INPUT, VSF_FLAG_NONE));
 -		e32(0x0);
- 
+-
 -		e32(PVS_OP_DST_OPERAND(VE_ADD, GL_FALSE, GL_FALSE, 1, 0xf, PVS_DST_REG_OUT));
 -		e32(PVS_SRC_OPERAND(1, PVS_SRC_SELECT_X, PVS_SRC_SELECT_Y, PVS_SRC_SELECT_Z, PVS_SRC_SELECT_W, PVS_SRC_REG_INPUT, VSF_FLAG_NONE));
 -		e32(PVS_SRC_OPERAND(1, PVS_SRC_SELECT_FORCE_0, PVS_SRC_SELECT_FORCE_0, PVS_SRC_SELECT_FORCE_0, PVS_SRC_SELECT_FORCE_0, PVS_SRC_REG_INPUT, VSF_FLAG_NONE));
@@ -2252,7 +2720,7 @@ index bd7f060..2b8b266 100644
  	}
  }
  
-@@ -467,7 +465,10 @@ static void r300EmitClearState(GLcontext * ctx)
+@@ -467,7 +471,10 @@ static void r300EmitClearState(GLcontext * ctx)
  static void r300Clear(GLcontext * ctx, GLbitfield mask)
  {
  	r300ContextPtr r300 = R300_CONTEXT(ctx);
@@ -2263,7 +2731,7 @@ index bd7f060..2b8b266 100644
  	int flags = 0;
  	int bits = 0;
  	int swapped;
-@@ -482,6 +483,12 @@ static void r300Clear(GLcontext * ctx, GLbitfield mask)
+@@ -482,6 +489,12 @@ static void r300Clear(GLcontext * ctx, GLbitfield mask)
  			return;
  	}
  
@@ -2276,7 +2744,7 @@ index bd7f060..2b8b266 100644
  	if (mask & BUFFER_BIT_FRONT_LEFT) {
  		flags |= BUFFER_BIT_FRONT_LEFT;
  		mask &= ~BUFFER_BIT_FRONT_LEFT;
-@@ -509,26 +516,27 @@ static void r300Clear(GLcontext * ctx, GLbitfield mask)
+@@ -509,26 +522,27 @@ static void r300Clear(GLcontext * ctx, GLbitfield mask)
  		_swrast_Clear(ctx, mask);
  	}
  
@@ -2309,7 +2777,7 @@ index bd7f060..2b8b266 100644
  }
  
  void r300Flush(GLcontext * ctx)
-@@ -541,16 +549,12 @@ void r300Flush(GLcontext * ctx)
+@@ -541,16 +555,12 @@ void r300Flush(GLcontext * ctx)
  	if (rmesa->dma.flush)
  		rmesa->dma.flush( rmesa );
  
@@ -2327,7 +2795,7 @@ index bd7f060..2b8b266 100644
  	size = MAX2(size, RADEON_BUFFER_SIZE * 16);
  
  	if (RADEON_DEBUG & (DEBUG_IOCTL | DEBUG_DMA))
-@@ -560,71 +564,24 @@ void r300RefillCurrentDmaRegion(r300ContextPtr rmesa, int size)
+@@ -560,216 +570,24 @@ void r300RefillCurrentDmaRegion(r300ContextPtr rmesa, int size)
  		rmesa->dma.flush(rmesa);
  	}
  
@@ -2392,30 +2860,25 @@ index bd7f060..2b8b266 100644
 -
 -	region->buf = 0;
 -	region->start = 0;
-+	rmesa->dma.current = radeon_bufmgr_classic_bo_alloc(&rmesa->radeon.bufmgr->base, "DMA regions",
-+		size, 4, DRM_BO_MEM_DMA);
-+	rmesa->dma.current_used = 0;
-+	rmesa->dma.current_vertexptr = 0;
- }
- 
- /* Allocates a region from rmesa->dma.current.  If there isn't enough
-  * space in current, grab a new buffer (and discard what was left of current)
-  */
- void r300AllocDmaRegion(r300ContextPtr rmesa,
+-}
+-
+-/* Allocates a region from rmesa->dma.current.  If there isn't enough
+- * space in current, grab a new buffer (and discard what was left of current)
+- */
+-void r300AllocDmaRegion(r300ContextPtr rmesa,
 -			struct r300_dma_region *region,
-+			dri_bo **pbo, int *poffset,
- 			int bytes, int alignment)
- {
- 	if (RADEON_DEBUG & DEBUG_IOCTL)
-@@ -633,207 +590,23 @@ void r300AllocDmaRegion(r300ContextPtr rmesa,
- 	if (rmesa->dma.flush)
- 		rmesa->dma.flush(rmesa);
- 
+-			int bytes, int alignment)
+-{
+-	if (RADEON_DEBUG & DEBUG_IOCTL)
+-		fprintf(stderr, "%s %d\n", __FUNCTION__, bytes);
+-
+-	if (rmesa->dma.flush)
+-		rmesa->dma.flush(rmesa);
+-
 -	if (region->buf)
 -		r300ReleaseDmaRegion(rmesa, region, __FUNCTION__);
-+	assert(rmesa->dma.current_used == rmesa->dma.current_vertexptr);
- 
- 	alignment--;
+-
+-	alignment--;
 -	rmesa->dma.current.start = rmesa->dma.current.ptr =
 -	    (rmesa->dma.current.ptr + alignment) & ~alignment;
 -
@@ -2428,17 +2891,14 @@ index bd7f060..2b8b266 100644
 -	region->address = rmesa->dma.current.address;
 -	region->buf = rmesa->dma.current.buf;
 -	region->buf->refcount++;
-+	rmesa->dma.current_used = (rmesa->dma.current_used + alignment) & ~alignment;
- 
+-
 -	rmesa->dma.current.ptr += bytes;	/* bug - if alignment > 7 */
 -	rmesa->dma.current.start =
 -	    rmesa->dma.current.ptr = (rmesa->dma.current.ptr + 0x7) & ~0x7;
 -
 -	assert(rmesa->dma.current.ptr <= rmesa->dma.current.end);
 -}
-+	if (!rmesa->dma.current || rmesa->dma.current_used + bytes > rmesa->dma.current->size)
-+		r300RefillCurrentDmaRegion(rmesa, (bytes + 15) & ~15);
- 
+-
 -#else
 -static void r300RefillCurrentDmaRegion(r300ContextPtr rmesa)
 -{
@@ -2448,16 +2908,10 @@ index bd7f060..2b8b266 100644
 -	int size = 0;
 -	drmDMAReq dma;
 -	int ret;
-+	*poffset = rmesa->dma.current_used;
-+	*pbo = rmesa->dma.current;
-+	dri_bo_reference(*pbo);
- 
+-
 -	if (RADEON_DEBUG & (DEBUG_IOCTL | DEBUG_DMA))
 -		fprintf(stderr, "%s\n", __FUNCTION__);
-+	/* Always align to at least 16 bytes */
-+	rmesa->dma.current_used = (rmesa->dma.current_used + bytes + 15) & ~15;
-+	rmesa->dma.current_vertexptr = rmesa->dma.current_used;
- 
+-
 -	if (rmesa->dma.flush) {
 -		rmesa->dma.flush(rmesa);
 -	}
@@ -2551,25 +3005,30 @@ index bd7f060..2b8b266 100644
 -
 -	region->buf = 0;
 -	region->start = 0;
--}
--
--/* Allocates a region from rmesa->dma.current.  If there isn't enough
-- * space in current, grab a new buffer (and discard what was left of current)
-- */
--void r300AllocDmaRegion(r300ContextPtr rmesa,
++	rmesa->dma.current = dri_bo_alloc(rmesa->radeon.bufmgr, "DMA regions",
++		size, 4, DRM_BO_MEM_DMA);
++	rmesa->dma.current_used = 0;
++	rmesa->dma.current_vertexptr = 0;
+ }
+ 
+ /* Allocates a region from rmesa->dma.current.  If there isn't enough
+  * space in current, grab a new buffer (and discard what was left of current)
+  */
+ void r300AllocDmaRegion(r300ContextPtr rmesa,
 -			struct r300_dma_region *region,
--			int bytes, int alignment)
--{
--	if (RADEON_DEBUG & DEBUG_IOCTL)
--		fprintf(stderr, "%s %d\n", __FUNCTION__, bytes);
--
--	if (rmesa->dma.flush)
--		rmesa->dma.flush(rmesa);
--
++			dri_bo **pbo, int *poffset,
+ 			int bytes, int alignment)
+ {
+ 	if (RADEON_DEBUG & DEBUG_IOCTL)
+@@ -778,62 +596,23 @@ void r300AllocDmaRegion(r300ContextPtr rmesa,
+ 	if (rmesa->dma.flush)
+ 		rmesa->dma.flush(rmesa);
+ 
 -	if (region->buf)
 -		r300ReleaseDmaRegion(rmesa, region, __FUNCTION__);
--
--	alignment--;
++	assert(rmesa->dma.current_used == rmesa->dma.current_vertexptr);
+ 
+ 	alignment--;
 -	rmesa->dma.current.start = rmesa->dma.current.ptr =
 -	    (rmesa->dma.current.ptr + alignment) & ~alignment;
 -
@@ -2586,7 +3045,8 @@ index bd7f060..2b8b266 100644
 -	rmesa->dma.current.ptr += bytes;	/* bug - if alignment > 7 */
 -	rmesa->dma.current.start =
 -	    rmesa->dma.current.ptr = (rmesa->dma.current.ptr + 0x7) & ~0x7;
--
++	rmesa->dma.current_used = (rmesa->dma.current_used + alignment) & ~alignment;
+ 
 -	assert(rmesa->dma.current.ptr <= rmesa->dma.current.end);
 -}
 -
@@ -2605,16 +3065,24 @@ index bd7f060..2b8b266 100644
 -	if (RADEON_DEBUG & DEBUG_IOCTL)
 -		fprintf(stderr, "r300IsGartMemory( %p ) : %d\n", pointer,
 -			valid);
--
++	if (!rmesa->dma.current || rmesa->dma.current_used + bytes > rmesa->dma.current->size)
++		r300RefillCurrentDmaRegion(rmesa, (bytes + 15) & ~15);
+ 
 -	return valid;
 -}
--
++	*poffset = rmesa->dma.current_used;
++	*pbo = rmesa->dma.current;
++	dri_bo_reference(*pbo);
+ 
 -GLuint r300GartOffsetFromVirtual(r300ContextPtr rmesa, const GLvoid * pointer)
 -{
 -	int offset =
 -	    (char *)pointer -
 -	    (char *)rmesa->radeon.radeonScreen->gartTextures.map;
--
++	/* Always align to at least 16 bytes */
++	rmesa->dma.current_used = (rmesa->dma.current_used + bytes + 15) & ~15;
++	rmesa->dma.current_vertexptr = rmesa->dma.current_used;
+ 
 -	//fprintf(stderr, "offset=%08x\n", offset);
 -
 -	if (offset < 0
@@ -2654,10 +3122,10 @@ index e1143fb..c743478 100644
  extern void r300InitIoctlFuncs(struct dd_function_table *functions);
  
 diff --git a/src/mesa/drivers/dri/r300/r300_mem.c b/src/mesa/drivers/dri/r300/r300_mem.c
-index f8f9d4f..1097388 100644
+index f8f9d4f..bb6d06a 100644
 --- a/src/mesa/drivers/dri/r300/r300_mem.c
 +++ b/src/mesa/drivers/dri/r300/r300_mem.c
-@@ -27,359 +27,869 @@
+@@ -27,359 +27,874 @@
  
  /**
   * \file
@@ -2677,8 +3145,9 @@ index f8f9d4f..1097388 100644
 -#include "r300_cmdbuf.h"
 -#include "r300_ioctl.h"
 -#include "r300_mem.h"
-+#include "simple_list.h"
++#include "main/simple_list.h"
 +
++#include "radeon_buffer.h"
  #include "radeon_ioctl.h"
 +#include "r300_cmdbuf.h"
  
@@ -2690,7 +3159,8 @@ index f8f9d4f..1097388 100644
 +typedef struct _radeon_bo_vram radeon_bo_vram;
 +
 +struct _radeon_bufmgr_classic {
-+	radeon_bufmgr base;
++	dri_bufmgr base;
++	radeonScreenPtr screen;
 +	r300ContextPtr rmesa;
 +
 +	radeon_bo_classic *buffers; /** Unsorted linked list of all buffer objects */
@@ -2927,7 +3397,7 @@ index f8f9d4f..1097388 100644
 +static void init_buffer(radeon_bufmgr_classic *bufmgr, radeon_bo_classic *bo, unsigned long size)
  {
 -	int i;
-+	bo->base.bufmgr = &bufmgr->base.base;
++	bo->base.bufmgr = &bufmgr->base;
 +	bo->base.size = size;
 +	bo->refcount = 1;
 +
@@ -2958,11 +3428,11 @@ index f8f9d4f..1097388 100644
 +
 +	memfree.region = RADEON_MEM_REGION_GART;
 +	memfree.region_offset = bo->base.offset;
-+	memfree.region_offset -= bufmgr->rmesa->radeon.radeonScreen->gart_texture_offset;
++	memfree.region_offset -= bufmgr->screen->gart_texture_offset;
  
 -	fprintf(stderr, "%p failed\n", ptr);
 -	return 0;
-+	ret = drmCommandWrite(bufmgr->rmesa->radeon.radeonScreen->driScreen->fd,
++	ret = drmCommandWrite(bufmgr->screen->driScreen->fd,
 +		DRM_RADEON_FREE, &memfree, sizeof(memfree));
 +	if (ret) {
 +		fprintf(stderr, "Failed to free bo[%p] at %08x\n", bo, memfree.region_offset);
@@ -3001,7 +3471,7 @@ index f8f9d4f..1097388 100644
 +	alloc.size = size;
 +	alloc.region_offset = &baseoffset;
 +
-+	ret = drmCommandWriteRead(bufmgr->rmesa->radeon.dri.fd,
++	ret = drmCommandWriteRead(bufmgr->screen->driScreen->fd,
 +			DRM_RADEON_ALLOC, &alloc, sizeof(alloc));
 +	if (ret) {
 +		if (RADEON_DEBUG & DEBUG_MEMORY)
@@ -3011,8 +3481,8 @@ index f8f9d4f..1097388 100644
  
 -	if (size < 4096)
 -		bytes_wasted += 4096 - size;
-+	bo->base.virtual = (char*)bufmgr->rmesa->radeon.radeonScreen->gartTextures.map + baseoffset;
-+	bo->base.offset = bufmgr->rmesa->radeon.radeonScreen->gart_texture_offset + baseoffset;
++	bo->base.virtual = (char*)bufmgr->screen->gartTextures.map + baseoffset;
++	bo->base.offset = bufmgr->screen->gart_texture_offset + baseoffset;
  
 -	allocated += size;
 +	return 1;
@@ -3245,7 +3715,7 @@ index f8f9d4f..1097388 100644
 +		tex.pitch = MAX2(tmp.width / 16, 1);
 +
 +		do {
-+			ret = drmCommandWriteRead(bufmgr->rmesa->radeon.dri.fd,
++			ret = drmCommandWriteRead(bufmgr->screen->driScreen->fd,
 +						DRM_RADEON_TEXTURE, &tex,
 +						sizeof(drm_radeon_texture_t));
 +			if (ret) {
@@ -3364,8 +3834,8 @@ index f8f9d4f..1097388 100644
 +{
 +	radeon_bufmgr_classic *bufmgr = get_bufmgr_classic(bo_base->base.bufmgr);
 +
-+	bo_base->base.virtual = bufmgr->rmesa->radeon.dri.screen->pFB +
-+		(bo_base->base.offset - bufmgr->rmesa->radeon.radeonScreen->fbLocation);
++	bo_base->base.virtual = bufmgr->screen->driScreen->pFB +
++		(bo_base->base.offset - bufmgr->screen->fbLocation);
 +
 +	/* Read the first pixel in the frame buffer.  This should
 +	 * be a noop, right?  In fact without this conform fails as reading
@@ -3384,7 +3854,7 @@ index f8f9d4f..1097388 100644
 +	 */
 +	{
 +		int p;
-+		volatile int *buf = (int*)bufmgr->rmesa->radeon.dri.screen->pFB;
++		volatile int *buf = (int*)bufmgr->screen->driScreen->pFB;
 +		p = *buf;
 +	}
  }
@@ -3437,7 +3907,7 @@ index f8f9d4f..1097388 100644
  }
  
 -void *r300_mem_map(r300ContextPtr rmesa, int id, int access)
-+dri_bo *radeon_bufmgr_classic_bo_alloc_static(dri_bufmgr *bufmgr_ctx, const char *name,
++static dri_bo *bufmgr_classic_bo_alloc_static(dri_bufmgr *bufmgr_ctx, const char *name,
 +					      unsigned long offset, unsigned long size,
 +					      void *virtual, uint32_t initial_domain)
  {
@@ -3452,7 +3922,7 @@ index f8f9d4f..1097388 100644
 +
 +	bo->base.functions = &static_bo_functions;
 +	bo->base.base.virtual = virtual;
-+	bo->base.base.offset = offset + bufmgr->rmesa->radeon.radeonScreen->fbLocation;
++	bo->base.base.offset = offset + bufmgr->screen->fbLocation;
 +	bo->base.validated = 1; /* Static buffer offsets are always valid */
 +
 +	init_buffer(bufmgr, &bo->base, size);
@@ -3606,7 +4076,7 @@ index f8f9d4f..1097388 100644
  }
  
 -void r300_mem_unmap(r300ContextPtr rmesa, int id)
-+int radeon_bufmgr_classic_emit_reloc(dri_bo *batch_buf, uint64_t flags, GLuint delta,
++static int bufmgr_classic_emit_reloc(dri_bo *batch_buf, uint64_t flags, GLuint delta,
 +				     GLuint offset, dri_bo *target)
  {
 -#ifdef MM_DEBUG
@@ -3721,9 +4191,9 @@ index f8f9d4f..1097388 100644
 +	track_pending_buffers(bufmgr);
 +
 +	if (bufmgr->buffers) {
-+		//fprintf(stderr, "Warning: Buffer objects have leaked\n");
++		fprintf(stderr, "Warning: Buffer objects have leaked\n");
 +		while(bufmgr->buffers) {
-+			//fprintf(stderr, "  Leak of size %ld\n", bufmgr->buffers->base.size);
++			fprintf(stderr, "  Leak of size %ld\n", bufmgr->buffers->base.size);
 +			bufmgr->buffers->refcount = 0;
 +			bufmgr->buffers->mapcount = 0;
 +			bufmgr->buffers->pending = 0;
@@ -3739,44 +4209,47 @@ index f8f9d4f..1097388 100644
 +	free(bufmgr);
 +}
 +
-+radeon_bufmgr* radeonBufmgrClassicInit(r300ContextPtr rmesa)
++dri_bufmgr* radeonBufmgrClassicInit(r300ContextPtr rmesa)
 +{
 +	radeon_bufmgr_classic* bufmgr = (radeon_bufmgr_classic*)calloc(1, sizeof(radeon_bufmgr_classic));
 +
++	bufmgr->screen = rmesa->radeon.radeonScreen;
 +	bufmgr->rmesa = rmesa;
-+	//	bufmgr->base.base.bo_alloc = &bufmgr_classic_bo_alloc;
-+	bufmgr->base.base.bo_reference = &bufmgr_classic_bo_reference;
-+	bufmgr->base.base.bo_unreference = &bufmgr_classic_bo_unreference;
-+	bufmgr->base.base.bo_map = &bufmgr_classic_bo_map;
-+	bufmgr->base.base.bo_unmap = &bufmgr_classic_bo_unmap;
-+	bufmgr->base.base.process_relocs = &bufmgr_classic_process_relocs;
-+	bufmgr->base.base.post_submit = &bufmgr_classic_post_submit;
-+	bufmgr->base.base.destroy = &bufmgr_classic_destroy;
++	bufmgr->base.bo_alloc = &radeon_bufmgr_classic_bo_alloc;
++	bufmgr->base.bo_alloc_static = bufmgr_classic_bo_alloc_static;
++	bufmgr->base.bo_reference = &bufmgr_classic_bo_reference;
++	bufmgr->base.bo_unreference = &bufmgr_classic_bo_unreference;
++	bufmgr->base.bo_map = &bufmgr_classic_bo_map;
++	bufmgr->base.bo_unmap = &bufmgr_classic_bo_unmap;
++	bufmgr->base.emit_reloc = &bufmgr_classic_emit_reloc;
++	bufmgr->base.process_relocs = &bufmgr_classic_process_relocs;
++	bufmgr->base.post_submit = &bufmgr_classic_post_submit;
++	bufmgr->base.destroy = &bufmgr_classic_destroy;
 +
 +	bufmgr->pending_tail = &bufmgr->pending;
 +
 +	/* Init texture heap */
 +	make_empty_list(&bufmgr->texture_swapped);
 +	bufmgr->texture_heap = driCreateTextureHeap(0, bufmgr,
-+			rmesa->radeon.radeonScreen->texSize[0], 12, RADEON_NR_TEX_REGIONS,
++			bufmgr->screen->texSize[0], 12, RADEON_NR_TEX_REGIONS,
 +			(drmTextureRegionPtr)rmesa->radeon.sarea->tex_list[0],
 +			&rmesa->radeon.sarea->tex_age[0],
 +			&bufmgr->texture_swapped, sizeof(radeon_vram_wrapper),
 +			&destroy_vram_wrapper);
-+	bufmgr->texture_offset = rmesa->radeon.radeonScreen->texOffset[0];
++	bufmgr->texture_offset = bufmgr->screen->texOffset[0];
 +
 +	return &bufmgr->base;
 +}
 +
-+void radeonBufmgrContendedLockTake(radeon_bufmgr* bufmgr_ctx)
++void radeonBufmgrContendedLockTake(dri_bufmgr* bufmgr_ctx)
 +{
-+	radeon_bufmgr_classic *bufmgr = get_bufmgr_classic(&bufmgr_ctx->base);
++	radeon_bufmgr_classic *bufmgr = get_bufmgr_classic(bufmgr_ctx);
 +
 +	DRI_AGE_TEXTURES(bufmgr->texture_heap);
  }
 -#endif
 diff --git a/src/mesa/drivers/dri/r300/r300_mem.h b/src/mesa/drivers/dri/r300/r300_mem.h
-index 625a7f6..4e9be65 100644
+index 625a7f6..a6788a8 100644
 --- a/src/mesa/drivers/dri/r300/r300_mem.h
 +++ b/src/mesa/drivers/dri/r300/r300_mem.h
 @@ -1,37 +1,22 @@
@@ -3785,16 +4258,13 @@ index 625a7f6..4e9be65 100644
  
 -//#define R300_MEM_PDL 0
 -#define R300_MEM_UL 1
-+#include "glheader.h"
-+#include "dri_bufmgr.h"
- 
+-
 -#define R300_MEM_R 1
 -#define R300_MEM_W 2
 -#define R300_MEM_RW (R300_MEM_R | R300_MEM_W)
-+#include "r300_context.h"
- 
+-
 -#define R300_MEM_SCRATCH 2
- 
+-
 -struct r300_memory_manager {
 -	struct {
 -		void *ptr;
@@ -3805,16 +4275,9 @@ index 625a7f6..4e9be65 100644
 -		int mapped;
 -	} *u_list;
 -	int u_head, u_size, u_last;
-+/* Note: The following flags should probably be ultimately eliminated,
-+ * or replaced by something else.
-+ */
-+#define DRM_BO_MEM_DMA (1 << 27) /** Use for transient buffers (texture upload, vertex buffers...) */
-+#define DRM_BO_MEM_CMDBUF (1 << 28) /** Use for command buffers */
- 
+-
 -};
-+#define DRM_RELOC_BLITTER (1 << 23) /** Offset overwrites lower 22 bits (used with blit packet3) */
-+#define DRM_RELOC_TXOFFSET (1 << 24) /** Offset overwrites everything but low bits (used for texture offsets) */
- 
+-
 -extern void r300_mem_init(r300ContextPtr rmesa);
 -extern void r300_mem_destroy(r300ContextPtr rmesa);
 -extern void *r300_mem_ptr(r300ContextPtr rmesa, int id);
@@ -3825,16 +4288,31 @@ index 625a7f6..4e9be65 100644
 -extern void *r300_mem_map(r300ContextPtr rmesa, int id, int access);
 -extern void r300_mem_unmap(r300ContextPtr rmesa, int id);
 -extern void r300_mem_free(r300ContextPtr rmesa, int id);
-+radeon_bufmgr* radeonBufmgrClassicInit(r300ContextPtr rmesa);
-+void radeonBufmgrContendedLockTake(radeon_bufmgr* bufmgr_ctx);
++#include "main/glheader.h"
++
++#include "r300_context.h"
++
++
++/* Note: The following flags should probably be ultimately eliminated,
++ * or replaced by something else.
++ */
++#define DRM_BO_MEM_DMA (1 << 27) /** Use for transient buffers (texture upload, vertex buffers...) */
++#define DRM_BO_MEM_CMDBUF (1 << 28) /** Use for command buffers */
++
++#define DRM_RELOC_BLITTER (1 << 23) /** Offset overwrites lower 22 bits (used with blit packet3) */
++#define DRM_RELOC_TXOFFSET (1 << 24) /** Offset overwrites everything but low bits (used for texture offsets) */
++
++dri_bufmgr* radeonBufmgrClassicInit(r300ContextPtr rmesa);
++void radeonBufmgrContendedLockTake(dri_bufmgr* bufmgr_ctx);
++
  
  #endif
 diff --git a/src/mesa/drivers/dri/r300/r300_mipmap_tree.c b/src/mesa/drivers/dri/r300/r300_mipmap_tree.c
 new file mode 100644
-index 0000000..75b7d32
+index 0000000..49fc161
 --- /dev/null
 +++ b/src/mesa/drivers/dri/r300/r300_mipmap_tree.c
-@@ -0,0 +1,248 @@
+@@ -0,0 +1,317 @@
 +/*
 + * Copyright (C) 2008 Nicolai Haehnle.
 + *
@@ -3867,10 +4345,11 @@ index 0000000..75b7d32
 +#include <errno.h>
 +#include <unistd.h>
 +
-+#include "simple_list.h"
-+#include "texcompress.h"
-+#include "texformat.h"
++#include "main/simple_list.h"
++#include "main/texcompress.h"
++#include "main/texformat.h"
 +
++#include "radeon_buffer.h"
 +#include "r300_mem.h"
 +
 +static GLuint r300_compressed_texture_size(GLcontext *ctx,
@@ -3909,19 +4388,28 @@ index 0000000..75b7d32
 +
 +	/* Find image size in bytes */
 +	if (mt->compressed) {
++		/* TODO: Is this correct? Need test cases for compressed textures! */
++		GLuint align;
++
++		if (mt->target == GL_TEXTURE_RECTANGLE_NV)
++			align = 64 / mt->bpp;
++		else
++			align = 32 / mt->bpp;
++		lvl->rowstride = (lvl->width + align - 1) & ~(align - 1);
 +		lvl->size = r300_compressed_texture_size(mt->r300->radeon.glCtx,
 +			lvl->width, lvl->height, lvl->depth, mt->compressed);
 +	} else if (mt->target == GL_TEXTURE_RECTANGLE_NV) {
-+		lvl->size = ((lvl->width * mt->bpp + 63) & ~63) * lvl->height;
++		lvl->rowstride = (lvl->width * mt->bpp + 63) & ~63;
++		lvl->size = lvl->rowstride * lvl->height;
 +	} else if (mt->tilebits & R300_TXO_MICRO_TILE) {
 +		/* tile pattern is 16 bytes x2. mipmaps stay 32 byte aligned,
 +		 * though the actual offset may be different (if texture is less than
 +		 * 32 bytes width) to the untiled case */
-+		int w = (lvl->width * mt->bpp * 2 + 31) & ~31;
-+		lvl->size = (w * ((lvl->height + 1) / 2)) * lvl->depth;
++		lvl->rowstride = (lvl->width * mt->bpp * 2 + 31) & ~31;
++		lvl->size = lvl->rowstride * ((lvl->height + 1) / 2) * lvl->depth;
 +	} else {
-+		int w = (lvl->width * mt->bpp + 31) & ~31;
-+		lvl->size = w * lvl->height * lvl->depth;
++		lvl->rowstride = (lvl->width * mt->bpp + 31) & ~31;
++		lvl->size = lvl->rowstride * lvl->height * lvl->depth;
 +	}
 +	assert(lvl->size > 0);
 +
@@ -3952,9 +4440,9 @@ index 0000000..75b7d32
 +	for(i = 0; i < numLevels; i++) {
 +		GLuint face;
 +
-+		mt->levels[i].width = minify(mt->width0, mt->firstLevel + i);
-+		mt->levels[i].height = minify(mt->height0, mt->firstLevel + i);
-+		mt->levels[i].depth = minify(mt->depth0, mt->firstLevel + i);
++		mt->levels[i].width = minify(mt->width0, i);
++		mt->levels[i].height = minify(mt->height0, i);
++		mt->levels[i].depth = minify(mt->depth0, i);
 +
 +		for(face = 0; face < mt->faces; face++)
 +			compute_tex_image_offset(mt, face, i, &curOffset);
@@ -3976,6 +4464,7 @@ index 0000000..75b7d32
 +	r300_mipmap_tree *mt = CALLOC_STRUCT(_r300_mipmap_tree);
 +
 +	mt->r300 = rmesa;
++	mt->refcount = 1;
 +	mt->t = t;
 +	mt->target = target;
 +	mt->faces = (target == GL_TEXTURE_CUBE_MAP) ? 6 : 1;
@@ -3990,105 +4479,163 @@ index 0000000..75b7d32
 +
 +	calculate_miptree_layout(mt);
 +
-+	mt->bo = radeon_bufmgr_classic_bo_alloc(&rmesa->radeon.bufmgr->base, "texture", mt->totalsize, 1024, 0);
++	mt->bo = dri_bo_alloc(rmesa->radeon.bufmgr, "texture", mt->totalsize, 1024, 0);
 +
 +	return mt;
 +}
 +
-+/**
-+ * Destroy the given mipmap tree.
-+ */
-+void r300_miptree_destroy(r300_mipmap_tree *mt)
++void r300_miptree_reference(r300_mipmap_tree *mt)
 +{
-+	dri_bo_unreference(mt->bo);
-+	free(mt);
++	mt->refcount++;
++	assert(mt->refcount > 0);
 +}
 +
-+/*
-+ * XXX Move this into core Mesa?
-+ */
-+static void
-+_mesa_copy_rect(GLubyte * dst,
-+                GLuint cpp,
-+                GLuint dst_pitch,
-+                GLuint dst_x,
-+                GLuint dst_y,
-+                GLuint width,
-+                GLuint height,
-+                const GLubyte * src,
-+                GLuint src_pitch, GLuint src_x, GLuint src_y)
++void r300_miptree_unreference(r300_mipmap_tree *mt)
 +{
-+   GLuint i;
++	if (!mt)
++		return;
 +
-+   dst_pitch *= cpp;
-+   src_pitch *= cpp;
-+   dst += dst_x * cpp;
-+   src += src_x * cpp;
-+   dst += dst_y * dst_pitch;
-+   src += src_y * dst_pitch;
-+   width *= cpp;
-+
-+   if (width == dst_pitch && width == src_pitch)
-+      memcpy(dst, src, height * width);
-+   else {
-+      for (i = 0; i < height; i++) {
-+         memcpy(dst, src, width);
-+         dst += dst_pitch;
-+         src += src_pitch;
-+      }
-+   }
++	assert(mt->refcount > 0);
++	mt->refcount--;
++	if (!mt->refcount) {
++		dri_bo_unreference(mt->bo);
++		free(mt);
++	}
 +}
 +
-+/**
-+ * Upload the given texture image to the given face/level of the mipmap tree.
-+ * \param level of the texture, i.e. \c level==mt->firstLevel is the first hw level
-+ */
-+void r300_miptree_upload_image(r300_mipmap_tree *mt, GLuint face, GLuint level,
-+			       struct gl_texture_image *texImage)
++
++static void calculate_first_last_level(struct gl_texture_object *tObj,
++				       GLuint *pfirstLevel, GLuint *plastLevel)
 +{
-+	GLuint hwlevel = level - mt->firstLevel;
-+	r300_mipmap_level *lvl = &mt->levels[hwlevel];
-+	void *dest;
++	const struct gl_texture_image * const baseImage =
++		tObj->Image[0][tObj->BaseLevel];
 +
-+	assert(face < mt->faces);
-+	assert(level >= mt->firstLevel && level <= mt->lastLevel);
-+	assert(texImage && texImage->Data);
-+	assert(texImage->Width == lvl->width);
-+	assert(texImage->Height == lvl->height);
-+	assert(texImage->Depth == lvl->depth);
++	/* These must be signed values.  MinLod and MaxLod can be negative numbers,
++	* and having firstLevel and lastLevel as signed prevents the need for
++	* extra sign checks.
++	*/
++	int   firstLevel;
++	int   lastLevel;
 +
-+	dri_bo_map(mt->bo, GL_TRUE);
-+
-+	dest = mt->bo->virtual + lvl->faces[face].offset;
-+
-+	if (mt->tilebits)
-+		WARN_ONCE("%s: tiling not supported yet", __FUNCTION__);
-+
-+	if (!mt->compressed) {
-+		GLuint dst_align;
-+		GLuint dst_pitch = lvl->width;
-+		GLuint src_pitch = lvl->width;
-+
-+		if (mt->target == GL_TEXTURE_RECTANGLE_NV)
-+			dst_align = 64 / mt->bpp;
-+		else
-+			dst_align = 32 / mt->bpp;
-+		dst_pitch = (dst_pitch + dst_align - 1) & ~(dst_align - 1);
-+
-+		_mesa_copy_rect(dest, mt->bpp, dst_pitch, 0, 0, lvl->width, lvl->height,
-+				texImage->Data, src_pitch, 0, 0);
-+	} else {
-+		memcpy(dest, texImage->Data, lvl->size);
++	/* Yes, this looks overly complicated, but it's all needed.
++	*/
++	switch (tObj->Target) {
++	case GL_TEXTURE_1D:
++	case GL_TEXTURE_2D:
++	case GL_TEXTURE_3D:
++	case GL_TEXTURE_CUBE_MAP:
++		if (tObj->MinFilter == GL_NEAREST || tObj->MinFilter == GL_LINEAR) {
++			/* GL_NEAREST and GL_LINEAR only care about GL_TEXTURE_BASE_LEVEL.
++			*/
++			firstLevel = lastLevel = tObj->BaseLevel;
++		} else {
++			firstLevel = tObj->BaseLevel + (GLint)(tObj->MinLod + 0.5);
++			firstLevel = MAX2(firstLevel, tObj->BaseLevel);
++			firstLevel = MIN2(firstLevel, tObj->BaseLevel + baseImage->MaxLog2);
++			lastLevel = tObj->BaseLevel + (GLint)(tObj->MaxLod + 0.5);
++			lastLevel = MAX2(lastLevel, tObj->BaseLevel);
++			lastLevel = MIN2(lastLevel, tObj->BaseLevel + baseImage->MaxLog2);
++			lastLevel = MIN2(lastLevel, tObj->MaxLevel);
++			lastLevel = MAX2(firstLevel, lastLevel); /* need at least one level */
++		}
++		break;
++	case GL_TEXTURE_RECTANGLE_NV:
++	case GL_TEXTURE_4D_SGIS:
++		firstLevel = lastLevel = 0;
++		break;
++	default:
++		return;
 +	}
 +
-+	dri_bo_unmap(mt->bo);
++	/* save these values */
++	*pfirstLevel = firstLevel;
++	*plastLevel = lastLevel;
++}
++
++
++/**
++ * Checks whether the given miptree can hold the given texture image at the
++ * given face and level.
++ */
++GLboolean r300_miptree_matches_image(r300_mipmap_tree *mt,
++		struct gl_texture_image *texImage, GLuint face, GLuint level)
++{
++	r300_mipmap_level *lvl;
++
++	if (face >= mt->faces || level < mt->firstLevel || level > mt->lastLevel)
++		return GL_FALSE;
++
++	if (texImage->TexFormat->TexelBytes != mt->bpp)
++		return GL_FALSE;
++
++	lvl = &mt->levels[level - mt->firstLevel];
++	if (lvl->width != texImage->Width ||
++	    lvl->height != texImage->Height ||
++	    lvl->depth != texImage->Depth)
++		return GL_FALSE;
++
++	return GL_TRUE;
++}
++
++
++/**
++ * Checks whether the given miptree has the right format to store the given texture object.
++ */
++GLboolean r300_miptree_matches_texture(r300_mipmap_tree *mt, struct gl_texture_object *texObj)
++{
++	struct gl_texture_image *firstImage;
++	GLuint compressed;
++	GLuint numfaces = 1;
++	GLuint firstLevel, lastLevel;
++
++	calculate_first_last_level(texObj, &firstLevel, &lastLevel);
++	if (texObj->Target == GL_TEXTURE_CUBE_MAP)
++		numfaces = 6;
++
++	firstImage = texObj->Image[0][firstLevel];
++	compressed = firstImage->IsCompressed ? firstImage->TexFormat->MesaFormat : 0;
++
++	return (mt->firstLevel == firstLevel &&
++	        mt->lastLevel == lastLevel &&
++	        mt->width0 == firstImage->Width &&
++	        mt->height0 == firstImage->Height &&
++	        mt->depth0 == firstImage->Depth &&
++	        mt->bpp == firstImage->TexFormat->TexelBytes &&
++	        mt->compressed == compressed);
++}
++
++
++/**
++ * Try to allocate a mipmap tree for the given texture that will fit the
++ * given image in the given position.
++ */
++void r300_try_alloc_miptree(r300ContextPtr rmesa, r300TexObj *t,
++		struct gl_texture_image *texImage, GLuint face, GLuint level)
++{
++	GLuint compressed = texImage->IsCompressed ? texImage->TexFormat->MesaFormat : 0;
++	GLuint numfaces = 1;
++	GLuint firstLevel, lastLevel;
++
++	assert(!t->mt);
++
++	calculate_first_last_level(&t->base, &firstLevel, &lastLevel);
++	if (t->base.Target == GL_TEXTURE_CUBE_MAP)
++		numfaces = 6;
++
++	if (level != firstLevel || face >= numfaces)
++		return;
++
++	t->mt = r300_miptree_create(rmesa, t, t->base.Target,
++		firstLevel, lastLevel,
++		texImage->Width, texImage->Height, texImage->Depth,
++		texImage->TexFormat->TexelBytes, t->tile_bits, compressed);
 +}
 diff --git a/src/mesa/drivers/dri/r300/r300_mipmap_tree.h b/src/mesa/drivers/dri/r300/r300_mipmap_tree.h
 new file mode 100644
-index 0000000..a888ecf
+index 0000000..7705a4d
 --- /dev/null
 +++ b/src/mesa/drivers/dri/r300/r300_mipmap_tree.h
-@@ -0,0 +1,91 @@
+@@ -0,0 +1,97 @@
 +/*
 + * Copyright (C) 2008 Nicolai Haehnle.
 + *
@@ -4126,7 +4673,7 @@ index 0000000..a888ecf
 +typedef struct _r300_mipmap_image r300_mipmap_image;
 +
 +struct _r300_mipmap_image {
-+	GLuint offset; /** Offset of this image from the start of mipmap tree, in bytes */
++	GLuint offset; /** Offset of this image from the start of mipmap tree buffer, in bytes */
 +};
 +
 +struct _r300_mipmap_level {
@@ -4134,6 +4681,7 @@ index 0000000..a888ecf
 +	GLuint height;
 +	GLuint depth;
 +	GLuint size; /** Size of each image, in bytes */
++	GLuint rowstride; /** in bytes */
 +	r300_mipmap_image faces[6];
 +};
 +
@@ -4150,6 +4698,7 @@ index 0000000..a888ecf
 +	r300ContextPtr r300;
 +	r300TexObj *t;
 +	dri_bo *bo;
++	GLuint refcount;
 +
 +	GLuint totalsize; /** total size of the miptree, in bytes */
 +
@@ -4158,9 +4707,9 @@ index 0000000..a888ecf
 +	GLuint firstLevel; /** First mip level stored in this mipmap tree */
 +	GLuint lastLevel; /** Last mip level stored in this mipmap tree */
 +
-+	GLuint width0; /** Width of level 0 image */
-+	GLuint height0; /** Height of level 0 image */
-+	GLuint depth0; /** Depth of level 0 image */
++	GLuint width0; /** Width of firstLevel image */
++	GLuint height0; /** Height of firstLevel image */
++	GLuint depth0; /** Depth of firstLevel image */
 +
 +	GLuint bpp; /** Bytes per texel */
 +	GLuint tilebits; /** R300_TXO_xxx_TILE */
@@ -4173,15 +4722,19 @@ index 0000000..a888ecf
 +		GLenum target, GLuint firstLevel, GLuint lastLevel,
 +		GLuint width0, GLuint height0, GLuint depth0,
 +		GLuint bpp, GLuint tilebits, GLuint compressed);
-+void r300_miptree_destroy(r300_mipmap_tree *mt);
++void r300_miptree_reference(r300_mipmap_tree *mt);
++void r300_miptree_unreference(r300_mipmap_tree *mt);
 +
-+void r300_miptree_upload_image(r300_mipmap_tree *mt, GLuint face, GLuint level,
-+			       struct gl_texture_image *texImage);
++GLboolean r300_miptree_matches_image(r300_mipmap_tree *mt,
++		struct gl_texture_image *texImage, GLuint face, GLuint level);
++GLboolean r300_miptree_matches_texture(r300_mipmap_tree *mt, struct gl_texture_object *texObj);
++void r300_try_alloc_miptree(r300ContextPtr rmesa, r300TexObj *t,
++		struct gl_texture_image *texImage, GLuint face, GLuint level);
 +
 +
 +#endif /* __R300_MIPMAP_TREE_H_ */
 diff --git a/src/mesa/drivers/dri/r300/r300_render.c b/src/mesa/drivers/dri/r300/r300_render.c
-index 0a199e6..209fae9 100644
+index 292f87a..11ffbca 100644
 --- a/src/mesa/drivers/dri/r300/r300_render.c
 +++ b/src/mesa/drivers/dri/r300/r300_render.c
 @@ -175,89 +175,79 @@ int r300NumVerts(r300ContextPtr rmesa, int num_verts, int prim)
@@ -4350,7 +4903,7 @@ index 0a199e6..209fae9 100644
  
  	return GL_FALSE;
 diff --git a/src/mesa/drivers/dri/r300/r300_state.c b/src/mesa/drivers/dri/r300/r300_state.c
-index 15cd053..589327d 100644
+index 6a5c363..935f948 100644
 --- a/src/mesa/drivers/dri/r300/r300_state.c
 +++ b/src/mesa/drivers/dri/r300/r300_state.c
 @@ -55,6 +55,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
@@ -4449,7 +5002,16 @@ index 15cd053..589327d 100644
  				WARN_ONCE("micro tiling enabled!\n");
  			}
  
-@@ -2371,20 +2352,6 @@ static void r300ResetHwState(r300ContextPtr r300)
+@@ -2223,8 +2204,6 @@ static void r300ResetHwState(r300ContextPtr r300)
+ 
+ 	r300UpdateCulling(ctx);
+ 
+-	r300UpdateTextureState(ctx);
+-
+ 	r300SetBlendState(ctx);
+ 	r300SetLogicOpState(ctx);
+ 
+@@ -2371,20 +2350,6 @@ static void r300ResetHwState(r300ContextPtr r300)
  
  	r300BlendColor(ctx, ctx->Color.BlendColor);
  
@@ -4470,7 +5032,7 @@ index 15cd053..589327d 100644
  	r300->hw.rb3d_dither_ctl.cmd[1] = 0;
  	r300->hw.rb3d_dither_ctl.cmd[2] = 0;
  	r300->hw.rb3d_dither_ctl.cmd[3] = 0;
-@@ -2400,10 +2367,6 @@ static void r300ResetHwState(r300ContextPtr r300)
+@@ -2400,10 +2365,6 @@ static void r300ResetHwState(r300ContextPtr r300)
  	r300->hw.rb3d_discard_src_pixel_lte_threshold.cmd[1] = 0x00000000;
  	r300->hw.rb3d_discard_src_pixel_lte_threshold.cmd[2] = 0xffffffff;
  
@@ -4481,6 +5043,15 @@ index 15cd053..589327d 100644
  
  	if (r300->radeon.sarea->tiling_enabled) {
  		/* XXX: Turn off when clearing buffers ? */
+@@ -2675,7 +2636,7 @@ void r300UpdateShaderStates(r300ContextPtr rmesa)
+ 	GLcontext *ctx;
+ 	ctx = rmesa->radeon.glCtx;
+ 
+-	r300UpdateTextureState(ctx);
++	r300ValidateTextures(ctx);
+ 	r300SetEarlyZState(ctx);
+ 
+ 	GLuint fgdepthsrc = R300_FG_DEPTH_SRC_SCAN;
 diff --git a/src/mesa/drivers/dri/r300/r300_state.h b/src/mesa/drivers/dri/r300/r300_state.h
 index 0589ab7..96177ba 100644
 --- a/src/mesa/drivers/dri/r300/r300_state.h
@@ -4495,7 +5066,7 @@ index 0589ab7..96177ba 100644
     }							\
      \
 diff --git a/src/mesa/drivers/dri/r300/r300_swtcl.c b/src/mesa/drivers/dri/r300/r300_swtcl.c
-index 8aebd9b..f4a0b7f 100644
+index b6e7ce1..4d73ee3 100644
 --- a/src/mesa/drivers/dri/r300/r300_swtcl.c
 +++ b/src/mesa/drivers/dri/r300/r300_swtcl.c
 @@ -61,7 +61,7 @@ USE OR OTHER DEALINGS IN THE SOFTWARE.
@@ -4790,10 +5361,18 @@ index 8aebd9b..f4a0b7f 100644
 +	END_BATCH();
  }
 diff --git a/src/mesa/drivers/dri/r300/r300_tex.c b/src/mesa/drivers/dri/r300/r300_tex.c
-index f7f4972..c6ee1b5 100644
+index 8ab382c..bdb971a 100644
 --- a/src/mesa/drivers/dri/r300/r300_tex.c
 +++ b/src/mesa/drivers/dri/r300/r300_tex.c
-@@ -48,6 +48,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+@@ -38,6 +38,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ #include "main/context.h"
+ #include "main/enums.h"
+ #include "main/image.h"
++#include "main/mipmap.h"
+ #include "main/simple_list.h"
+ #include "main/texformat.h"
+ #include "main/texstore.h"
+@@ -49,6 +50,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  #include "r300_context.h"
  #include "r300_state.h"
  #include "r300_ioctl.h"
@@ -4801,7 +5380,7 @@ index f7f4972..c6ee1b5 100644
  #include "r300_tex.h"
  
  #include "xmlpool.h"
-@@ -78,7 +79,7 @@ static unsigned int translate_wrap_mode(GLenum wrapmode)
+@@ -79,7 +81,7 @@ static unsigned int translate_wrap_mode(GLenum wrapmode)
   */
  static void r300UpdateTexWrap(r300TexObjPtr t)
  {
@@ -4810,7 +5389,17 @@ index f7f4972..c6ee1b5 100644
  
  	t->filter &=
  	    ~(R300_TX_WRAP_S_MASK | R300_TX_WRAP_T_MASK | R300_TX_WRAP_R_MASK);
-@@ -175,39 +176,6 @@ static void r300SetTexBorderColor(r300TexObjPtr t, GLubyte c[4])
+@@ -119,6 +121,9 @@ static GLuint aniso_filter(GLfloat anisotropy)
+  */
+ static void r300SetTexFilter(r300TexObjPtr t, GLenum minf, GLenum magf, GLfloat anisotropy)
+ {
++	/* Force revalidation to account for switches from/to mipmapping. */
++	t->validated = GL_FALSE;
++
+ 	t->filter &= ~(R300_TX_MIN_FILTER_MASK | R300_TX_MIN_FILTER_MIP_MASK | R300_TX_MAG_FILTER_MASK | R300_TX_MAX_ANISO_MASK);
+ 	t->filter_1 &= ~R300_EDGE_ANISO_EDGE_ONLY;
+ 
+@@ -176,39 +181,6 @@ static void r300SetTexBorderColor(r300TexObjPtr t, GLubyte c[4])
  	t->pp_border_color = PACK_COLOR_8888(c[3], c[0], c[1], c[2]);
  }
  
@@ -4850,7 +5439,7 @@ index f7f4972..c6ee1b5 100644
  /* try to find a format which will only need a memcopy */
  static const struct gl_texture_format *r300Choose8888TexFormat(GLenum srcFormat,
  							       GLenum srcType)
-@@ -433,95 +401,14 @@ static const struct gl_texture_format *r300ChooseTextureFormat(GLcontext * ctx,
+@@ -434,277 +406,204 @@ static const struct gl_texture_format *r300ChooseTextureFormat(GLcontext * ctx,
  	return NULL;		/* never get here */
  }
  
@@ -4862,28 +5451,43 @@ index f7f4972..c6ee1b5 100644
 -			  const struct gl_pixelstore_attrib *packing,
 -			  struct gl_texture_object *texObj,
 -			  struct gl_texture_image *texImage)
++
 +/**
-+ * Marks the given face/level pair as dirty.
-+ * This will cause an appropriate texture reupload the next time this
-+ * texture is validated.
++ * Allocate an empty texture image object.
 + */
-+static void mark_texture_image_dirty(r300TexObj *t, int face, int level)
++static struct gl_texture_image *r300NewTextureImage(GLcontext *ctx)
  {
 -	r300ContextPtr rmesa = R300_CONTEXT(ctx);
--
++	return CALLOC(sizeof(r300_texture_image));
++}
+ 
 -	if (RADEON_DEBUG & DEBUG_TEXTURE)
 -		fprintf(stderr, "intformat %s format %s type %s\n",
 -			_mesa_lookup_enum_by_nr(internalFormat),
 -			_mesa_lookup_enum_by_nr(format),
 -			_mesa_lookup_enum_by_nr(type));
--
++/**
++ * Free memory associated with this texture image.
++ */
++static void r300FreeTexImageData(GLcontext *ctx, struct gl_texture_image *timage)
++{
++	r300_texture_image* image = get_r300_texture_image(timage);
+ 
 -	if (!ctx->Unpack.ClientStorage)
 -		return 0;
--
++	if (image->mt) {
++		r300_miptree_unreference(image->mt);
++		image->mt = 0;
++		assert(!image->base.Data);
++	} else {
++		_mesa_free_texture_image_data(ctx, timage);
++	}
++}
+ 
 -	if (ctx->_ImageTransferState ||
 -	    texImage->IsCompressed || texObj->GenerateMipmap)
 -		return 0;
--
+ 
 -	/* This list is incomplete, may be different on ppc???
 -	 */
 -	switch (internalFormat) {
@@ -4893,14 +5497,21 @@ index f7f4972..c6ee1b5 100644
 -		} else
 -			return 0;
 -		break;
--
++/* Set Data pointer and additional data for mapped texture image */
++static void teximage_set_map_data(r300_texture_image *image)
++{
++	r300_mipmap_level *lvl = &image->mt->levels[image->mtlevel];
++	image->base.Data = image->mt->bo->virtual + lvl->faces[image->mtface].offset;
++	image->base.RowStride = lvl->rowstride / image->mt->bpp;
++}
+ 
 -	case GL_RGB:
 -		if (format == GL_RGB && type == GL_UNSIGNED_SHORT_5_6_5) {
 -			texImage->TexFormat = _dri_texformat_rgb565;
 -		} else
 -			return 0;
 -		break;
--
+ 
 -	case GL_YCBCR_MESA:
 -		if (format == GL_YCBCR_MESA &&
 -		    type == GL_UNSIGNED_SHORT_8_8_REV_APPLE) {
@@ -4912,25 +5523,43 @@ index f7f4972..c6ee1b5 100644
 -		} else
 -			return 0;
 -		break;
--
++/**
++ * Map a single texture image for glTexImage and friends.
++ */
++static void r300_teximage_map(r300_texture_image *image, GLboolean write_enable)
++{
++	if (image->mt) {
++		assert(!image->base.Data);
+ 
 -	default:
 -		return 0;
--	}
--
++		dri_bo_map(image->mt->bo, write_enable);
++		teximage_set_map_data(image);
+ 	}
++}
+ 
 -	/* Could deal with these packing issues, but currently don't:
 -	 */
 -	if (packing->SkipPixels ||
 -	    packing->SkipRows || packing->SwapBytes || packing->LsbFirst) {
 -		return 0;
 -	}
--
+ 
 -	GLint srcRowStride = _mesa_image_row_stride(packing, srcWidth,
 -						    format, type);
--
++static void r300_teximage_unmap(r300_texture_image *image)
++{
++	if (image->mt) {
++		assert(image->base.Data);
+ 
 -	if (RADEON_DEBUG & DEBUG_TEXTURE)
 -		fprintf(stderr, "%s: srcRowStride %d/%x\n",
 -			__FUNCTION__, srcRowStride, srcRowStride);
--
++		image->base.Data = 0;
++		dri_bo_unmap(image->mt->bo);
++	}
++}
+ 
 -	/* Could check this later in upload, pitch restrictions could be
 -	 * relaxed, but would need to store the image pitch somewhere,
 -	 * as packing details might change before image is uploaded:
@@ -4938,7 +5567,14 @@ index f7f4972..c6ee1b5 100644
 -	if (!r300IsGartMemory(rmesa, pixels, srcHeight * srcRowStride)
 -	    || (srcRowStride & 63))
 -		return 0;
--
++/**
++ * Map a validated texture for reading during software rendering.
++ */
++static void r300MapTexture(GLcontext *ctx, struct gl_texture_object *texObj)
++{
++	r300TexObj* t = r300_tex_obj(texObj);
++	int face, level;
+ 
 -	/* Have validated that _mesa_transfer_teximage would be a straight
 -	 * memcpy at this point.  NOTE: future calls to TexSubImage will
 -	 * overwrite the client data.  This is explicitly mentioned in the
@@ -4947,18 +5583,29 @@ index f7f4972..c6ee1b5 100644
 -	texImage->Data = (void *)pixels;
 -	texImage->IsClientData = GL_TRUE;
 -	texImage->RowStride = srcRowStride / texImage->TexFormat->TexelBytes;
--
++	assert(texObj->_Complete);
++	assert(t->mt);
+ 
 -	return 1;
-+	t->dirty_images[face] |= 1 << level;
++	dri_bo_map(t->mt->bo, GL_FALSE);
++	for(face = 0; face < t->mt->faces; ++face) {
++		for(level = t->mt->firstLevel; level <= t->mt->lastLevel; ++level)
++			teximage_set_map_data(get_r300_texture_image(texObj->Image[face][level]));
++	}
  }
  
- static void r300TexImage1D(GLcontext * ctx, GLenum target, GLint level,
-@@ -532,24 +419,13 @@ static void r300TexImage1D(GLcontext * ctx, GLenum target, GLint level,
- 			   struct gl_texture_object *texObj,
- 			   struct gl_texture_image *texImage)
+-static void r300TexImage1D(GLcontext * ctx, GLenum target, GLint level,
+-			   GLint internalFormat,
+-			   GLint width, GLint border,
+-			   GLenum format, GLenum type, const GLvoid * pixels,
+-			   const struct gl_pixelstore_attrib *packing,
+-			   struct gl_texture_object *texObj,
+-			   struct gl_texture_image *texImage)
++static void r300UnmapTexture(GLcontext *ctx, struct gl_texture_object *texObj)
  {
 -	driTextureObject *t = (driTextureObject *) texObj->DriverData;
 +	r300TexObj* t = r300_tex_obj(texObj);
++	int face, level;
  
 -	if (t) {
 -		driSwapOutTextureObject(t);
@@ -4969,23 +5616,50 @@ index f7f4972..c6ee1b5 100644
 -			return;
 -		}
 -	}
--
--	/* Note, this will call ChooseTextureFormat */
- 	_mesa_store_teximage1d(ctx, target, level, internalFormat,
- 			       width, border, format, type, pixels,
- 			       &ctx->Unpack, texObj, texImage);
++	assert(texObj->_Complete);
++	assert(t->mt);
  
+-	/* Note, this will call ChooseTextureFormat */
+-	_mesa_store_teximage1d(ctx, target, level, internalFormat,
+-			       width, border, format, type, pixels,
+-			       &ctx->Unpack, texObj, texImage);
+-
 -	t->dirty_images[0] |= (1 << level);
-+	mark_texture_image_dirty(t, 0, level);
++	for(face = 0; face < t->mt->faces; ++face) {
++		for(level = t->mt->firstLevel; level <= t->mt->lastLevel; ++level)
++			texObj->Image[face][level]->Data = 0;
++	}
++	dri_bo_unmap(t->mt->bo);
  }
  
- static void r300TexSubImage1D(GLcontext * ctx, GLenum target, GLint level,
-@@ -561,24 +437,13 @@ static void r300TexSubImage1D(GLcontext * ctx, GLenum target, GLint level,
- 			      struct gl_texture_object *texObj,
- 			      struct gl_texture_image *texImage)
+-static void r300TexSubImage1D(GLcontext * ctx, GLenum target, GLint level,
+-			      GLint xoffset,
+-			      GLsizei width,
+-			      GLenum format, GLenum type,
+-			      const GLvoid * pixels,
+-			      const struct gl_pixelstore_attrib *packing,
+-			      struct gl_texture_object *texObj,
+-			      struct gl_texture_image *texImage)
++/**
++ * All glTexImage calls go through this function.
++ */
++static void r300_teximage(
++	GLcontext *ctx, int dims,
++	GLint face, GLint level,
++	GLint internalFormat,
++	GLint width, GLint height, GLint depth,
++	GLsizei imageSize,
++	GLenum format, GLenum type, const GLvoid * pixels,
++	const struct gl_pixelstore_attrib *packing,
++	struct gl_texture_object *texObj,
++	struct gl_texture_image *texImage,
++	int compressed)
  {
 -	driTextureObject *t = (driTextureObject *) texObj->DriverData;
--
++	r300ContextPtr rmesa = R300_CONTEXT(ctx);
++	r300TexObj* t = r300_tex_obj(texObj);
++	r300_texture_image* image = get_r300_texture_image(texImage);
+ 
 -	assert(t);		/* this _should_ be true */
 -	if (t) {
 -		driSwapOutTextureObject(t);
@@ -4996,42 +5670,83 @@ index f7f4972..c6ee1b5 100644
 -			return;
 -		}
 -	}
-+	r300TexObj* t = r300_tex_obj(texObj);
++	R300_FIREVERTICES(rmesa);
  
- 	_mesa_store_texsubimage1d(ctx, target, level, xoffset, width,
- 				  format, type, pixels, packing, texObj,
- 				  texImage);
+-	_mesa_store_texsubimage1d(ctx, target, level, xoffset, width,
+-				  format, type, pixels, packing, texObj,
+-				  texImage);
++	t->validated = GL_FALSE;
  
 -	t->dirty_images[0] |= (1 << level);
-+	mark_texture_image_dirty(t, 0, level);
- }
+-}
++	/* Choose and fill in the texture format for this image */
++	texImage->TexFormat = r300ChooseTextureFormat(ctx, internalFormat, format, type);
++	_mesa_set_fetch_functions(texImage, dims);
  
- static void r300TexImage2D(GLcontext * ctx, GLenum target, GLint level,
-@@ -589,7 +454,7 @@ static void r300TexImage2D(GLcontext * ctx, GLenum target, GLint level,
- 			   struct gl_texture_object *texObj,
- 			   struct gl_texture_image *texImage)
- {
+-static void r300TexImage2D(GLcontext * ctx, GLenum target, GLint level,
+-			   GLint internalFormat,
+-			   GLint width, GLint height, GLint border,
+-			   GLenum format, GLenum type, const GLvoid * pixels,
+-			   const struct gl_pixelstore_attrib *packing,
+-			   struct gl_texture_object *texObj,
+-			   struct gl_texture_image *texImage)
+-{
 -	driTextureObject *t = (driTextureObject *) texObj->DriverData;
-+	r300TexObj* t = r300_tex_obj(texObj);
- 	GLuint face;
- 
- 	/* which cube face or ordinary 2D image */
-@@ -608,43 +473,23 @@ static void r300TexImage2D(GLcontext * ctx, GLenum target, GLint level,
- 		face = 0;
+-	GLuint face;
+-
+-	/* which cube face or ordinary 2D image */
+-	switch (target) {
+-	case GL_TEXTURE_CUBE_MAP_POSITIVE_X:
+-	case GL_TEXTURE_CUBE_MAP_NEGATIVE_X:
+-	case GL_TEXTURE_CUBE_MAP_POSITIVE_Y:
+-	case GL_TEXTURE_CUBE_MAP_NEGATIVE_Y:
+-	case GL_TEXTURE_CUBE_MAP_POSITIVE_Z:
+-	case GL_TEXTURE_CUBE_MAP_NEGATIVE_Z:
+-		face =
+-		    (GLuint) target - (GLuint) GL_TEXTURE_CUBE_MAP_POSITIVE_X;
+-		ASSERT(face < 6);
+-		break;
+-	default:
+-		face = 0;
++	if (texImage->TexFormat->TexelBytes == 0) {
++		texImage->IsCompressed = GL_TRUE;
++		texImage->CompressedSize =
++			ctx->Driver.CompressedTextureSize(ctx, texImage->Width,
++					   texImage->Height, texImage->Depth,
++					   texImage->TexFormat->MesaFormat);
++	} else {
++		texImage->IsCompressed = GL_FALSE;
++		texImage->CompressedSize = 0;
  	}
  
 -	if (t != NULL) {
 -		driSwapOutTextureObject(t);
--	} else {
++	/* Allocate memory for image */
++	r300FreeTexImageData(ctx, texImage); /* Mesa core only clears texImage->Data but not image->mt */
++
++	if (!t->mt)
++		r300_try_alloc_miptree(rmesa, t, texImage, face, level);
++	if (t->mt && r300_miptree_matches_image(t->mt, texImage, face, level)) {
++		image->mt = t->mt;
++		image->mtlevel = level - t->mt->firstLevel;
++		image->mtface = face;
++		r300_miptree_reference(t->mt);
+ 	} else {
 -		t = (driTextureObject *) r300AllocTexObj(texObj);
 -		if (!t) {
 -			_mesa_error(ctx, GL_OUT_OF_MEMORY, "glTexImage2D");
 -			return;
--		}
--	}
--
- 	texImage->IsClientData = GL_FALSE;
++		int size;
++		if (texImage->IsCompressed) {
++			size = texImage->CompressedSize;
++		} else {
++			size = texImage->Width * texImage->Height * texImage->Depth * texImage->TexFormat->TexelBytes;
+ 		}
++		texImage->Data = _mesa_alloc_texmemory(size);
+ 	}
  
+-	texImage->IsClientData = GL_FALSE;
+-
 -	if (r300ValidateClientStorage(ctx, target,
 -				      internalFormat,
 -				      width, height,
@@ -5040,7 +5755,11 @@ index f7f4972..c6ee1b5 100644
 -		if (RADEON_DEBUG & DEBUG_TEXTURE)
 -			fprintf(stderr, "%s: Using client storage\n",
 -				__FUNCTION__);
--	} else {
++	/* Upload texture image; note that the spec allows pixels to be NULL */
++	if (compressed) {
++		pixels = _mesa_validate_pbo_compressed_teximage(
++			ctx, imageSize, pixels, packing, "glCompressedTexImage");
+ 	} else {
 -		if (RADEON_DEBUG & DEBUG_TEXTURE)
 -			fprintf(stderr, "%s: Using normal storage\n",
 -				__FUNCTION__);
@@ -5054,39 +5773,44 @@ index f7f4972..c6ee1b5 100644
 -		_mesa_store_teximage2d(ctx, target, level, internalFormat,
 -				       width, height, border, format, type,
 -				       pixels, &ctx->Unpack, texObj, texImage);
-+	if (RADEON_DEBUG & DEBUG_TEXTURE)
-+		fprintf(stderr, "%s: Using normal storage\n",
-+			__FUNCTION__);
-+
-+	/* Normal path: copy (to cached memory) and eventually upload
-+	 * via another copy to GART memory and then a blit...  Could
-+	 * eliminate one copy by going straight to (permanent) GART.
-+	 *
-+	 * Note, this will call r300ChooseTextureFormat.
-+	 */
-+	_mesa_store_teximage2d(ctx, target, level, internalFormat,
-+				width, height, border, format, type,
-+				pixels, &ctx->Unpack, texObj, texImage);
- 
+-
 -		t->dirty_images[face] |= (1 << level);
--	}
-+	mark_texture_image_dirty(t, face, level);
- }
- 
- static void r300TexSubImage2D(GLcontext * ctx, GLenum target, GLint level,
-@@ -656,7 +501,7 @@ static void r300TexSubImage2D(GLcontext * ctx, GLenum target, GLint level,
- 			      struct gl_texture_object *texObj,
- 			      struct gl_texture_image *texImage)
- {
--	driTextureObject *t = (driTextureObject *) texObj->DriverData;
-+	r300TexObj* t = r300_tex_obj(texObj);
- 	GLuint face;
- 
- 	/* which cube face or ordinary 2D image */
-@@ -675,22 +520,11 @@ static void r300TexSubImage2D(GLcontext * ctx, GLenum target, GLint level,
- 		face = 0;
++		pixels = _mesa_validate_pbo_teximage(
++			ctx, dims, width, height, depth,
++			format, type, pixels, packing, "glTexImage");
  	}
+-}
  
+-static void r300TexSubImage2D(GLcontext * ctx, GLenum target, GLint level,
+-			      GLint xoffset, GLint yoffset,
+-			      GLsizei width, GLsizei height,
+-			      GLenum format, GLenum type,
+-			      const GLvoid * pixels,
+-			      const struct gl_pixelstore_attrib *packing,
+-			      struct gl_texture_object *texObj,
+-			      struct gl_texture_image *texImage)
+-{
+-	driTextureObject *t = (driTextureObject *) texObj->DriverData;
+-	GLuint face;
++	if (pixels) {
++		r300_teximage_map(image, GL_TRUE);
+ 
+-	/* which cube face or ordinary 2D image */
+-	switch (target) {
+-	case GL_TEXTURE_CUBE_MAP_POSITIVE_X:
+-	case GL_TEXTURE_CUBE_MAP_NEGATIVE_X:
+-	case GL_TEXTURE_CUBE_MAP_POSITIVE_Y:
+-	case GL_TEXTURE_CUBE_MAP_NEGATIVE_Y:
+-	case GL_TEXTURE_CUBE_MAP_POSITIVE_Z:
+-	case GL_TEXTURE_CUBE_MAP_NEGATIVE_Z:
+-		face =
+-		    (GLuint) target - (GLuint) GL_TEXTURE_CUBE_MAP_POSITIVE_X;
+-		ASSERT(face < 6);
+-		break;
+-	default:
+-		face = 0;
+-	}
+-
 -	assert(t);		/* this _should_ be true */
 -	if (t) {
 -		driSwapOutTextureObject(t);
@@ -5095,31 +5819,71 @@ index f7f4972..c6ee1b5 100644
 -		if (!t) {
 -			_mesa_error(ctx, GL_OUT_OF_MEMORY, "glTexSubImage2D");
 -			return;
--		}
--	}
--
- 	_mesa_store_texsubimage2d(ctx, target, level, xoffset, yoffset, width,
- 				  height, format, type, pixels, packing, texObj,
- 				  texImage);
- 
--	t->dirty_images[face] |= (1 << level);
-+	mark_texture_image_dirty(t, face, level);
- }
- 
- static void r300CompressedTexImage2D(GLcontext * ctx, GLenum target,
-@@ -700,7 +534,7 @@ static void r300CompressedTexImage2D(GLcontext * ctx, GLenum target,
- 				     struct gl_texture_object *texObj,
- 				     struct gl_texture_image *texImage)
- {
--	driTextureObject *t = (driTextureObject *) texObj->DriverData;
-+	r300TexObj* t = r300_tex_obj(texObj);
- 	GLuint face;
- 
- 	/* which cube face or ordinary 2D image */
-@@ -719,49 +553,24 @@ static void r300CompressedTexImage2D(GLcontext * ctx, GLenum target,
- 		face = 0;
++		if (compressed) {
++			memcpy(texImage->Data, pixels, imageSize);
++		} else {
++			GLuint dstRowStride;
++			if (image->mt) {
++				r300_mipmap_level *lvl = &image->mt->levels[image->mtlevel];
++				dstRowStride = lvl->rowstride;
++			} else {
++				dstRowStride = texImage->Width * texImage->TexFormat->TexelBytes;
++			}
++			if (!texImage->TexFormat->StoreImage(ctx, dims,
++						texImage->_BaseFormat,
++						texImage->TexFormat,
++						texImage->Data, 0, 0, 0, /* dstX/Y/Zoffset */
++						dstRowStride,
++						texImage->ImageOffsets,
++						width, height, depth,
++						format, type, pixels, packing))
++				_mesa_error(ctx, GL_OUT_OF_MEMORY, "glTexImage");
+ 		}
++
++		r300_teximage_unmap(image);
  	}
  
+-	_mesa_store_texsubimage2d(ctx, target, level, xoffset, yoffset, width,
+-				  height, format, type, pixels, packing, texObj,
+-				  texImage);
++	_mesa_unmap_teximage_pbo(ctx, packing);
+ 
+-	t->dirty_images[face] |= (1 << level);
++	/* SGIS_generate_mipmap */
++	if (level == texObj->BaseLevel && texObj->GenerateMipmap) {
++		ctx->Driver.GenerateMipmap(ctx, texObj->Target, texObj);
++	}
+ }
+ 
+-static void r300CompressedTexImage2D(GLcontext * ctx, GLenum target,
+-				     GLint level, GLint internalFormat,
+-				     GLint width, GLint height, GLint border,
+-				     GLsizei imageSize, const GLvoid * data,
+-				     struct gl_texture_object *texObj,
+-				     struct gl_texture_image *texImage)
+-{
+-	driTextureObject *t = (driTextureObject *) texObj->DriverData;
+-	GLuint face;
+ 
+-	/* which cube face or ordinary 2D image */
++static GLuint face_for_target(GLenum target)
++{
+ 	switch (target) {
+ 	case GL_TEXTURE_CUBE_MAP_POSITIVE_X:
+ 	case GL_TEXTURE_CUBE_MAP_NEGATIVE_X:
+@@ -712,103 +611,50 @@ static void r300CompressedTexImage2D(GLcontext * ctx, GLenum target,
+ 	case GL_TEXTURE_CUBE_MAP_NEGATIVE_Y:
+ 	case GL_TEXTURE_CUBE_MAP_POSITIVE_Z:
+ 	case GL_TEXTURE_CUBE_MAP_NEGATIVE_Z:
+-		face =
+-		    (GLuint) target - (GLuint) GL_TEXTURE_CUBE_MAP_POSITIVE_X;
+-		ASSERT(face < 6);
+-		break;
++		return (GLuint) target - (GLuint) GL_TEXTURE_CUBE_MAP_POSITIVE_X;
+ 	default:
+-		face = 0;
+-	}
+-
 -	if (t != NULL) {
 -		driSwapOutTextureObject(t);
 -	} else {
@@ -5129,9 +5893,11 @@ index f7f4972..c6ee1b5 100644
 -				    "glCompressedTexImage2D");
 -			return;
 -		}
--	}
--
- 	texImage->IsClientData = GL_FALSE;
++		return 0;
+ 	}
++}
+ 
+-	texImage->IsClientData = GL_FALSE;
  
 -	/* can't call this, different parameters. Would never evaluate to true anyway currently */
 -#if 0
@@ -5160,40 +5926,56 @@ index f7f4972..c6ee1b5 100644
 -						  internalFormat, width, height,
 -						  border, imageSize, data,
 -						  texObj, texImage);
-+	if (RADEON_DEBUG & DEBUG_TEXTURE)
-+		fprintf(stderr, "%s: Using normal storage\n",
-+			__FUNCTION__);
-+
-+	/* Normal path: copy (to cached memory) and eventually upload
-+	 * via another copy to GART memory and then a blit...  Could
-+	 * eliminate one copy by going straight to (permanent) GART.
-+	 *
-+	 * Note, this will call r300ChooseTextureFormat.
-+	 */
-+	_mesa_store_compressed_teximage2d(ctx, target, level,
-+						internalFormat, width, height,
-+						border, imageSize, data,
-+						texObj, texImage);
- 
+-
 -		t->dirty_images[face] |= (1 << level);
 -	}
-+	mark_texture_image_dirty(t, face, level);
++static void r300TexImage1D(GLcontext * ctx, GLenum target, GLint level,
++			   GLint internalFormat,
++			   GLint width, GLint border,
++			   GLenum format, GLenum type, const GLvoid * pixels,
++			   const struct gl_pixelstore_attrib *packing,
++			   struct gl_texture_object *texObj,
++			   struct gl_texture_image *texImage)
++{
++	r300_teximage(ctx, 1, 0, level, internalFormat, width, 1, 1,
++		0, format, type, pixels, packing, texObj, texImage, 0);
  }
  
- static void r300CompressedTexSubImage2D(GLcontext * ctx, GLenum target,
-@@ -772,7 +581,7 @@ static void r300CompressedTexSubImage2D(GLcontext * ctx, GLenum target,
- 					struct gl_texture_object *texObj,
- 					struct gl_texture_image *texImage)
+-static void r300CompressedTexSubImage2D(GLcontext * ctx, GLenum target,
+-					GLint level, GLint xoffset,
+-					GLint yoffset, GLsizei width,
+-					GLsizei height, GLenum format,
+-					GLsizei imageSize, const GLvoid * data,
+-					struct gl_texture_object *texObj,
+-					struct gl_texture_image *texImage)
++static void r300TexImage2D(GLcontext * ctx, GLenum target, GLint level,
++			   GLint internalFormat,
++			   GLint width, GLint height, GLint border,
++			   GLenum format, GLenum type, const GLvoid * pixels,
++			   const struct gl_pixelstore_attrib *packing,
++			   struct gl_texture_object *texObj,
++			   struct gl_texture_image *texImage)
  {
 -	driTextureObject *t = (driTextureObject *) texObj->DriverData;
-+	r300TexObj* t = r300_tex_obj(texObj);
- 	GLuint face;
+-	GLuint face;
++	GLuint face = face_for_target(target);
  
- 	/* which cube face or ordinary 2D image */
-@@ -791,23 +600,11 @@ static void r300CompressedTexSubImage2D(GLcontext * ctx, GLenum target,
- 		face = 0;
- 	}
- 
+-	/* which cube face or ordinary 2D image */
+-	switch (target) {
+-	case GL_TEXTURE_CUBE_MAP_POSITIVE_X:
+-	case GL_TEXTURE_CUBE_MAP_NEGATIVE_X:
+-	case GL_TEXTURE_CUBE_MAP_POSITIVE_Y:
+-	case GL_TEXTURE_CUBE_MAP_NEGATIVE_Y:
+-	case GL_TEXTURE_CUBE_MAP_POSITIVE_Z:
+-	case GL_TEXTURE_CUBE_MAP_NEGATIVE_Z:
+-		face =
+-		    (GLuint) target - (GLuint) GL_TEXTURE_CUBE_MAP_POSITIVE_X;
+-		ASSERT(face < 6);
+-		break;
+-	default:
+-		face = 0;
+-	}
+-
 -	assert(t);		/* this _should_ be true */
 -	if (t) {
 -		driSwapOutTextureObject(t);
@@ -5205,22 +5987,37 @@ index f7f4972..c6ee1b5 100644
 -			return;
 -		}
 -	}
--
- 	_mesa_store_compressed_texsubimage2d(ctx, target, level, xoffset,
- 					     yoffset, width, height, format,
- 					     imageSize, data, texObj, texImage);
++	r300_teximage(ctx, 2, face, level, internalFormat, width, height, 1,
++		0, format, type, pixels, packing, texObj, texImage, 0);
++}
+ 
+-	_mesa_store_compressed_texsubimage2d(ctx, target, level, xoffset,
+-					     yoffset, width, height, format,
+-					     imageSize, data, texObj, texImage);
++static void r300CompressedTexImage2D(GLcontext * ctx, GLenum target,
++				     GLint level, GLint internalFormat,
++				     GLint width, GLint height, GLint border,
++				     GLsizei imageSize, const GLvoid * data,
++				     struct gl_texture_object *texObj,
++				     struct gl_texture_image *texImage)
++{
++	GLuint face = face_for_target(target);
  
 -	t->dirty_images[face] |= (1 << level);
-+	mark_texture_image_dirty(t, face, level);
++	r300_teximage(ctx, 2, face, level, internalFormat, width, height, 1,
++		imageSize, 0, 0, data, 0, texObj, texImage, 1);
  }
  
  static void r300TexImage3D(GLcontext * ctx, GLenum target, GLint level,
-@@ -819,49 +616,26 @@ static void r300TexImage3D(GLcontext * ctx, GLenum target, GLint level,
+@@ -820,51 +666,100 @@ static void r300TexImage3D(GLcontext * ctx, GLenum target, GLint level,
  			   struct gl_texture_object *texObj,
  			   struct gl_texture_image *texImage)
  {
 -	driTextureObject *t = (driTextureObject *) texObj->DriverData;
--
++	r300_teximage(ctx, 3, 0, level, internalFormat, width, height, depth,
++		0, format, type, pixels, packing, texObj, texImage, 0);
++}
+ 
 -	if (t) {
 -		driSwapOutTextureObject(t);
 -	} else {
@@ -5228,11 +6025,48 @@ index f7f4972..c6ee1b5 100644
 -		if (!t) {
 -			_mesa_error(ctx, GL_OUT_OF_MEMORY, "glTexImage3D");
 -			return;
--		}
++/**
++ * Update a subregion of the given texture image.
++ */
++static void r300_texsubimage(GLcontext* ctx, int dims, int level,
++		GLint xoffset, GLint yoffset, GLint zoffset,
++		GLsizei width, GLsizei height, GLsizei depth,
++		GLenum format, GLenum type,
++		const GLvoid * pixels,
++		const struct gl_pixelstore_attrib *packing,
++		struct gl_texture_object *texObj,
++		struct gl_texture_image *texImage,
++		int compressed)
++{
++	r300ContextPtr rmesa = R300_CONTEXT(ctx);
++	r300_texture_image* image = get_r300_texture_image(texImage);
++
++	R300_FIREVERTICES(rmesa);
++
++	pixels = _mesa_validate_pbo_teximage(ctx, dims,
++		width, height, depth, format, type, pixels, packing, "glTexSubImage1D");
++
++	if (pixels) {
++		GLint dstRowStride;
++		r300_teximage_map(image, GL_TRUE);
++
++		if (image->mt) {
++			r300_mipmap_level *lvl = &image->mt->levels[image->mtlevel];
++			dstRowStride = lvl->rowstride;
++		} else {
++			dstRowStride = texImage->Width * texImage->TexFormat->TexelBytes;
+ 		}
 -	}
-+	r300TexObj* t = r300_tex_obj(texObj);
  
- 	texImage->IsClientData = GL_FALSE;
+-	texImage->IsClientData = GL_FALSE;
++		if (!texImage->TexFormat->StoreImage(ctx, dims, texImage->_BaseFormat,
++				texImage->TexFormat, texImage->Data,
++				xoffset, yoffset, zoffset,
++				dstRowStride,
++				texImage->ImageOffsets,
++				width, height, depth,
++				format, type, pixels, packing))
++			_mesa_error(ctx, GL_OUT_OF_MEMORY, "glTexSubImage");
  
 -#if 0
 -	if (r300ValidateClientStorage(ctx, target,
@@ -5260,35 +6094,70 @@ index f7f4972..c6ee1b5 100644
 -				       width, height, depth, border,
 -				       format, type, pixels,
 -				       &ctx->Unpack, texObj, texImage);
-+	if (RADEON_DEBUG & DEBUG_TEXTURE)
-+		fprintf(stderr, "%s: Using normal storage\n",
-+			__FUNCTION__);
-+
-+	/* Normal path: copy (to cached memory) and eventually upload
-+	 * via another copy to GART memory and then a blit...  Could
-+	 * eliminate one copy by going straight to (permanent) GART.
-+	 *
-+	 * Note, this will call r300ChooseTextureFormat.
-+	 */
-+	_mesa_store_teximage3d(ctx, target, level, internalFormat,
-+				width, height, depth, border,
-+				format, type, pixels,
-+				&ctx->Unpack, texObj, texImage);
++		r300_teximage_unmap(image);
++	}
  
 -		t->dirty_images[0] |= (1 << level);
--	}
-+	mark_texture_image_dirty(t, 0, level);
++	_mesa_unmap_teximage_pbo(ctx, packing);
++
++	/* GL_SGIS_generate_mipmap */
++	if (level == texObj->BaseLevel && texObj->GenerateMipmap) {
++		ctx->Driver.GenerateMipmap(ctx, texObj->Target, texObj);
+ 	}
  }
  
++static void r300TexSubImage1D(GLcontext * ctx, GLenum target, GLint level,
++			      GLint xoffset,
++			      GLsizei width,
++			      GLenum format, GLenum type,
++			      const GLvoid * pixels,
++			      const struct gl_pixelstore_attrib *packing,
++			      struct gl_texture_object *texObj,
++			      struct gl_texture_image *texImage)
++{
++	r300_texsubimage(ctx, 1, level, xoffset, 0, 0, width, 1, 1,
++		format, type, pixels, packing, texObj, texImage, 0);
++}
++
++static void r300TexSubImage2D(GLcontext * ctx, GLenum target, GLint level,
++			      GLint xoffset, GLint yoffset,
++			      GLsizei width, GLsizei height,
++			      GLenum format, GLenum type,
++			      const GLvoid * pixels,
++			      const struct gl_pixelstore_attrib *packing,
++			      struct gl_texture_object *texObj,
++			      struct gl_texture_image *texImage)
++{
++	r300_texsubimage(ctx, 2, level, xoffset, yoffset, 0, width, height, 1,
++		format, type, pixels, packing, texObj, texImage, 0);
++}
++
++static void r300CompressedTexSubImage2D(GLcontext * ctx, GLenum target,
++					GLint level, GLint xoffset,
++					GLint yoffset, GLsizei width,
++					GLsizei height, GLenum format,
++					GLsizei imageSize, const GLvoid * data,
++					struct gl_texture_object *texObj,
++					struct gl_texture_image *texImage)
++{
++	r300_texsubimage(ctx, 2, level, xoffset, yoffset, 0, width, height, 1,
++		format, 0, data, 0, texObj, texImage, 1);
++}
++
  static void
-@@ -874,28 +648,14 @@ r300TexSubImage3D(GLcontext * ctx, GLenum target, GLint level,
+ r300TexSubImage3D(GLcontext * ctx, GLenum target, GLint level,
+ 		  GLint xoffset, GLint yoffset, GLint zoffset,
+@@ -875,30 +770,29 @@ r300TexSubImage3D(GLcontext * ctx, GLenum target, GLint level,
  		  struct gl_texture_object *texObj,
  		  struct gl_texture_image *texImage)
  {
 -	driTextureObject *t = (driTextureObject *) texObj->DriverData;
 -
 -/*     fprintf(stderr, "%s\n", __FUNCTION__); */
--
++	r300_texsubimage(ctx, 3, level, xoffset, yoffset, zoffset, width, height, depth,
++		format, type, pixels, packing, texObj, texImage, 0);
++}
+ 
 -	assert(t);		/* this _should_ be true */
 -	if (t) {
 -		driSwapOutTextureObject(t);
@@ -5300,19 +6169,34 @@ index f7f4972..c6ee1b5 100644
 -		}
 -		texObj->DriverData = t;
 -	}
-+	r300TexObj* t = r300_tex_obj(texObj);
  
- 	_mesa_store_texsubimage3d(ctx, target, level, xoffset, yoffset, zoffset,
- 				  width, height, depth,
- 				  format, type, pixels, packing, texObj,
- 				  texImage);
+-	_mesa_store_texsubimage3d(ctx, target, level, xoffset, yoffset, zoffset,
+-				  width, height, depth,
+-				  format, type, pixels, packing, texObj,
+-				  texImage);
++/**
++ * Wraps Mesa's implementation to ensure that the base level image is mapped.
++ *
++ * This relies on internal details of _mesa_generate_mipmap, in particular
++ * the fact that the memory for recreated texture images is always freed.
++ */
++static void r300_generate_mipmap(GLcontext* ctx, GLenum target, struct gl_texture_object *texObj)
++{
++	GLuint face = face_for_target(target);
++	r300_texture_image *baseimage = get_r300_texture_image(texObj->Image[face][texObj->BaseLevel]);
  
 -	t->dirty_images[0] |= (1 << level);
-+	mark_texture_image_dirty(t, 0, level);
++	r300_teximage_map(baseimage, GL_FALSE);
++	_mesa_generate_mipmap(ctx, target, texObj);
++	r300_teximage_unmap(baseimage);
  }
  
++
++
  /**
-@@ -907,7 +667,7 @@ static void r300TexParameter(GLcontext * ctx, GLenum target,
+  * Changes variables and flags for a state update, which will happen at the
+  * next UpdateTextureState
+@@ -908,7 +802,7 @@ static void r300TexParameter(GLcontext * ctx, GLenum target,
  			     struct gl_texture_object *texObj,
  			     GLenum pname, const GLfloat * params)
  {
@@ -5321,19 +6205,20 @@ index f7f4972..c6ee1b5 100644
  
  	if (RADEON_DEBUG & (DEBUG_STATE | DEBUG_TEXTURE)) {
  		fprintf(stderr, "%s( %s )\n", __FUNCTION__,
-@@ -940,7 +700,10 @@ static void r300TexParameter(GLcontext * ctx, GLenum target,
+@@ -941,7 +835,11 @@ static void r300TexParameter(GLcontext * ctx, GLenum target,
  		 * we just have to rely on loading the right subset of mipmap levels
  		 * to simulate a clamped LOD.
  		 */
 -		driSwapOutTextureObject((driTextureObject *) t);
 +		if (t->mt) {
-+			r300_miptree_destroy(t->mt);
++			r300_miptree_unreference(t->mt);
 +			t->mt = 0;
++			t->validated = GL_FALSE;
 +		}
  		break;
  
  	case GL_DEPTH_TEXTURE_MODE:
-@@ -963,27 +726,10 @@ static void r300TexParameter(GLcontext * ctx, GLenum target,
+@@ -964,27 +862,10 @@ static void r300TexParameter(GLcontext * ctx, GLenum target,
  	}
  }
  
@@ -5362,7 +6247,7 @@ index f7f4972..c6ee1b5 100644
  
  	if (RADEON_DEBUG & (DEBUG_STATE | DEBUG_TEXTURE)) {
  		fprintf(stderr, "%s( %p (target = %s) )\n", __FUNCTION__,
-@@ -991,14 +737,19 @@ static void r300DeleteTexture(GLcontext * ctx, struct gl_texture_object *texObj)
+@@ -992,14 +873,19 @@ static void r300DeleteTexture(GLcontext * ctx, struct gl_texture_object *texObj)
  			_mesa_lookup_enum_by_nr(texObj->Target));
  	}
  
@@ -5381,14 +6266,14 @@ index f7f4972..c6ee1b5 100644
  
 -		driDestroyTextureObject(t);
 +	if (t->mt) {
-+		r300_miptree_destroy(t->mt);
++		r300_miptree_unreference(t->mt);
 +		t->mt = 0;
  	}
 -	/* Free mipmap images and the texture object itself */
  	_mesa_delete_texture_object(ctx, texObj);
  }
  
-@@ -1007,8 +758,6 @@ static void r300DeleteTexture(GLcontext * ctx, struct gl_texture_object *texObj)
+@@ -1008,8 +894,6 @@ static void r300DeleteTexture(GLcontext * ctx, struct gl_texture_object *texObj)
   * Called via ctx->Driver.NewTextureObject.
   * Note: this function will be called during context creation to
   * allocate the default texture objects.
@@ -5397,7 +6282,7 @@ index f7f4972..c6ee1b5 100644
   * Fixup MaxAnisotropy according to user preference.
   */
  static struct gl_texture_object *r300NewTextureObject(GLcontext * ctx,
-@@ -1016,14 +765,23 @@ static struct gl_texture_object *r300NewTextureObject(GLcontext * ctx,
+@@ -1017,14 +901,23 @@ static struct gl_texture_object *r300NewTextureObject(GLcontext * ctx,
  						      GLenum target)
  {
  	r300ContextPtr rmesa = R300_CONTEXT(ctx);
@@ -5407,7 +6292,9 @@ index f7f4972..c6ee1b5 100644
 -		return NULL;
 -	obj->MaxAnisotropy = rmesa->initialMaxAnisotropy;
 +	r300TexObj* t = CALLOC_STRUCT(r300_tex_obj);
-+
+ 
+-	r300AllocTexObj(obj);
+-	return obj;
 +
 +	if (RADEON_DEBUG & (DEBUG_STATE | DEBUG_TEXTURE)) {
 +		fprintf(stderr, "%s( %p (target = %s) )\n", __FUNCTION__,
@@ -5421,14 +6308,24 @@ index f7f4972..c6ee1b5 100644
 +	r300UpdateTexWrap(t);
 +	r300SetTexFilter(t, t->base.MinFilter, t->base.MagFilter, t->base.MaxAnisotropy);
 +	r300SetTexBorderColor(t, t->base._BorderChan);
- 
--	r300AllocTexObj(obj);
--	return obj;
++
 +	return &t->base;
  }
  
  void r300InitTextureFuncs(struct dd_function_table *functions)
-@@ -1039,7 +797,6 @@ void r300InitTextureFuncs(struct dd_function_table *functions)
+@@ -1032,6 +925,11 @@ void r300InitTextureFuncs(struct dd_function_table *functions)
+ 	/* Note: we only plug in the functions we implement in the driver
+ 	 * since _mesa_init_driver_functions() was already called.
+ 	 */
++	functions->NewTextureImage = r300NewTextureImage;
++	functions->FreeTexImageData = r300FreeTexImageData;
++	functions->MapTexture = r300MapTexture;
++	functions->UnmapTexture = r300UnmapTexture;
++
+ 	functions->ChooseTextureFormat = r300ChooseTextureFormat;
+ 	functions->TexImage1D = r300TexImage1D;
+ 	functions->TexImage2D = r300TexImage2D;
+@@ -1040,7 +938,6 @@ void r300InitTextureFuncs(struct dd_function_table *functions)
  	functions->TexSubImage2D = r300TexSubImage2D;
  	functions->TexSubImage3D = r300TexSubImage3D;
  	functions->NewTextureObject = r300NewTextureObject;
@@ -5436,24 +6333,37 @@ index f7f4972..c6ee1b5 100644
  	functions->DeleteTexture = r300DeleteTexture;
  	functions->IsTextureResident = driIsTextureResident;
  
+@@ -1049,5 +946,7 @@ void r300InitTextureFuncs(struct dd_function_table *functions)
+ 	functions->CompressedTexImage2D = r300CompressedTexImage2D;
+ 	functions->CompressedTexSubImage2D = r300CompressedTexSubImage2D;
+ 
++	functions->GenerateMipmap = r300_generate_mipmap;
++
+ 	driInitTextureFormats();
+ }
 diff --git a/src/mesa/drivers/dri/r300/r300_tex.h b/src/mesa/drivers/dri/r300/r300_tex.h
-index b86d45b..5d7f21e 100644
+index b86d45b..358b927 100644
 --- a/src/mesa/drivers/dri/r300/r300_tex.h
 +++ b/src/mesa/drivers/dri/r300/r300_tex.h
-@@ -46,8 +46,6 @@ extern void r300UpdateTextureState(GLcontext * ctx);
- extern int r300UploadTexImages(r300ContextPtr rmesa, r300TexObjPtr t,
- 			       GLuint face);
+@@ -41,12 +41,7 @@ extern void r300SetTexOffset(__DRIcontext *pDRICtx, GLint texname,
+ 			     unsigned long long offset, GLint depth,
+ 			     GLuint pitch);
  
--extern void r300DestroyTexObj(r300ContextPtr rmesa, r300TexObjPtr t);
+-extern void r300UpdateTextureState(GLcontext * ctx);
 -
+-extern int r300UploadTexImages(r300ContextPtr rmesa, r300TexObjPtr t,
+-			       GLuint face);
+-
+-extern void r300DestroyTexObj(r300ContextPtr rmesa, r300TexObjPtr t);
++extern void r300ValidateTextures(GLcontext * ctx);
+ 
  extern void r300InitTextureFuncs(struct dd_function_table *functions);
  
- #endif				/* __r300_TEX_H__ */
 diff --git a/src/mesa/drivers/dri/r300/r300_texmem.c b/src/mesa/drivers/dri/r300/r300_texmem.c
-index 69847a4..b3b501b 100644
+index b03eefa..bacf12f 100644
 --- a/src/mesa/drivers/dri/r300/r300_texmem.c
 +++ b/src/mesa/drivers/dri/r300/r300_texmem.c
-@@ -48,439 +48,15 @@ SOFTWARE.
+@@ -48,520 +48,12 @@ SOFTWARE.
  #include "r300_context.h"
  #include "r300_state.h"
  #include "r300_cmdbuf.h"
@@ -5892,38 +6802,38 @@ index 69847a4..b3b501b 100644
 -		_mesa_exit(-1);
 -	}
 -}
- 
- /**
-  * Upload the texture images associated with texture \a t.  This might
-@@ -493,69 +69,32 @@ static void r300UploadSubImage(r300ContextPtr rmesa, r300TexObjPtr t,
- 
- int r300UploadTexImages(r300ContextPtr rmesa, r300TexObjPtr t, GLuint face)
- {
+-
+-/**
+- * Upload the texture images associated with texture \a t.  This might
+- * require the allocation of texture memory.
+- *
+- * \param rmesa Context pointer
+- * \param t Texture to be uploaded
+- * \param face Cube map face to be uploaded.  Zero for non-cube maps.
+- */
+-
+-int r300UploadTexImages(r300ContextPtr rmesa, r300TexObjPtr t, GLuint face)
+-{
 -	const int numLevels = t->base.lastLevel - t->base.firstLevel + 1;
 -
- 	if (t->image_override)
- 		return 0;
-+	if (!t->mt)
-+		return 0;
- 
- 	if (RADEON_DEBUG & (DEBUG_TEXTURE | DEBUG_IOCTL)) {
+-	if (t->image_override)
+-		return 0;
+-
+-	if (RADEON_DEBUG & (DEBUG_TEXTURE | DEBUG_IOCTL)) {
 -		fprintf(stderr, "%s( %p, %p ) sz=%d lvls=%d-%d\n", __FUNCTION__,
 -			(void *)rmesa->radeon.glCtx, (void *)t->base.tObj,
 -			t->base.totalSize, t->base.firstLevel,
 -			t->base.lastLevel);
-+		fprintf(stderr, "%s( %p, %p ) lvls=%d-%d\n", __FUNCTION__,
-+			(void *)rmesa->radeon.glCtx, t,
-+			t->mt->firstLevel, t->mt->lastLevel);
- 	}
- 
+-	}
+-
 -	if (t->base.totalSize == 0)
 -		return 0;
 -
- 	if (RADEON_DEBUG & DEBUG_SYNC) {
- 		fprintf(stderr, "%s: Syncing\n", __FUNCTION__);
- 		radeonFinish(rmesa->radeon.glCtx);
- 	}
- 
+-	if (RADEON_DEBUG & DEBUG_SYNC) {
+-		fprintf(stderr, "%s: Syncing\n", __FUNCTION__);
+-		radeonFinish(rmesa->radeon.glCtx);
+-	}
+-
 -	LOCK_HARDWARE(&rmesa->radeon);
 -
 -	if (t->base.memBlock == NULL) {
@@ -5952,12 +6862,10 @@ index 69847a4..b3b501b 100644
 -	driUpdateTextureLRU((driTextureObject *) t);
 -	UNLOCK_HARDWARE(&rmesa->radeon);
 -
- 	/* Upload any images that are new */
+-	/* Upload any images that are new */
 -	if (t->base.dirty_images[face]) {
 -		int i;
-+	if (t->dirty_images[face]) {
-+		int i, numLevels = t->mt->lastLevel - t->mt->firstLevel + 1;
- 		for (i = 0; i < numLevels; i++) {
+-		for (i = 0; i < numLevels; i++) {
 -			if ((t->base.
 -			     dirty_images[face] & (1 <<
 -						   (i + t->base.firstLevel))) !=
@@ -5966,18 +6874,20 @@ index 69847a4..b3b501b 100644
 -						   t->image[face][i].width,
 -						   t->image[face][i].height,
 -						   face);
-+			if (t->dirty_images[face] & (1 << (i + t->mt->firstLevel))) {
-+				r300_miptree_upload_image(t->mt, face, t->mt->firstLevel + i,
-+					t->base.Image[face][t->mt->firstLevel + i]);
- 			}
- 		}
+-			}
+-		}
 -		t->base.dirty_images[face] = 0;
-+		t->dirty_images[face] = 0;
- 	}
- 
- 	if (RADEON_DEBUG & DEBUG_SYNC) {
+-	}
+-
+-	if (RADEON_DEBUG & DEBUG_SYNC) {
+-		fprintf(stderr, "%s: Syncing\n", __FUNCTION__);
+-		radeonFinish(rmesa->radeon.glCtx);
+-	}
+-
+-	return 0;
+-}
 diff --git a/src/mesa/drivers/dri/r300/r300_texstate.c b/src/mesa/drivers/dri/r300/r300_texstate.c
-index d19832f..5cb9010 100644
+index e2329f0..ca148de 100644
 --- a/src/mesa/drivers/dri/r300/r300_texstate.c
 +++ b/src/mesa/drivers/dri/r300/r300_texstate.c
 @@ -48,6 +48,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
@@ -5998,11 +6908,10 @@ index d19832f..5cb9010 100644
  
  	switch (tObj->Image[0][tObj->BaseLevel]->TexFormat->MesaFormat) {
  	case MESA_FORMAT_Z16:
-@@ -189,118 +189,59 @@ void r300SetDepthTexMode(struct gl_texture_object *tObj)
- }
+@@ -190,399 +190,228 @@ void r300SetDepthTexMode(struct gl_texture_object *tObj)
  
  
--/**
+ /**
 - * Compute sizes and fill in offset and blit information for the given
 - * image (determined by \p face and \p level).
 - *
@@ -6014,9 +6923,7 @@ index d19832f..5cb9010 100644
 -	GLuint face,
 -	GLint level,
 -	GLint* curOffset)
-+static void calculate_first_last_level(struct gl_texture_object *tObj,
-+				       GLuint *pfirstLevel, GLuint *plastLevel)
- {
+-{
 -	r300TexObjPtr t = (r300TexObjPtr) tObj->DriverData;
 -	const struct gl_texture_image* texImage;
 -	GLuint blitWidth = R300_BLIT_WIDTH_BYTES;
@@ -6040,28 +6947,7 @@ index d19832f..5cb9010 100644
 -				size = texImage->CompressedSize * 2;
 -			else
 -				size = texImage->CompressedSize;
-+	const struct gl_texture_image * const baseImage =
-+		tObj->Image[0][tObj->BaseLevel];
-+
-+	/* These must be signed values.  MinLod and MaxLod can be negative numbers,
-+	* and having firstLevel and lastLevel as signed prevents the need for
-+	* extra sign checks.
-+	*/
-+	int   firstLevel;
-+	int   lastLevel;
-+
-+	/* Yes, this looks overly complicated, but it's all needed.
-+	*/
-+	switch (tObj->Target) {
-+	case GL_TEXTURE_1D:
-+	case GL_TEXTURE_2D:
-+	case GL_TEXTURE_3D:
-+	case GL_TEXTURE_CUBE_MAP:
-+		if (tObj->MinFilter == GL_NEAREST || tObj->MinFilter == GL_LINEAR) {
-+			/* GL_NEAREST and GL_LINEAR only care about GL_TEXTURE_BASE_LEVEL.
-+			*/
-+			firstLevel = lastLevel = tObj->BaseLevel;
- 		} else {
+-		} else {
 -			/* DXT3/5, 16 bytes per block */
 -			WARN_ONCE
 -				("DXT 3/5 suffers from multitexturing problems!\n");
@@ -6070,15 +6956,7 @@ index d19832f..5cb9010 100644
 -				size = texImage->CompressedSize * 2;
 -			else
 -				size = texImage->CompressedSize;
-+			firstLevel = tObj->BaseLevel + (GLint)(tObj->MinLod + 0.5);
-+			firstLevel = MAX2(firstLevel, tObj->BaseLevel);
-+			firstLevel = MIN2(firstLevel, tObj->BaseLevel + baseImage->MaxLog2);
-+			lastLevel = tObj->BaseLevel + (GLint)(tObj->MaxLod + 0.5);
-+			lastLevel = MAX2(lastLevel, tObj->BaseLevel);
-+			lastLevel = MIN2(lastLevel, tObj->BaseLevel + baseImage->MaxLog2);
-+			lastLevel = MIN2(lastLevel, tObj->MaxLevel);
-+			lastLevel = MAX2(firstLevel, lastLevel); /* need at least one level */
- 		}
+-		}
 -	} else if (tObj->Target == GL_TEXTURE_RECTANGLE_NV) {
 -		size =
 -			((texImage->Width * texelBytes +
@@ -6124,15 +7002,8 @@ index d19832f..5cb9010 100644
 -		t->image[face][level].width =
 -			MIN2(size, R300_BLIT_WIDTH_BYTES);
 -		t->image[face][level].height = size / t->image[face][level].width;
-+		break;
-+	case GL_TEXTURE_RECTANGLE_NV:
-+	case GL_TEXTURE_4D_SGIS:
-+		firstLevel = lastLevel = 0;
-+		break;
-+	default:
-+		return;
- 	}
- 
+-	}
+-
 -	if (RADEON_DEBUG & DEBUG_TEXTURE)
 -		fprintf(stderr,
 -			"level %d, face %d: %dx%d x=%d y=%d w=%d h=%d size=%d at %d\n",
@@ -6142,48 +7013,61 @@ index d19832f..5cb9010 100644
 -			size, *curOffset);
 -
 -	*curOffset += size;
-+	/* save these values */
-+	*pfirstLevel = firstLevel;
-+	*plastLevel = lastLevel;
- }
- 
- 
+-}
 -
- /**
+-
+-
+-/**
 - * This function computes the number of bytes of storage needed for
 - * the given texture object (all mipmap levels, all cube faces).
 - * The \c image[face][level].x/y/width/height parameters for upload/blitting
 - * are computed here.  \c filter, \c format, etc. will be set here
 - * too.
-+ * This function ensures a validated miptree is available.
-+ *
-+ * Additionally, some texture format bits are configured here.
++ * Compute the cached hardware register values for the given texture object.
   *
   * \param rmesa Context pointer
-  * \param tObj GL texture object whose images are to be posted to
-@@ -309,13 +250,13 @@ static void compute_tex_image_offset(
- static void r300SetTexImages(r300ContextPtr rmesa,
- 			     struct gl_texture_object *tObj)
+- * \param tObj GL texture object whose images are to be posted to
+- *                 hardware state.
++ * \param t the r300 texture object
+  */
+-static void r300SetTexImages(r300ContextPtr rmesa,
+-			     struct gl_texture_object *tObj)
++static void setup_hardware_state(r300ContextPtr rmesa, r300TexObj *t)
  {
 -	r300TexObjPtr t = (r300TexObjPtr) tObj->DriverData;
-+	r300TexObjPtr t = r300_tex_obj(tObj);
- 	const struct gl_texture_image *baseImage =
- 	    tObj->Image[0][tObj->BaseLevel];
+-	const struct gl_texture_image *baseImage =
+-	    tObj->Image[0][tObj->BaseLevel];
 -	GLint curOffset;
 -	GLint i, texelBytes;
 -	GLint numLevels;
 -	GLint log2Width, log2Height, log2Depth;
-+	GLint texelBytes;
-+	GLuint firstLevel = 0, lastLevel = 0;
+-
+-	/* Set the hardware texture format
+-	 */
++	const struct gl_texture_image *firstImage =
++	    t->base.Image[0][t->mt->firstLevel];
 +
-+	calculate_first_last_level(tObj, &firstLevel, &lastLevel);
+ 	if (!t->image_override
+-	    && VALID_FORMAT(baseImage->TexFormat->MesaFormat)) {
+-		if (baseImage->TexFormat->BaseFormat == GL_DEPTH_COMPONENT) {
+-			r300SetDepthTexMode(tObj);
++	    && VALID_FORMAT(firstImage->TexFormat->MesaFormat)) {
++		if (firstImage->TexFormat->BaseFormat == GL_DEPTH_COMPONENT) {
++			r300SetDepthTexMode(&t->base);
+ 		} else {
+-			t->format = tx_table[baseImage->TexFormat->MesaFormat].format;
++			t->format = tx_table[firstImage->TexFormat->MesaFormat].format;
+ 		}
  
- 	/* Set the hardware texture format
- 	 */
-@@ -335,112 +276,66 @@ static void r300SetTexImages(r300ContextPtr rmesa,
+-		t->filter |= tx_table[baseImage->TexFormat->MesaFormat].filter;
++		t->filter |= tx_table[firstImage->TexFormat->MesaFormat].filter;
+ 	} else if (!t->image_override) {
+ 		_mesa_problem(NULL, "unexpected texture format in %s",
+ 			      __FUNCTION__);
+ 		return;
  	}
  
- 	texelBytes = baseImage->TexFormat->TexelBytes;
+-	texelBytes = baseImage->TexFormat->TexelBytes;
 -
 -	/* Compute which mipmap levels we really want to send to the hardware.
 -	 */
@@ -6221,78 +7105,55 @@ index d19832f..5cb9010 100644
 -				t->tile_bits |= R300_TXO_MICRO_TILE;
 -			}
 -		}
-+	if (tObj->Target == GL_TEXTURE_CUBE_MAP)
-+		t->format |= R300_TX_FORMAT_CUBIC_MAP;
- 
+-
 -		if (tObj->Target != GL_TEXTURE_RECTANGLE_NV) {
 -			/* we can set macro tiling even for small textures, they will be untiled anyway */
 -			t->tile_bits |= R300_TXO_MACRO_TILE;
-+	if (!t->image_override) {
-+		GLuint compressed = baseImage->IsCompressed ? baseImage->TexFormat->MesaFormat : 0;
-+
-+		if (t->mt) {
-+			if (t->mt->firstLevel != firstLevel ||
-+			    t->mt->lastLevel != lastLevel ||
-+			    t->mt->width0 != baseImage->Width ||
-+			    t->mt->height0 != baseImage->Height ||
-+			    t->mt->depth0 != baseImage->Depth ||
-+			    t->mt->bpp != texelBytes ||
-+			    t->mt->tilebits != t->tile_bits ||
-+			    t->mt->compressed != compressed) {
-+				r300_miptree_destroy(t->mt);
-+				t->mt = 0;
-+			}
- 		}
+-		}
 -	}
 -#endif
 -
 -	curOffset = 0;
- 
+-
 -	if (tObj->Target == GL_TEXTURE_CUBE_MAP) {
 -		ASSERT(log2Width == log2Height);
--		t->format |= R300_TX_FORMAT_CUBIC_MAP;
--
++	if (t->base.Target == GL_TEXTURE_CUBE_MAP)
+ 		t->format |= R300_TX_FORMAT_CUBIC_MAP;
++	if (t->base.Target == GL_TEXTURE_3D)
++		t->format |= R300_TX_FORMAT_3D;
+ 
 -		for(i = 0; i < numLevels; i++) {
 -			GLuint face;
 -			for(face = 0; face < 6; face++)
 -				compute_tex_image_offset(tObj, face, i, &curOffset);
-+		if (!t->mt) {
-+			t->mt = r300_miptree_create(rmesa, t, tObj->Target,
-+				firstLevel, lastLevel,
-+				baseImage->Width, baseImage->Height, baseImage->Depth,
-+				texelBytes, t->tile_bits, compressed);
-+			memset(t->dirty_images, 0xff, sizeof(t->dirty_images));
- 		}
- 	} else {
- 		if (tObj->Target == GL_TEXTURE_3D)
-                 	t->format |= R300_TX_FORMAT_3D;
--
+-		}
+-	} else {
+-		if (tObj->Target == GL_TEXTURE_3D)
+-                	t->format |= R300_TX_FORMAT_3D;
++	t->size = (((firstImage->Width - 1) << R300_TX_WIDTHMASK_SHIFT)
++		| ((firstImage->Height - 1) << R300_TX_HEIGHTMASK_SHIFT))
++		| ((t->mt->lastLevel - t->mt->firstLevel) << R300_TX_MAX_MIP_LEVEL_SHIFT);
+ 
 -		for (i = 0; i < numLevels; i++)
 -			compute_tex_image_offset(tObj, 0, i, &curOffset);
- 	}
- 
- 	/* Align the total size of texture memory block.
- 	 */
+-	}
+-
+-	/* Align the total size of texture memory block.
+-	 */
 -	t->base.totalSize =
 -	    (curOffset + RADEON_OFFSET_MASK) & ~RADEON_OFFSET_MASK;
-+	//	dritex->totalSize = (curOffset + RADEON_OFFSET_MASK) & ~RADEON_OFFSET_MASK;
- 
- 	t->size =
+-
+-	t->size =
 -	    (((tObj->Image[0][t->base.firstLevel]->Width -
-+	    (((tObj->Image[0][firstLevel]->Width -
- 	       1) << R300_TX_WIDTHMASK_SHIFT)
+-	       1) << R300_TX_WIDTHMASK_SHIFT)
 -	     | ((tObj->Image[0][t->base.firstLevel]->Height - 1) <<
-+	     | ((tObj->Image[0][firstLevel]->Height - 1) <<
- 		R300_TX_HEIGHTMASK_SHIFT)
+-		R300_TX_HEIGHTMASK_SHIFT)
 -	     | ((tObj->Image[0][t->base.firstLevel]->DepthLog2) <<
-+	     | ((tObj->Image[0][firstLevel]->DepthLog2) <<
- 		R300_TX_DEPTHMASK_SHIFT))
+-		R300_TX_DEPTHMASK_SHIFT))
 -	    | ((numLevels - 1) << R300_TX_MAX_MIP_LEVEL_SHIFT);
-+	    | ((lastLevel - firstLevel) << R300_TX_MAX_MIP_LEVEL_SHIFT);
- 
+-
 -	t->pitch = 0;
-+	//	t->pitch = 0;
- 
+-
 -	/* Only need to round to nearest 32 for textures, but the blitter
 -	 * requires 64-byte aligned pitches, and we may/may not need the
 -	 * blitter.   NPOT only!
@@ -6301,10 +7162,11 @@ index d19832f..5cb9010 100644
 -		t->pitch |=
 -		    (tObj->Image[0][t->base.firstLevel]->Width + 63) & ~(63);
 -	} else if (tObj->Target == GL_TEXTURE_RECTANGLE_NV) {
-+	if (tObj->Target == GL_TEXTURE_RECTANGLE_NV) {
- 		unsigned int align = (64 / texelBytes) - 1;
+-		unsigned int align = (64 / texelBytes) - 1;
 -		t->pitch |= ((tObj->Image[0][t->base.firstLevel]->Width *
 -			     texelBytes) + 63) & ~(63);
++	if (t->base.Target == GL_TEXTURE_RECTANGLE_NV) {
++		unsigned int align = (64 / t->mt->bpp) - 1;
  		t->size |= R300_TX_SIZE_TXPITCH_EN;
  		if (!t->image_override)
 -			t->pitch_reg =
@@ -6314,139 +7176,270 @@ index d19832f..5cb9010 100644
 -		t->pitch |=
 -		    ((tObj->Image[0][t->base.firstLevel]->Width *
 -		      texelBytes) + 63) & ~(63);
-+			t->pitch_reg = (((tObj->Image[0][firstLevel]->Width) + align) & ~align) - 1;
++			t->pitch_reg = ((firstImage->Width + align) & ~align) - 1;
  	}
  
  	if (rmesa->radeon.radeonScreen->chip_family >= CHIP_FAMILY_RV515) {
 -	    if (tObj->Image[0][t->base.firstLevel]->Width > 2048)
-+	    if (tObj->Image[0][firstLevel]->Width > 2048)
++	    if (firstImage->Width > 2048)
  		t->pitch_reg |= R500_TXWIDTH_BIT11;
 -	    if (tObj->Image[0][t->base.firstLevel]->Height > 2048)
-+	    if (tObj->Image[0][firstLevel]->Height > 2048)
++	    if (firstImage->Height > 2048)
  		t->pitch_reg |= R500_TXHEIGHT_BIT11;
  	}
  }
-@@ -454,17 +349,15 @@ static GLboolean r300EnableTexture2D(GLcontext * ctx, int unit)
- 	r300ContextPtr rmesa = R300_CONTEXT(ctx);
- 	struct gl_texture_unit *texUnit = &ctx->Texture.Unit[unit];
- 	struct gl_texture_object *tObj = texUnit->_Current;
+ 
+-/* ================================================================
+- * Texture unit state management
+- */
+ 
+-static GLboolean r300EnableTexture2D(GLcontext * ctx, int unit)
++static void copy_rows(void* dst, GLuint dststride, const void* src, GLuint srcstride,
++	GLuint numrows, GLuint rowsize)
+ {
+-	r300ContextPtr rmesa = R300_CONTEXT(ctx);
+-	struct gl_texture_unit *texUnit = &ctx->Texture.Unit[unit];
+-	struct gl_texture_object *tObj = texUnit->_Current;
 -	r300TexObjPtr t = (r300TexObjPtr) tObj->DriverData;
-+	r300TexObjPtr t = r300_tex_obj(tObj);
++	assert(rowsize <= dststride);
++	assert(rowsize <= srcstride);
  
- 	ASSERT(tObj->Target == GL_TEXTURE_2D || tObj->Target == GL_TEXTURE_1D);
- 
+-	ASSERT(tObj->Target == GL_TEXTURE_2D || tObj->Target == GL_TEXTURE_1D);
+-
 -	if (t->base.dirty_images[0]) {
-+	if (!t->mt || t->dirty_images[0]) {
- 		R300_FIREVERTICES(rmesa);
- 
- 		r300SetTexImages(rmesa, tObj);
+-		R300_FIREVERTICES(rmesa);
+-
+-		r300SetTexImages(rmesa, tObj);
 -		r300UploadTexImages(rmesa, (r300TexObjPtr) tObj->DriverData, 0);
 -		if (!t->base.memBlock && !t->image_override)
 -			return GL_FALSE;
-+		r300UploadTexImages(rmesa, t, 0);
++	if (rowsize == srcstride && rowsize == dststride) {
++		memcpy(dst, src, numrows*rowsize);
++	} else {
++		GLuint i;
++		for(i = 0; i < numrows; ++i) {
++			memcpy(dst, src, rowsize);
++			dst += dststride;
++			src += srcstride;
++		}
  	}
+-
+-	return GL_TRUE;
+ }
  
- 	return GL_TRUE;
-@@ -475,7 +368,7 @@ static GLboolean r300EnableTexture3D(GLcontext * ctx, int unit)
- 	r300ContextPtr rmesa = R300_CONTEXT(ctx);
- 	struct gl_texture_unit *texUnit = &ctx->Texture.Unit[unit];
- 	struct gl_texture_object *tObj = texUnit->_Current;
+-static GLboolean r300EnableTexture3D(GLcontext * ctx, int unit)
++
++/**
++ * Ensure that the given image is stored in the given miptree from now on.
++ */
++static void migrate_image_to_miptree(r300_mipmap_tree *mt, r300_texture_image *image, int face, int level)
+ {
+-	r300ContextPtr rmesa = R300_CONTEXT(ctx);
+-	struct gl_texture_unit *texUnit = &ctx->Texture.Unit[unit];
+-	struct gl_texture_object *tObj = texUnit->_Current;
 -	r300TexObjPtr t = (r300TexObjPtr) tObj->DriverData;
-+	r300TexObjPtr t = r300_tex_obj(tObj);
++	r300_mipmap_level *dstlvl = &mt->levels[level - mt->firstLevel];
++	unsigned char *dest;
  
- 	ASSERT(tObj->Target == GL_TEXTURE_3D);
+-	ASSERT(tObj->Target == GL_TEXTURE_3D);
++	assert(image->mt != mt);
++	assert(dstlvl->width == image->base.Width);
++	assert(dstlvl->height == image->base.Height);
++	assert(dstlvl->depth == image->base.Depth);
  
-@@ -484,12 +377,10 @@ static GLboolean r300EnableTexture3D(GLcontext * ctx, int unit)
- 		return GL_FALSE;
- 	}
+-	/* r300 does not support mipmaps for 3D textures. */
+-	if ((tObj->MinFilter != GL_NEAREST) && (tObj->MinFilter != GL_LINEAR)) {
+-		return GL_FALSE;
+-	}
++	dri_bo_map(mt->bo, GL_TRUE);
++	dest = mt->bo->virtual + dstlvl->faces[face].offset;
  
 -	if (t->base.dirty_images[0]) {
-+	if (!t->mt || t->dirty_images[0]) {
- 		R300_FIREVERTICES(rmesa);
- 		r300SetTexImages(rmesa, tObj);
+-		R300_FIREVERTICES(rmesa);
+-		r300SetTexImages(rmesa, tObj);
 -		r300UploadTexImages(rmesa, (r300TexObjPtr) tObj->DriverData, 0);
 -		if (!t->base.memBlock)
 -			return GL_FALSE;
-+		r300UploadTexImages(rmesa, t, 0);
- 	}
+-	}
++	if (image->mt) {
++		/* Format etc. should match, so we really just need a memcpy().
++		 * In fact, that memcpy() could be done by the hardware in many
++		 * cases, provided that we have a proper memory manager.
++		 */
++		r300_mipmap_level *srclvl = &image->mt->levels[image->mtlevel];
  
- 	return GL_TRUE;
-@@ -500,14 +391,15 @@ static GLboolean r300EnableTextureCube(GLcontext * ctx, int unit)
- 	r300ContextPtr rmesa = R300_CONTEXT(ctx);
- 	struct gl_texture_unit *texUnit = &ctx->Texture.Unit[unit];
- 	struct gl_texture_object *tObj = texUnit->_Current;
+-	return GL_TRUE;
+-}
++		assert(srclvl->size == dstlvl->size);
++		assert(srclvl->rowstride == dstlvl->rowstride);
+ 
+-static GLboolean r300EnableTextureCube(GLcontext * ctx, int unit)
+-{
+-	r300ContextPtr rmesa = R300_CONTEXT(ctx);
+-	struct gl_texture_unit *texUnit = &ctx->Texture.Unit[unit];
+-	struct gl_texture_object *tObj = texUnit->_Current;
 -	r300TexObjPtr t = (r300TexObjPtr) tObj->DriverData;
-+	r300TexObjPtr t = r300_tex_obj(tObj);
- 	GLuint face;
- 
- 	ASSERT(tObj->Target == GL_TEXTURE_CUBE_MAP);
- 
+-	GLuint face;
+-
+-	ASSERT(tObj->Target == GL_TEXTURE_CUBE_MAP);
+-
 -	if (t->base.dirty_images[0] || t->base.dirty_images[1] ||
 -	    t->base.dirty_images[2] || t->base.dirty_images[3] ||
 -	    t->base.dirty_images[4] || t->base.dirty_images[5]) {
-+	if (!t->mt ||
-+	    t->dirty_images[0] || t->dirty_images[1] ||
-+	    t->dirty_images[2] || t->dirty_images[3] ||
-+	    t->dirty_images[4] || t->dirty_images[5]) {
- 		/* flush */
- 		R300_FIREVERTICES(rmesa);
- 		/* layout memory space, once for all faces */
-@@ -516,18 +408,11 @@ static GLboolean r300EnableTextureCube(GLcontext * ctx, int unit)
+-		/* flush */
+-		R300_FIREVERTICES(rmesa);
+-		/* layout memory space, once for all faces */
+-		r300SetTexImages(rmesa, tObj);
+-	}
++		dri_bo_map(image->mt->bo, GL_FALSE);
++		memcpy(dest,
++			image->mt->bo->virtual + srclvl->faces[face].offset,
++			dstlvl->size);
++		dri_bo_unmap(image->mt->bo);
  
- 	/* upload (per face) */
- 	for (face = 0; face < 6; face++) {
+-	/* upload (per face) */
+-	for (face = 0; face < 6; face++) {
 -		if (t->base.dirty_images[face]) {
 -			r300UploadTexImages(rmesa,
 -					    (r300TexObjPtr) tObj->DriverData,
 -					    face);
-+		if (t->dirty_images[face]) {
-+			r300UploadTexImages(rmesa, t, face);
- 		}
- 	}
+-		}
+-	}
++		r300_miptree_unreference(image->mt);
++	} else {
++		uint srcrowstride = image->base.Width * image->base.TexFormat->TexelBytes;
  
 -	if (!t->base.memBlock) {
 -		/* texmem alloc failed, use s/w fallback */
 -		return GL_FALSE;
--	}
--
- 	return GL_TRUE;
++		if (mt->tilebits)
++			WARN_ONCE("%s: tiling not supported yet", __FUNCTION__);
++
++		copy_rows(dest, dstlvl->rowstride, image->base.Data, srcrowstride,
++			image->base.Height * image->base.Depth, srcrowstride);
++
++		_mesa_free_texmemory(image->base.Data);
++		image->base.Data = 0;
+ 	}
+ 
+-	return GL_TRUE;
++	dri_bo_unmap(mt->bo);
++
++	image->mt = mt;
++	image->mtface = face;
++	image->mtlevel = level;
++	r300_miptree_reference(image->mt);
  }
  
-@@ -536,18 +421,15 @@ static GLboolean r300EnableTextureRect(GLcontext * ctx, int unit)
+-static GLboolean r300EnableTextureRect(GLcontext * ctx, int unit)
++
++/**
++ * Ensure the given texture is ready for rendering.
++ *
++ * Mostly this means populating the texture object's mipmap tree.
++ */
++static GLboolean r300_validate_texture(GLcontext * ctx, struct gl_texture_object *texObj)
+ {
  	r300ContextPtr rmesa = R300_CONTEXT(ctx);
- 	struct gl_texture_unit *texUnit = &ctx->Texture.Unit[unit];
- 	struct gl_texture_object *tObj = texUnit->_Current;
+-	struct gl_texture_unit *texUnit = &ctx->Texture.Unit[unit];
+-	struct gl_texture_object *tObj = texUnit->_Current;
 -	r300TexObjPtr t = (r300TexObjPtr) tObj->DriverData;
-+	r300TexObjPtr t = r300_tex_obj(tObj);
++	r300TexObj *t = r300_tex_obj(texObj);
++	r300_texture_image *baseimage = get_r300_texture_image(texObj->Image[0][texObj->BaseLevel]);
++	int face, level;
++
++	if (t->validated)
++		return GL_TRUE;
  
- 	ASSERT(tObj->Target == GL_TEXTURE_RECTANGLE_NV);
+-	ASSERT(tObj->Target == GL_TEXTURE_RECTANGLE_NV);
++	if (RADEON_DEBUG & DEBUG_TEXTURE)
++		fprintf(stderr, "%s: Validating texture %p now\n", __FUNCTION__, texObj);
  
 -	if (t->base.dirty_images[0]) {
-+	if (!t->mt || t->dirty_images[0]) {
- 		R300_FIREVERTICES(rmesa);
+-		R300_FIREVERTICES(rmesa);
++	if (baseimage->base.Border > 0)
++		return GL_FALSE;
  
- 		r300SetTexImages(rmesa, tObj);
+-		r300SetTexImages(rmesa, tObj);
 -		r300UploadTexImages(rmesa, (r300TexObjPtr) tObj->DriverData, 0);
 -		if (!t->base.memBlock && !t->image_override &&
 -		    !rmesa->prefer_gart_client_texturing)
--			return GL_FALSE;
-+		r300UploadTexImages(rmesa, t, 0);
++	/* Ensure a matching miptree exists.
++	 *
++	 * Differing mipmap trees can result when the app uses TexImage to
++	 * change texture dimensions.
++	 *
++	 * Prefer to use base image's miptree if it
++	 * exists, since that most likely contains more valid data (remember
++	 * that the base level is usually significantly larger than the rest
++	 * of the miptree, so cubemaps are the only possible exception).
++	 */
++	if (baseimage->mt &&
++	    baseimage->mt != t->mt &&
++	    r300_miptree_matches_texture(baseimage->mt, &t->base)) {
++		r300_miptree_unreference(t->mt);
++		t->mt = baseimage->mt;
++		r300_miptree_reference(t->mt);
++	} else if (t->mt && !r300_miptree_matches_texture(t->mt, &t->base)) {
++		r300_miptree_unreference(t->mt);
++		t->mt = 0;
++	}
++
++	if (!t->mt) {
++		if (RADEON_DEBUG & DEBUG_TEXTURE)
++			fprintf(stderr, " Allocate new miptree\n");
++		r300_try_alloc_miptree(rmesa, t, &baseimage->base, 0, texObj->BaseLevel);
++		if (!t->mt) {
++			_mesa_problem(ctx, "r300_validate_texture failed to alloc miptree");
+ 			return GL_FALSE;
++		}
++	}
++
++	/* Ensure all images are stored in the single main miptree */
++	for(face = 0; face < t->mt->faces; ++face) {
++		for(level = t->mt->firstLevel; level <= t->mt->lastLevel; ++level) {
++			r300_texture_image *image = get_r300_texture_image(texObj->Image[face][level]);
++			if (RADEON_DEBUG & DEBUG_TEXTURE)
++				fprintf(stderr, " face %i, level %i... ", face, level);
++			if (t->mt == image->mt) {
++				if (RADEON_DEBUG & DEBUG_TEXTURE)
++					fprintf(stderr, "OK\n");
++				continue;
++			}
++
++			if (RADEON_DEBUG & DEBUG_TEXTURE)
++				fprintf(stderr, "migrating\n");
++			migrate_image_to_miptree(t->mt, image, face, level);
++		}
  	}
  
++	/* Configure the hardware registers (more precisely, the cached version
++	 * of the hardware registers). */
++	setup_hardware_state(rmesa, t);
++
++	t->validated = GL_TRUE;
  	return GL_TRUE;
-@@ -555,34 +437,19 @@ static GLboolean r300EnableTextureRect(GLcontext * ctx, int unit)
+ }
  
- static GLboolean r300UpdateTexture(GLcontext * ctx, int unit)
+-static GLboolean r300UpdateTexture(GLcontext * ctx, int unit)
++
++/**
++ * Ensure all enabled and complete textures are uploaded.
++ */
++void r300ValidateTextures(GLcontext * ctx)
  {
 -	r300ContextPtr rmesa = R300_CONTEXT(ctx);
- 	struct gl_texture_unit *texUnit = &ctx->Texture.Unit[unit];
- 	struct gl_texture_object *tObj = texUnit->_Current;
+-	struct gl_texture_unit *texUnit = &ctx->Texture.Unit[unit];
+-	struct gl_texture_object *tObj = texUnit->_Current;
 -	r300TexObjPtr t = (r300TexObjPtr) tObj->DriverData;
-+	r300TexObjPtr t = r300_tex_obj(tObj);
++	int i;
  
- 	/* Fallback if there's a texture border */
- 	if (tObj->Image[0][tObj->BaseLevel]->Border > 0)
- 		return GL_FALSE;
+-	/* Fallback if there's a texture border */
+-	if (tObj->Image[0][tObj->BaseLevel]->Border > 0)
+-		return GL_FALSE;
++	for (i = 0; i < ctx->Const.MaxTextureImageUnits; ++i) {
++		if (!ctx->Texture.Unit[i]._ReallyEnabled)
++			continue;
  
 -	/* Update state if this is a different texture object to last
 -	 * time.
@@ -6459,22 +7452,22 @@ index d19832f..5cb9010 100644
 -
 -			rmesa->state.texture.unit[unit].texobj->base.bound &=
 -			    ~(1 << unit);
--		}
++		if (!r300_validate_texture(ctx, ctx->Texture.Unit[i]._Current)) {
++			_mesa_warning(ctx,
++				      "failed to validate texture for unit %d.\n",
++				      i);
+ 		}
 -
 -		rmesa->state.texture.unit[unit].texobj = t;
 -		t->base.bound |= (1 << unit);
 -		driUpdateTextureLRU((driTextureObject *) t);	/* XXX: should be locked! */
--	}
-+	/* Fallback if memory upload didn't work */
-+	if (!t->mt)
-+		return GL_FALSE;
- 
+ 	}
+-
 -	return !t->border_fallback;
-+	return GL_TRUE;
  }
  
  void r300SetTexOffset(__DRIcontext * pDRICtx, GLint texname,
-@@ -591,20 +458,18 @@ void r300SetTexOffset(__DRIcontext * pDRICtx, GLint texname,
+@@ -591,20 +420,18 @@ void r300SetTexOffset(__DRIcontext * pDRICtx, GLint texname,
  	r300ContextPtr rmesa = pDRICtx->driverPrivate;
  	struct gl_texture_object *tObj =
  	    _mesa_lookup_texture(rmesa->radeon.glCtx, texname);
@@ -6497,19 +7490,67 @@ index d19832f..5cb9010 100644
  	t->pitch_reg &= (1 << 13) -1;
  	pitch_val = pitch;
  
+@@ -630,39 +457,3 @@ void r300SetTexOffset(__DRIcontext * pDRICtx, GLint texname,
+ 
+ 	t->pitch_reg |= pitch_val;
+ }
+-
+-static GLboolean r300UpdateTextureUnit(GLcontext * ctx, int unit)
+-{
+-	struct gl_texture_unit *texUnit = &ctx->Texture.Unit[unit];
+-
+-	if (texUnit->_ReallyEnabled & (TEXTURE_RECT_BIT)) {
+-		return (r300EnableTextureRect(ctx, unit) &&
+-			r300UpdateTexture(ctx, unit));
+-	} else if (texUnit->_ReallyEnabled & (TEXTURE_1D_BIT | TEXTURE_2D_BIT)) {
+-		return (r300EnableTexture2D(ctx, unit) &&
+-			r300UpdateTexture(ctx, unit));
+-	} else if (texUnit->_ReallyEnabled & (TEXTURE_3D_BIT)) {
+-		return (r300EnableTexture3D(ctx, unit) &&
+-			r300UpdateTexture(ctx, unit));
+-	} else if (texUnit->_ReallyEnabled & (TEXTURE_CUBE_BIT)) {
+-		return (r300EnableTextureCube(ctx, unit) &&
+-			r300UpdateTexture(ctx, unit));
+-	} else if (texUnit->_ReallyEnabled) {
+-		return GL_FALSE;
+-	} else {
+-		return GL_TRUE;
+-	}
+-}
+-
+-void r300UpdateTextureState(GLcontext * ctx)
+-{
+-	int i;
+-
+-	for (i = 0; i < 8; i++) {
+-		if (!r300UpdateTextureUnit(ctx, i)) {
+-			_mesa_warning(ctx,
+-				      "failed to update texture state for unit %d.\n",
+-				      i);
+-		}
+-	}
+-}
 diff --git a/src/mesa/drivers/dri/r300/radeon_context.c b/src/mesa/drivers/dri/r300/radeon_context.c
-index 3fc724a..a9d36a2 100644
+index 5267fe9..c1c2168 100644
 --- a/src/mesa/drivers/dri/r300/radeon_context.c
 +++ b/src/mesa/drivers/dri/r300/radeon_context.c
-@@ -42,6 +42,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- #include "state.h"
- #include "matrix.h"
- #include "framebuffer.h"
-+#include "drirenderbuffer.h"
- 
+@@ -46,6 +46,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  #include "drivers/common/driverfuncs.h"
  #include "swrast/swrast.h"
-@@ -258,6 +259,59 @@ void radeonCopySubBuffer(__DRIdrawablePrivate * dPriv,
+ 
++#include "radeon_buffer.h"
+ #include "radeon_screen.h"
+ #include "radeon_ioctl.h"
+ #include "radeon_macros.h"
+@@ -57,6 +58,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ #include "utils.h"
+ #include "vblank.h"
+ #include "xmlpool.h"		/* for symbolic values of enum-type options */
++#include "drirenderbuffer.h"
+ 
+ #define DRIVER_DATE "20060815"
+ 
+@@ -258,6 +260,56 @@ void radeonCopySubBuffer(__DRIdrawablePrivate * dPriv,
      }
  }
  
@@ -6532,10 +7573,8 @@ index 3fc724a..a9d36a2 100644
 +			map = radeon->radeonScreen->front.map;
 +
 + 		offset = radeon->radeonScreen->kernel_mm ? radeon->radeonScreen->front.offset : radeon->radeonScreen->frontOffset;
-+		if (!rb->bo)
-+			rb->bo = radeon_bufmgr_classic_bo_alloc_static(&radeon->bufmgr->base, "front buffer",
-+								       offset, size, map,
-+								       0);
++			rb->bo = dri_bo_alloc_static(radeon->bufmgr, "front buffer",
++					       offset, size, map, 0);
 +		rb->cpp = radeon->radeonScreen->cpp;
 +		rb->pitch = radeon->radeonScreen->frontPitch;
 +	}
@@ -6546,7 +7585,7 @@ index 3fc724a..a9d36a2 100644
 +
 + 		offset = radeon->radeonScreen->kernel_mm ? radeon->radeonScreen->back.offset : radeon->radeonScreen->backOffset;
 +		if (!rb->bo)
-+			rb->bo = radeon_bufmgr_classic_bo_alloc_static(&radeon->bufmgr->base, "back buffer",
++			rb->bo = dri_bo_alloc_static(radeon->bufmgr, "back buffer",
 +						     offset, size, map, 0);
 +		rb->cpp = radeon->radeonScreen->cpp;
 +		rb->pitch = radeon->radeonScreen->backPitch;
@@ -6558,18 +7597,17 @@ index 3fc724a..a9d36a2 100644
 +			map = radeon->radeonScreen->depth.map;
 +
 +		if (!rb->bo)
-+			rb->bo = radeon_bufmgr_classic_bo_alloc_static(&radeon->bufmgr->base, "depth buffer",
++			rb->bo = dri_bo_alloc_static(radeon->bufmgr, "depth buffer",
 +								       offset, size, map, 0);
 +		rb->cpp = radeon->radeonScreen->cpp;
 +		rb->pitch = radeon->radeonScreen->depthPitch;
 +	}
 +}
 +
-+
  /* Force the context `c' to be the current context and associate with it
   * buffer `b'.
   */
-@@ -265,51 +319,57 @@ GLboolean radeonMakeCurrent(__DRIcontextPrivate * driContextPriv,
+@@ -265,51 +317,57 @@ GLboolean radeonMakeCurrent(__DRIcontextPrivate * driContextPriv,
  			    __DRIdrawablePrivate * driDrawPriv,
  			    __DRIdrawablePrivate * driReadPriv)
  {
@@ -6602,22 +7640,24 @@ index 3fc724a..a9d36a2 100644
 +	radeon = (radeonContextPtr) driContextPriv->driverPrivate;
 +	dfb = driDrawPriv->driverPrivate;
 +	rfb = driReadPriv->driverPrivate;
-+
+ 
+-		radeon->dri.readable = driReadPriv;
 +	if (RADEON_DEBUG & DEBUG_DRI)
 +		fprintf(stderr, "%s ctx %p\n", __FUNCTION__, radeon->glCtx);
 +
 +	driUpdateFramebufferSize(radeon->glCtx, driDrawPriv);
 +	if (driReadPriv != driDrawPriv)
 +		driUpdateFramebufferSize(radeon->glCtx, driReadPriv);
-+
-+	radeon_make_renderbuffer_current(radeon, dfb);
- 
--		radeon->dri.readable = driReadPriv;
-+	_mesa_make_current(radeon->glCtx, dfb, rfb);
  
 -		if (radeon->dri.drawable != driDrawPriv ||
 -		    radeon->lastStamp != driDrawPriv->lastStamp) {
 -			radeon->dri.drawable = driDrawPriv;
++	radeon_make_renderbuffer_current(radeon, dfb);
+ 
+-			radeonSetCliprects(radeon);
+-			r300UpdateViewportOffset(radeon->glCtx);
++	_mesa_make_current(radeon->glCtx, dfb, rfb);
++
 +	if (radeon->dri.drawable != driDrawPriv) {
 +		if (driDrawPriv->swap_interval == (unsigned)-1) {
 +			driDrawPriv->vblFlags =
@@ -6625,9 +7665,7 @@ index 3fc724a..a9d36a2 100644
 +				? driGetDefaultVBlankFlags(&radeon->
 +							   optionCache)
 +					: VBLANK_FLAG_NO_IRQ;
- 
--			radeonSetCliprects(radeon);
--			r300UpdateViewportOffset(radeon->glCtx);
++
 +			driDrawableInitVBlank(driDrawPriv);
  		}
 +	}
@@ -6661,17 +7699,17 @@ index 3fc724a..a9d36a2 100644
  		fprintf(stderr, "End %s\n", __FUNCTION__);
  	return GL_TRUE;
 diff --git a/src/mesa/drivers/dri/r300/radeon_context.h b/src/mesa/drivers/dri/r300/radeon_context.h
-index 7458d63..828853b 100644
+index 47cbc22..a1f0225 100644
 --- a/src/mesa/drivers/dri/r300/radeon_context.h
 +++ b/src/mesa/drivers/dri/r300/radeon_context.h
-@@ -48,6 +48,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+@@ -45,6 +45,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ 
+ #include "main/mtypes.h"
+ #include "main/colormac.h"
++#include "radeon_dri_bufmgr.h"
+ #include "radeon_screen.h"
  #include "drm.h"
  #include "dri_util.h"
- #include "colormac.h"
-+#include "radeon_buffer.h"
- 
- struct radeon_context;
- typedef struct radeon_context radeonContextRec;
 @@ -132,12 +133,13 @@ struct radeon_scissor_state {
  
  struct radeon_colorbuffer_state {
@@ -6692,12 +7730,12 @@ index 7458d63..828853b 100644
  	 */
  	driOptionCache optionCache;
 +
-+	struct radeon_bufmgr *bufmgr;
++	dri_bufmgr *bufmgr;
  };
  
  #define RADEON_CONTEXT(glctx) ((radeonContextPtr)(ctx->DriverCtx))
 diff --git a/src/mesa/drivers/dri/r300/radeon_ioctl.c b/src/mesa/drivers/dri/r300/radeon_ioctl.c
-index 0c1a195..486ce8e 100644
+index 36502eb..6186d1f 100644
 --- a/src/mesa/drivers/dri/r300/radeon_ioctl.c
 +++ b/src/mesa/drivers/dri/r300/radeon_ioctl.c
 @@ -42,6 +42,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
@@ -6771,7 +7809,7 @@ index 0c1a195..486ce8e 100644
  
  void radeonWaitForIdleLocked(radeonContextPtr radeon)
 diff --git a/src/mesa/drivers/dri/r300/radeon_lock.c b/src/mesa/drivers/dri/r300/radeon_lock.c
-index d54a821..4df6a9c 100644
+index 4f47afd..9e59c76 100644
 --- a/src/mesa/drivers/dri/r300/radeon_lock.c
 +++ b/src/mesa/drivers/dri/r300/radeon_lock.c
 @@ -44,6 +44,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
@@ -6780,7 +7818,7 @@ index d54a821..4df6a9c 100644
  #include "r300_state.h"
 +#include "r300_mem.h"
  
- #include "framebuffer.h"
+ #include "main/framebuffer.h"
  
 @@ -59,11 +60,11 @@ int prevLockLine = 0;
  void radeonUpdatePageFlipping(radeonContextPtr rmesa)
@@ -6834,7 +7872,7 @@ index d54a821..4df6a9c 100644
  
  	rmesa->lost_context = GL_TRUE;
 diff --git a/src/mesa/drivers/dri/r300/radeon_span.c b/src/mesa/drivers/dri/r300/radeon_span.c
-index 3616d8b..58b00ff 100644
+index 16f9fb9..de94888 100644
 --- a/src/mesa/drivers/dri/r300/radeon_span.c
 +++ b/src/mesa/drivers/dri/r300/radeon_span.c
 @@ -48,7 +48,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
@@ -7026,7 +8064,7 @@ index 3616d8b..58b00ff 100644
  /* Move locking out to get reasonable span performance (10x better
   * than doing this in HW_LOCK above).  WaitForIdle() is the main
   * culprit.
-@@ -278,45 +295,51 @@ do {									\
+@@ -278,45 +295,61 @@ do {									\
  static void radeonSpanRenderStart(GLcontext * ctx)
  {
  	radeonContextPtr rmesa = RADEON_CONTEXT(ctx);
@@ -7037,26 +8075,9 @@ index 3616d8b..58b00ff 100644
  #else
  	RADEON_FIREVERTICES(rmesa);
  #endif
-+
-+	/* color draw buffers */
-+	for (i = 0; i < ctx->DrawBuffer->_NumColorDrawBuffers; i++)
-+		map_buffer(ctx->DrawBuffer->_ColorDrawBuffers[i], GL_TRUE);
-+
-+	map_buffer(ctx->ReadBuffer->_ColorReadBuffer, GL_FALSE);
-+
-+	if (ctx->DrawBuffer->_DepthBuffer)
-+		map_buffer(ctx->DrawBuffer->_DepthBuffer->Wrapped, GL_TRUE);
-+	if (ctx->DrawBuffer->_StencilBuffer)
-+		map_buffer(ctx->DrawBuffer->_StencilBuffer->Wrapped, GL_TRUE);
-+
-+	/* The locking and wait for idle should really only be needed in classic mode.
-+	 * In a future memory manager based implementation, this should become
-+	 * unnecessary due to the fact that mapping our buffers, textures, etc.
-+	 * should implicitly wait for any previous rendering commands that must
-+	 * be waited on. */
- 	LOCK_HARDWARE(rmesa);
- 	radeonWaitForIdleLocked(rmesa);
--
+-	LOCK_HARDWARE(rmesa);
+-	radeonWaitForIdleLocked(rmesa);
+ 
 -	/* Read the first pixel in the frame buffer.  This should
 -	 * be a noop, right?  In fact without this conform fails as reading
 -	 * from the framebuffer sometimes produces old results -- the
@@ -7079,7 +8100,29 @@ index 3616d8b..58b00ff 100644
 -		volatile int *buf =
 -			(volatile int *)(rmesa->dri.screen->pFB + drb->offset);
 -		p = *buf;
--	}
++	for (i = 0; i < ctx->Const.MaxTextureImageUnits; i++) {
++		if (ctx->Texture.Unit[i]._ReallyEnabled)
++			ctx->Driver.MapTexture(ctx, ctx->Texture.Unit[i]._Current);
+ 	}
++
++	/* color draw buffers */
++	for (i = 0; i < ctx->DrawBuffer->_NumColorDrawBuffers; i++)
++		map_buffer(ctx->DrawBuffer->_ColorDrawBuffers[i], GL_TRUE);
++
++	map_buffer(ctx->ReadBuffer->_ColorReadBuffer, GL_FALSE);
++
++	if (ctx->DrawBuffer->_DepthBuffer)
++		map_buffer(ctx->DrawBuffer->_DepthBuffer->Wrapped, GL_TRUE);
++	if (ctx->DrawBuffer->_StencilBuffer)
++		map_buffer(ctx->DrawBuffer->_StencilBuffer->Wrapped, GL_TRUE);
++
++	/* The locking and wait for idle should really only be needed in classic mode.
++	 * In a future memory manager based implementation, this should become
++	 * unnecessary due to the fact that mapping our buffers, textures, etc.
++	 * should implicitly wait for any previous rendering commands that must
++	 * be waited on. */
++	LOCK_HARDWARE(rmesa);
++	radeonWaitForIdleLocked(rmesa);
  }
  
  static void radeonSpanRenderFinish(GLcontext * ctx)
@@ -7088,6 +8131,11 @@ index 3616d8b..58b00ff 100644
 +	int i;
  	_swrast_flush(ctx);
  	UNLOCK_HARDWARE(rmesa);
++
++	for (i = 0; i < ctx->Const.MaxTextureImageUnits; i++) {
++		if (ctx->Texture.Unit[i]._ReallyEnabled)
++			ctx->Driver.UnmapTexture(ctx, ctx->Texture.Unit[i]._Current);
++	}
 +
 +	/* color draw buffers */
 +	for (i = 0; i < ctx->DrawBuffer->_NumColorDrawBuffers; i++)
@@ -7102,7 +8150,7 @@ index 3616d8b..58b00ff 100644
  }
  
  void radeonInitSpanFuncs(GLcontext * ctx)
-@@ -330,20 +353,17 @@ void radeonInitSpanFuncs(GLcontext * ctx)
+@@ -330,20 +363,17 @@ void radeonInitSpanFuncs(GLcontext * ctx)
  /**
   * Plug in the Get/Put routines for the given driRenderbuffer.
   */
@@ -7135,10 +8183,10 @@ index 3616d8b..58b00ff 100644
  	}
  }
 diff --git a/src/mesa/drivers/dri/r300/radeon_state.c b/src/mesa/drivers/dri/r300/radeon_state.c
-index d81318c..a7720da 100644
+index c401da6..0241903 100644
 --- a/src/mesa/drivers/dri/r300/radeon_state.c
 +++ b/src/mesa/drivers/dri/r300/radeon_state.c
-@@ -222,14 +222,6 @@ void radeonEnable(GLcontext* ctx, GLenum cap, GLboolean state)
+@@ -223,14 +223,6 @@ void radeonEnable(GLcontext* ctx, GLenum cap, GLboolean state)
  void radeonInitState(radeonContextPtr radeon)
  {
  	radeon->Fallback = 0;
@@ -7155,10 +8203,10 @@ index d81318c..a7720da 100644
  
 diff --git a/src/mesa/drivers/dri/radeon/radeon_buffer.h b/src/mesa/drivers/dri/radeon/radeon_buffer.h
 new file mode 100644
-index 0000000..a5e4529
+index 0000000..1f9fdff
 --- /dev/null
 +++ b/src/mesa/drivers/dri/radeon/radeon_buffer.h
-@@ -0,0 +1,62 @@
+@@ -0,0 +1,47 @@
 +/*
 + * Copyright 2008 Red Hat, Inc.
 + *
@@ -7187,7 +8235,8 @@ index 0000000..a5e4529
 +#ifndef RADEON_BUFFER_H
 +#define RADEON_BUFFER_H
 +
-+#include "dri_bufmgr.h"
++#include "radeon_dri_bufmgr.h"
++#include "dri_util.h"
 +
 +struct radeon_renderbuffer
 +{
@@ -7204,28 +8253,444 @@ index 0000000..a5e4529
 +    __DRIdrawablePrivate *dPriv;
 +};
 +
-+struct radeon_bufmgr {
-+	dri_bufmgr base;
-+	void (*emit_reloc)(dri_bo *buf, uint32_t *head, uint32_t *count_p, uint32_t read_domains, uint32_t write_domain);
++#endif
+diff --git a/src/mesa/drivers/dri/radeon/radeon_dri_bufmgr.c b/src/mesa/drivers/dri/radeon/radeon_dri_bufmgr.c
+new file mode 100644
+index 0000000..0bae2b5
+--- /dev/null
++++ b/src/mesa/drivers/dri/radeon/radeon_dri_bufmgr.c
+@@ -0,0 +1,160 @@
++/*
++ * Copyright Â© 2007 Intel Corporation
++ *
++ * Permission is hereby granted, free of charge, to any person obtaining a
++ * copy of this software and associated documentation files (the "Software"),
++ * to deal in the Software without restriction, including without limitation
++ * the rights to use, copy, modify, merge, publish, distribute, sublicense,
++ * and/or sell copies of the Software, and to permit persons to whom the
++ * Software is furnished to do so, subject to the following conditions:
++ *
++ * The above copyright notice and this permission notice (including the next
++ * paragraph) shall be included in all copies or substantial portions of the
++ * Software.
++ *
++ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
++ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
++ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
++ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
++ * IN THE SOFTWARE.
++ *
++ * Authors:
++ *    Eric Anholt <eric@anholt.net>
++ *
++ */
++
++#include <string.h>
++#include <stdlib.h>
++#include <assert.h>
++#include "main/mtypes.h"
++#include "radeon_dri_bufmgr.h"
++
++/** @file dri_bufmgr.c
++ *
++ * Convenience functions for buffer management methods.
++ */
++
++dri_bo *
++dri_bo_alloc(dri_bufmgr *bufmgr, const char *name, unsigned long size,
++	     unsigned int alignment, uint64_t location_mask)
++{
++   return bufmgr->bo_alloc(bufmgr, name, size, alignment, location_mask);
++}
++
++dri_bo *
++dri_bo_alloc_static(dri_bufmgr *bufmgr, const char *name, unsigned long offset,
++		    unsigned long size, void *virtual,
++		    uint64_t location_mask)
++{
++   return bufmgr->bo_alloc_static(bufmgr, name, offset, size, virtual,
++				  location_mask);
++}
++
++void
++dri_bo_reference(dri_bo *bo)
++{
++   bo->bufmgr->bo_reference(bo);
++}
++
++void
++dri_bo_unreference(dri_bo *bo)
++{
++   if (bo == NULL)
++      return;
++
++   bo->bufmgr->bo_unreference(bo);
++}
++
++int
++dri_bo_map(dri_bo *buf, GLboolean write_enable)
++{
++   return buf->bufmgr->bo_map(buf, write_enable);
++}
++
++int
++dri_bo_unmap(dri_bo *buf)
++{
++   return buf->bufmgr->bo_unmap(buf);
++}
++
++void
++dri_fence_wait(dri_fence *fence)
++{
++   fence->bufmgr->fence_wait(fence);
++}
++
++void
++dri_fence_reference(dri_fence *fence)
++{
++   fence->bufmgr->fence_reference(fence);
++}
++
++void
++dri_fence_unreference(dri_fence *fence)
++{
++   if (fence == NULL)
++      return;
++
++   fence->bufmgr->fence_unreference(fence);
++}
++
++void
++dri_bo_subdata(dri_bo *bo, unsigned long offset,
++	       unsigned long size, const void *data)
++{
++   if (size == 0 || data == NULL)
++      return;
++
++   dri_bo_map(bo, GL_TRUE);
++   memcpy((unsigned char *)bo->virtual + offset, data, size);
++   dri_bo_unmap(bo);
++}
++
++void
++dri_bo_get_subdata(dri_bo *bo, unsigned long offset,
++		   unsigned long size, void *data)
++{
++   if (size == 0 || data == NULL)
++      return;
++
++   dri_bo_map(bo, GL_FALSE);
++   memcpy(data, (unsigned char *)bo->virtual + offset, size);
++   dri_bo_unmap(bo);
++}
++
++void
++dri_bufmgr_destroy(dri_bufmgr *bufmgr)
++{
++   bufmgr->destroy(bufmgr);
++}
++
++
++int dri_emit_reloc(dri_bo *reloc_buf, uint64_t flags, GLuint delta,
++		    GLuint offset, dri_bo *target_buf)
++{
++   return reloc_buf->bufmgr->emit_reloc(reloc_buf, flags, delta, offset, target_buf);
++}
++
++void *dri_process_relocs(dri_bo *batch_buf, GLuint *count)
++{
++   return batch_buf->bufmgr->process_relocs(batch_buf, count);
++}
++
++void dri_post_submit(dri_bo *batch_buf, dri_fence **last_fence)
++{
++   batch_buf->bufmgr->post_submit(batch_buf, last_fence);
++}
++
++void
++dri_bufmgr_set_debug(dri_bufmgr *bufmgr, GLboolean enable_debug)
++{
++   bufmgr->debug = enable_debug;
++}
++
++int
++dri_bufmgr_check_aperture_space(dri_bo *bo)
++{
++    return bo->bufmgr->check_aperture_space(bo);
++}
+diff --git a/src/mesa/drivers/dri/radeon/radeon_dri_bufmgr.h b/src/mesa/drivers/dri/radeon/radeon_dri_bufmgr.h
+new file mode 100644
+index 0000000..0a726dc
+--- /dev/null
++++ b/src/mesa/drivers/dri/radeon/radeon_dri_bufmgr.h
+@@ -0,0 +1,260 @@
++/**************************************************************************
++ * 
++ * Copyright © 2007 Intel Corporation
++ * Copyright 2006 Tungsten Graphics, Inc., Bismarck, ND., USA
++ * All Rights Reserved.
++ * 
++ * Permission is hereby granted, free of charge, to any person obtaining a
++ * copy of this software and associated documentation files (the
++ * "Software"), to deal in the Software without restriction, including
++ * without limitation the rights to use, copy, modify, merge, publish,
++ * distribute, sub license, and/or sell copies of the Software, and to
++ * permit persons to whom the Software is furnished to do so, subject to
++ * the following conditions:
++ * 
++ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++ * FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL
++ * THE COPYRIGHT HOLDERS, AUTHORS AND/OR ITS SUPPLIERS BE LIABLE FOR ANY CLAIM,
++ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR 
++ * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE 
++ * USE OR OTHER DEALINGS IN THE SOFTWARE.
++ *
++ * The above copyright notice and this permission notice (including the
++ * next paragraph) shall be included in all copies or substantial portions
++ * of the Software.
++ * 
++ * 
++ **************************************************************************/
++/*
++ * Authors: Thomas Hellström <thomas-at-tungstengraphics-dot-com>
++ *          Keith Whitwell <keithw-at-tungstengraphics-dot-com>
++ *	    Eric Anholt <eric@anholt.net>
++ */
++
++#ifndef _DRI_BUFMGR_H_
++#define _DRI_BUFMGR_H_
++#include <xf86drm.h>
++
++typedef struct _dri_bufmgr dri_bufmgr;
++typedef struct _dri_bo dri_bo;
++typedef struct _dri_fence dri_fence;
++
++struct _dri_bo {
++   /** Size in bytes of the buffer object. */
++   unsigned long size;
++   /**
++    * Card virtual address (offset from the beginning of the aperture) for the
++    * object.  Only valid while validated.
++    */
++   unsigned long offset;
++   /**
++    * Virtual address for accessing the buffer data.  Only valid while mapped.
++    */
++   void *virtual;
++   /** Buffer manager context associated with this buffer object */
++   dri_bufmgr *bufmgr;
 +};
 +
-+void radeon_bufmgr_emit_reloc(dri_bo *buf, uint32_t *head, uint32_t *count_p, uint32_t read_domains, uint32_t write_domain);
++struct _dri_fence {
++   /**
++    * This is an ORed mask of DRM_BO_FLAG_READ, DRM_BO_FLAG_WRITE, and
++    * DRM_FLAG_EXE indicating the operations associated with this fence.
++    *
++    * It is constant for the life of the fence object.
++    */
++   unsigned int type;
++   /** Buffer manager context associated with this fence */
++   dri_bufmgr *bufmgr;
++};
 +
-+dri_bo *radeon_bufmgr_classic_bo_alloc_static(dri_bufmgr *bufmgr_ctx, const char *name,
-+					      unsigned long offset, unsigned long size,
-+					      void *virtual, uint32_t initial_domain);
-+dri_bo *radeon_bufmgr_classic_bo_alloc(dri_bufmgr *bufmgr_ctx, const char *name,
-+				       unsigned long size, unsigned int alignment,
-+				       uint32_t location_mask);
++/**
++ * Context for a buffer manager instance.
++ *
++ * Contains public methods followed by private storage for the buffer manager.
++ */
++struct _dri_bufmgr {
++   /**
++    * Allocate a buffer object.
++    *
++    * Buffer objects are not necessarily initially mapped into CPU virtual
++    * address space or graphics device aperture.  They must be mapped using
++    * bo_map() to be used by the CPU, and validated for use using bo_validate()
++    * to be used from the graphics device.
++    */
++   dri_bo *(*bo_alloc)(dri_bufmgr *bufmgr_ctx, const char *name,
++		       unsigned long size, unsigned int alignment,
++		       uint64_t location_mask);
 +
-+int radeon_bufmgr_classic_emit_reloc(dri_bo *batch_buf, uint64_t flags, GLuint delta,
-+				     GLuint offset, dri_bo *target);
++   /**
++    * Allocates a buffer object for a static allocation.
++    *
++    * Static allocations are ones such as the front buffer that are offered by
++    * the X Server, which are never evicted and never moved.
++    */
++   dri_bo *(*bo_alloc_static)(dri_bufmgr *bufmgr_ctx, const char *name,
++			      unsigned long offset, unsigned long size,
++			      void *virtual, uint64_t location_mask);
++
++   /** Takes a reference on a buffer object */
++   void (*bo_reference)(dri_bo *bo);
++
++   /**
++    * Releases a reference on a buffer object, freeing the data if
++    * rerefences remain.
++    */
++   void (*bo_unreference)(dri_bo *bo);
++
++   /**
++    * Maps the buffer into userspace.
++    *
++    * This function will block waiting for any existing fence on the buffer to
++    * clear, first.  The resulting mapping is available at buf->virtual.
++\    */
++   int (*bo_map)(dri_bo *buf, GLboolean write_enable);
++
++   /** Reduces the refcount on the userspace mapping of the buffer object. */
++   int (*bo_unmap)(dri_bo *buf);
++
++   /** Takes a reference on a fence object */
++   void (*fence_reference)(dri_fence *fence);
++
++   /**
++    * Releases a reference on a fence object, freeing the data if
++    * rerefences remain.
++    */
++   void (*fence_unreference)(dri_fence *fence);
++
++   /**
++    * Blocks until the given fence is signaled.
++    */
++   void (*fence_wait)(dri_fence *fence);
++
++   /**
++    * Tears down the buffer manager instance.
++    */
++   void (*destroy)(dri_bufmgr *bufmgr);
++
++   /**
++    * Add relocation entry in reloc_buf, which will be updated with the
++    * target buffer's real offset on on command submission.
++    *
++    * Relocations remain in place for the lifetime of the buffer object.
++    *
++    * \param reloc_buf Buffer to write the relocation into.
++    * \param flags BO flags to be used in validating the target buffer.
++    *	     Applicable flags include:
++    *	     - DRM_BO_FLAG_READ: The buffer will be read in the process of
++    *	       command execution.
++    *	     - DRM_BO_FLAG_WRITE: The buffer will be written in the process of
++    *	       command execution.
++    *	     - DRM_BO_FLAG_MEM_TT: The buffer should be validated in TT memory.
++    *	     - DRM_BO_FLAG_MEM_VRAM: The buffer should be validated in video
++    *	       memory.
++    * \param delta Constant value to be added to the relocation target's offset.
++    * \param offset Byte offset within batch_buf of the relocated pointer.
++    * \param target Buffer whose offset should be written into the relocation
++    *	     entry.
++    */
++   int (*emit_reloc)(dri_bo *reloc_buf, uint64_t flags, GLuint delta,
++		      GLuint offset, dri_bo *target);
++
++   /**
++    * Processes the relocations, either in userland or by converting the list
++    * for use in batchbuffer submission.
++    *
++    * Kernel-based implementations will return a pointer to the arguments
++    * to be handed with batchbuffer submission to the kernel.  The userland
++    * implementation performs the buffer validation and emits relocations
++    * into them the appopriate order.
++    *
++    * \param batch_buf buffer at the root of the tree of relocations
++    * \param count returns the number of buffers validated.
++    * \return relocation record for use in command submission.
++    * */
++   void *(*process_relocs)(dri_bo *batch_buf, GLuint *count);
++
++   void (*post_submit)(dri_bo *batch_buf, dri_fence **fence);
++
++   int (*check_aperture_space)(dri_bo *bo);
++   GLboolean debug; /**< Enables verbose debugging printouts */
++};
++
++dri_bo *dri_bo_alloc(dri_bufmgr *bufmgr, const char *name, unsigned long size,
++		     unsigned int alignment, uint64_t location_mask);
++dri_bo *dri_bo_alloc_static(dri_bufmgr *bufmgr, const char *name,
++			    unsigned long offset, unsigned long size,
++			    void *virtual, uint64_t location_mask);
++void dri_bo_reference(dri_bo *bo);
++void dri_bo_unreference(dri_bo *bo);
++int dri_bo_map(dri_bo *buf, GLboolean write_enable);
++int dri_bo_unmap(dri_bo *buf);
++void dri_fence_wait(dri_fence *fence);
++void dri_fence_reference(dri_fence *fence);
++void dri_fence_unreference(dri_fence *fence);
++
++void dri_bo_subdata(dri_bo *bo, unsigned long offset,
++		    unsigned long size, const void *data);
++void dri_bo_get_subdata(dri_bo *bo, unsigned long offset,
++			unsigned long size, void *data);
++
++void dri_bufmgr_fake_contended_lock_take(dri_bufmgr *bufmgr);
++dri_bufmgr *dri_bufmgr_fake_init(unsigned long low_offset, void *low_virtual,
++				 unsigned long size,
++				 unsigned int (*fence_emit)(void *private),
++				 int (*fence_wait)(void *private,
++						   unsigned int cookie),
++				 void *driver_priv);
++void dri_bufmgr_set_debug(dri_bufmgr *bufmgr, GLboolean enable_debug);
++void dri_bo_fake_disable_backing_store(dri_bo *bo,
++				       void (*invalidate_cb)(dri_bo *bo,
++							     void *ptr),
++				       void *ptr);
++void dri_bufmgr_destroy(dri_bufmgr *bufmgr);
++
++int dri_emit_reloc(dri_bo *reloc_buf, uint64_t flags, GLuint delta,
++		   GLuint offset, dri_bo *target_buf);
++void *dri_process_relocs(dri_bo *batch_buf, uint32_t *count);
++void dri_post_process_relocs(dri_bo *batch_buf);
++void dri_post_submit(dri_bo *batch_buf, dri_fence **last_fence);
++int dri_bufmgr_check_aperture_space(dri_bo *bo);
++
++#ifndef TTM_API
++/* reuse some TTM API */
++
++#define DRM_BO_MEM_LOCAL 0
++#define DRM_BO_MEM_TT 1
++#define DRM_BO_MEM_VRAM 2
++#define DRM_BO_MEM_PRIV0 3
++#define DRM_BO_MEM_PRIV1 4
++#define DRM_BO_MEM_PRIV2 5
++#define DRM_BO_MEM_PRIV3 6
++#define DRM_BO_MEM_PRIV4 7
++
++#define DRM_BO_FLAG_READ        (1ULL << 0)
++#define DRM_BO_FLAG_WRITE       (1ULL << 1)
++#define DRM_BO_FLAG_EXE         (1ULL << 2)
++#define DRM_BO_MASK_ACCESS	(DRM_BO_FLAG_READ | DRM_BO_FLAG_WRITE | DRM_BO_FLAG_EXE)
++#define DRM_BO_FLAG_NO_EVICT    (1ULL << 4)
++
++#define DRM_BO_FLAG_MAPPABLE    (1ULL << 5)
++#define DRM_BO_FLAG_SHAREABLE   (1ULL << 6)
++
++#define DRM_BO_FLAG_CACHED      (1ULL << 7)
++
++#define DRM_BO_FLAG_NO_MOVE     (1ULL << 8)
++#define DRM_BO_FLAG_CACHED_MAPPED    (1ULL << 19)
++#define DRM_BO_FLAG_FORCE_CACHING  (1ULL << 13)
++#define DRM_BO_FLAG_FORCE_MAPPABLE (1ULL << 14)
++#define DRM_BO_FLAG_TILE           (1ULL << 15)
++
++#define DRM_BO_FLAG_MEM_LOCAL  (1ULL << 24)
++#define DRM_BO_FLAG_MEM_TT     (1ULL << 25)
++#define DRM_BO_FLAG_MEM_VRAM   (1ULL << 26)
++
++#define DRM_BO_MASK_MEM         0x00000000FF000000ULL
++
++#define DRM_FENCE_TYPE_EXE                 0x00000001
++#endif
++
 +#endif
 diff --git a/src/mesa/drivers/dri/radeon/radeon_screen.c b/src/mesa/drivers/dri/radeon/radeon_screen.c
-index 84b5c46..cc384e1 100644
+index 05107dd..b51ff9f 100644
 --- a/src/mesa/drivers/dri/radeon/radeon_screen.c
 +++ b/src/mesa/drivers/dri/radeon/radeon_screen.c
-@@ -46,6 +46,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+@@ -45,6 +45,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  #include "radeon_chipset.h"
  #include "radeon_macros.h"
  #include "radeon_screen.h"
@@ -7233,7 +8698,7 @@ index 84b5c46..cc384e1 100644
  #if !RADEON_COMMON
  #include "radeon_context.h"
  #include "radeon_span.h"
-@@ -69,6 +70,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+@@ -67,6 +68,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  
  #include "GL/internal/dri_interface.h"
  
@@ -7243,7 +8708,7 @@ index 84b5c46..cc384e1 100644
  /* Radeon configuration
   */
  #include "xmlpool.h"
-@@ -344,11 +348,99 @@ static const __DRItexOffsetExtension r200texOffsetExtension = {
+@@ -342,17 +346,123 @@ static const __DRItexOffsetExtension r200texOffsetExtension = {
  #endif
  
  #if RADEON_COMMON && defined(RADEON_COMMON_FOR_R300)
@@ -7256,7 +8721,7 @@ index 84b5c46..cc384e1 100644
 +#endif
 +
 +
-+static void
++static int
 +radeon_gem_update_handle(radeonScreenPtr screen, __DRIscreenPrivate *sPriv,
 +			 struct radeon_gem_object *gem_obj)
 +{
@@ -7265,7 +8730,7 @@ index 84b5c46..cc384e1 100644
 +     struct drm_radeon_gem_mmap mmap_args;
 +     struct drm_radeon_gem_pin pin_args;
 +     int ret;
-+   
++     
 +     if (gem_obj->gem_handle) {
 +	     close_args.handle = gem_obj->gem_handle;
 +
@@ -7277,8 +8742,8 @@ index 84b5c46..cc384e1 100644
 +     args.name = gem_obj->gem_name;
 +     ret = ioctl(sPriv->fd, DRM_IOCTL_GEM_OPEN, &args);
 +     if (ret) {
-+		fprintf(stderr," failed to open handle %d\n", gem_obj->gem_name);
-+	     return;
++	     fprintf(stderr,"failed to open\n");
++	     return ret;
 +     }
 +     
 +     gem_obj->gem_handle = args.handle;
@@ -7291,59 +8756,85 @@ index 84b5c46..cc384e1 100644
 +     ret = drmCommandWriteRead(sPriv->fd, DRM_RADEON_GEM_MMAP, &mmap_args,
 +			       sizeof(mmap_args));
 +     
-+     if (ret)
-+	     return;
++     if (ret) {
++	     fprintf(stderr,"failed to mmap\n");
++	     return ret;
++     }
 +     
 +     gem_obj->map = (void *)(unsigned long)(mmap_args.addr_ptr);
 +     
 +     pin_args.handle = gem_obj->gem_handle;
++     pin_args.pin_domain = 0;
 +     pin_args.alignment = 0;
 +     
 +     ret = drmCommandWriteRead(sPriv->fd, DRM_RADEON_GEM_PIN, &pin_args,
 +			       sizeof(pin_args));
 +     
-+     if (ret)
-+	     return;
++     if (ret) {
++	     fprintf(stderr,"failed to get offset\n");
++	     return ret;
++     }
 +     
 +     gem_obj->offset = pin_args.offset;
-+     
++     return 0;
 +}
 +
 +static int
 +radeon_init_mm_buffers(radeonScreenPtr screen, __DRIscreenPrivate *sPriv,
 +		       RADEONDRIPtr dri_priv)
 +{
++	int ret;
 +	/* STOP GAP HERE */
 +
 +	screen->front.gem_name = dri_priv->frontOffset;
-+	radeon_gem_update_handle(screen, sPriv, &screen->front);
++	ret = radeon_gem_update_handle(screen, sPriv, &screen->front);
++	if (ret)	
++		return ret;
++
 +	screen->frontOffset = screen->front.offset;
 +
 +	screen->back.gem_name = dri_priv->backOffset;
-+	radeon_gem_update_handle(screen, sPriv, &screen->back);
++	ret = radeon_gem_update_handle(screen, sPriv, &screen->back);
++	if (ret)	
++		return ret;
 +
 +	screen->backOffset = screen->back.offset;
 +
 +	screen->depth.gem_name = dri_priv->depthOffset;
-+	radeon_gem_update_handle(screen, sPriv, &screen->depth);
++	ret = radeon_gem_update_handle(screen, sPriv, &screen->depth);
++	if (ret)	
++		return ret;
++
 +	screen->depthOffset = screen->depth.offset;
 +
 +	screen->vram_texture.gem_name = dri_priv->textureOffset;
-+	radeon_gem_update_handle(screen, sPriv, &screen->vram_texture);
++	ret = radeon_gem_update_handle(screen, sPriv, &screen->vram_texture);
++	if (ret)	
++		return ret;
 +
 +	screen->texOffset[RADEON_LOCAL_TEX_HEAP] = screen->vram_texture.offset + screen->fbLocation;
 +	screen->texSize[RADEON_LOCAL_TEX_HEAP] = screen->vram_texture.size;
 +
 +	screen->gart_texture.gem_name = dri_priv->gartTexHandle;
-+	radeon_gem_update_handle(screen, sPriv, &screen->gart_texture);
++	ret = radeon_gem_update_handle(screen, sPriv, &screen->gart_texture);
++	if (ret)	
++		return ret;
++
 +	screen->gartTextures.map = screen->gart_texture.map;
 +	screen->gart_texture_offset = screen->gart_texture.offset + screen->gart_base;
-+
++	return 0;
 +}
  
  /* Create the device specific screen private data struct.
   */
-@@ -389,6 +481,21 @@ radeonCreateScreen( __DRIscreenPrivate *sPriv )
+ static radeonScreenPtr
+-radeonCreateScreen( __DRIscreenPrivate *sPriv )
+-{
++radeonCreateScreen( __DRIscreenPrivate *sPriv ){
+    radeonScreenPtr screen;
+    RADEONDRIPtr dri_priv = (RADEONDRIPtr)sPriv->pDevPriv;
+    unsigned char *RADEONMMIO;
+@@ -387,6 +497,21 @@ radeonCreateScreen( __DRIscreenPrivate *sPriv )
     screen->card_type = (dri_priv->IsPCI ? RADEON_CARD_PCI : RADEON_CARD_AGP);
     {
        int ret;
@@ -7365,7 +8856,7 @@ index 84b5c46..cc384e1 100644
        ret = radeonGetParam( sPriv->fd, RADEON_PARAM_GART_BUFFER_OFFSET,
  			    &screen->gart_buffer_offset);
  
-@@ -422,32 +529,34 @@ radeonCreateScreen( __DRIscreenPrivate *sPriv )
+@@ -420,32 +545,34 @@ radeonCreateScreen( __DRIscreenPrivate *sPriv )
        screen->drmSupportsVertexProgram = (sPriv->drm_version.minor >= 25);
     }
  
@@ -7418,12 +8909,12 @@ index 84b5c46..cc384e1 100644
 +      screen->scratch = (__volatile__ u_int32_t *)
 +	 ((GLubyte *)screen->status.map + RADEON_SCRATCH_REG_OFFSET);
     }
--   screen->scratch = (__volatile__ u_int32_t *)
+-   screen->scratch = (__volatile__ uint32_t *)
 -      ((GLubyte *)screen->status.map + RADEON_SCRATCH_REG_OFFSET);
  
     screen->buffers = drmMapBufs( sPriv->fd );
     if ( !screen->buffers ) {
-@@ -458,22 +567,24 @@ radeonCreateScreen( __DRIscreenPrivate *sPriv )
+@@ -456,22 +583,24 @@ radeonCreateScreen( __DRIscreenPrivate *sPriv )
        return NULL;
     }
  
@@ -7463,7 +8954,7 @@ index 84b5c46..cc384e1 100644
     }
  
     screen->chip_flags = 0;
-@@ -840,7 +951,7 @@ radeonCreateScreen( __DRIscreenPrivate *sPriv )
+@@ -838,7 +967,7 @@ radeonCreateScreen( __DRIscreenPrivate *sPriv )
     ret = radeonGetParam( sPriv->fd, RADEON_PARAM_FB_LOCATION,
                           &temp);
     if (ret) {
@@ -7472,7 +8963,7 @@ index 84b5c46..cc384e1 100644
  	   screen->fbLocation      = ( INREG( RADEON_MC_FB_LOCATION ) & 0xffff) << 16;
         else {
             FREE( screen );
-@@ -881,55 +992,59 @@ radeonCreateScreen( __DRIscreenPrivate *sPriv )
+@@ -879,55 +1008,65 @@ radeonCreateScreen( __DRIscreenPrivate *sPriv )
         }
     }
  
@@ -7532,6 +9023,7 @@ index 84b5c46..cc384e1 100644
 +      screen->frontOffset	= dri_priv->frontOffset;
 +      screen->backOffset	= dri_priv->backOffset;
 +      screen->depthOffset	= dri_priv->depthOffset;
++
 +   
 +      /* Check if ddx has set up a surface reg to cover depth buffer */
 +      screen->depthHasSurface = (sPriv->ddx_version.major > 4) ||
@@ -7571,22 +9063,25 @@ index 84b5c46..cc384e1 100644
 -      screen->texSize[RADEON_GART_TEX_HEAP] = dri_priv->gartTexMapSize;
 -      screen->logTexGranularity[RADEON_GART_TEX_HEAP] =
 -	 dri_priv->log2GARTTexGran;
-+      radeon_init_mm_buffers(screen, sPriv, dri_priv);
++      ret = radeon_init_mm_buffers(screen, sPriv, dri_priv);
++      if (ret) {
++           FREE( screen );
++           fprintf(stderr, "Unable to get mm buffers inited\n");
++           return NULL;
++      }
     }
  
     i = 0;
-@@ -954,8 +1069,10 @@ radeonCreateScreen( __DRIscreenPrivate *sPriv )
+@@ -952,7 +1091,7 @@ radeonCreateScreen( __DRIscreenPrivate *sPriv )
  #endif
  
  #if RADEON_COMMON && defined(RADEON_COMMON_FOR_R300)
-+#if 0
-    screen->extensions[i++] = &r300texOffsetExtension.base;
+-   screen->extensions[i++] = &r300texOffsetExtension.base;
++   //screen->extensions[i++] = &r300texOffsetExtension.base;
  #endif
-+#endif
  
     screen->extensions[i++] = NULL;
-    sPriv->extensions = screen->extensions;
-@@ -975,12 +1092,14 @@ radeonDestroyScreen( __DRIscreenPrivate *sPriv )
+@@ -973,12 +1112,14 @@ radeonDestroyScreen( __DRIscreenPrivate *sPriv )
     if (!screen)
        return;
  
@@ -7606,7 +9101,7 @@ index 84b5c46..cc384e1 100644
  
     /* free all option information */
     driDestroyOptionInfo (&screen->optionCache);
-@@ -1004,6 +1123,160 @@ radeonInitDriver( __DRIscreenPrivate *sPriv )
+@@ -1002,6 +1143,160 @@ radeonInitDriver( __DRIscreenPrivate *sPriv )
     return GL_TRUE;
  }
  
@@ -7767,7 +9262,7 @@ index 84b5c46..cc384e1 100644
  
  /**
   * Create the Mesa framebuffer and renderbuffers for a given window/drawable.
-@@ -1103,7 +1376,7 @@ radeonCreateBuffer( __DRIscreenPrivate *driScrnPriv,
+@@ -1101,7 +1396,7 @@ radeonCreateBuffer( __DRIscreenPrivate *driScrnPriv,
        return (driDrawPriv->driverPrivate != NULL);
     }
  }
@@ -7776,7 +9271,7 @@ index 84b5c46..cc384e1 100644
  
  static void
  radeonDestroyBuffer(__DRIdrawablePrivate *driDrawPriv)
-@@ -1199,11 +1472,11 @@ radeonInitScreen(__DRIscreenPrivate *psp)
+@@ -1197,11 +1492,11 @@ radeonInitScreen(__DRIscreenPrivate *psp)
     if (!radeonInitDriver(psp))
         return NULL;
  
@@ -7791,10 +9286,10 @@ index 84b5c46..cc384e1 100644
  
  
 diff --git a/src/mesa/drivers/dri/radeon/radeon_screen.h b/src/mesa/drivers/dri/radeon/radeon_screen.h
-index ab859d5..82eb7d8 100644
+index b84c70b..59f1e86 100644
 --- a/src/mesa/drivers/dri/radeon/radeon_screen.h
 +++ b/src/mesa/drivers/dri/radeon/radeon_screen.h
-@@ -55,6 +55,14 @@ typedef struct {
+@@ -54,6 +54,14 @@ typedef struct {
     drmAddress map;			/* Mapping of the DRM region */
  } radeonRegionRec, *radeonRegionPtr;
  
@@ -7809,7 +9304,7 @@ index ab859d5..82eb7d8 100644
  typedef struct {
     int chip_family;
     int chip_flags;
-@@ -107,6 +115,13 @@ typedef struct {
+@@ -106,6 +114,13 @@ typedef struct {
     const __DRIextension *extensions[8];
  
     int num_gb_pipes;
@@ -7842,3 +9337,17 @@ index 9abe086..1650a9b 100644
 +extern void radeonSetSpanFunctions(driRenderbuffer * rb, const GLvisual * vis);
 +#endif
  #endif
+diff --git a/src/mesa/main/mipmap.c b/src/mesa/main/mipmap.c
+index 13d90e7..fe49faf 100644
+--- a/src/mesa/main/mipmap.c
++++ b/src/mesa/main/mipmap.c
+@@ -1073,8 +1073,7 @@ _mesa_generate_mipmap(GLcontext *ctx, GLenum target,
+          _mesa_free(dstImage->ImageOffsets);
+ 
+       /* Free old image data */
+-      if (dstImage->Data)
+-         ctx->Driver.FreeTexImageData(ctx, dstImage);
++      ctx->Driver.FreeTexImageData(ctx, dstImage);
+ 
+       /* initialize new image */
+       _mesa_init_teximage_fields(ctx, target, dstImage, dstWidth, dstHeight,
