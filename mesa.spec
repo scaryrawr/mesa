@@ -422,7 +422,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/mesa-demos-data
 
 %changelog
-* Thu Oct  9 2008 Kristian HÃ¸gsberg <krh@redhat.com> - 7.2-0.7
+* Thu Oct  9 2008 Kristian Høgsberg <krh@redhat.com> - 7.2-0.7
 - Actually add patch.
 
 * Thu Oct  9 2008 Kristian Høgsberg <krh@redhat.com> - 7.2-0.6
