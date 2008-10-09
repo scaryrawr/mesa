@@ -18,7 +18,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.2
-Release: 0.6%{?dist}
+Release: 0.7%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -422,6 +422,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/mesa-demos-data
 
 %changelog
+* Thu Oct  9 2008 Kristian HÃ¸gsberg <krh@redhat.com> - 7.2-0.7
+- Actually add patch.
+
 * Thu Oct  9 2008 Kristian Høgsberg <krh@redhat.com> - 7.2-0.6
 - Fix black shadows in compiz (fix from Eric Anholt, bugs.fd.o #17233)
 
