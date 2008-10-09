@@ -18,7 +18,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.2
-Release: 0.5%{?dist}
+Release: 0.6%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -35,6 +35,7 @@ Source5: http://www.x.org/pub/individual/app/%{xdriinfo}.tar.bz2
 Patch0: mesa-7.1-osmesa-version.patch
 Patch2: mesa-7.1-nukeglthread-debug.patch
 Patch3: mesa-no-mach64.patch
+Patch4: depth-override-fix.patch
 
 Patch5: r300-bufmgr.patch
 
@@ -171,6 +172,7 @@ This package provides some demo applications for testing Mesa.
 %patch0 -p1 -b .osmesa
 %patch2 -p1 -b .intel-glthread
 %patch3 -p0 -b .no-mach64
+%patch4 -p1 -b .depth-override-fix
 %patch5 -p1 -b .r300-bufmgr
 %patch7 -p1 -b .dricore
 %patch9 -p1 -b .intel-vbl
@@ -420,6 +422,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/mesa-demos-data
 
 %changelog
+* Thu Oct  9 2008 Kristian Høgsberg <krh@redhat.com> - 7.2-0.6
+- Fix black shadows in compiz (fix from Eric Anholt, bugs.fd.o #17233)
+
 * Wed Oct 01 2008 Dave Airlie <airlied@redhat.com> 7.2-0.5
 - fix drm requires
 
