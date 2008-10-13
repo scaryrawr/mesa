@@ -18,7 +18,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.2
-Release: 0.7%{?dist}
+Release: 0.8%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -422,6 +422,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/mesa-demos-data
 
 %changelog
+* Mon Oct 13 2008 Dave Airlie <airlied@redhat.com> 7.2-0.8
+- r300-bufmgr.patch - fix sw fallbacks + kernel texture error.
+
 * Thu Oct  9 2008 Kristian Høgsberg <krh@redhat.com> - 7.2-0.7
 - Actually add patch.
 

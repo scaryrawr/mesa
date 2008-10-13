@@ -1,3 +1,23 @@
+commit 737b174d7e82cc277d877ff810ffe058e1aa4522
+Author: Dave Airlie <airlied@redhat.com>
+Date:   Mon Oct 13 15:40:58 2008 +1000
+
+    radeon: fixup prototypes
+
+commit a4fa4aaf6754e2e35cee42924dc141738b7edc27
+Author: Dave Airlie <airlied@redhat.com>
+Date:   Mon Oct 13 15:39:46 2008 +1000
+
+    radeon: fix rounding to avoid kernel EFAULT
+
+commit c6b6a65281b8e98f5050f142d284e6ba622bea1b
+Author: Dave Airlie <airlied@redhat.com>
+Date:   Mon Oct 13 15:39:20 2008 +1000
+
+    r300: with real buffers - sw fallbacks to hardcoded maps
+    
+    so don't screw with virtual
+
 commit c41a002914ab9cfd8f49199e4a4612a6aeecf0b5
 Author: Dave Airlie <airlied@redhat.com>
 Date:   Tue Sep 30 16:51:04 2008 +1000
@@ -3122,10 +3142,10 @@ index e1143fb..c743478 100644
  extern void r300InitIoctlFuncs(struct dd_function_table *functions);
  
 diff --git a/src/mesa/drivers/dri/r300/r300_mem.c b/src/mesa/drivers/dri/r300/r300_mem.c
-index f8f9d4f..bb6d06a 100644
+index f8f9d4f..948a62e 100644
 --- a/src/mesa/drivers/dri/r300/r300_mem.c
 +++ b/src/mesa/drivers/dri/r300/r300_mem.c
-@@ -27,359 +27,874 @@
+@@ -27,359 +27,879 @@
  
  /**
   * \file
@@ -3834,8 +3854,9 @@ index f8f9d4f..bb6d06a 100644
 +{
 +	radeon_bufmgr_classic *bufmgr = get_bufmgr_classic(bo_base->base.bufmgr);
 +
-+	bo_base->base.virtual = bufmgr->screen->driScreen->pFB +
-+		(bo_base->base.offset - bufmgr->screen->fbLocation);
++	/* don't map static here - we have hardcoded maps */
++//	bo_base->base.virtual = bufmgr->screen->driScreen->pFB +
++//		(bo_base->base.offset - bufmgr->screen->fbLocation);
 +
 +	/* Read the first pixel in the frame buffer.  This should
 +	 * be a noop, right?  In fact without this conform fails as reading
@@ -3863,16 +3884,20 @@ index f8f9d4f..bb6d06a 100644
 +static void static_unmap(radeon_bo_classic *bo_base)
  {
 -	unsigned long offset;
-+	bo_base->base.virtual = 0;
++	/* don't unmap we have hardcoded maps */
++//	bo_base->base.virtual = 0;
 +}
-+
+ 
+-	assert(id <= rmesa->rmm->u_last);
 +static const radeon_bo_functions static_bo_functions = {
 +	.free = static_free,
 +	.map = static_map,
 +	.unmap = static_unmap
 +};
  
--	assert(id <= rmesa->rmm->u_last);
+-	offset = (char *)rmesa->rmm->u_list[id].ptr -
+-	    (char *)rmesa->radeon.radeonScreen->gartTextures.map;
+-	offset += rmesa->radeon.radeonScreen->gart_texture_offset;
 +/**
 + * Allocate a backing store buffer object that is validated into VRAM.
 + */
@@ -3880,10 +3905,10 @@ index f8f9d4f..bb6d06a 100644
 +		unsigned long size, unsigned int alignment)
 +{
 +	radeon_bo_vram* bo = (radeon_bo_vram*)calloc(1, sizeof(radeon_bo_vram));
- 
--	offset = (char *)rmesa->rmm->u_list[id].ptr -
--	    (char *)rmesa->radeon.radeonScreen->gartTextures.map;
--	offset += rmesa->radeon.radeonScreen->gart_texture_offset;
++	uint32_t pgsize = getpagesize() - 1;
++
++	size = (size + pgsize) & ~pgsize;
++	/* round size up to page size */
 +	bo->base.functions = &vram_bo_functions;
 +	bo->base.base.virtual = malloc(size);
 +	init_buffer(bufmgr, &bo->base, size);
@@ -3893,7 +3918,7 @@ index f8f9d4f..bb6d06a 100644
 -	return offset;
 +dri_bo *radeon_bufmgr_classic_bo_alloc(dri_bufmgr *bufmgr_ctx, const char *name,
 +				       unsigned long size, unsigned int alignment,
-+				       uint32_t location_mask)
++				       uint64_t location_mask)
 +{
 +	radeon_bufmgr_classic* bufmgr = get_bufmgr_classic(bufmgr_ctx);
 +
@@ -3909,7 +3934,7 @@ index f8f9d4f..bb6d06a 100644
 -void *r300_mem_map(r300ContextPtr rmesa, int id, int access)
 +static dri_bo *bufmgr_classic_bo_alloc_static(dri_bufmgr *bufmgr_ctx, const char *name,
 +					      unsigned long offset, unsigned long size,
-+					      void *virtual, uint32_t initial_domain)
++					      void *virtual, uint64_t location_mask)
  {
 -#ifdef MM_DEBUG
 -	fprintf(stderr, "%s: %d at age %x\n", __FUNCTION__, id,
@@ -3919,18 +3944,23 @@ index f8f9d4f..bb6d06a 100644
 -	int tries = 0;
 +  	radeon_bufmgr_classic* bufmgr = get_bufmgr_classic(bufmgr_ctx);
 +	radeon_bo_vram* bo = (radeon_bo_vram*)calloc(1, sizeof(radeon_bo_vram));
-+
+ 
+-	assert(id <= rmesa->rmm->u_last);
 +	bo->base.functions = &static_bo_functions;
 +	bo->base.base.virtual = virtual;
 +	bo->base.base.offset = offset + bufmgr->screen->fbLocation;
 +	bo->base.validated = 1; /* Static buffer offsets are always valid */
-+
+ 
+-	if (access == R300_MEM_R) {
 +	init_buffer(bufmgr, &bo->base, size);
 +	return &bo->base.base;
-+
+ 
+-		if (rmesa->rmm->u_list[id].mapped == 1)
+-			WARN_ONCE("buffer %d already mapped\n", id);
 +}
  
--	assert(id <= rmesa->rmm->u_last);
+-		rmesa->rmm->u_list[id].mapped = 1;
+-		ptr = r300_mem_ptr(rmesa, id);
 +static void bufmgr_classic_bo_reference(dri_bo *bo_base)
 +{
 +	radeon_bo_classic *bo = get_bo_classic(bo_base);
@@ -3938,36 +3968,34 @@ index f8f9d4f..bb6d06a 100644
 +	assert(bo->refcount > 0);
 +}
  
--	if (access == R300_MEM_R) {
+-		return ptr;
+-	}
 +static void bufmgr_classic_bo_unreference(dri_bo *bo_base)
 +{
 +	radeon_bo_classic *bo = get_bo_classic(bo_base);
- 
--		if (rmesa->rmm->u_list[id].mapped == 1)
--			WARN_ONCE("buffer %d already mapped\n", id);
++
 +	if (!bo_base)
 +		return;
  
--		rmesa->rmm->u_list[id].mapped = 1;
--		ptr = r300_mem_ptr(rmesa, id);
+-	if (rmesa->rmm->u_list[id].h_pending)
+-		r300FlushCmdBuf(rmesa, __FUNCTION__);
 +	assert(bo->refcount > 0);
 +	bo->refcount--;
 +	if (!bo->refcount) {
 +		// Ugly HACK - figure out whether this is really necessary
 +		get_bufmgr_classic(bo_base->bufmgr)->rmesa->dma.nr_released_bufs++;
  
--		return ptr;
+-	if (rmesa->rmm->u_list[id].h_pending) {
+-		return NULL;
 +		assert(!bo->mapcount);
 +		if (!bo->pending)
 +			bo_free(bo);
  	}
 +}
  
--	if (rmesa->rmm->u_list[id].h_pending)
--		r300FlushCmdBuf(rmesa, __FUNCTION__);
--
--	if (rmesa->rmm->u_list[id].h_pending) {
--		return NULL;
+-	while (rmesa->rmm->u_list[id].age >
+-	       radeonGetAge((radeonContextPtr) rmesa) && tries++ < 1000)
+-		usleep(10);
 +static int bufmgr_classic_bo_map(dri_bo *bo_base, int write_enable)
 +{
 +	radeon_bufmgr_classic *bufmgr = get_bufmgr_classic(bo_base->bufmgr);
@@ -3987,11 +4015,8 @@ index f8f9d4f..bb6d06a 100644
 +				abort();
 +			}
 +		}
- 	}
- 
--	while (rmesa->rmm->u_list[id].age >
--	       radeonGetAge((radeonContextPtr) rmesa) && tries++ < 1000)
--		usleep(10);
++	}
++
 +	if (!bo->mapcount && bo->functions->map)
 +		bo->functions->map(bo, write_enable);
 +
@@ -4085,16 +4110,19 @@ index f8f9d4f..bb6d06a 100644
 -#endif
 +	radeon_bo_classic *bo = get_bo_classic(batch_buf);
 +	radeon_reloc *reloc;
-+
+ 
+-	assert(id <= rmesa->rmm->u_last);
 +	if (bo->relocs_used >= bo->relocs_size) {
 +		bo->relocs_size *= 2;
 +		if (bo->relocs_size < 32)
 +			bo->relocs_size = 32;
-+
+ 
+-	if (rmesa->rmm->u_list[id].mapped == 0)
+-		WARN_ONCE("buffer %d not mapped\n", id);
 +		bo->relocs = (radeon_reloc*)realloc(bo->relocs, bo->relocs_size*sizeof(radeon_reloc));
 +	}
  
--	assert(id <= rmesa->rmm->u_last);
+-	rmesa->rmm->u_list[id].mapped = 0;
 +	reloc = &bo->relocs[bo->relocs_used++];
 +	reloc->flags = flags;
 +	reloc->offset = offset;
@@ -4102,20 +4130,23 @@ index f8f9d4f..bb6d06a 100644
 +	reloc->target = get_bo_classic(target);
 +	dri_bo_reference(target);
 +	return 0;
-+}
+ }
  
--	if (rmesa->rmm->u_list[id].mapped == 0)
--		WARN_ONCE("buffer %d not mapped\n", id);
+-void r300_mem_free(r300ContextPtr rmesa, int id)
 +/* process_relocs is called just before the given command buffer
 + * is executed. It ensures that all referenced buffers are in
 + * the right GPU domain.
 + */
 +static void *bufmgr_classic_process_relocs(dri_bo *batch_buf)
-+{
+ {
+-#ifdef MM_DEBUG
+-	fprintf(stderr, "%s: %d at age %x\n", __FUNCTION__, id,
+-		radeonGetAge((radeonContextPtr) rmesa));
+-#endif
 +	radeon_bo_classic *batch_bo = get_bo_classic(batch_buf);
 +	int i;
  
--	rmesa->rmm->u_list[id].mapped = 0;
+-	assert(id <= rmesa->rmm->u_last);
 +	// Warning: At this point, we append something to the batch buffer
 +	// during flush.
 +	emit_age_for_buffer(batch_bo);
@@ -4140,33 +4171,27 @@ index f8f9d4f..bb6d06a 100644
 +	}
 +	dri_bo_unmap(batch_buf);
 +	return 0;
- }
++}
  
--void r300_mem_free(r300ContextPtr rmesa, int id)
+-	if (id == 0)
+-		return;
 +/* post_submit is called just after the given command buffer
 + * is executed. It ensures that buffers are properly marked as
 + * pending.
 + */
 +static void bufmgr_classic_post_submit(dri_bo *batch_buf)
- {
--#ifdef MM_DEBUG
--	fprintf(stderr, "%s: %d at age %x\n", __FUNCTION__, id,
--		radeonGetAge((radeonContextPtr) rmesa));
--#endif
++{
 +	radeon_bo_classic *batch_bo = get_bo_classic(batch_buf);
 +	int i;
- 
--	assert(id <= rmesa->rmm->u_last);
-+	assert(!batch_bo->pending_count);
- 
--	if (id == 0)
--		return;
-+	for(i = 0; i < batch_bo->relocs_used; ++i) {
-+		radeon_reloc *reloc = &batch_bo->relocs[i];
  
 -	if (rmesa->rmm->u_list[id].ptr == NULL) {
 -		WARN_ONCE("Not allocated!\n");
 -		return;
++	assert(!batch_bo->pending_count);
++
++	for(i = 0; i < batch_bo->relocs_used; ++i) {
++		radeon_reloc *reloc = &batch_bo->relocs[i];
++
 +		if (reloc->target->used) {
 +			reloc->target->used = 0;
 +			assert(!reloc->target->pending_count);
