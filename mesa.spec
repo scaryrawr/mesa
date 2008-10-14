@@ -214,7 +214,7 @@ mv %{_lib} osmesa32
 make clean
 
 # just to be sure...
-[ `find . -name \*.o | wc -l` -eq 0 ] || exit "make cleaner plz"
+[ `find . -name \*.o | wc -l` -eq 0 ] || exit 1
 
 # XXX should get visibility working again post-dricore.
 export CFLAGS="$RPM_OPT_FLAGS -Os"
@@ -422,6 +422,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/mesa-demos-data
 
 %changelog
+* Tue Oct 14 2008 Adam Jackson <ajax@redhat.com>
+- spec-only fix: exit builtin needs a numeric arg, not string.
+
 * Mon Oct 13 2008 Dave Airlie <airlied@redhat.com> 7.2-0.8
 - r300-bufmgr.patch - fix sw fallbacks + kernel texture error.
 
