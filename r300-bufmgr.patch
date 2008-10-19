@@ -1,3 +1,15 @@
+commit e768e7df0f6b7f61f82d70a55c7419c359b17cb2
+Author: Dave Airlie <airlied@redhat.com>
+Date:   Sun Oct 19 18:56:56 2008 +1000
+
+    r300: fixup no kms case for map/unmap
+
+commit 6b6995112d3223496c04e7afc338ffc9bcc5093e
+Author: Dave Airlie <airlied@redhat.com>
+Date:   Sun Oct 19 18:42:24 2008 +1000
+
+    radeon: disable leak detection for now
+
 commit 445d367fed8b55a1351788dbf3e2e303e56095b5
 Author: Dave Airlie <airlied@redhat.com>
 Date:   Sun Oct 19 18:28:45 2008 +1000
@@ -3148,10 +3160,10 @@ index e1143fb..c743478 100644
  extern void r300InitIoctlFuncs(struct dd_function_table *functions);
  
 diff --git a/src/mesa/drivers/dri/r300/r300_mem.c b/src/mesa/drivers/dri/r300/r300_mem.c
-index f8f9d4f..948a62e 100644
+index f8f9d4f..5b90e42 100644
 --- a/src/mesa/drivers/dri/r300/r300_mem.c
 +++ b/src/mesa/drivers/dri/r300/r300_mem.c
-@@ -27,359 +27,879 @@
+@@ -27,359 +27,882 @@
  
  /**
   * \file
@@ -3860,9 +3872,10 @@ index f8f9d4f..948a62e 100644
 +{
 +	radeon_bufmgr_classic *bufmgr = get_bufmgr_classic(bo_base->base.bufmgr);
 +
-+	/* don't map static here - we have hardcoded maps */
-+//	bo_base->base.virtual = bufmgr->screen->driScreen->pFB +
-+//		(bo_base->base.offset - bufmgr->screen->fbLocation);
++	/* don't map static for kernel mm  - we have hardcoded maps */
++	if (!bufmgr->screen->kernel_mm)
++		bo_base->base.virtual = bufmgr->screen->driScreen->pFB +
++			(bo_base->base.offset - bufmgr->screen->fbLocation);
 +
 +	/* Read the first pixel in the frame buffer.  This should
 +	 * be a noop, right?  In fact without this conform fails as reading
@@ -3890,8 +3903,10 @@ index f8f9d4f..948a62e 100644
 +static void static_unmap(radeon_bo_classic *bo_base)
  {
 -	unsigned long offset;
-+	/* don't unmap we have hardcoded maps */
-+//	bo_base->base.virtual = 0;
++	radeon_bufmgr_classic *bufmgr = get_bufmgr_classic(bo_base->base.bufmgr);
++	/* don't unmap for kernel mm we have hardcoded maps */
++	if (!bufmgr->screen->kernel_mm)
++		bo_base->base.virtual = 0;
 +}
  
 -	assert(id <= rmesa->rmm->u_last);
@@ -4222,9 +4237,9 @@ index f8f9d4f..948a62e 100644
 +	track_pending_buffers(bufmgr);
 +
 +	if (bufmgr->buffers) {
-+		fprintf(stderr, "Warning: Buffer objects have leaked\n");
++		//fprintf(stderr, "Warning: Buffer objects have leaked\n");
 +		while(bufmgr->buffers) {
-+			fprintf(stderr, "  Leak of size %ld\n", bufmgr->buffers->base.size);
++		//	fprintf(stderr, "  Leak of size %ld\n", bufmgr->buffers->base.size);
 +			bufmgr->buffers->refcount = 0;
 +			bufmgr->buffers->mapcount = 0;
 +			bufmgr->buffers->pending = 0;

@@ -423,7 +423,8 @@ rm -rf $RPM_BUILD_ROOT
 
 %changelog
 * Sun Oct 19 2008 Dave Airlie <airlied@redhat.com> 7.2-0.9
-- r300: re-enable zerocopy TFP for non-kms systems
+- r300: re-enable zerocopy TFP for non-kms system
+- r300: fix sw fallbacks on !kms + fix debug
 
 * Tue Oct 14 2008 Adam Jackson <ajax@redhat.com>
 - spec-only fix: exit builtin needs a numeric arg, not string.
