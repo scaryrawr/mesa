@@ -1,3 +1,9 @@
+commit 445d367fed8b55a1351788dbf3e2e303e56095b5
+Author: Dave Airlie <airlied@redhat.com>
+Date:   Sun Oct 19 18:28:45 2008 +1000
+
+    r300: only enable set tex offset for non-kernel mm systems
+
 commit 737b174d7e82cc277d877ff810ffe058e1aa4522
 Author: Dave Airlie <airlied@redhat.com>
 Date:   Mon Oct 13 15:40:58 2008 +1000
@@ -8712,7 +8718,7 @@ index 0000000..0a726dc
 +
 +#endif
 diff --git a/src/mesa/drivers/dri/radeon/radeon_screen.c b/src/mesa/drivers/dri/radeon/radeon_screen.c
-index 05107dd..b51ff9f 100644
+index 05107dd..1810ded 100644
 --- a/src/mesa/drivers/dri/radeon/radeon_screen.c
 +++ b/src/mesa/drivers/dri/radeon/radeon_screen.c
 @@ -45,6 +45,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
@@ -8733,18 +8739,10 @@ index 05107dd..b51ff9f 100644
  /* Radeon configuration
   */
  #include "xmlpool.h"
-@@ -342,17 +346,123 @@ static const __DRItexOffsetExtension r200texOffsetExtension = {
- #endif
- 
- #if RADEON_COMMON && defined(RADEON_COMMON_FOR_R300)
-+#if 0
- static const __DRItexOffsetExtension r300texOffsetExtension = {
-     { __DRI_TEX_OFFSET, __DRI_TEX_OFFSET_VERSION },
-    r300SetTexOffset,
+@@ -348,11 +352,115 @@ static const __DRItexOffsetExtension r300texOffsetExtension = {
  };
  #endif
-+#endif
-+
+ 
 +
 +static int
 +radeon_gem_update_handle(radeonScreenPtr screen, __DRIscreenPrivate *sPriv,
@@ -8849,7 +8847,7 @@ index 05107dd..b51ff9f 100644
 +	screen->gart_texture_offset = screen->gart_texture.offset + screen->gart_base;
 +	return 0;
 +}
- 
++
  /* Create the device specific screen private data struct.
   */
  static radeonScreenPtr
@@ -8859,7 +8857,7 @@ index 05107dd..b51ff9f 100644
     radeonScreenPtr screen;
     RADEONDRIPtr dri_priv = (RADEONDRIPtr)sPriv->pDevPriv;
     unsigned char *RADEONMMIO;
-@@ -387,6 +497,21 @@ radeonCreateScreen( __DRIscreenPrivate *sPriv )
+@@ -387,6 +495,21 @@ radeonCreateScreen( __DRIscreenPrivate *sPriv )
     screen->card_type = (dri_priv->IsPCI ? RADEON_CARD_PCI : RADEON_CARD_AGP);
     {
        int ret;
@@ -8881,7 +8879,7 @@ index 05107dd..b51ff9f 100644
        ret = radeonGetParam( sPriv->fd, RADEON_PARAM_GART_BUFFER_OFFSET,
  			    &screen->gart_buffer_offset);
  
-@@ -420,32 +545,34 @@ radeonCreateScreen( __DRIscreenPrivate *sPriv )
+@@ -420,32 +543,34 @@ radeonCreateScreen( __DRIscreenPrivate *sPriv )
        screen->drmSupportsVertexProgram = (sPriv->drm_version.minor >= 25);
     }
  
@@ -8939,7 +8937,7 @@ index 05107dd..b51ff9f 100644
  
     screen->buffers = drmMapBufs( sPriv->fd );
     if ( !screen->buffers ) {
-@@ -456,22 +583,24 @@ radeonCreateScreen( __DRIscreenPrivate *sPriv )
+@@ -456,22 +581,24 @@ radeonCreateScreen( __DRIscreenPrivate *sPriv )
        return NULL;
     }
  
@@ -8979,7 +8977,7 @@ index 05107dd..b51ff9f 100644
     }
  
     screen->chip_flags = 0;
-@@ -838,7 +967,7 @@ radeonCreateScreen( __DRIscreenPrivate *sPriv )
+@@ -838,7 +965,7 @@ radeonCreateScreen( __DRIscreenPrivate *sPriv )
     ret = radeonGetParam( sPriv->fd, RADEON_PARAM_FB_LOCATION,
                           &temp);
     if (ret) {
@@ -8988,7 +8986,7 @@ index 05107dd..b51ff9f 100644
  	   screen->fbLocation      = ( INREG( RADEON_MC_FB_LOCATION ) & 0xffff) << 16;
         else {
             FREE( screen );
-@@ -879,55 +1008,65 @@ radeonCreateScreen( __DRIscreenPrivate *sPriv )
+@@ -879,55 +1006,65 @@ radeonCreateScreen( __DRIscreenPrivate *sPriv )
         }
     }
  
@@ -9097,16 +9095,17 @@ index 05107dd..b51ff9f 100644
     }
  
     i = 0;
-@@ -952,7 +1091,7 @@ radeonCreateScreen( __DRIscreenPrivate *sPriv )
+@@ -952,7 +1089,8 @@ radeonCreateScreen( __DRIscreenPrivate *sPriv )
  #endif
  
  #if RADEON_COMMON && defined(RADEON_COMMON_FOR_R300)
 -   screen->extensions[i++] = &r300texOffsetExtension.base;
-+   //screen->extensions[i++] = &r300texOffsetExtension.base;
++   if (!screen->kernel_mm) 
++      screen->extensions[i++] = &r300texOffsetExtension.base;
  #endif
  
     screen->extensions[i++] = NULL;
-@@ -973,12 +1112,14 @@ radeonDestroyScreen( __DRIscreenPrivate *sPriv )
+@@ -973,12 +1111,14 @@ radeonDestroyScreen( __DRIscreenPrivate *sPriv )
     if (!screen)
        return;
  
@@ -9126,7 +9125,7 @@ index 05107dd..b51ff9f 100644
  
     /* free all option information */
     driDestroyOptionInfo (&screen->optionCache);
-@@ -1002,6 +1143,160 @@ radeonInitDriver( __DRIscreenPrivate *sPriv )
+@@ -1002,6 +1142,160 @@ radeonInitDriver( __DRIscreenPrivate *sPriv )
     return GL_TRUE;
  }
  
@@ -9287,7 +9286,7 @@ index 05107dd..b51ff9f 100644
  
  /**
   * Create the Mesa framebuffer and renderbuffers for a given window/drawable.
-@@ -1101,7 +1396,7 @@ radeonCreateBuffer( __DRIscreenPrivate *driScrnPriv,
+@@ -1101,7 +1395,7 @@ radeonCreateBuffer( __DRIscreenPrivate *driScrnPriv,
        return (driDrawPriv->driverPrivate != NULL);
     }
  }
@@ -9296,7 +9295,7 @@ index 05107dd..b51ff9f 100644
  
  static void
  radeonDestroyBuffer(__DRIdrawablePrivate *driDrawPriv)
-@@ -1197,11 +1492,11 @@ radeonInitScreen(__DRIscreenPrivate *psp)
+@@ -1197,11 +1491,11 @@ radeonInitScreen(__DRIscreenPrivate *psp)
     if (!radeonInitDriver(psp))
         return NULL;
  

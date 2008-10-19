@@ -18,7 +18,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.2
-Release: 0.8%{?dist}
+Release: 0.9%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -422,6 +422,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/mesa-demos-data
 
 %changelog
+* Sun Oct 19 2008 Dave Airlie <airlied@redhat.com> 7.2-0.9
+- r300: re-enable zerocopy TFP for non-kms systems
+
 * Tue Oct 14 2008 Adam Jackson <ajax@redhat.com>
 - spec-only fix: exit builtin needs a numeric arg, not string.
 
