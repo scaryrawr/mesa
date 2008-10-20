@@ -18,7 +18,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.2
-Release: 0.10%{?dist}
+Release: 0.11%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -199,17 +199,17 @@ export CXXFLAGS="$RPM_OPT_FLAGS -fvisibility=hidden -Os"
 # first, build the osmesa variants. XXX this is overkill.  osmesa32 is
 # sufficient to render to any of the channel sizes, according to the
 # docs.  should fix this someday.
-%configure --with-driver=osmesa --with-osmesa-bits=8
+%configure --with-driver=osmesa --with-osmesa-bits=8 --enable-selinux
 make %{_smp_mflags} SRC_DIRS=mesa
 mv %{_lib} osmesa8
 make clean
 
-%configure --with-driver=osmesa --with-osmesa-bits=16
+%configure --with-driver=osmesa --with-osmesa-bits=16 --enable-selinux
 make %{_smp_mflags} SRC_DIRS=mesa
 mv %{_lib} osmesa16
 make clean
 
-%configure --with-driver=osmesa --with-osmesa-bits=32
+%configure --with-driver=osmesa --with-osmesa-bits=32 --enable-selinux
 make %{_smp_mflags} SRC_DIRS=mesa
 mv %{_lib} osmesa32
 make clean
@@ -223,6 +223,7 @@ export CXXFLAGS="$RPM_OPT_FLAGS -Os"
 
 # now build the rest of mesa
 %configure \
+    --enable-selinux \
     --disable-glw \
     --disable-glut \
     --disable-gl-osmesa \
@@ -428,6 +429,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/mesa-demos-data
 
 %changelog
+* Mon Oct 20 2008 Adam Jackson <ajax@redhat.com> 7.2-0.11
+- Build with --enable-selinux.  Don't know how this got dropped...
+
 * Mon Oct 20 2008 Adam Jackson <ajax@redhat.com> 7.2-0.10
 - Be extra paranoid about textrels at the end of %%build
 
