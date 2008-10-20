@@ -18,7 +18,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.2
-Release: 0.9%{?dist}
+Release: 0.10%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -61,6 +61,7 @@ BuildRequires: libXfixes-devel
 BuildRequires: libXdamage-devel
 BuildRequires: libXi-devel
 BuildRequires: libXmu-devel
+BuildRequires: elfutils
 
 %description
 Mesa
@@ -232,6 +233,11 @@ make #{?_smp_mflags}
 
 make -C progs/xdemos glxgears glxinfo
 make %{?_smp_mflags} -C progs/demos
+
+# this keeps breaking, check it early.  note that the exit from eu-ftr is odd.
+for i in */*.so ; do
+    eu-findtextrel $i && exit 1
+done
 
 pushd ../%{xdriinfo}
 %configure
@@ -422,6 +428,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/mesa-demos-data
 
 %changelog
+* Mon Oct 20 2008 Adam Jackson <ajax@redhat.com> 7.2-0.10
+- Be extra paranoid about textrels at the end of %%build
+
 * Sun Oct 19 2008 Dave Airlie <airlied@redhat.com> 7.2-0.9
 - r300: re-enable zerocopy TFP for non-kms system
 - r300: fix sw fallbacks on !kms + fix debug
