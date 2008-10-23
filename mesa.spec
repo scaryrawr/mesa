@@ -18,7 +18,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.2
-Release: 0.12%{?dist}
+Release: 0.13%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -429,6 +429,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/mesa-demos-data
 
 %changelog
+* Thu Oct 23 2008 Dave Airlie <airlied@redhat.com> 7.2-0.13
+- r300-bufmgr.patch - fix aperture sizing issues - should make compiz work better
+
 * Mon Oct 20 2008 Adam Jackson <ajax@redhat.com> 7.2-0.12
 - Disable the textrel check for the moment.
 

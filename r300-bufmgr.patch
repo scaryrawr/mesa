@@ -1,3 +1,18 @@
+commit 576ee3db94bd79092fe7f69b4ac8293367b6dfb1
+Author: Dave Airlie <airlied@redhat.com>
+Date:   Thu Oct 23 10:27:54 2008 +1000
+
+    r300: fallback to sw rendering if we can't fit textures into aperture
+
+commit bd018ad09b6225a6386c57d8ca8eb37f74025006
+Author: Dave Airlie <airlied@redhat.com>
+Date:   Thu Oct 23 10:13:28 2008 +1000
+
+    r300: add bufmgr vram sizing to stop overflowing textures in VRAM
+    
+    a) needs to be redone for bufmgr in screen
+    b) need to add GART aperture sizing also.
+
 commit e768e7df0f6b7f61f82d70a55c7419c359b17cb2
 Author: Dave Airlie <airlied@redhat.com>
 Date:   Sun Oct 19 18:56:56 2008 +1000
@@ -3160,10 +3175,10 @@ index e1143fb..c743478 100644
  extern void r300InitIoctlFuncs(struct dd_function_table *functions);
  
 diff --git a/src/mesa/drivers/dri/r300/r300_mem.c b/src/mesa/drivers/dri/r300/r300_mem.c
-index f8f9d4f..5b90e42 100644
+index f8f9d4f..3c0b055 100644
 --- a/src/mesa/drivers/dri/r300/r300_mem.c
 +++ b/src/mesa/drivers/dri/r300/r300_mem.c
-@@ -27,359 +27,882 @@
+@@ -27,359 +27,955 @@
  
  /**
   * \file
@@ -3210,6 +3225,8 @@ index f8f9d4f..5b90e42 100644
 +	driTexHeap *texture_heap;
 +	GLuint texture_offset;
 +	driTextureObject texture_swapped;
++
++  	GLuint total_vram_used;
 +};
 +
 +struct _radeon_reloc {
@@ -3231,8 +3248,9 @@ index f8f9d4f..5b90e42 100644
 +	 *
 +	 * May be null for buffer objects that are always valid.
 +	 * Always called with lock held.
++	 * return -1 to restart validation
 +	 */
-+	void (*validate)(radeon_bo_classic*);
++	int (*validate)(radeon_bo_classic*);
 +
 +	/**
 +	 * Map the buffer for CPU access.
@@ -3310,9 +3328,9 @@ index f8f9d4f..5b90e42 100644
 -	}
 +	unsigned int validated:1; /** whether the buffer is validated for hardware use right now */
 +	unsigned int used:1; /* only for communication between process_relocs and post_submit */
- 
--	rmesa->rmm->u_size = nsize;
++
 +	unsigned int pending:1;
++	unsigned int space_accounted:1;
 +	radeon_bo_classic *pending_next; /** Age-sorted linked list of pending buffer objects */
 +	radeon_bo_classic **pending_pprev;
 +
@@ -3347,31 +3365,27 @@ index f8f9d4f..5b90e42 100644
 +static radeon_bufmgr_classic* get_bufmgr_classic(dri_bufmgr *bufmgr_ctx)
 +{
 +	return (radeon_bufmgr_classic*)bufmgr_ctx;
- }
- 
--void r300_mem_init(r300ContextPtr rmesa)
++}
++
 +static radeon_bo_classic* get_bo_classic(dri_bo *bo_base)
- {
--	rmesa->rmm = malloc(sizeof(struct r300_memory_manager));
--	memset(rmesa->rmm, 0, sizeof(struct r300_memory_manager));
++{
 +	return (radeon_bo_classic*)bo_base;
 +}
  
--	rmesa->rmm->u_size = 128;
--	resize_u_list(rmesa);
+-	rmesa->rmm->u_size = nsize;
 +static radeon_bo_vram* get_bo_vram(radeon_bo_classic *bo_base)
 +{
 +	return (radeon_bo_vram*)bo_base;
  }
  
--void r300_mem_destroy(r300ContextPtr rmesa)
+-void r300_mem_init(r300ContextPtr rmesa)
 +/**
 + * Really free a given buffer object.
 + */
 +static void bo_free(radeon_bo_classic *bo)
  {
--	_mesa_free(rmesa->rmm->u_list);
--	rmesa->rmm->u_list = NULL;
+-	rmesa->rmm = malloc(sizeof(struct r300_memory_manager));
+-	memset(rmesa->rmm, 0, sizeof(struct r300_memory_manager));
 +	assert(!bo->refcount);
 +	assert(!bo->pending);
 +	assert(!bo->mapcount);
@@ -3383,17 +3397,17 @@ index f8f9d4f..5b90e42 100644
 +		free(bo->relocs);
 +		bo->relocs = 0;
 +	}
-+
+ 
+-	rmesa->rmm->u_size = 128;
+-	resize_u_list(rmesa);
 +	*bo->pprev = bo->next;
 +	if (bo->next)
 +		bo->next->pprev = bo->pprev;
- 
--	_mesa_free(rmesa->rmm);
--	rmesa->rmm = NULL;
++
 +	bo->functions->free(bo);
  }
  
--void *r300_mem_ptr(r300ContextPtr rmesa, int id)
+-void r300_mem_destroy(r300ContextPtr rmesa)
 +
 +/**
 + * Keep track of which buffer objects are still pending, i.e. waiting for
@@ -3401,15 +3415,17 @@ index f8f9d4f..5b90e42 100644
 + */
 +static void track_pending_buffers(radeon_bufmgr_classic *bufmgr)
  {
--	assert(id <= rmesa->rmm->u_last);
--	return rmesa->rmm->u_list[id].ptr;
+-	_mesa_free(rmesa->rmm->u_list);
+-	rmesa->rmm->u_list = NULL;
 +	uint32_t currentage = radeonGetAge((radeonContextPtr)bufmgr->rmesa);
 +
 +	while(bufmgr->pending) {
 +		radeon_bo_classic *bo = bufmgr->pending;
 +
 +		assert(bo->pending);
-+
+ 
+-	_mesa_free(rmesa->rmm);
+-	rmesa->rmm = NULL;
 +		if (bo->pending_count ||
 +		    bo->pending_age > currentage) // TODO: Age counter wraparound!
 +			break;
@@ -3428,13 +3444,14 @@ index f8f9d4f..5b90e42 100644
 +	}
  }
  
--int r300_mem_find(r300ContextPtr rmesa, void *ptr)
+-void *r300_mem_ptr(r300ContextPtr rmesa, int id)
 +/**
 + * Initialize common buffer object data.
 + */
 +static void init_buffer(radeon_bufmgr_classic *bufmgr, radeon_bo_classic *bo, unsigned long size)
  {
--	int i;
+-	assert(id <= rmesa->rmm->u_last);
+-	return rmesa->rmm->u_list[id].ptr;
 +	bo->base.bufmgr = &bufmgr->base;
 +	bo->base.size = size;
 +	bo->refcount = 1;
@@ -3444,7 +3461,19 @@ index f8f9d4f..5b90e42 100644
 +	if (bo->next)
 +		bo->next->pprev = &bo->next;
 +	bufmgr->buffers = bo;
-+}
+ }
+ 
+-int r300_mem_find(r300ContextPtr rmesa, void *ptr)
++
++/**
++ * Free a DMA-based buffer.
++ */
++static void dma_free(radeon_bo_classic *bo)
+ {
+-	int i;
++	radeon_bufmgr_classic* bufmgr = get_bufmgr_classic(bo->base.bufmgr);
++	drm_radeon_mem_free_t memfree;
++	int ret;
  
 -	for (i = 1; i < rmesa->rmm->u_size + 1; i++)
 -		if (rmesa->rmm->u_list[i].ptr &&
@@ -3452,24 +3481,12 @@ index f8f9d4f..5b90e42 100644
 -		    ptr <
 -		    rmesa->rmm->u_list[i].ptr + rmesa->rmm->u_list[i].size)
 -			break;
- 
--	if (i < rmesa->rmm->u_size + 1)
--		return i;
-+/**
-+ * Free a DMA-based buffer.
-+ */
-+static void dma_free(radeon_bo_classic *bo)
-+{
-+	radeon_bufmgr_classic* bufmgr = get_bufmgr_classic(bo->base.bufmgr);
-+	drm_radeon_mem_free_t memfree;
-+	int ret;
-+
 +	memfree.region = RADEON_MEM_REGION_GART;
 +	memfree.region_offset = bo->base.offset;
 +	memfree.region_offset -= bufmgr->screen->gart_texture_offset;
  
--	fprintf(stderr, "%p failed\n", ptr);
--	return 0;
+-	if (i < rmesa->rmm->u_size + 1)
+-		return i;
 +	ret = drmCommandWrite(bufmgr->screen->driScreen->fd,
 +		DRM_RADEON_FREE, &memfree, sizeof(memfree));
 +	if (ret) {
@@ -3477,7 +3494,9 @@ index f8f9d4f..5b90e42 100644
 +		fprintf(stderr, "ret = %s\n", strerror(-ret));
 +		exit(1);
 +	}
-+
+ 
+-	fprintf(stderr, "%p failed\n", ptr);
+-	return 0;
 +	free(bo);
  }
  
@@ -3503,12 +3522,15 @@ index f8f9d4f..5b90e42 100644
 -	static int bytes_wasted = 0, allocated = 0;
 +	int baseoffset;
 +	int ret;
-+
+ 
+-	if (size < 4096)
+-		bytes_wasted += 4096 - size;
 +	alloc.region = RADEON_MEM_REGION_GART;
 +	alloc.alignment = alignment;
 +	alloc.size = size;
 +	alloc.region_offset = &baseoffset;
-+
+ 
+-	allocated += size;
 +	ret = drmCommandWriteRead(bufmgr->screen->driScreen->fd,
 +			DRM_RADEON_ALLOC, &alloc, sizeof(alloc));
 +	if (ret) {
@@ -3516,15 +3538,9 @@ index f8f9d4f..5b90e42 100644
 +			fprintf(stderr, "DRM_RADEON_ALLOC failed: %d\n", ret);
 +		return 0;
 +	}
- 
--	if (size < 4096)
--		bytes_wasted += 4096 - size;
++
 +	bo->base.virtual = (char*)bufmgr->screen->gartTextures.map + baseoffset;
 +	bo->base.offset = bufmgr->screen->gart_texture_offset + baseoffset;
- 
--	allocated += size;
-+	return 1;
-+}
  
 -#if 0
 -	static int t = 0;
@@ -3533,6 +3549,9 @@ index f8f9d4f..5b90e42 100644
 -		fprintf(stderr, "slots used %d, wasted %d kb, allocated %d\n",
 -			rmesa->rmm->u_last, bytes_wasted / 1024,
 -			allocated / 1024);
++	return 1;
++}
++
 +/**
 + * Allocate a DMA buffer.
 + */
@@ -3567,7 +3586,8 @@ index f8f9d4f..5b90e42 100644
 -      again:
 +	return &bo->base;
 +}
-+
+ 
+-	done_age = radeonGetAge((radeonContextPtr) rmesa);
 +/**
 + * Free a command buffer
 + */
@@ -3577,13 +3597,17 @@ index f8f9d4f..5b90e42 100644
 +	free(bo);
 +}
  
--	done_age = radeonGetAge((radeonContextPtr) rmesa);
+-	if (rmesa->rmm->u_last + 1 >= rmesa->rmm->u_size)
+-		resize_u_list(rmesa);
 +static const radeon_bo_functions cmdbuf_bo_functions = {
 +	.free = cmdbuf_free
 +};
  
--	if (rmesa->rmm->u_last + 1 >= rmesa->rmm->u_size)
--		resize_u_list(rmesa);
+-	for (i = rmesa->rmm->u_last + 1; i > 0; i--) {
+-		if (rmesa->rmm->u_list[i].ptr == NULL) {
+-			free = i;
+-			continue;
+-		}
 +/**
 + * Allocate a command buffer.
 + *
@@ -3595,14 +3619,6 @@ index f8f9d4f..5b90e42 100644
 +{
 +	radeon_bo_classic* bo = (radeon_bo_classic*)calloc(1, sizeof(radeon_bo_classic));
  
--	for (i = rmesa->rmm->u_last + 1; i > 0; i--) {
--		if (rmesa->rmm->u_list[i].ptr == NULL) {
--			free = i;
--			continue;
--		}
-+	bo->functions = &cmdbuf_bo_functions;
-+	bo->base.virtual = malloc(size);
- 
 -		if (rmesa->rmm->u_list[i].h_pending == 0 &&
 -		    rmesa->rmm->u_list[i].pending
 -		    && rmesa->rmm->u_list[i].age <= done_age) {
@@ -3610,20 +3626,16 @@ index f8f9d4f..5b90e42 100644
 -			    (char *)rmesa->rmm->u_list[i].ptr -
 -			    (char *)rmesa->radeon.radeonScreen->gartTextures.
 -			    map;
-+	init_buffer(bufmgr, bo, size);
-+	return &bo->base;
-+}
++	bo->functions = &cmdbuf_bo_functions;
++	bo->base.virtual = malloc(size);
  
 -			ret =
 -			    drmCommandWrite(rmesa->radeon.radeonScreen->
 -					    driScreen->fd, DRM_RADEON_FREE,
 -					    &memfree, sizeof(memfree));
-+/**
-+ * Free a VRAM-based buffer object.
-+ */
-+static void vram_free(radeon_bo_classic *bo_base)
-+{
-+	radeon_bo_vram *bo = get_bo_vram(bo_base);
++	init_buffer(bufmgr, bo, size);
++	return &bo->base;
++}
  
 -			if (ret) {
 -				fprintf(stderr, "Failed to free at %p\n",
@@ -3647,11 +3659,53 @@ index f8f9d4f..5b90e42 100644
 -				rmesa->rmm->u_list[i].pending = 0;
 -				rmesa->rmm->u_list[i].ptr = NULL;
 -				free = i;
--			}
--		}
++/**
++ * Free a VRAM-based buffer object.
++ */
++static void vram_free(radeon_bo_classic *bo_base)
++{
++	radeon_bo_vram *bo = get_bo_vram(bo_base);
++
 +	if (bo->vram) {
 +		driDestroyTextureObject(&bo->vram->base);
 +		bo->vram = 0;
++	}
++
++	free(bo->base.base.virtual);
++	free(bo);
++}
++
++/**
++ * Allocate/update the copy in vram.
++ *
++ * Note: Assume we're called with the DRI lock held.
++ */
++static int vram_validate(radeon_bo_classic *bo_base)
++{
++	radeon_bufmgr_classic *bufmgr = get_bufmgr_classic(bo_base->base.bufmgr);
++	radeon_bo_vram *bo = get_bo_vram(bo_base);
++	int retry_count = 0, pending_retry = 0;
++
++	track_pending_buffers(bufmgr);
++	if (!bo->vram) {
++		bo->backing_store_dirty = 1;
++		bo->vram = (radeon_vram_wrapper*)calloc(1, sizeof(radeon_vram_wrapper));
++		bo->vram->bo = bo;
++		make_empty_list(&bo->vram->base);
++		bo->vram->base.totalSize = bo->base.base.size;
++retry:
++		if (driAllocateTexture(&bufmgr->texture_heap, 1, &bo->vram->base) < 0) {
++			pending_retry = 0;
++			while(bufmgr->pending && pending_retry++ < 10000)
++				track_pending_buffers(bufmgr);
++			retry_count++;
++			if (retry_count > 2) {
++				free(bo->vram);
++				bo->vram = NULL;
++				return -1;
+ 			}
++			goto retry;
+ 		}
  	}
 -	rmesa->rmm->u_head = i;
 -
@@ -3664,56 +3718,8 @@ index f8f9d4f..5b90e42 100644
 -			WARN_ONCE("Ran out of slots!\n");
 -			exit(1);
 +
-+	free(bo->base.base.virtual);
-+	free(bo);
-+}
-+
-+/**
-+ * Allocate/update the copy in vram.
-+ *
-+ * Note: Assume we're called with the DRI lock held.
-+ */
-+static void vram_validate(radeon_bo_classic *bo_base)
-+{
-+	radeon_bufmgr_classic *bufmgr = get_bufmgr_classic(bo_base->base.bufmgr);
-+	radeon_bo_vram *bo = get_bo_vram(bo_base);
-+
-+	if (!bo->vram) {
-+		bo->backing_store_dirty = 1;
-+
-+		bo->vram = (radeon_vram_wrapper*)calloc(1, sizeof(radeon_vram_wrapper));
-+		bo->vram->bo = bo;
-+		make_empty_list(&bo->vram->base);
-+		bo->vram->base.totalSize = bo->base.base.size;
-+		if (driAllocateTexture(&bufmgr->texture_heap, 1, &bo->vram->base) < 0) {
-+			fprintf(stderr, "Ouch! vram_validate failed\n");
-+			free(bo->vram);
-+			bo->base.base.offset = 0;
-+			bo->vram = 0;
-+			return;
- 		}
--		goto again;
- 	}
- 
--	alloc.region = RADEON_MEM_REGION_GART;
--	alloc.alignment = alignment;
--	alloc.size = size;
--	alloc.region_offset = &offset;
 +	assert(bo->vram->base.memBlock);
- 
--	ret =
--	    drmCommandWriteRead(rmesa->radeon.dri.fd, DRM_RADEON_ALLOC, &alloc,
--				sizeof(alloc));
--	if (ret) {
--#if 0
--		WARN_ONCE("Ran out of mem!\n");
--		r300FlushCmdBuf(rmesa, __FUNCTION__);
--		//usleep(100);
--		tries2++;
--		tries = 0;
--		if (tries2 > 100) {
--			WARN_ONCE("Ran out of GART memory!\n");
--			exit(1);
++
 +	bo->base.base.offset = bufmgr->texture_offset + bo->vram->base.memBlock->ofs;
 +
 +	if (bo->backing_store_dirty) {
@@ -3739,12 +3745,6 @@ index f8f9d4f..5b90e42 100644
 +			tmp.height = (bo->base.base.size + 4095) / 4096;
  		}
 -		goto again;
--#else
--		WARN_ONCE
--		    ("Ran out of GART memory (for %d)!\nPlease consider adjusting GARTSize option.\n",
--		     size);
--		return 0;
--#endif
 +		tmp.data = bo->base.base.virtual;
 +
 +		tex.format = RADEON_TXFORMAT_ARGB8888;
@@ -3767,15 +3767,61 @@ index f8f9d4f..5b90e42 100644
 +		bo->backing_store_dirty = 0;
  	}
  
--	i = free;
+-	alloc.region = RADEON_MEM_REGION_GART;
+-	alloc.alignment = alignment;
+-	alloc.size = size;
+-	alloc.region_offset = &offset;
 +	bo->base.validated = 1;
++	return 0;
++}
+ 
+-	ret =
+-	    drmCommandWriteRead(rmesa->radeon.dri.fd, DRM_RADEON_ALLOC, &alloc,
+-				sizeof(alloc));
+-	if (ret) {
+-#if 0
+-		WARN_ONCE("Ran out of mem!\n");
+-		r300FlushCmdBuf(rmesa, __FUNCTION__);
+-		//usleep(100);
+-		tries2++;
+-		tries = 0;
+-		if (tries2 > 100) {
+-			WARN_ONCE("Ran out of GART memory!\n");
+-			exit(1);
+-		}
+-		goto again;
+-#else
+-		WARN_ONCE
+-		    ("Ran out of GART memory (for %d)!\nPlease consider adjusting GARTSize option.\n",
+-		     size);
+-		return 0;
+-#endif
++/* No need for actual mmap actions since we have backing store,
++ * but mark buffer dirty when necessary */
++static void vram_map(radeon_bo_classic *bo_base, GLboolean write)
++{
++	radeon_bo_vram *bo = get_bo_vram(bo_base);
++
++	if (write) {
++		bo->base.validated = 0;
++		bo->backing_store_dirty = 1;
+ 	}
++}
++
++static void vram_bind(radeon_bo_classic *bo_base)
++{
++	radeon_bo_vram *bo = get_bo_vram(bo_base);
+ 
+-	i = free;
++	if (bo->vram) {
++		bo->vram->base.bound = 1;
++		driUpdateTextureLRU(&bo->vram->base);
++	}
 +}
  
 -	if (i > rmesa->rmm->u_last)
 -		rmesa->rmm->u_last = i;
-+/* No need for actual mmap actions since we have backing store,
-+ * but mark buffer dirty when necessary */
-+static void vram_map(radeon_bo_classic *bo_base, GLboolean write)
++static void vram_unbind(radeon_bo_classic *bo_base)
 +{
 +	radeon_bo_vram *bo = get_bo_vram(bo_base);
  
@@ -3784,29 +3830,39 @@ index f8f9d4f..5b90e42 100644
 -	rmesa->rmm->u_list[i].size = size;
 -	rmesa->rmm->u_list[i].age = 0;
 -	//fprintf(stderr, "alloc %p at id %d\n", rmesa->rmm->u_list[i].ptr, i);
-+	if (write) {
-+		bo->base.validated = 0;
-+		bo->backing_store_dirty = 1;
-+	}
++	if (bo->vram)
++		bo->vram->base.bound = 0;
 +}
  
 -#ifdef MM_DEBUG
 -	fprintf(stderr, "allocated %d at age %x\n", i,
 -		radeonGetAge((radeonContextPtr) rmesa));
 -#endif
-+static void vram_bind(radeon_bo_classic *bo_base)
++/** Callback function called by the texture heap when a texture is evicted */
++static void destroy_vram_wrapper(void *data, driTextureObject *t)
 +{
-+	radeon_bo_vram *bo = get_bo_vram(bo_base);
++	radeon_vram_wrapper *wrapper = (radeon_vram_wrapper*)t;
  
 -	return i;
-+	if (bo->vram) {
-+		bo->vram->base.bound = 1;
-+		driUpdateTextureLRU(&bo->vram->base);
++	if (wrapper->bo && wrapper->bo->vram == wrapper) {
++		wrapper->bo->base.validated = 0;
++		wrapper->bo->vram = 0;
 +	}
  }
  
 -void r300_mem_use(r300ContextPtr rmesa, int id)
-+static void vram_unbind(radeon_bo_classic *bo_base)
++static const radeon_bo_functions vram_bo_functions = {
++	.free = vram_free,
++	.validate = vram_validate,
++	.map = vram_map,
++	.bind = vram_bind,
++	.unbind = vram_unbind
++};
++
++/**
++ * Free a VRAM-based buffer object.
++ */
++static void static_free(radeon_bo_classic *bo_base)
  {
 -	uint64_t ull;
 -#ifdef MM_DEBUG
@@ -3817,57 +3873,11 @@ index f8f9d4f..5b90e42 100644
 +	radeon_bo_vram *bo = get_bo_vram(bo_base);
  
 -	assert(id <= rmesa->rmm->u_last);
-+	if (bo->vram)
-+		bo->vram->base.bound = 0;
++	free(bo);
 +}
  
 -	if (id == 0)
 -		return;
-+/** Callback function called by the texture heap when a texture is evicted */
-+static void destroy_vram_wrapper(void *data, driTextureObject *t)
-+{
-+	radeon_vram_wrapper *wrapper = (radeon_vram_wrapper*)t;
-+
-+	if (wrapper->bo && wrapper->bo->vram == wrapper) {
-+		wrapper->bo->base.validated = 0;
-+		wrapper->bo->vram = 0;
-+	}
-+}
- 
--	cmd =
--	    (drm_r300_cmd_header_t *) r300AllocCmdBuf(rmesa,
--						      2 + sizeof(ull) / 4,
--						      __FUNCTION__);
--	cmd[0].scratch.cmd_type = R300_CMD_SCRATCH;
--	cmd[0].scratch.reg = R300_MEM_SCRATCH;
--	cmd[0].scratch.n_bufs = 1;
--	cmd[0].scratch.flags = 0;
--	cmd++;
-+static const radeon_bo_functions vram_bo_functions = {
-+	.free = vram_free,
-+	.validate = vram_validate,
-+	.map = vram_map,
-+	.bind = vram_bind,
-+	.unbind = vram_unbind
-+};
- 
--	ull = (uint64_t) (intptr_t) & rmesa->rmm->u_list[id].age;
--	_mesa_memcpy(cmd, &ull, sizeof(ull));
--	cmd += sizeof(ull) / 4;
-+/**
-+ * Free a VRAM-based buffer object.
-+ */
-+static void static_free(radeon_bo_classic *bo_base)
-+{
-+	radeon_bo_vram *bo = get_bo_vram(bo_base);
- 
--	cmd[0].u = /*id */ 0;
-+	free(bo);
-+}
- 
--	LOCK_HARDWARE(&rmesa->radeon);	/* Protect from DRM. */
--	rmesa->rmm->u_list[id].h_pending++;
--	UNLOCK_HARDWARE(&rmesa->radeon);
 +static void static_map(radeon_bo_classic *bo_base, GLboolean write)
 +{
 +	radeon_bufmgr_classic *bufmgr = get_bufmgr_classic(bo_base->base.bufmgr);
@@ -3897,28 +3907,35 @@ index f8f9d4f..5b90e42 100644
 +		volatile int *buf = (int*)bufmgr->screen->driScreen->pFB;
 +		p = *buf;
 +	}
- }
++}
  
--unsigned long r300_mem_offset(r300ContextPtr rmesa, int id)
+-	cmd =
+-	    (drm_r300_cmd_header_t *) r300AllocCmdBuf(rmesa,
+-						      2 + sizeof(ull) / 4,
+-						      __FUNCTION__);
+-	cmd[0].scratch.cmd_type = R300_CMD_SCRATCH;
+-	cmd[0].scratch.reg = R300_MEM_SCRATCH;
+-	cmd[0].scratch.n_bufs = 1;
+-	cmd[0].scratch.flags = 0;
+-	cmd++;
 +static void static_unmap(radeon_bo_classic *bo_base)
- {
--	unsigned long offset;
++{
 +	radeon_bufmgr_classic *bufmgr = get_bufmgr_classic(bo_base->base.bufmgr);
 +	/* don't unmap for kernel mm we have hardcoded maps */
 +	if (!bufmgr->screen->kernel_mm)
 +		bo_base->base.virtual = 0;
 +}
  
--	assert(id <= rmesa->rmm->u_last);
+-	ull = (uint64_t) (intptr_t) & rmesa->rmm->u_list[id].age;
+-	_mesa_memcpy(cmd, &ull, sizeof(ull));
+-	cmd += sizeof(ull) / 4;
 +static const radeon_bo_functions static_bo_functions = {
 +	.free = static_free,
 +	.map = static_map,
 +	.unmap = static_unmap
 +};
  
--	offset = (char *)rmesa->rmm->u_list[id].ptr -
--	    (char *)rmesa->radeon.radeonScreen->gartTextures.map;
--	offset += rmesa->radeon.radeonScreen->gart_texture_offset;
+-	cmd[0].u = /*id */ 0;
 +/**
 + * Allocate a backing store buffer object that is validated into VRAM.
 + */
@@ -3936,7 +3953,9 @@ index f8f9d4f..5b90e42 100644
 +	return &bo->base.base;
 +}
  
--	return offset;
+-	LOCK_HARDWARE(&rmesa->radeon);	/* Protect from DRM. */
+-	rmesa->rmm->u_list[id].h_pending++;
+-	UNLOCK_HARDWARE(&rmesa->radeon);
 +dri_bo *radeon_bufmgr_classic_bo_alloc(dri_bufmgr *bufmgr_ctx, const char *name,
 +				       unsigned long size, unsigned int alignment,
 +				       uint64_t location_mask)
@@ -3952,17 +3971,12 @@ index f8f9d4f..5b90e42 100644
 +	}
  }
  
--void *r300_mem_map(r300ContextPtr rmesa, int id, int access)
+-unsigned long r300_mem_offset(r300ContextPtr rmesa, int id)
 +static dri_bo *bufmgr_classic_bo_alloc_static(dri_bufmgr *bufmgr_ctx, const char *name,
 +					      unsigned long offset, unsigned long size,
 +					      void *virtual, uint64_t location_mask)
  {
--#ifdef MM_DEBUG
--	fprintf(stderr, "%s: %d at age %x\n", __FUNCTION__, id,
--		radeonGetAge((radeonContextPtr) rmesa));
--#endif
--	void *ptr;
--	int tries = 0;
+-	unsigned long offset;
 +  	radeon_bufmgr_classic* bufmgr = get_bufmgr_classic(bufmgr_ctx);
 +	radeon_bo_vram* bo = (radeon_bo_vram*)calloc(1, sizeof(radeon_bo_vram));
  
@@ -3972,51 +3986,48 @@ index f8f9d4f..5b90e42 100644
 +	bo->base.base.offset = offset + bufmgr->screen->fbLocation;
 +	bo->base.validated = 1; /* Static buffer offsets are always valid */
  
--	if (access == R300_MEM_R) {
+-	offset = (char *)rmesa->rmm->u_list[id].ptr -
+-	    (char *)rmesa->radeon.radeonScreen->gartTextures.map;
+-	offset += rmesa->radeon.radeonScreen->gart_texture_offset;
 +	init_buffer(bufmgr, &bo->base, size);
 +	return &bo->base.base;
  
--		if (rmesa->rmm->u_list[id].mapped == 1)
--			WARN_ONCE("buffer %d already mapped\n", id);
-+}
+-	return offset;
+ }
  
--		rmesa->rmm->u_list[id].mapped = 1;
--		ptr = r300_mem_ptr(rmesa, id);
+-void *r300_mem_map(r300ContextPtr rmesa, int id, int access)
 +static void bufmgr_classic_bo_reference(dri_bo *bo_base)
-+{
+ {
+-#ifdef MM_DEBUG
+-	fprintf(stderr, "%s: %d at age %x\n", __FUNCTION__, id,
+-		radeonGetAge((radeonContextPtr) rmesa));
+-#endif
+-	void *ptr;
+-	int tries = 0;
 +	radeon_bo_classic *bo = get_bo_classic(bo_base);
 +	bo->refcount++;
 +	assert(bo->refcount > 0);
 +}
- 
--		return ptr;
--	}
++
 +static void bufmgr_classic_bo_unreference(dri_bo *bo_base)
 +{
 +	radeon_bo_classic *bo = get_bo_classic(bo_base);
 +
 +	if (!bo_base)
 +		return;
- 
--	if (rmesa->rmm->u_list[id].h_pending)
--		r300FlushCmdBuf(rmesa, __FUNCTION__);
++
 +	assert(bo->refcount > 0);
 +	bo->refcount--;
 +	if (!bo->refcount) {
 +		// Ugly HACK - figure out whether this is really necessary
 +		get_bufmgr_classic(bo_base->bufmgr)->rmesa->dma.nr_released_bufs++;
- 
--	if (rmesa->rmm->u_list[id].h_pending) {
--		return NULL;
++
 +		assert(!bo->mapcount);
 +		if (!bo->pending)
 +			bo_free(bo);
- 	}
++	}
 +}
- 
--	while (rmesa->rmm->u_list[id].age >
--	       radeonGetAge((radeonContextPtr) rmesa) && tries++ < 1000)
--		usleep(10);
++
 +static int bufmgr_classic_bo_map(dri_bo *bo_base, int write_enable)
 +{
 +	radeon_bufmgr_classic *bufmgr = get_bufmgr_classic(bo_base->bufmgr);
@@ -4037,33 +4048,35 @@ index f8f9d4f..5b90e42 100644
 +			}
 +		}
 +	}
-+
+ 
+-	assert(id <= rmesa->rmm->u_last);
 +	if (!bo->mapcount && bo->functions->map)
 +		bo->functions->map(bo, write_enable);
-+
+ 
+-	if (access == R300_MEM_R) {
 +	bo->mapcount++;
 +	assert(bo->mapcount > 0);
 +	return 0;
 +}
-+
+ 
+-		if (rmesa->rmm->u_list[id].mapped == 1)
+-			WARN_ONCE("buffer %d already mapped\n", id);
 +static int bufmgr_classic_bo_unmap(dri_bo *buf)
 +{
 +	radeon_bo_classic *bo = get_bo_classic(buf);
 +	assert(bo->refcount > 0);
 +	assert(bo->mapcount > 0);
 +	bo->mapcount--;
-+
+ 
+-		rmesa->rmm->u_list[id].mapped = 1;
+-		ptr = r300_mem_ptr(rmesa, id);
 +	if (!bo->mapcount && bo->functions->unmap)
 +		bo->functions->unmap(bo);
-+
+ 
+-		return ptr;
 +	return 0;
 +}
- 
--	if (tries >= 1000) {
--		fprintf(stderr, "Idling failed (%x vs %x)\n",
--			rmesa->rmm->u_list[id].age,
--			radeonGetAge((radeonContextPtr) rmesa));
--		return NULL;
++
 +/**
 + * Mark the given buffer as pending and move it to the tail
 + * of the pending list.
@@ -4081,17 +4094,15 @@ index f8f9d4f..5b90e42 100644
 +			bufmgr->pending_tail = bo->pending_pprev;
  	}
  
--	if (rmesa->rmm->u_list[id].mapped == 1)
--		WARN_ONCE("buffer %d already mapped\n", id);
+-	if (rmesa->rmm->u_list[id].h_pending)
+-		r300FlushCmdBuf(rmesa, __FUNCTION__);
 +	bo->pending = 1;
 +	bo->pending_pprev = bufmgr->pending_tail;
 +	bo->pending_next = 0;
 +	*bufmgr->pending_tail = bo;
 +	bufmgr->pending_tail = &bo->pending_next;
 +}
- 
--	rmesa->rmm->u_list[id].mapped = 1;
--	ptr = r300_mem_ptr(rmesa, id);
++
 +/**
 + * Emit commands to the batch buffer that cause the guven buffer's
 + * pending_count and pending_age to be updated.
@@ -4102,8 +4113,7 @@ index f8f9d4f..5b90e42 100644
 +	BATCH_LOCALS(bufmgr->rmesa);
 +	drm_r300_cmd_header_t cmd;
 +	uint64_t ull;
- 
--	return ptr;
++
 +	cmd.scratch.cmd_type = R300_CMD_SCRATCH;
 +	cmd.scratch.reg = 2; /* Scratch register 2 corresponds to what radeonGetAge polls */
 +	cmd.scratch.n_bufs = 1;
@@ -4119,31 +4129,27 @@ index f8f9d4f..5b90e42 100644
 +	COMMIT_BATCH();
 +
 +	bo->pending_count++;
- }
++}
  
--void r300_mem_unmap(r300ContextPtr rmesa, int id)
+-	if (rmesa->rmm->u_list[id].h_pending) {
+-		return NULL;
 +static int bufmgr_classic_emit_reloc(dri_bo *batch_buf, uint64_t flags, GLuint delta,
 +				     GLuint offset, dri_bo *target)
- {
--#ifdef MM_DEBUG
--	fprintf(stderr, "%s: %d at age %x\n", __FUNCTION__, id,
--		radeonGetAge((radeonContextPtr) rmesa));
--#endif
++{
 +	radeon_bo_classic *bo = get_bo_classic(batch_buf);
 +	radeon_reloc *reloc;
- 
--	assert(id <= rmesa->rmm->u_last);
++	
 +	if (bo->relocs_used >= bo->relocs_size) {
 +		bo->relocs_size *= 2;
 +		if (bo->relocs_size < 32)
 +			bo->relocs_size = 32;
- 
--	if (rmesa->rmm->u_list[id].mapped == 0)
--		WARN_ONCE("buffer %d not mapped\n", id);
++
 +		bo->relocs = (radeon_reloc*)realloc(bo->relocs, bo->relocs_size*sizeof(radeon_reloc));
-+	}
+ 	}
  
--	rmesa->rmm->u_list[id].mapped = 0;
+-	while (rmesa->rmm->u_list[id].age >
+-	       radeonGetAge((radeonContextPtr) rmesa) && tries++ < 1000)
+-		usleep(10);
 +	reloc = &bo->relocs[bo->relocs_used++];
 +	reloc->flags = flags;
 +	reloc->offset = offset;
@@ -4151,38 +4157,79 @@ index f8f9d4f..5b90e42 100644
 +	reloc->target = get_bo_classic(target);
 +	dri_bo_reference(target);
 +	return 0;
- }
++}
  
--void r300_mem_free(r300ContextPtr rmesa, int id)
+-	if (tries >= 1000) {
+-		fprintf(stderr, "Idling failed (%x vs %x)\n",
+-			rmesa->rmm->u_list[id].age,
+-			radeonGetAge((radeonContextPtr) rmesa));
+-		return NULL;
++static void bufmgr_kick_all_buffers(radeon_bufmgr_classic *bufmgr)
++{
++	radeon_bo_classic *bo;
++
++	bo = bufmgr->buffers;
++	while(bo) {
++		if (bo->functions == &vram_bo_functions) {
++			radeon_bo_vram *bo_vram = get_bo_vram(bo);
++			if (bo->validated) {
++				driDestroyTextureObject(&bo_vram->vram->base);
++				bo_vram->vram = 0;
++				bo->validated = 0;
++			}
++		}
++		bo = bo->next;
+ 	}
++}
+ 
+-	if (rmesa->rmm->u_list[id].mapped == 1)
+-		WARN_ONCE("buffer %d already mapped\n", id);
 +/* process_relocs is called just before the given command buffer
 + * is executed. It ensures that all referenced buffers are in
 + * the right GPU domain.
 + */
 +static void *bufmgr_classic_process_relocs(dri_bo *batch_buf)
- {
--#ifdef MM_DEBUG
--	fprintf(stderr, "%s: %d at age %x\n", __FUNCTION__, id,
--		radeonGetAge((radeonContextPtr) rmesa));
--#endif
++{
 +	radeon_bo_classic *batch_bo = get_bo_classic(batch_buf);
++	radeon_bufmgr_classic *bufmgr = get_bufmgr_classic(batch_bo->base.bufmgr);
 +	int i;
- 
--	assert(id <= rmesa->rmm->u_last);
++	int ret = 0;
++	int retries = 0;
++
 +	// Warning: At this point, we append something to the batch buffer
 +	// during flush.
 +	emit_age_for_buffer(batch_bo);
 +
 +	dri_bo_map(batch_buf, GL_TRUE);
++
++restart:
 +	for(i = 0; i < batch_bo->relocs_used; ++i) {
 +		radeon_reloc *reloc = &batch_bo->relocs[i];
 +		uint32_t *dest = (uint32_t*)((char*)batch_buf->virtual + reloc->offset);
 +		uint32_t offset;
-+
++		
++		ret = 0;
 +		if (!reloc->target->validated)
-+			reloc->target->functions->validate(reloc->target);
++		    ret = reloc->target->functions->validate(reloc->target);
++		
++		if (ret == -1) {
++			track_pending_buffers(bufmgr);
++			/* seriously not afraid of the police */
++		  	bufmgr_kick_all_buffers(bufmgr);
++		  	retries++;
++		  	if (retries == 2) {
++				fprintf(stderr,"r300: Failed to get relocations into aperture\n");
++				exit(-1);
++			}
++			goto restart;
++		}
+ 
+-	rmesa->rmm->u_list[id].mapped = 1;
+-	ptr = r300_mem_ptr(rmesa, id);
 +		reloc->target->used = 1;
 +		offset = reloc->target->base.offset + reloc->delta;
-+
+ 
+-	return ptr;
 +		if (reloc->flags & DRM_RELOC_BLITTER)
 +			*dest = (*dest & 0xffc00000) | (offset >> 10);
 +		else if (reloc->flags & DRM_RELOC_TXOFFSET)
@@ -4192,27 +4239,32 @@ index f8f9d4f..5b90e42 100644
 +	}
 +	dri_bo_unmap(batch_buf);
 +	return 0;
-+}
+ }
  
--	if (id == 0)
--		return;
+-void r300_mem_unmap(r300ContextPtr rmesa, int id)
 +/* post_submit is called just after the given command buffer
 + * is executed. It ensures that buffers are properly marked as
 + * pending.
 + */
 +static void bufmgr_classic_post_submit(dri_bo *batch_buf)
-+{
+ {
+-#ifdef MM_DEBUG
+-	fprintf(stderr, "%s: %d at age %x\n", __FUNCTION__, id,
+-		radeonGetAge((radeonContextPtr) rmesa));
+-#endif
 +	radeon_bo_classic *batch_bo = get_bo_classic(batch_buf);
++	radeon_bufmgr_classic *bufmgr = get_bufmgr_classic(batch_bo->base.bufmgr);
 +	int i;
  
--	if (rmesa->rmm->u_list[id].ptr == NULL) {
--		WARN_ONCE("Not allocated!\n");
--		return;
+-	assert(id <= rmesa->rmm->u_last);
 +	assert(!batch_bo->pending_count);
-+
+ 
+-	if (rmesa->rmm->u_list[id].mapped == 0)
+-		WARN_ONCE("buffer %d not mapped\n", id);
 +	for(i = 0; i < batch_bo->relocs_used; ++i) {
 +		radeon_reloc *reloc = &batch_bo->relocs[i];
-+
+ 
+-	rmesa->rmm->u_list[id].mapped = 0;
 +		if (reloc->target->used) {
 +			reloc->target->used = 0;
 +			assert(!reloc->target->pending_count);
@@ -4221,14 +4273,19 @@ index f8f9d4f..5b90e42 100644
 +			if (reloc->target->functions->bind)
 +				(*reloc->target->functions->bind)(reloc->target);
 +		}
- 	}
-+}
++		if (reloc->target->space_accounted)
++			reloc->target->space_accounted = 0;
++	}
++	bufmgr->total_vram_used = 0;
+ }
  
--	if (rmesa->rmm->u_list[id].pending) {
--		WARN_ONCE("%p already pended!\n", rmesa->rmm->u_list[id].ptr);
--		return;
+-void r300_mem_free(r300ContextPtr rmesa, int id)
 +static void bufmgr_classic_destroy(dri_bufmgr *bufmgr_ctx)
-+{
+ {
+-#ifdef MM_DEBUG
+-	fprintf(stderr, "%s: %d at age %x\n", __FUNCTION__, id,
+-		radeonGetAge((radeonContextPtr) rmesa));
+-#endif
 +	radeon_bufmgr_classic* bufmgr = get_bufmgr_classic(bufmgr_ctx);
 +
 +	track_pending_buffers(bufmgr);
@@ -4245,14 +4302,43 @@ index f8f9d4f..5b90e42 100644
 +			bufmgr->buffers->pending = 0;
 +			bo_free(bufmgr->buffers);
 +		}
- 	}
++	}
  
--	rmesa->rmm->u_list[id].pending = 1;
+-	assert(id <= rmesa->rmm->u_last);
 +	driDestroyTextureHeap(bufmgr->texture_heap);
 +	bufmgr->texture_heap = 0;
 +	assert(is_empty_list(&bufmgr->texture_swapped));
-+
+ 
+-	if (id == 0)
+-		return;
 +	free(bufmgr);
++}
+ 
+-	if (rmesa->rmm->u_list[id].ptr == NULL) {
+-		WARN_ONCE("Not allocated!\n");
+-		return;
++static int bufmgr_check_aperture_space(dri_bo *buf)
++{
++	radeon_bo_classic *bo = get_bo_classic(buf);	
++	radeon_bufmgr_classic *bufmgr = get_bufmgr_classic(bo->base.bufmgr);
++  	if (bo->space_accounted == 0) {
++		bo->space_accounted = 1;
++		if (bo->functions == &vram_bo_functions) {
++			bufmgr->total_vram_used += bo->base.size;
++		}
+ 	}
+ 
+-	if (rmesa->rmm->u_list[id].pending) {
+-		WARN_ONCE("%p already pended!\n", rmesa->rmm->u_list[id].ptr);
+-		return;
++	if (bufmgr->total_vram_used >= bufmgr->texture_heap->size) {
++		bufmgr->total_vram_used -= bo->base.size;
++		bo->space_accounted = 0;
++		return -1;
+ 	}
+ 
+-	rmesa->rmm->u_list[id].pending = 1;
++	return 0;
 +}
 +
 +dri_bufmgr* radeonBufmgrClassicInit(r300ContextPtr rmesa)
@@ -4271,7 +4357,7 @@ index f8f9d4f..5b90e42 100644
 +	bufmgr->base.process_relocs = &bufmgr_classic_process_relocs;
 +	bufmgr->base.post_submit = &bufmgr_classic_post_submit;
 +	bufmgr->base.destroy = &bufmgr_classic_destroy;
-+
++	bufmgr->base.check_aperture_space = &bufmgr_check_aperture_space;
 +	bufmgr->pending_tail = &bufmgr->pending;
 +
 +	/* Init texture heap */
@@ -4780,7 +4866,7 @@ index 0000000..7705a4d
 +
 +#endif /* __R300_MIPMAP_TREE_H_ */
 diff --git a/src/mesa/drivers/dri/r300/r300_render.c b/src/mesa/drivers/dri/r300/r300_render.c
-index 292f87a..11ffbca 100644
+index 292f87a..4cf11cf 100644
 --- a/src/mesa/drivers/dri/r300/r300_render.c
 +++ b/src/mesa/drivers/dri/r300/r300_render.c
 @@ -175,89 +175,79 @@ int r300NumVerts(r300ContextPtr rmesa, int num_verts, int prim)
@@ -4937,7 +5023,18 @@ index 292f87a..11ffbca 100644
  }
  
  static GLboolean r300RunRender(GLcontext * ctx,
-@@ -324,10 +321,6 @@ static GLboolean r300RunRender(GLcontext * ctx,
+@@ -310,6 +307,10 @@ static GLboolean r300RunRender(GLcontext * ctx,
+ 	if (r300EmitArrays(ctx))
+ 		return GL_TRUE;
+ 
++
++	if (r300ValidateTextures(ctx))
++		return GL_TRUE;
++
+ 	r300UpdateShaderStates(rmesa);
+ 
+ 	r300EmitCacheFlush(rmesa);
+@@ -324,10 +325,6 @@ static GLboolean r300RunRender(GLcontext * ctx,
  
  	r300EmitCacheFlush(rmesa);
  
@@ -4949,7 +5046,7 @@ index 292f87a..11ffbca 100644
  
  	return GL_FALSE;
 diff --git a/src/mesa/drivers/dri/r300/r300_state.c b/src/mesa/drivers/dri/r300/r300_state.c
-index 6a5c363..935f948 100644
+index 6a5c363..ed399b2 100644
 --- a/src/mesa/drivers/dri/r300/r300_state.c
 +++ b/src/mesa/drivers/dri/r300/r300_state.c
 @@ -55,6 +55,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
@@ -5089,12 +5186,11 @@ index 6a5c363..935f948 100644
  
  	if (r300->radeon.sarea->tiling_enabled) {
  		/* XXX: Turn off when clearing buffers ? */
-@@ -2675,7 +2636,7 @@ void r300UpdateShaderStates(r300ContextPtr rmesa)
+@@ -2675,7 +2636,6 @@ void r300UpdateShaderStates(r300ContextPtr rmesa)
  	GLcontext *ctx;
  	ctx = rmesa->radeon.glCtx;
  
 -	r300UpdateTextureState(ctx);
-+	r300ValidateTextures(ctx);
  	r300SetEarlyZState(ctx);
  
  	GLuint fgdepthsrc = R300_FG_DEPTH_SRC_SCAN;
@@ -5112,10 +5208,15 @@ index 0589ab7..96177ba 100644
     }							\
      \
 diff --git a/src/mesa/drivers/dri/r300/r300_swtcl.c b/src/mesa/drivers/dri/r300/r300_swtcl.c
-index b6e7ce1..4d73ee3 100644
+index b6e7ce1..c4e88e2 100644
 --- a/src/mesa/drivers/dri/r300/r300_swtcl.c
 +++ b/src/mesa/drivers/dri/r300/r300_swtcl.c
-@@ -61,7 +61,7 @@ USE OR OTHER DEALINGS IN THE SOFTWARE.
+@@ -57,11 +57,12 @@ USE OR OTHER DEALINGS IN THE SOFTWARE.
+ #include "r300_ioctl.h"
+ #include "r300_emit.h"
+ #include "r300_mem.h"
++#include "r300_tex.h"
+ 
  static void flush_last_swtcl_prim( r300ContextPtr rmesa  );
  
  
@@ -5124,7 +5225,7 @@ index b6e7ce1..4d73ee3 100644
  void r300EmitVbufPrim(r300ContextPtr rmesa, GLuint primitive, GLuint vertex_nr);
  #define EMIT_ATTR( ATTR, STYLE )					\
  do {									\
-@@ -175,7 +175,7 @@ static void r300SetVertexFormat( GLcontext *ctx )
+@@ -175,7 +176,7 @@ static void r300SetVertexFormat( GLcontext *ctx )
  			inputs[i] = -1;
  		}
  	}
@@ -5133,7 +5234,7 @@ index b6e7ce1..4d73ee3 100644
  	/* Fixed, apply to vir0 only */
  	if (InputsRead & (1 << VERT_ATTRIB_POS))
  		inputs[VERT_ATTRIB_POS] = 0;
-@@ -186,16 +186,16 @@ static void r300SetVertexFormat( GLcontext *ctx )
+@@ -186,16 +187,16 @@ static void r300SetVertexFormat( GLcontext *ctx )
  	for (i = VERT_ATTRIB_TEX0; i <= VERT_ATTRIB_TEX7; i++)
  		if (InputsRead & (1 << i))
  			inputs[i] = 6 + (i - VERT_ATTRIB_TEX0);
@@ -5153,7 +5254,7 @@ index b6e7ce1..4d73ee3 100644
  		swizzle[i][0] = SWIZZLE_ZERO;
  		swizzle[i][1] = SWIZZLE_ZERO;
  		swizzle[i][2] = SWIZZLE_ZERO;
-@@ -215,21 +215,21 @@ static void r300SetVertexFormat( GLcontext *ctx )
+@@ -215,21 +216,21 @@ static void r300SetVertexFormat( GLcontext *ctx )
  	((drm_r300_cmd_header_t *) rmesa->hw.vir[1].cmd)->packet0.count =
  		r300VAPInputRoute1(&rmesa->hw.vir[1].cmd[R300_VIR_CNTL_0], swizzle,
  				   nr);
@@ -5180,7 +5281,7 @@ index b6e7ce1..4d73ee3 100644
  	rmesa->swtcl.vertex_size /= 4;
  
  	RENDERINPUTS_COPY( rmesa->tnl_index_bitset, index_bitset );
-@@ -245,38 +245,40 @@ static void r300SetVertexFormat( GLcontext *ctx )
+@@ -245,38 +246,40 @@ static void r300SetVertexFormat( GLcontext *ctx )
   */
  static void flush_last_swtcl_prim( r300ContextPtr rmesa  )
  {
@@ -5235,7 +5336,7 @@ index b6e7ce1..4d73ee3 100644
  	}
  }
  
-@@ -287,7 +289,7 @@ r300AllocDmaLowVerts( r300ContextPtr rmesa, int nverts, int vsize )
+@@ -287,7 +290,7 @@ r300AllocDmaLowVerts( r300ContextPtr rmesa, int nverts, int vsize )
  {
  	GLuint bytes = vsize * nverts;
  
@@ -5244,7 +5345,7 @@ index b6e7ce1..4d73ee3 100644
  		r300RefillCurrentDmaRegion( rmesa, bytes);
  
  	if (!rmesa->dma.flush) {
-@@ -297,13 +299,13 @@ r300AllocDmaLowVerts( r300ContextPtr rmesa, int nverts, int vsize )
+@@ -297,13 +300,13 @@ r300AllocDmaLowVerts( r300ContextPtr rmesa, int nverts, int vsize )
  
  	ASSERT( vsize == rmesa->swtcl.vertex_size * 4 );
  	ASSERT( rmesa->dma.flush == flush_last_swtcl_prim );
@@ -5262,7 +5363,7 @@ index b6e7ce1..4d73ee3 100644
  		rmesa->swtcl.numverts += nverts;
  		return head;
  	}
-@@ -352,7 +354,7 @@ static void r300RenderPrimitive( GLcontext *ctx, GLenum prim );
+@@ -352,7 +355,7 @@ static void r300RenderPrimitive( GLcontext *ctx, GLenum prim );
     r300ContextPtr rmesa = R300_CONTEXT(ctx);		\
     const char *r300verts = (char *)rmesa->swtcl.verts;
  #define VERT(x) (r300Vertex *)(r300verts + ((x) * vertsize * sizeof(int)))
@@ -5271,7 +5372,7 @@ index b6e7ce1..4d73ee3 100644
  #define DO_DEBUG_VERTS (1 && (RADEON_DEBUG & DEBUG_VERTS))
  #define PRINT_VERTEX(x)
  #undef TAG
-@@ -572,15 +574,15 @@ static void r300RenderStart(GLcontext *ctx)
+@@ -572,15 +575,17 @@ static void r300RenderStart(GLcontext *ctx)
          r300ContextPtr rmesa = R300_CONTEXT( ctx );
  	//	fprintf(stderr, "%s\n", __FUNCTION__);
  
@@ -5280,6 +5381,8 @@ index b6e7ce1..4d73ee3 100644
  	r300SetVertexFormat(ctx);
  
  	r300UpdateShaders(rmesa);
++	
++	r300ValidateTextures(ctx);
  	r300UpdateShaderStates(rmesa);
  
  	r300EmitCacheFlush(rmesa);
@@ -5290,7 +5393,7 @@ index b6e7ce1..4d73ee3 100644
  	    rmesa->dma.flush != flush_last_swtcl_prim)
  		rmesa->dma.flush( rmesa );
  
-@@ -593,7 +595,7 @@ static void r300RenderFinish(GLcontext *ctx)
+@@ -593,7 +598,7 @@ static void r300RenderFinish(GLcontext *ctx)
  static void r300RasterPrimitive( GLcontext *ctx, GLuint hwprim )
  {
  	r300ContextPtr rmesa = R300_CONTEXT(ctx);
@@ -5299,7 +5402,7 @@ index b6e7ce1..4d73ee3 100644
  	if (rmesa->swtcl.hw_primitive != hwprim) {
  	        R300_NEWPRIM( rmesa );
  		rmesa->swtcl.hw_primitive = hwprim;
-@@ -611,7 +613,7 @@ static void r300RenderPrimitive(GLcontext *ctx, GLenum prim)
+@@ -611,7 +616,7 @@ static void r300RenderPrimitive(GLcontext *ctx, GLenum prim)
  
  	r300RasterPrimitive( ctx, reduced_prim[prim] );
  	//	fprintf(stderr, "%s\n", __FUNCTION__);
@@ -5308,7 +5411,7 @@ index b6e7ce1..4d73ee3 100644
  }
  
  static void r300ResetLineStipple(GLcontext *ctx)
-@@ -625,12 +627,12 @@ void r300InitSwtcl(GLcontext *ctx)
+@@ -625,12 +630,12 @@ void r300InitSwtcl(GLcontext *ctx)
  	TNLcontext *tnl = TNL_CONTEXT(ctx);
  	r300ContextPtr rmesa = R300_CONTEXT(ctx);
  	static int firsttime = 1;
@@ -5323,7 +5426,7 @@ index b6e7ce1..4d73ee3 100644
  	tnl->Driver.Render.Start = r300RenderStart;
  	tnl->Driver.Render.Finish = r300RenderFinish;
  	tnl->Driver.Render.PrimitiveNotify = r300RenderPrimitive;
-@@ -638,15 +640,15 @@ void r300InitSwtcl(GLcontext *ctx)
+@@ -638,15 +643,15 @@ void r300InitSwtcl(GLcontext *ctx)
  	tnl->Driver.Render.BuildVertices = _tnl_build_vertices;
  	tnl->Driver.Render.CopyPV = _tnl_copy_pv;
  	tnl->Driver.Render.Interp = _tnl_interp;
@@ -5343,7 +5446,7 @@ index b6e7ce1..4d73ee3 100644
  
  	_tnl_invalidate_vertex_state( ctx, ~0 );
  	_tnl_invalidate_vertices( ctx, ~0 );
-@@ -655,9 +657,9 @@ void r300InitSwtcl(GLcontext *ctx)
+@@ -655,9 +660,9 @@ void r300InitSwtcl(GLcontext *ctx)
  	_tnl_need_projected_coords( ctx, GL_FALSE );
  	r300ChooseRenderState(ctx);
  
@@ -5355,7 +5458,7 @@ index b6e7ce1..4d73ee3 100644
  	  _mesa_validate_all_lighting_tables;
  }
  
-@@ -665,33 +667,32 @@ void r300DestroySwtcl(GLcontext *ctx)
+@@ -665,33 +670,32 @@ void r300DestroySwtcl(GLcontext *ctx)
  {
  }
  
@@ -6388,7 +6491,7 @@ index 8ab382c..bdb971a 100644
  	driInitTextureFormats();
  }
 diff --git a/src/mesa/drivers/dri/r300/r300_tex.h b/src/mesa/drivers/dri/r300/r300_tex.h
-index b86d45b..358b927 100644
+index b86d45b..a293ccf 100644
 --- a/src/mesa/drivers/dri/r300/r300_tex.h
 +++ b/src/mesa/drivers/dri/r300/r300_tex.h
 @@ -41,12 +41,7 @@ extern void r300SetTexOffset(__DRIcontext *pDRICtx, GLint texname,
@@ -6401,7 +6504,7 @@ index b86d45b..358b927 100644
 -			       GLuint face);
 -
 -extern void r300DestroyTexObj(r300ContextPtr rmesa, r300TexObjPtr t);
-+extern void r300ValidateTextures(GLcontext * ctx);
++extern GLboolean r300ValidateTextures(GLcontext * ctx);
  
  extern void r300InitTextureFuncs(struct dd_function_table *functions);
  
@@ -6933,7 +7036,7 @@ index b03eefa..bacf12f 100644
 -	return 0;
 -}
 diff --git a/src/mesa/drivers/dri/r300/r300_texstate.c b/src/mesa/drivers/dri/r300/r300_texstate.c
-index e2329f0..ca148de 100644
+index e2329f0..f42f020 100644
 --- a/src/mesa/drivers/dri/r300/r300_texstate.c
 +++ b/src/mesa/drivers/dri/r300/r300_texstate.c
 @@ -48,6 +48,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
@@ -6954,7 +7057,7 @@ index e2329f0..ca148de 100644
  
  	switch (tObj->Image[0][tObj->BaseLevel]->TexFormat->MesaFormat) {
  	case MESA_FORMAT_Z16:
-@@ -190,399 +190,228 @@ void r300SetDepthTexMode(struct gl_texture_object *tObj)
+@@ -190,399 +190,241 @@ void r300SetDepthTexMode(struct gl_texture_object *tObj)
  
  
  /**
@@ -7472,18 +7575,21 @@ index e2329f0..ca148de 100644
 +/**
 + * Ensure all enabled and complete textures are uploaded.
 + */
-+void r300ValidateTextures(GLcontext * ctx)
++GLboolean r300ValidateTextures(GLcontext * ctx)
  {
 -	r300ContextPtr rmesa = R300_CONTEXT(ctx);
 -	struct gl_texture_unit *texUnit = &ctx->Texture.Unit[unit];
 -	struct gl_texture_object *tObj = texUnit->_Current;
 -	r300TexObjPtr t = (r300TexObjPtr) tObj->DriverData;
 +	int i;
++	int flushed = 0;
  
 -	/* Fallback if there's a texture border */
 -	if (tObj->Image[0][tObj->BaseLevel]->Border > 0)
 -		return GL_FALSE;
++ again:
 +	for (i = 0; i < ctx->Const.MaxTextureImageUnits; ++i) {
++		r300TexObj *t;
 +		if (!ctx->Texture.Unit[i]._ReallyEnabled)
 +			continue;
  
@@ -7498,22 +7604,31 @@ index e2329f0..ca148de 100644
 -
 -			rmesa->state.texture.unit[unit].texobj->base.bound &=
 -			    ~(1 << unit);
-+		if (!r300_validate_texture(ctx, ctx->Texture.Unit[i]._Current)) {
++		t = r300_tex_obj(ctx->Texture.Unit[i]._Current);
++		if (!r300_validate_texture(ctx, t)) {
 +			_mesa_warning(ctx,
 +				      "failed to validate texture for unit %d.\n",
 +				      i);
  		}
--
+ 
 -		rmesa->state.texture.unit[unit].texobj = t;
 -		t->base.bound |= (1 << unit);
 -		driUpdateTextureLRU((driTextureObject *) t);	/* XXX: should be locked! */
++		if (dri_bufmgr_check_aperture_space(t->mt->bo)) {
++			r300Flush(ctx);
++			if (flushed)
++				return GL_TRUE;
++		   	flushed = 1;
++		  	goto again;
++		}
  	}
 -
 -	return !t->border_fallback;
++	return GL_FALSE;
  }
  
  void r300SetTexOffset(__DRIcontext * pDRICtx, GLint texname,
-@@ -591,20 +420,18 @@ void r300SetTexOffset(__DRIcontext * pDRICtx, GLint texname,
+@@ -591,20 +433,18 @@ void r300SetTexOffset(__DRIcontext * pDRICtx, GLint texname,
  	r300ContextPtr rmesa = pDRICtx->driverPrivate;
  	struct gl_texture_object *tObj =
  	    _mesa_lookup_texture(rmesa->radeon.glCtx, texname);
@@ -7536,7 +7651,7 @@ index e2329f0..ca148de 100644
  	t->pitch_reg &= (1 << 13) -1;
  	pitch_val = pitch;
  
-@@ -630,39 +457,3 @@ void r300SetTexOffset(__DRIcontext * pDRICtx, GLint texname,
+@@ -630,39 +470,3 @@ void r300SetTexOffset(__DRIcontext * pDRICtx, GLint texname,
  
  	t->pitch_reg |= pitch_val;
  }
