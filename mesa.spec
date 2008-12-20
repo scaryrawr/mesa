@@ -51,7 +51,6 @@ BuildRequires: kernel-headers >= 2.6.27-0.305.rc5.git6
 BuildRequires: libXxf86vm-devel
 BuildRequires: expat-devel >= 2.0
 BuildRequires: xorg-x11-proto-devel >= 7.1-10
-BuildRequires: dri2proto >= 1.1
 BuildRequires: makedepend
 BuildRequires: libselinux-devel
 BuildRequires: libXext-devel
@@ -189,7 +188,7 @@ sed -i 's,terrain.dat,%{_libdir}/mesa-demos-data/&,' progs/demos/terrain.c
 
 %build
 
-autoreconf --install
+autoreconf --install  
 
 export CFLAGS="$RPM_OPT_FLAGS -fvisibility=hidden -Os"
 export CXXFLAGS="$RPM_OPT_FLAGS -fvisibility=hidden -Os"
