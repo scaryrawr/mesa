@@ -18,7 +18,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.3
-Release: 0.13%{?dist}
+Release: 0.2%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -42,6 +42,8 @@ Patch7: mesa-7.1-link-shared.patch
 Patch9: intel-revert-vbl.patch
 
 Patch12: mesa-7.1-disable-intel-classic-warn.patch
+Patch13: intel-triple-remove.patch
+Patch14: intel-fix-sarea-define.patch
 
 BuildRequires: pkgconfig autoconf automake
 %if %{with_dri}
@@ -175,6 +177,8 @@ This package provides some demo applications for testing Mesa.
 %patch7 -p1 -b .dricore
 %patch9 -p1 -b .intel-vbl
 %patch12 -p1 -b .intel-nowarn
+%patch13 -p1 -b .triple-remove
+%patch14 -p1 -b .sarea
 
 # WARNING: The following files are copyright "Mark J. Kilgard" under the GLUT
 # license and are not open source/free software, so we remove them.
@@ -426,7 +430,11 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/mesa-demos-data
 
 %changelog
-* Sat Dec 20 2008 Dave Airlie <airlied@redhat.com> 7.3-0.13
+* Sun Dec 21 2008 Dave Airlie <airlied@redhat.com> 7.3-0.2
+- intel-fix-sarea-define.patch - workaround wrong define
+- intel-triple-remove.patch - remove triple buffering
+
+* Sat Dec 20 2008 Dave Airlie <airlied@redhat.com> 7.3-0.1
 - Mesa rebase to upstream + new r300 bufmgr code (may need more work)
 
 * Thu Oct 23 2008 Dave Airlie <airlied@redhat.com> 7.2-0.13
