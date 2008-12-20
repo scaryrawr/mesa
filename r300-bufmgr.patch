@@ -49,7 +49,7 @@ index 6ca9342..cbb09e6 100644
 +	radeon_bo_legacy.h \
 +	radeon_cs_legacy.h
 +
-+DRI_LIB_DEPS += -ldrm-radeon
++DRI_LIB_DEPS += -ldrm_radeon
  
  ##### TARGETS #####
  
@@ -10577,3 +10577,17 @@ index 9abe086..1650a9b 100644
 +extern void radeonSetSpanFunctions(driRenderbuffer * rb, const GLvisual * vis);
 +#endif
  #endif
+diff -up mesa-20081220/src/mesa/drivers/dri/r200/Makefile.dave mesa-20081220/src/mesa/drivers/dri/r200/Makefile
+--- mesa-20081220/src/mesa/drivers/dri/r200/Makefile.dave	2008-12-21 09:24:58.000000000 +1000
++++ mesa-20081220/src/mesa/drivers/dri/r200/Makefile	2008-12-21 09:26:11.000000000 +1000
+@@ -48,7 +48,9 @@ SYMLINKS = \
+ COMMON_SYMLINKS = \
+ 	radeon_chipset.h \
+ 	radeon_screen.c \
+-	radeon_screen.h
++	radeon_screen.h \
++	radeon_bo_legacy.h \
++	radeon_buffer.h
+ 
+ ##### TARGETS #####
+ 
