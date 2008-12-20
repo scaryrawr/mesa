@@ -13,11 +13,11 @@
 
 %define manpages gl-manpages-1.0.1
 %define xdriinfo xdriinfo-1.0.2
-%define gitdate 20081001
+%define gitdate 20081220
 
 Summary: Mesa graphics libraries
 Name: mesa
-Version: 7.2
+Version: 7.3
 Release: 0.13%{?dist}
 License: MIT
 Group: System Environment/Libraries
@@ -35,7 +35,6 @@ Source5: http://www.x.org/pub/individual/app/%{xdriinfo}.tar.bz2
 Patch0: mesa-7.1-osmesa-version.patch
 Patch2: mesa-7.1-nukeglthread-debug.patch
 Patch3: mesa-no-mach64.patch
-Patch4: depth-override-fix.patch
 
 Patch5: r300-bufmgr.patch
 
@@ -173,7 +172,6 @@ This package provides some demo applications for testing Mesa.
 %patch0 -p1 -b .osmesa
 %patch2 -p1 -b .intel-glthread
 %patch3 -p0 -b .no-mach64
-%patch4 -p1 -b .depth-override-fix
 %patch5 -p1 -b .r300-bufmgr
 %patch7 -p1 -b .dricore
 %patch9 -p1 -b .intel-vbl
@@ -429,6 +427,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/mesa-demos-data
 
 %changelog
+* Sat Dec 20 2008 Dave Airlie <airlied@redhat.com> 7.3-0.13
+- Mesa rebase to upstream + new r300 bufmgr code (may need more work)
+
 * Thu Oct 23 2008 Dave Airlie <airlied@redhat.com> 7.2-0.13
 - r300-bufmgr.patch - fix aperture sizing issues - should make compiz work better
 
