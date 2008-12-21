@@ -18,7 +18,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.3
-Release: 0.2%{?dist}
+Release: 0.3%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -173,7 +173,7 @@ This package provides some demo applications for testing Mesa.
 %patch0 -p1 -b .osmesa
 %patch2 -p1 -b .intel-glthread
 %patch3 -p0 -b .no-mach64
-#patch5 -p1 -b .r300-bufmgr
+%patch5 -p1 -b .r300-bufmgr
 %patch7 -p1 -b .dricore
 %patch9 -p1 -b .intel-vbl
 %patch12 -p1 -b .intel-nowarn
@@ -430,6 +430,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/mesa-demos-data
 
 %changelog
+* Sun Dec 21 2008 Dave Airlie <airlied@redhat.com> 7.3-0.3
+- r300-bufmgr.patch: make radeon/r200 work
+
 * Sun Dec 21 2008 Dave Airlie <airlied@redhat.com> 7.3-0.2
 - intel-fix-sarea-define.patch - workaround wrong define
 - intel-triple-remove.patch - remove triple buffering
