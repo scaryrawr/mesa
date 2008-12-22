@@ -64,7 +64,7 @@ index 6ca9342..cbb09e6 100644
 +	radeon_bo_legacy.h \
 +	radeon_cs_legacy.h
 +
-+DRI_LIB_DEPS += -ldrm-radeon
++DRI_LIB_DEPS += -ldrm_radeon
  
  ##### TARGETS #####
  
