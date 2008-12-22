@@ -18,7 +18,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.3
-Release: 0.3%{?dist}
+Release: 0.4%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -430,6 +430,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/mesa-demos-data
 
 %changelog
+* Mon Dec 22 2008 Dave Airlie <airlied@redhat.com> 7.3-0.4
+- r300-bufmgr.patch: remove start/end offset properly + r500 FP
+
 * Sun Dec 21 2008 Dave Airlie <airlied@redhat.com> 7.3-0.3
 - r300-bufmgr.patch: make radeon/r200 work
 
