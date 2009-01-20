@@ -14,20 +14,21 @@
 %define manpages gl-manpages-1.0.1
 %define xdriinfo xdriinfo-1.0.2
 %define gitdate 20081220
+%define snapshot -rc3
 
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.3
-Release: 0.4%{?dist}
+Release: 0.5%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
-#Source0: http://internap.dl.sourceforge.net/sourceforge/mesa3d/MesaLib-7.1pre.tar.bz2
-#Source1: http://internap.dl.sourceforge.net/sourceforge/mesa3d/MesaDemos-7.1pre.tar.bz2
-Source0: %{name}-%{gitdate}.tar.bz2
-Source2: %{manpages}.tar.bz2
+Source0: http://www.mesa3d.org/beta/MesaLib-7.3-rc3.tar.gz
+Source1: http://www.mesa3d.org/beta/MesaDemos-7.3-rc3.tar.gz
+#Source0: %{name}-%{gitdate}.tar.bz2
+#Source2: %{manpages}.tar.bz2
 Source3: make-git-snapshot.sh
 
 Source5: http://www.x.org/pub/individual/app/%{xdriinfo}.tar.bz2
@@ -42,8 +43,6 @@ Patch7: mesa-7.1-link-shared.patch
 Patch9: intel-revert-vbl.patch
 
 Patch12: mesa-7.1-disable-intel-classic-warn.patch
-Patch13: intel-triple-remove.patch
-Patch14: intel-fix-sarea-define.patch
 
 BuildRequires: pkgconfig autoconf automake
 %if %{with_dri}
@@ -168,21 +167,15 @@ This package provides some demo applications for testing Mesa.
 
 
 %prep
-#%setup -q -n Mesa-%{version}pre -b1 -b2
-%setup -q -n mesa-%{gitdate} -b2 -b5
+%setup -q -n Mesa-%{version}%{snapshot} -b0 -b1
+#%setup -q -n mesa-%{gitdate} -b2 -b5
 %patch0 -p1 -b .osmesa
 %patch2 -p1 -b .intel-glthread
 %patch3 -p0 -b .no-mach64
-%patch5 -p1 -b .r300-bufmgr
+#%patch5 -p1 -b .r300-bufmgr
 %patch7 -p1 -b .dricore
 %patch9 -p1 -b .intel-vbl
 %patch12 -p1 -b .intel-nowarn
-%patch13 -p1 -b .triple-remove
-%patch14 -p1 -b .sarea
-
-# WARNING: The following files are copyright "Mark J. Kilgard" under the GLUT
-# license and are not open source/free software, so we remove them.
-rm -f include/GL/uglglutshapes.h
 
 # Hack the demos to use installed data files
 sed -i 's,../images,%{_libdir}/mesa-demos-data,' progs/demos/*.c
@@ -269,7 +262,7 @@ done | xargs install -m 0755 -t $RPM_BUILD_ROOT%{_libdir}/dri >& /dev/null || :
 
 # strip out undesirable headers
 pushd $RPM_BUILD_ROOT%{_includedir}/GL 
-rm [a-fh-np-wyz]*.h gg*.h glf*.h glut*.h
+rm [a-fh-np-wyz]*.h gg*.h glf*.h
 popd
 
 # XXX demos, since they don't install automatically.  should fix that.
@@ -328,9 +321,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_includedir}/GL/glx.h
 %{_includedir}/GL/glx_mangle.h
 %{_includedir}/GL/glxext.h
-%{_includedir}/GL/xmesa.h
-%{_includedir}/GL/xmesa_x.h
-%{_includedir}/GL/xmesa_xf86.h
 %dir %{_includedir}/GL/internal
 %{_includedir}/GL/internal/dri_interface.h
 %{_libdir}/libGL.so
@@ -430,6 +420,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/mesa-demos-data
 
 %changelog
+* Tue Jan 20 2009 Kristian Høgsberg <krh@redhat.com> 7.3-0.5
+- Update to 7.3.0 rc3.
+
 * Mon Dec 22 2008 Dave Airlie <airlied@redhat.com> 7.3-0.4
 - r300-bufmgr.patch: remove start/end offset properly + r500 FP
 
