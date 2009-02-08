@@ -15,7 +15,7 @@
 %define manpages gl-manpages-1.0.1
 %define xdriinfo xdriinfo-1.0.2
 %define gitdate 20081220
-#%define snapshot 
+#% define snapshot 
 
 Summary: Mesa graphics libraries
 Name: mesa
@@ -26,10 +26,12 @@ Group: System Environment/Libraries
 URL: http://www.mesa3d.org
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
-Source0: http://www.mesa3d.org/beta/MesaLib-%{version}%{?snapshot}.tar.bz2
-Source1: http://www.mesa3d.org/beta/MesaDemos-%{version}%{?snapshot}.tar.bz2
+Source0: http://downloads.sf.net/mesa3d/MesaLib-%{version}.tar.bz2
+Source1: http://downloads.sf.net/mesa3d/MesaDemos-%{version}.tar.bz2
+#Source0: http://www.mesa3d.org/beta/MesaLib-%{version}%{?snapshot}.tar.bz2
+#Source1: http://www.mesa3d.org/beta/MesaDemos-%{version}%{?snapshot}.tar.bz2
 #Source0: %{name}-%{gitdate}.tar.bz2
-#Source2: %{manpages}.tar.bz2
+Source2: %{manpages}.tar.bz2
 Source3: make-git-snapshot.sh
 
 Source5: http://www.x.org/pub/individual/app/%{xdriinfo}.tar.bz2
@@ -168,7 +170,7 @@ This package provides some demo applications for testing Mesa.
 
 
 %prep
-%setup -q -n Mesa-%{version}%{?snapshot} -b0 -b1
+%setup -q -n Mesa-%{version}%{?snapshot} -b0 -b1 -b2 -b5
 #%setup -q -n mesa-%{gitdate} -b2 -b5
 %patch0 -p1 -b .osmesa
 %patch2 -p1 -b .intel-glthread
@@ -421,8 +423,8 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/mesa-demos-data
 
 %changelog
-* Thu Jan 22 2009 Kristian Høgsberg <krh@redhat.com> 7.3-1
-- And now, 7.3.0.
+* Sun Feb 08 2009 Adam Jackson <ajax@redhat.com> 7.3-1
+- Mesa 7.3
 
 * Tue Jan 20 2009 Kristian Høgsberg <krh@redhat.com> 7.3-0.5
 - Update to 7.3.0 rc3.
