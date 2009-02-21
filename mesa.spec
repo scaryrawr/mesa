@@ -20,7 +20,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.3
-Release: 2%{?dist}
+Release: 3%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -75,8 +75,6 @@ Group: System Environment/Libraries
 Requires(post): /sbin/ldconfig
 Requires(postun): /sbin/ldconfig
 Provides: libGL
-Obsoletes: Mesa XFree86-libs XFree86-Mesa-libGL xorg-x11-Mesa-libGL
-Obsoletes: xorg-x11-libs
 %if %{with_dri}
 Requires: libdrm >= 2.4.0-0.21
 Requires: mesa-dri-drivers = %{version}-%{release}
@@ -89,7 +87,7 @@ Mesa libGL runtime library.
 
 %if %{with_dri}
 %package dri-drivers
-Summary: Mesa-based DRI drivers.
+Summary: Mesa-based DRI drivers
 Group: User Interface/X Hardware Support
 %description dri-drivers
 Mesa-based DRI drivers.
@@ -102,7 +100,6 @@ Group: Development/Libraries
 Requires: mesa-libGL = %{version}-%{release}
 Requires: libX11-devel
 Provides: libGL-devel
-Obsoletes: Mesa-devel XFree86-devel xorg-x11-devel
 Conflicts: xorg-x11-proto-devel <= 7.2-12
 
 %description libGL-devel
@@ -115,8 +112,6 @@ Group: System Environment/Libraries
 Requires(post): /sbin/ldconfig
 Requires(postun): /sbin/ldconfig
 Provides: libGLU
-Obsoletes: Mesa XFree86-libs XFree86-Mesa-libGLU xorg-x11-Mesa-libGLU
-Obsoletes: xorg-x11-libs
 
 %description libGLU
 Mesa libGLU runtime library
@@ -128,7 +123,6 @@ Group: Development/Libraries
 Requires: mesa-libGLU = %{version}-%{release}
 Requires: libGL-devel
 Provides: libGLU-devel
-Obsoletes: Mesa-devel XFree86-devel xorg-x11-devel
 
 %description libGLU-devel
 Mesa libGLU development package
@@ -313,6 +307,7 @@ rm -rf $RPM_BUILD_ROOT
 
 %if %{with_dri}
 %files dri-drivers
+%defattr(-,root,root,-)
 %dir %{_libdir}/dri
 %{_libdir}/dri/libdricore.so
 %{_libdir}/dri/*_dri.so
@@ -425,6 +420,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/mesa-demos-data
 
 %changelog
+* Sat Feb 21 2009 Adam Jackson <ajax@redhat.com> 7.3-3
+- Merge review cleanups (#226136)
+
 * Mon Feb 09 2009 Adam Jackson <ajax@redhat.com> 7.3-2
 - mesa-7.3-965-texture-size.patch: Bump maximum 965 texture size. (#483674)
 
