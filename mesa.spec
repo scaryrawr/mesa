@@ -20,7 +20,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.3
-Release: 4%{?dist}
+Release: 5%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -77,7 +77,7 @@ Requires(postun): /sbin/ldconfig
 Provides: libGL
 %if %{with_dri}
 Requires: libdrm >= 2.4.0-0.21
-Requires: mesa-dri-drivers = %{version}-%{release}
+Requires: mesa-dri-drivers%{?_isa} = %{version}-%{release}
 Conflicts: xorg-x11-server-Xorg < 1.4.99.901-14
 %endif
 
@@ -228,11 +228,6 @@ make #{?_smp_mflags}
 make -C progs/xdemos glxgears glxinfo
 make %{?_smp_mflags} -C progs/demos
 
-# this keeps breaking, check it early.  note that the exit from eu-ftr is odd.
-#for i in */*.so ; do
-#    eu-findtextrel $i && exit 1
-#done
-
 pushd ../%{xdriinfo}
 %configure
 make %{?_smp_mflags}
@@ -253,7 +248,7 @@ make install DESTDIR=$RPM_BUILD_ROOT DRI_DIRS=
 %if %{with_dri}
 install -d $RPM_BUILD_ROOT%{_libdir}/dri
 install -m 0755 -t $RPM_BUILD_ROOT%{_libdir}/dri %{_lib}/libdricore.so >& /dev/null
-for f in i810 i915 i965 mga r128 r200 r300 radeon savage sis swrast tdfx unichrome; do
+for f in i810 i915 i965 mach64 mga r128 r200 r300 radeon savage sis swrast tdfx unichrome; do
     so=%{_lib}/${f}_dri.so
     test -e $so && echo $so
 done | xargs install -m 0755 -t $RPM_BUILD_ROOT%{_libdir}/dri >& /dev/null || :
@@ -287,6 +282,12 @@ popd
 pushd ../%{manpages}
 make %{?_smp_mflags} install DESTDIR=$RPM_BUILD_ROOT
 popd
+
+# this keeps breaking, check it early.  note that the exit from eu-ftr is odd.
+#pushd $RPM_BUILD_ROOT%{_libdir}
+#for i in *.so ; do
+#    eu-findtextrel $i && exit 1
+#done
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -420,6 +421,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/mesa-demos-data
 
 %changelog
+* Mon Feb 23 2009 Adam Jackson <ajax@redhat.com> 7.3-5
+- libGL Requires: mesa-dri-drivers%%{?_isa}.  Gets both 32 and 64 bit
+  drivers installed on multilib systems, so 32-bit clients get DRI.
+
 * Mon Feb 23 2009 Dave Airlie <airlied@redhat.com> 7.3-4
 - radeon: merge radeon-rewrite branch, drop old r300 bufmgr
 
