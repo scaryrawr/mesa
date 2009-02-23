@@ -20,7 +20,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.3
-Release: 3%{?dist}
+Release: 4%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -40,7 +40,7 @@ Patch0: mesa-7.1-osmesa-version.patch
 Patch2: mesa-7.1-nukeglthread-debug.patch
 Patch3: mesa-no-mach64.patch
 
-Patch5: r300-bufmgr.patch
+Patch5: radeon-rewrite.patch
 
 Patch7: mesa-7.1-link-shared.patch
 Patch9: intel-revert-vbl.patch
@@ -170,7 +170,7 @@ This package provides some demo applications for testing Mesa.
 %patch0 -p1 -b .osmesa
 %patch2 -p1 -b .intel-glthread
 %patch3 -p0 -b .no-mach64
-#%patch5 -p1 -b .r300-bufmgr
+%patch5 -p1 -b .radeon-rewrite
 %patch7 -p1 -b .dricore
 %patch9 -p1 -b .intel-vbl
 %patch12 -p1 -b .intel-nowarn
@@ -420,6 +420,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/mesa-demos-data
 
 %changelog
+* Mon Feb 23 2009 Dave Airlie <airlied@redhat.com> 7.3-4
+- radeon: merge radeon-rewrite branch, drop old r300 bufmgr
+
 * Sat Feb 21 2009 Adam Jackson <ajax@redhat.com> 7.3-3
 - Merge review cleanups (#226136)
 
