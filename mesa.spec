@@ -20,7 +20,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.3
-Release: 5%{?dist}
+Release: 6%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -188,21 +188,24 @@ autoreconf --install
 
 export CFLAGS="$RPM_OPT_FLAGS -fvisibility=hidden -Os"
 export CXXFLAGS="$RPM_OPT_FLAGS -fvisibility=hidden -Os"
+%define common_flags --enable-selinux --enable-pic
+%define osmesa_flags --with-driver=osmesa --disable-asm %{common_flags}
 
 # first, build the osmesa variants. XXX this is overkill.  osmesa32 is
 # sufficient to render to any of the channel sizes, according to the
 # docs.  should fix this someday.
-%configure --with-driver=osmesa --with-osmesa-bits=8 --enable-selinux
+
+%configure %{osmesa_flags} --with-osmesa-bits=8
 make %{_smp_mflags} SRC_DIRS=mesa
 mv %{_lib} osmesa8
 make clean
 
-%configure --with-driver=osmesa --with-osmesa-bits=16 --enable-selinux
+%configure %{osmesa_flags} --with-osmesa-bits=16
 make %{_smp_mflags} SRC_DIRS=mesa
 mv %{_lib} osmesa16
 make clean
 
-%configure --with-driver=osmesa --with-osmesa-bits=32 --enable-selinux
+%configure %{osmesa_flags} --with-osmesa-bits=32
 make %{_smp_mflags} SRC_DIRS=mesa
 mv %{_lib} osmesa32
 make clean
@@ -215,8 +218,7 @@ export CFLAGS="$RPM_OPT_FLAGS -Os"
 export CXXFLAGS="$RPM_OPT_FLAGS -Os"
 
 # now build the rest of mesa
-%configure \
-    --enable-selinux \
+%configure %{common_flags} \
     --disable-glw \
     --disable-glut \
     --disable-gl-osmesa \
@@ -284,10 +286,10 @@ make %{?_smp_mflags} install DESTDIR=$RPM_BUILD_ROOT
 popd
 
 # this keeps breaking, check it early.  note that the exit from eu-ftr is odd.
-#pushd $RPM_BUILD_ROOT%{_libdir}
-#for i in *.so ; do
-#    eu-findtextrel $i && exit 1
-#done
+pushd $RPM_BUILD_ROOT%{_libdir}
+for i in libOSMesa*.so ; do
+    eu-findtextrel $i && exit 1
+done
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -421,6 +423,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/mesa-demos-data
 
 %changelog
+* Tue Feb 24 2009 Adam Jackson <ajax@redhat.com> 7.3-6
+- Fix text relocations in OSMesa build. (#475146)
+- Re-enable textrel checks, for OSMesa only.
+
 * Mon Feb 23 2009 Adam Jackson <ajax@redhat.com> 7.3-5
 - libGL Requires: mesa-dri-drivers%%{?_isa}.  Gets both 32 and 64 bit
   drivers installed on multilib systems, so 32-bit clients get DRI.
