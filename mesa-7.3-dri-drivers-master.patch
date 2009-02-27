@@ -1,28 +1,3 @@
-diff --git a/src/mesa/drivers/dri/Makefile b/src/mesa/drivers/dri/Makefile
-index 9e49fb1..32db097 100644
---- a/src/mesa/drivers/dri/Makefile
-+++ b/src/mesa/drivers/dri/Makefile
-@@ -6,7 +6,7 @@ include $(TOP)/configs/current
- 
- 
- 
--default: $(TOP)/$(LIB_DIR) subdirs
-+default: $(TOP)/$(LIB_DIR) subdirs
- 
- 
- $(TOP)/$(LIB_DIR):
-diff --git a/src/mesa/drivers/dri/Makefile.template b/src/mesa/drivers/dri/Makefile.template
-index 2dc3664..2fa36ba 100644
---- a/src/mesa/drivers/dri/Makefile.template
-+++ b/src/mesa/drivers/dri/Makefile.template
-@@ -69,6 +72,7 @@ $(TOP)/$(LIB_DIR)/$(LIBNAME): $(LIBNAME)
- 
- 
- depend: $(C_SOURCES) $(ASM_SOURCES) $(SYMLINKS)
-+	rm -f depend
- 	touch depend
- 	$(MKDEP) $(MKDEP_OPTIONS) $(DRIVER_DEFINES) $(INCLUDES) $(C_SOURCES) \
- 		$(ASM_SOURCES)
 diff --git a/src/mesa/drivers/dri/common/dri_util.h b/src/mesa/drivers/dri/common/dri_util.h
 index c6781f1..c95a5c8 100644
 --- a/src/mesa/drivers/dri/common/dri_util.h
@@ -1234,22 +1209,6 @@ index a53f120..814fb59 100644
  }
  
  
-diff --git a/src/mesa/drivers/dri/i915/intel_clear.c b/src/mesa/drivers/dri/i915/intel_clear.c
-new file mode 120000
-index 0000000..9a2a742
---- /dev/null
-+++ b/src/mesa/drivers/dri/i915/intel_clear.c
-@@ -0,0 +1 @@
-+../intel/intel_clear.c
-\ No newline at end of file
-diff --git a/src/mesa/drivers/dri/i915/intel_extensions.c b/src/mesa/drivers/dri/i915/intel_extensions.c
-new file mode 120000
-index 0000000..a2f3e8c
---- /dev/null
-+++ b/src/mesa/drivers/dri/i915/intel_extensions.c
-@@ -0,0 +1 @@
-+../intel/intel_extensions.c
-\ No newline at end of file
 diff --git a/src/mesa/drivers/dri/i915/intel_state.c b/src/mesa/drivers/dri/i915/intel_state.c
 deleted file mode 100644
 index 4aa43e5..519672f
@@ -1553,22 +1512,6 @@ index 4aa43e5..519672f
 -   functions->DepthRange = intelDepthRange;
 -   functions->ClearColor = intelClearColor;
 -}
-diff --git a/src/mesa/drivers/dri/i915/intel_state.c b/src/mesa/drivers/dri/i915/intel_state.c
-new file mode 120000
-index 4aa43e5..519672f
---- /dev/null
-+++ b/src/mesa/drivers/dri/i915/intel_state.c
-@@ -0,0 +1 @@
-+../intel/intel_state.c
-\ No newline at end of file
-diff --git a/src/mesa/drivers/dri/i915/intel_swapbuffers.c b/src/mesa/drivers/dri/i915/intel_swapbuffers.c
-new file mode 120000
-index 0000000..148d521
---- /dev/null
-+++ b/src/mesa/drivers/dri/i915/intel_swapbuffers.c
-@@ -0,0 +1 @@
-+../intel/intel_swapbuffers.c
-\ No newline at end of file
 diff --git a/src/mesa/drivers/dri/i965/Makefile b/src/mesa/drivers/dri/i965/Makefile
 index 37a470f..2934414 100644
 --- a/src/mesa/drivers/dri/i965/Makefile
