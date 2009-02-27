@@ -1,5 +1,5 @@
 diff --git a/configs/autoconf.in b/configs/autoconf.in
-index b352974..d786029 100644
+index e034431..98e39bb 100644
 --- a/configs/autoconf.in
 +++ b/configs/autoconf.in
 @@ -20,6 +20,8 @@ CXXFLAGS = @CPPFLAGS@ @CXXFLAGS@ \
@@ -12,10 +12,20 @@ index b352974..d786029 100644
  # Assembler
  MESA_ASM_SOURCES = @MESA_ASM_SOURCES@
 diff --git a/configure.ac b/configure.ac
-index a9a8d5a..ea2992d 100644
+index 2f3f0be..3554982 100644
 --- a/configure.ac
 +++ b/configure.ac
-@@ -573,6 +575,13 @@ dri)
+@@ -410,6 +410,9 @@ AC_SUBST([GLU_DIRS])
+ AC_SUBST([DRIVER_DIRS])
+ AC_SUBST([WINDOW_SYSTEM])
+ 
++AC_SUBST([RADEON_CFLAGS])
++AC_SUBST([RADEON_LDFLAGS])
++
+ dnl
+ dnl User supplied program configuration
+ dnl
+@@ -583,6 +585,13 @@ dri)
      GL_PC_REQ_PRIV="libdrm >= $LIBDRM_REQUIRED dri2proto >= $DRI2PROTO_REQUIRED"
      DRI_PC_REQ_PRIV="libdrm >= $LIBDRM_REQUIRED"
  
@@ -29,15 +39,6 @@ index a9a8d5a..ea2992d 100644
      # find the DRI deps for libGL
      if test "$x11_pkgconfig" = yes; then
          # add xcb modules if necessary
-@@ -578,6 +585,8 @@ AC_SUBST([GL_PC_REQ_PRIV])
- AC_SUBST([GL_PC_LIB_PRIV])
- AC_SUBST([GL_PC_CFLAGS])
- AC_SUBST([DRI_PC_REQ_PRIV])
-+AC_SUBST([RADEON_CFLAGS])
-+AC_SUBST([RADEON_LDFLAGS])
- 
- dnl
- dnl More X11 setup
 diff --git a/src/mesa/drivers/dri/r200/Makefile b/src/mesa/drivers/dri/r200/Makefile
 index e9144ac..e593ed9 100644
 --- a/src/mesa/drivers/dri/r200/Makefile
@@ -738,17 +739,23 @@ diff --git a/src/mesa/drivers/dri/r200/r200_context.c b/src/mesa/drivers/dri/r20
 index c067515..a744469 100644
 --- a/src/mesa/drivers/dri/r200/r200_context.c
 +++ b/src/mesa/drivers/dri/r200/r200_context.c
-@@ -52,9 +52,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DE
- #include "drivers/common/driverfuncs.h"
- 
+@@ -54,7 +54,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  #include "r200_context.h"
-+#include "radeon_span.h"
  #include "r200_ioctl.h"
  #include "r200_state.h"
 -#include "r200_span.h"
  #include "r200_pixel.h"
  #include "r200_tex.h"
  #include "r200_swtcl.h"
+@@ -62,6 +61,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ #include "r200_maos.h"
+ #include "r200_vertprog.h"
+ 
++#include "radeon_span.h"
++
+ #define need_GL_ARB_vertex_program
+ #define need_GL_ATI_fragment_shader
+ #define need_GL_EXT_blend_minmax
 @@ -78,9 +79,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  #include "vblank.h"
  #include "utils.h"
@@ -4955,7 +4962,7 @@ index a917163..1dddbfd 100644
  
  extern void r200LightingSpaceChange( GLcontext *ctx );
 diff --git a/src/mesa/drivers/dri/r200/r200_state_init.c b/src/mesa/drivers/dri/r200/r200_state_init.c
-index 9e4677e..013064d 100644
+index 9e4677e..b40690e 100644
 --- a/src/mesa/drivers/dri/r200/r200_state_init.c
 +++ b/src/mesa/drivers/dri/r200/r200_state_init.c
 @@ -43,6 +43,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
@@ -5120,7 +5127,7 @@ index 9e4677e..013064d 100644
     return h.i;
  }
  
-@@ -127,71 +243,353 @@ static int cmdscl2( int offset, int stride, int count )
+@@ -127,96 +243,388 @@ static int cmdscl2( int offset, int stride, int count )
  }
  
  #define CHECK( NM, FLAG )				\
@@ -5247,6 +5254,7 @@ index 9e4677e..013064d 100644
 +   BATCH_LOCALS(&r200->radeon);
 +   uint32_t dwords = atom->cmd_size;
 +
++   dwords += 6;
 +   BEGIN_BATCH_NO_AUTOSTATE(dwords);
 +   OUT_VEC(atom->cmd[MTL_CMD_0], (atom->cmd+1));
 +   OUT_SCL2(atom->cmd[MTL_CMD_1], (atom->cmd + 18));
@@ -5259,6 +5267,7 @@ index 9e4677e..013064d 100644
 +   BATCH_LOCALS(&r200->radeon);
 +   uint32_t dwords = atom->cmd_size;
 +
++   dwords += 8;
 +   BEGIN_BATCH_NO_AUTOSTATE(dwords);
 +   OUT_VEC(atom->cmd[LIT_CMD_0], atom->cmd+1);
 +   OUT_VEC(atom->cmd[LIT_CMD_1], atom->cmd+LIT_CMD_1+1);
@@ -5271,6 +5280,7 @@ index 9e4677e..013064d 100644
 +   BATCH_LOCALS(&r200->radeon);
 +   uint32_t dwords = atom->cmd_size;
 +
++   dwords += 8;
 +   BEGIN_BATCH_NO_AUTOSTATE(dwords);
 +   OUT_VEC(atom->cmd[PTP_CMD_0], atom->cmd+1);
 +   OUT_VEC(atom->cmd[PTP_CMD_1], atom->cmd+PTP_CMD_1+1);
@@ -5283,6 +5293,7 @@ index 9e4677e..013064d 100644
 +   BATCH_LOCALS(&r200->radeon);
 +   uint32_t dwords = atom->cmd_size;
 +
++   dwords += 4;
 +   BEGIN_BATCH_NO_AUTOSTATE(dwords);
 +   OUT_VECLINEAR(atom->cmd[0], atom->cmd+1);
 +   END_BATCH();
@@ -5294,6 +5305,7 @@ index 9e4677e..013064d 100644
 +   BATCH_LOCALS(&r200->radeon);
 +   uint32_t dwords = atom->cmd_size;
 +
++   dwords += 2;
 +   BEGIN_BATCH_NO_AUTOSTATE(dwords);
 +   OUT_SCL(atom->cmd[0], atom->cmd+1);
 +   END_BATCH();
@@ -5306,6 +5318,7 @@ index 9e4677e..013064d 100644
 +   BATCH_LOCALS(&r200->radeon);
 +   uint32_t dwords = atom->cmd_size;
 +
++   dwords += 4;
 +   BEGIN_BATCH_NO_AUTOSTATE(dwords);
 +   OUT_VEC(atom->cmd[0], atom->cmd+1);
 +   END_BATCH();
@@ -5317,36 +5330,47 @@ index 9e4677e..013064d 100644
 +   BATCH_LOCALS(&r200->radeon);
 +   struct radeon_renderbuffer *rrb;
 +   uint32_t cbpitch;
-+   uint32_t zbpitch;
++   uint32_t zbpitch, depth_fmt;
 +   uint32_t dwords = atom->cmd_size;
-+   GLframebuffer *fb = r200->radeon.dri.drawable->driverPrivate;
 +
 +   /* output the first 7 bytes of context */
 +   BEGIN_BATCH_NO_AUTOSTATE(dwords+2+2);
 +   OUT_BATCH_TABLE(atom->cmd, 5);
 +
-+   rrb = r200->radeon.state.depth.rrb;
++   rrb = radeon_get_depthbuffer(&r200->radeon);
 +   if (!rrb) {
 +     OUT_BATCH(0);
 +     OUT_BATCH(0);
 +   } else {
 +     zbpitch = (rrb->pitch / rrb->cpp);
++     if (r200->using_hyperz)
++       zbpitch |= RADEON_DEPTH_HYPERZ;
 +     OUT_BATCH_RELOC(0, rrb->bo, 0, 0, RADEON_GEM_DOMAIN_VRAM, 0);
 +     OUT_BATCH(zbpitch);
++     if (rrb->cpp == 4) 
++       depth_fmt = RADEON_DEPTH_FORMAT_24BIT_INT_Z; 
++     else 
++       depth_fmt = RADEON_DEPTH_FORMAT_16BIT_INT_Z; 
++     atom->cmd[CTX_RB3D_ZSTENCILCNTL] &= ~RADEON_DEPTH_FORMAT_MASK; 
++     atom->cmd[CTX_RB3D_ZSTENCILCNTL] |= depth_fmt; 
 +   }
 +     
 +   OUT_BATCH(atom->cmd[CTX_RB3D_ZSTENCILCNTL]);
 +   OUT_BATCH(atom->cmd[CTX_CMD_1]);
 +   OUT_BATCH(atom->cmd[CTX_PP_CNTL]);
-+   OUT_BATCH(atom->cmd[CTX_RB3D_CNTL]);
 +
-+   rrb = r200->radeon.state.color.rrb;
-+   if (r200->radeon.radeonScreen->driScreen->dri2.enabled) {
-+      rrb = (struct radeon_renderbuffer *)fb->Attachment[BUFFER_BACK_LEFT].Renderbuffer;
-+   }
++   rrb = radeon_get_colorbuffer(&r200->radeon);
 +   if (!rrb || !rrb->bo) {
++     OUT_BATCH(atom->cmd[CTX_RB3D_CNTL]);
 +     OUT_BATCH(atom->cmd[CTX_RB3D_COLOROFFSET]);
 +   } else {
++     atom->cmd[CTX_RB3D_CNTL] &= ~(0xf << 10); 
++     if (rrb->cpp == 4) 
++       atom->cmd[CTX_RB3D_CNTL] |= RADEON_COLOR_FORMAT_ARGB8888; 
++     else 
++       atom->cmd[CTX_RB3D_CNTL] |= RADEON_COLOR_FORMAT_RGB565; 
++ 
++     OUT_BATCH(atom->cmd[CTX_RB3D_CNTL]); 
 +     OUT_BATCH_RELOC(0, rrb->bo, 0, 0, RADEON_GEM_DOMAIN_VRAM, 0);
 +   }
 +
@@ -5356,11 +5380,7 @@ index 9e4677e..013064d 100644
 +     OUT_BATCH(atom->cmd[CTX_RB3D_COLORPITCH]);
 +   } else {
 +     cbpitch = (rrb->pitch / rrb->cpp);
-+     if (rrb->cpp == 4)
-+       ;
-+     else
-+       ;
-+     if (r200->radeon.sarea->tiling_enabled)
++     if (rrb->bo->flags & RADEON_BO_FLAGS_MACRO_TILE)
 +       cbpitch |= R200_COLOR_TILE_ENABLE;
 +     OUT_BATCH(cbpitch);
 +   }
@@ -5379,22 +5399,38 @@ index 9e4677e..013064d 100644
 +   uint32_t cbpitch = 0;
 +   uint32_t zbpitch = 0;
 +   uint32_t dwords = atom->cmd_size;
-+   GLframebuffer *fb = r200->radeon.dri.drawable->driverPrivate;
++   uint32_t depth_fmt;
 +
-+   rrb = r200->radeon.state.color.rrb;
-+   if (r200->radeon.radeonScreen->driScreen->dri2.enabled) {
-+      rrb = (struct radeon_renderbuffer *)fb->Attachment[BUFFER_BACK_LEFT].Renderbuffer;
++   rrb = radeon_get_colorbuffer(&r200->radeon);
++   if (!rrb || !rrb->bo) {
++      return;
 +   }
-+   if (rrb) {
-+     assert(rrb->bo != NULL);
-+     cbpitch = (rrb->pitch / rrb->cpp);
-+     if (r200->radeon.sarea->tiling_enabled)
++
++   atom->cmd[CTX_RB3D_CNTL] &= ~(0xf << 10);
++   if (rrb->cpp == 4)
++	atom->cmd[CTX_RB3D_CNTL] |= RADEON_COLOR_FORMAT_ARGB8888;
++   else
++	atom->cmd[CTX_RB3D_CNTL] |= RADEON_COLOR_FORMAT_RGB565;
++
++   cbpitch = (rrb->pitch / rrb->cpp);
++   if (rrb->bo->flags & RADEON_BO_FLAGS_MACRO_TILE)
 +       cbpitch |= R200_COLOR_TILE_ENABLE;
++
++   drb = radeon_get_depthbuffer(&r200->radeon);
++   if (drb) {
++     zbpitch = (drb->pitch / drb->cpp);
++     if (drb->cpp == 4)
++        depth_fmt = RADEON_DEPTH_FORMAT_24BIT_INT_Z;
++     else
++        depth_fmt = RADEON_DEPTH_FORMAT_16BIT_INT_Z;
++     atom->cmd[CTX_RB3D_ZSTENCILCNTL] &= ~RADEON_DEPTH_FORMAT_MASK;
++     atom->cmd[CTX_RB3D_ZSTENCILCNTL] |= depth_fmt;
 +   }
 +
-+   drb = r200->radeon.state.depth.rrb;
 +   if (drb)
-+     zbpitch = (drb->pitch / drb->cpp);
++     dwords += 4;
++   if (rrb)
++     dwords += 4;
 +
 +   /* output the first 7 bytes of context */
 +   BEGIN_BATCH_NO_AUTOSTATE(dwords);
@@ -5424,10 +5460,6 @@ index 9e4677e..013064d 100644
 +   }
 +
 +   if (rrb) {
-+     if (rrb->cpp == 4)
-+       ;
-+     else
-+       ;
 +     OUT_BATCH(CP_PACKET0(RADEON_RB3D_COLORPITCH, 0));
 +     OUT_BATCH(cbpitch);
 +   }
@@ -5491,18 +5523,22 @@ index 9e4677e..013064d 100644
  void r200InitState( r200ContextPtr rmesa )
  {
 -   GLcontext *ctx = rmesa->glCtx;
-+   GLcontext *ctx = rmesa->radeon.glCtx;
-    GLuint color_fmt, depth_fmt, i;
-    GLint drawPitch, drawOffset;
- 
+-   GLuint color_fmt, depth_fmt, i;
+-   GLint drawPitch, drawOffset;
+-
 -   switch ( rmesa->r200Screen->cpp ) {
-+   switch ( rmesa->radeon.radeonScreen->cpp ) {
-    case 2:
-       color_fmt = R200_COLOR_FORMAT_RGB565;
-       break;
-@@ -203,20 +601,20 @@ void r200InitState( r200ContextPtr rmesa )
-       exit( -1 );
-    }
+-   case 2:
+-      color_fmt = R200_COLOR_FORMAT_RGB565;
+-      break;
+-   case 4:
+-      color_fmt = R200_COLOR_FORMAT_ARGB8888;
+-      break;
+-   default:
+-      fprintf( stderr, "Error: Unsupported pixel depth... exiting\n" );
+-      exit( -1 );
+-   }
++   GLcontext *ctx = rmesa->radeon.glCtx;
++   GLuint i;
  
 -   rmesa->state.color.clear = 0x00000000;
 +   rmesa->radeon.state.color.clear = 0x00000000;
@@ -5511,24 +5547,24 @@ index 9e4677e..013064d 100644
     case 16:
 -      rmesa->state.depth.clear = 0x0000ffff;
 -      rmesa->state.depth.scale = 1.0 / (GLfloat)0xffff;
+-      depth_fmt = R200_DEPTH_FORMAT_16BIT_INT_Z;
+-      rmesa->state.stencil.clear = 0x00000000;
 +      rmesa->radeon.state.depth.clear = 0x0000ffff;
 +      rmesa->radeon.state.depth.scale = 1.0 / (GLfloat)0xffff;
-       depth_fmt = R200_DEPTH_FORMAT_16BIT_INT_Z;
--      rmesa->state.stencil.clear = 0x00000000;
 +      rmesa->radeon.state.stencil.clear = 0x00000000;
        break;
     case 24:
 -      rmesa->state.depth.clear = 0x00ffffff;
 -      rmesa->state.depth.scale = 1.0 / (GLfloat)0xffffff;
+-      depth_fmt = R200_DEPTH_FORMAT_24BIT_INT_Z;
+-      rmesa->state.stencil.clear = 0xffff0000;
 +      rmesa->radeon.state.depth.clear = 0x00ffffff;
 +      rmesa->radeon.state.depth.scale = 1.0 / (GLfloat)0xffffff;
-       depth_fmt = R200_DEPTH_FORMAT_24BIT_INT_Z;
--      rmesa->state.stencil.clear = 0xffff0000;
 +      rmesa->radeon.state.stencil.clear = 0xffff0000;
        break;
     default:
        fprintf( stderr, "Error: Unsupported depth %d... exiting\n",
-@@ -225,52 +623,57 @@ void r200InitState( r200ContextPtr rmesa )
+@@ -225,52 +633,37 @@ void r200InitState( r200ContextPtr rmesa )
     }
  
     /* Only have hw stencil when depth buffer is 24 bits deep */
@@ -5542,34 +5578,23 @@ index 9e4677e..013064d 100644
 -   if ( ctx->Visual.doubleBufferMode && rmesa->sarea->pfCurrentPage == 0 ) {
 -      drawOffset = rmesa->r200Screen->backOffset;
 -      drawPitch  = rmesa->r200Screen->backPitch;
-+   if ( ctx->Visual.doubleBufferMode && rmesa->radeon.sarea->pfCurrentPage == 0 ) {
-+      drawOffset = rmesa->radeon.radeonScreen->backOffset;
-+      drawPitch  = rmesa->radeon.radeonScreen->backPitch;
-    } else {
+-   } else {
 -      drawOffset = rmesa->r200Screen->frontOffset;
 -      drawPitch  = rmesa->r200Screen->frontPitch;
-+      drawOffset = rmesa->radeon.radeonScreen->frontOffset;
-+      drawPitch  = rmesa->radeon.radeonScreen->frontPitch;
-    }
- #if 000
-    if ( ctx->Visual.doubleBufferMode && rmesa->sarea->pfCurrentPage == 0 ) {
+-   }
+-#if 000
+-   if ( ctx->Visual.doubleBufferMode && rmesa->sarea->pfCurrentPage == 0 ) {
 -      rmesa->state.color.drawOffset = rmesa->r200Screen->backOffset;
 -      rmesa->state.color.drawPitch  = rmesa->r200Screen->backPitch;
-+      rmesa->radeon.state.color.drawOffset = rmesa->radeon.radeonScreen->backOffset;
-+      rmesa->radeon.state.color.drawPitch  = rmesa->radeon.radeonScreen->backPitch;
-    } else {
+-   } else {
 -      rmesa->state.color.drawOffset = rmesa->r200Screen->frontOffset;
 -      rmesa->state.color.drawPitch  = rmesa->r200Screen->frontPitch;
-+      rmesa->radeon.state.color.drawOffset = rmesa->radeon.radeonScreen->frontOffset;
-+      rmesa->radeon.state.color.drawPitch  = rmesa->radeon.radeonScreen->frontPitch;
-    }
- 
+-   }
+-
 -   rmesa->state.pixel.readOffset = rmesa->state.color.drawOffset;
 -   rmesa->state.pixel.readPitch  = rmesa->state.color.drawPitch;
-+   rmesa->state.pixel.readOffset = rmesa->radeon.state.color.drawOffset;
-+   rmesa->state.pixel.readPitch  = rmesa->radeon.state.color.drawPitch;
- #endif
- 
+-#endif
+-
 -   rmesa->hw.max_state_size = 0;
 +   rmesa->radeon.hw.max_state_size = 0;
  
@@ -5604,7 +5629,7 @@ index 9e4677e..013064d 100644
     ALLOC_STATE( set, always, SET_STATE_SIZE, "SET/setup", 0 );
     ALLOC_STATE( lin, always, LIN_STATE_SIZE, "LIN/line", 0 );
     ALLOC_STATE( msk, always, MSK_STATE_SIZE, "MSK/mask", 0 );
-@@ -282,8 +685,8 @@ void r200InitState( r200ContextPtr rmesa )
+@@ -282,8 +675,8 @@ void r200InitState( r200ContextPtr rmesa )
     ALLOC_STATE( cst, always, CST_STATE_SIZE, "CST/constant", 0 );
     ALLOC_STATE( zbs, always, ZBS_STATE_SIZE, "ZBS/zbias", 0 );
     ALLOC_STATE( tf, tf, TF_STATE_SIZE, "TF/tfactor", 0 );
@@ -5615,7 +5640,7 @@ index 9e4677e..013064d 100644
        /* make sure texture units 0/1 are emitted pair-wise for r200 t0 hang workaround */
  	 ALLOC_STATE( tex[0], tex_pair, TEX_STATE_SIZE_NEWDRM, "TEX/tex-0", 0 );
  	 ALLOC_STATE( tex[1], tex_pair, TEX_STATE_SIZE_NEWDRM, "TEX/tex-1", 1 );
-@@ -303,7 +706,7 @@ void r200InitState( r200ContextPtr rmesa )
+@@ -303,7 +696,7 @@ void r200InitState( r200ContextPtr rmesa )
        ALLOC_STATE( afs[1], afs, AFS_STATE_SIZE, "AFS/afsinst-1", 1 );
     }
     else {
@@ -5624,7 +5649,7 @@ index 9e4677e..013064d 100644
  	 ALLOC_STATE( tex[0], tex_pair, TEX_STATE_SIZE_OLDDRM, "TEX/tex-0", 0 );
  	 ALLOC_STATE( tex[1], tex_pair, TEX_STATE_SIZE_OLDDRM, "TEX/tex-1", 1 );
  	 ALLOC_STATE( tam, tex_any, TAM_STATE_SIZE, "TAM/tam", 0 );
-@@ -321,13 +724,18 @@ void r200InitState( r200ContextPtr rmesa )
+@@ -321,13 +714,18 @@ void r200InitState( r200ContextPtr rmesa )
        ALLOC_STATE( afs[0], never, AFS_STATE_SIZE, "AFS/afsinst-0", 0 );
        ALLOC_STATE( afs[1], never, AFS_STATE_SIZE, "AFS/afsinst-1", 1 );
     }
@@ -5644,7 +5669,7 @@ index 9e4677e..013064d 100644
     }
     else {
        ALLOC_STATE( cube[0], never, CUBE_STATE_SIZE, "CUBE/tex-0", 0 );
-@@ -337,7 +745,8 @@ void r200InitState( r200ContextPtr rmesa )
+@@ -337,7 +735,8 @@ void r200InitState( r200ContextPtr rmesa )
        ALLOC_STATE( cube[4], never, CUBE_STATE_SIZE, "CUBE/tex-4", 4 );
        ALLOC_STATE( cube[5], never, CUBE_STATE_SIZE, "CUBE/tex-5", 5 );
     }
@@ -5654,7 +5679,7 @@ index 9e4677e..013064d 100644
        ALLOC_STATE( pvs, tcl_vp, PVS_STATE_SIZE, "PVS/pvscntl", 0 );
        ALLOC_STATE( vpi[0], tcl_vp, VPI_STATE_SIZE, "VP/vertexprog-0", 0 );
        ALLOC_STATE( vpi[1], tcl_vp_size, VPI_STATE_SIZE, "VP/vertexprog-1", 1 );
-@@ -390,13 +799,13 @@ void r200InitState( r200ContextPtr rmesa )
+@@ -390,13 +789,13 @@ void r200InitState( r200ContextPtr rmesa )
     ALLOC_STATE( pix[3], texenv, PIX_STATE_SIZE, "PIX/pixstage-3", 3 );
     ALLOC_STATE( pix[4], texenv, PIX_STATE_SIZE, "PIX/pixstage-4", 4 );
     ALLOC_STATE( pix[5], texenv, PIX_STATE_SIZE, "PIX/pixstage-5", 5 );
@@ -5670,7 +5695,7 @@ index 9e4677e..013064d 100644
        ALLOC_STATE( spr, always, SPR_STATE_SIZE, "SPR/pointsprite", 0 );
        ALLOC_STATE( ptp, tcl, PTP_STATE_SIZE, "PTP/pointparams", 0 );
     }
-@@ -409,87 +818,115 @@ void r200InitState( r200ContextPtr rmesa )
+@@ -409,87 +808,115 @@ void r200InitState( r200ContextPtr rmesa )
  
     /* Fill in the packet headers:
      */
@@ -5866,7 +5891,7 @@ index 9e4677e..013064d 100644
     rmesa->hw.mtl[0].cmd[MTL_CMD_0] = 
        cmdvec( R200_VS_MAT_0_EMISS, 1, 16 );
     rmesa->hw.mtl[0].cmd[MTL_CMD_1] = 
-@@ -567,7 +1004,7 @@ void r200InitState( r200ContextPtr rmesa )
+@@ -567,7 +994,7 @@ void r200InitState( r200ContextPtr rmesa )
  				(R200_BLEND_GL_ONE << R200_SRC_BLEND_SHIFT) |
  				(R200_BLEND_GL_ZERO << R200_DST_BLEND_SHIFT));
  
@@ -5875,7 +5900,7 @@ index 9e4677e..013064d 100644
        rmesa->hw.ctx.cmd[CTX_RB3D_BLENDCOLOR] = 0x00000000;
        rmesa->hw.ctx.cmd[CTX_RB3D_ABLENDCNTL] = (R200_COMB_FCN_ADD_CLAMP |
  				(R200_BLEND_GL_ONE << R200_SRC_BLEND_SHIFT) |
-@@ -578,10 +1015,10 @@ void r200InitState( r200ContextPtr rmesa )
+@@ -578,18 +1005,17 @@ void r200InitState( r200ContextPtr rmesa )
     }
  
     rmesa->hw.ctx.cmd[CTX_RB3D_DEPTHOFFSET] =
@@ -5888,7 +5913,16 @@ index 9e4677e..013064d 100644
  	R200_DEPTHPITCH_MASK) |
         R200_DEPTH_ENDIAN_NO_SWAP);
     
-@@ -599,7 +1036,7 @@ void r200InitState( r200ContextPtr rmesa )
+    if (rmesa->using_hyperz)
+       rmesa->hw.ctx.cmd[CTX_RB3D_DEPTHPITCH] |= R200_DEPTH_HYPERZ;
+ 
+-   rmesa->hw.ctx.cmd[CTX_RB3D_ZSTENCILCNTL] = (depth_fmt |
+-					       R200_Z_TEST_LESS |
++   rmesa->hw.ctx.cmd[CTX_RB3D_ZSTENCILCNTL] = (R200_Z_TEST_LESS |
+ 					       R200_STENCIL_TEST_ALWAYS |
+ 					       R200_STENCIL_FAIL_KEEP |
+ 					       R200_STENCIL_ZPASS_KEEP |
+@@ -599,15 +1025,14 @@ void r200InitState( r200ContextPtr rmesa )
     if (rmesa->using_hyperz) {
        rmesa->hw.ctx.cmd[CTX_RB3D_ZSTENCILCNTL] |= R200_Z_COMPRESSION_ENABLE |
  						  R200_Z_DECOMPRESSION_ENABLE;
@@ -5897,16 +5931,16 @@ index 9e4677e..013064d 100644
  	 rmesa->hw.ctx.cmd[CTX_RB3D_ZSTENCILCNTL] |= RADEON_Z_HIERARCHY_ENABLE;*/
     }
  
-@@ -607,7 +1044,7 @@ void r200InitState( r200ContextPtr rmesa )
+    rmesa->hw.ctx.cmd[CTX_PP_CNTL] = (R200_ANTI_ALIAS_NONE 
   				     | R200_TEX_BLEND_0_ENABLE);
  
-    rmesa->hw.ctx.cmd[CTX_RB3D_CNTL] = color_fmt;
+-   rmesa->hw.ctx.cmd[CTX_RB3D_CNTL] = color_fmt;
 -   switch ( driQueryOptioni( &rmesa->optionCache, "dither_mode" ) ) {
 +   switch ( driQueryOptioni( &rmesa->radeon.optionCache, "dither_mode" ) ) {
     case DRI_CONF_DITHER_XERRORDIFFRESET:
        rmesa->hw.ctx.cmd[CTX_RB3D_CNTL] |= R200_DITHER_INIT;
        break;
-@@ -615,28 +1052,28 @@ void r200InitState( r200ContextPtr rmesa )
+@@ -615,41 +1040,19 @@ void r200InitState( r200ContextPtr rmesa )
        rmesa->hw.ctx.cmd[CTX_RB3D_CNTL] |= R200_SCALE_DITHER_ENABLE;
        break;
     }
@@ -5924,34 +5958,29 @@ index 9e4677e..013064d 100644
        rmesa->hw.ctx.cmd[CTX_RB3D_CNTL] |= R200_DITHER_ENABLE;
     else
 -      rmesa->hw.ctx.cmd[CTX_RB3D_CNTL] |= rmesa->state.color.roundEnable;
-+      rmesa->hw.ctx.cmd[CTX_RB3D_CNTL] |= rmesa->radeon.state.color.roundEnable;
- 
- #if 000
+-
+-#if 000
 -   rmesa->hw.ctx.cmd[CTX_RB3D_COLOROFFSET] = ((rmesa->state.color.drawOffset +
 -					       rmesa->r200Screen->fbLocation)
-+   rmesa->hw.ctx.cmd[CTX_RB3D_COLOROFFSET] = ((rmesa->radeon.state.color.drawOffset +
-+					       rmesa->radeon.radeonScreen->fbLocation)
- 					      & R200_COLOROFFSET_MASK);
- 
+-					      & R200_COLOROFFSET_MASK);
+-
 -   rmesa->hw.ctx.cmd[CTX_RB3D_COLORPITCH] = ((rmesa->state.color.drawPitch &
-+   rmesa->hw.ctx.cmd[CTX_RB3D_COLORPITCH] = ((rmesa->radeon.state.color.drawPitch &
- 					      R200_COLORPITCH_MASK) |
- 					     R200_COLOR_ENDIAN_NO_SWAP);
- #else
-    rmesa->hw.ctx.cmd[CTX_RB3D_COLOROFFSET] = ((drawOffset +
+-					      R200_COLORPITCH_MASK) |
+-					     R200_COLOR_ENDIAN_NO_SWAP);
+-#else
+-   rmesa->hw.ctx.cmd[CTX_RB3D_COLOROFFSET] = ((drawOffset +
 -					       rmesa->r200Screen->fbLocation)
-+					       rmesa->radeon.radeonScreen->fbLocation)
- 					      & R200_COLOROFFSET_MASK);
- 
-    rmesa->hw.ctx.cmd[CTX_RB3D_COLORPITCH] = ((drawPitch &
-@@ -644,12 +1081,12 @@ void r200InitState( r200ContextPtr rmesa )
- 					     R200_COLOR_ENDIAN_NO_SWAP);
- #endif
-    /* (fixed size) sarea is initialized to zero afaics so can omit version check. Phew! */
+-					      & R200_COLOROFFSET_MASK);
+-
+-   rmesa->hw.ctx.cmd[CTX_RB3D_COLORPITCH] = ((drawPitch &
+-					      R200_COLORPITCH_MASK) |
+-					     R200_COLOR_ENDIAN_NO_SWAP);
+-#endif
+-   /* (fixed size) sarea is initialized to zero afaics so can omit version check. Phew! */
 -   if (rmesa->sarea->tiling_enabled) {
-+   if (rmesa->radeon.sarea->tiling_enabled) {
-       rmesa->hw.ctx.cmd[CTX_RB3D_COLORPITCH] |= R200_COLOR_TILE_ENABLE;
-    }
+-      rmesa->hw.ctx.cmd[CTX_RB3D_COLORPITCH] |= R200_COLOR_TILE_ENABLE;
+-   }
++      rmesa->hw.ctx.cmd[CTX_RB3D_CNTL] |= rmesa->radeon.state.color.roundEnable;
  
     rmesa->hw.prf.cmd[PRF_PP_TRI_PERF] = R200_TRI_CUTOFF_MASK - R200_TRI_CUTOFF_MASK * 
 -			driQueryOptionf (&rmesa->optionCache,"texture_blend_quality");
@@ -5959,7 +5988,7 @@ index 9e4677e..013064d 100644
     rmesa->hw.prf.cmd[PRF_PP_PERF_CNTL] = 0;
  
     rmesa->hw.set.cmd[SET_SE_CNTL] = (R200_FFACE_CULL_CCW |
-@@ -704,7 +1141,7 @@ void r200InitState( r200ContextPtr rmesa )
+@@ -704,7 +1107,7 @@ void r200InitState( r200ContextPtr rmesa )
  						R200_VC_NO_SWAP;
  #endif
  
@@ -5968,7 +5997,7 @@ index 9e4677e..013064d 100644
        /* Bypass TCL */
        rmesa->hw.cst.cmd[CST_SE_VAP_CNTL_STATUS] |= (1<<8);
     }
-@@ -743,28 +1180,28 @@ void r200InitState( r200ContextPtr rmesa )
+@@ -743,28 +1146,28 @@ void r200InitState( r200ContextPtr rmesa )
        rmesa->hw.tex[i].cmd[TEX_PP_TXFORMAT_X] =
           (/* R200_TEXCOORD_PROJ | */
            0x100000);	/* Small default bias */
@@ -6005,7 +6034,7 @@ index 9e4677e..013064d 100644
  
        rmesa->hw.pix[i].cmd[PIX_PP_TXCBLEND] =
           (R200_TXC_ARG_A_ZERO |
-@@ -967,5 +1404,7 @@ void r200InitState( r200ContextPtr rmesa )
+@@ -967,5 +1370,7 @@ void r200InitState( r200ContextPtr rmesa )
  
     r200LightingSpaceChange( ctx );
  
@@ -8142,7 +8171,7 @@ index 3b81ac0..0000000
 -   return 0;
 -}
 diff --git a/src/mesa/drivers/dri/r200/r200_texstate.c b/src/mesa/drivers/dri/r200/r200_texstate.c
-index 3f9a2f4..6432068 100644
+index 0ad5651..302ea2e 100644
 --- a/src/mesa/drivers/dri/r200/r200_texstate.c
 +++ b/src/mesa/drivers/dri/r200/r200_texstate.c
 @@ -40,6 +40,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
@@ -8527,9 +8556,9 @@ index 3f9a2f4..6432068 100644
     }
 -
     if (texUnit->TexGenEnabled & R_BIT) {
-       if (texUnit->GenModeR != mode)
+       if (texUnit->GenR.Mode != mode)
  	 mixed_fallback = GL_TRUE;
-@@ -1513,52 +1276,6 @@ static GLboolean r200_validate_texgen( GLcontext *ctx, GLuint unit )
+@@ -1517,52 +1280,6 @@ static GLboolean r200_validate_texgen( GLcontext *ctx, GLuint unit )
     return GL_TRUE;
  }
  
@@ -8582,7 +8611,7 @@ index 3f9a2f4..6432068 100644
  void set_re_cntl_d3d( GLcontext *ctx, int unit, GLboolean use_d3d )
  {
     r200ContextPtr rmesa = R200_CONTEXT(ctx);
-@@ -1575,237 +1292,165 @@ void set_re_cntl_d3d( GLcontext *ctx, int unit, GLboolean use_d3d )
+@@ -1579,237 +1296,165 @@ void set_re_cntl_d3d( GLcontext *ctx, int unit, GLboolean use_d3d )
     }
  }
  
@@ -8944,7 +8973,7 @@ index 3f9a2f4..6432068 100644
  }
  
  
-@@ -1846,11 +1491,11 @@ void r200UpdateTextureState( GLcontext *ctx )
+@@ -1850,11 +1495,11 @@ void r200UpdateTextureState( GLcontext *ctx )
  
     FALLBACK( rmesa, R200_FALLBACK_TEXTURE, !ok );
  
@@ -8958,7 +8987,7 @@ index 3f9a2f4..6432068 100644
  
        /*
         * T0 hang workaround -------------
-@@ -1863,7 +1508,7 @@ void r200UpdateTextureState( GLcontext *ctx )
+@@ -1867,7 +1512,7 @@ void r200UpdateTextureState( GLcontext *ctx )
  	 R200_STATECHANGE(rmesa, tex[1]);
  	 rmesa->hw.ctx.cmd[CTX_PP_CNTL] |= R200_TEX_1_ENABLE;
  	 if (!(rmesa->hw.cst.cmd[CST_PP_CNTL_X] & R200_PPX_TEX_1_ENABLE))
@@ -9076,10 +9105,10 @@ index 6ca9342..497b1ec 100644
  ##### TARGETS #####
  
 diff --git a/src/mesa/drivers/dri/r300/r300_cmdbuf.c b/src/mesa/drivers/dri/r300/r300_cmdbuf.c
-index c9e1dfe..ac1c128 100644
+index c9e1dfe..231576f 100644
 --- a/src/mesa/drivers/dri/r300/r300_cmdbuf.c
 +++ b/src/mesa/drivers/dri/r300/r300_cmdbuf.c
-@@ -44,235 +44,252 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+@@ -44,235 +44,288 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  #include "drm.h"
  #include "radeon_drm.h"
  
@@ -9179,14 +9208,20 @@ index c9e1dfe..ac1c128 100644
 +	addr = (cmd.vpu.adrhi << 8) | cmd.vpu.adrlo;
 +	ndw = cmd.vpu.count * 4;
 +	if (ndw) {
-+		BEGIN_BATCH_NO_AUTOSTATE(13 + ndw);
 +
-+		/* flush processing vertices */
-+		OUT_BATCH_REGVAL(R300_SC_SCREENDOOR, 0);
-+		OUT_BATCH_REGVAL(R300_RB3D_DSTCACHE_CTLSTAT, R300_RB3D_DSTCACHE_CTLSTAT_DC_FLUSH_FLUSH_DIRTY_3D);
-+		OUT_BATCH_REGVAL(RADEON_WAIT_UNTIL, RADEON_WAIT_3D_IDLECLEAN);
-+		OUT_BATCH_REGVAL(R300_SC_SCREENDOOR, 0xffffff);
-+		OUT_BATCH_REGVAL(R300_VAP_PVS_STATE_FLUSH_REG, 1);
++		if (r300->vap_flush_needed) {
++			BEGIN_BATCH_NO_AUTOSTATE(15 + ndw);
++
++			/* flush processing vertices */
++			OUT_BATCH_REGVAL(R300_SC_SCREENDOOR, 0);
++			OUT_BATCH_REGVAL(R300_RB3D_DSTCACHE_CTLSTAT, R300_RB3D_DSTCACHE_CTLSTAT_DC_FLUSH_FLUSH_DIRTY_3D);
++			OUT_BATCH_REGVAL(RADEON_WAIT_UNTIL, RADEON_WAIT_3D_IDLECLEAN);
++			OUT_BATCH_REGVAL(R300_SC_SCREENDOOR, 0xffffff);
++			OUT_BATCH_REGVAL(R300_VAP_PVS_STATE_FLUSH_REG, 0);
++			r300->vap_flush_needed = GL_FALSE;
++		} else {
++			BEGIN_BATCH_NO_AUTOSTATE(5 + ndw);
++		}
 +		OUT_BATCH_REGVAL(R300_VAP_PVS_UPLOAD_ADDRESS, addr);
 +		OUT_BATCH(CP_PACKET0(R300_VAP_PVS_UPLOAD_DATA, ndw-1) | RADEON_ONE_REG_WR);
 +		for (i = 0; i < ndw; i++) {
@@ -9207,16 +9242,6 @@ index c9e1dfe..ac1c128 100644
 +void emit_r500fp(GLcontext *ctx, struct radeon_state_atom * atom)
  {
 -	int ret;
--
--	LOCK_HARDWARE(&r300->radeon);
--
--	ret = r300FlushCmdBufLocked(r300, caller);
--
--	UNLOCK_HARDWARE(&r300->radeon);
--
--	if (ret) {
--		fprintf(stderr, "drmRadeonCmdBuffer: %d\n", ret);
--		_mesa_exit(ret);
 +	r300ContextPtr r300 = R300_CONTEXT(ctx);
 +	BATCH_LOCALS(&r300->radeon);
 +	drm_r300_cmd_header_t cmd;
@@ -9230,41 +9255,91 @@ index c9e1dfe..ac1c128 100644
 +		OUT_BATCH_TABLE(atom->cmd, dwords);
 +		END_BATCH();
 +		return;
- 	}
++	}
  
--	return ret;
--}
+-	LOCK_HARDWARE(&r300->radeon);
 +	cmd.u = atom->cmd[0];
 +	sz = cmd.r500fp.count;
 +	addr = ((cmd.r500fp.adrhi_flags & 1) << 8) | cmd.r500fp.adrlo;
 +	type = !!(cmd.r500fp.adrhi_flags & R500FP_CONSTANT_TYPE);
 +	clamp = !!(cmd.r500fp.adrhi_flags & R500FP_CONSTANT_CLAMP);
  
--static void r300PrintStateAtom(r300ContextPtr r300, struct r300_state_atom *state)
--{
--	int i;
--	int dwords = (*state->check) (r300, state);
+-	ret = r300FlushCmdBufLocked(r300, caller);
 +	addr |= (type << 16);
 +	addr |= (clamp << 17);
  
--	fprintf(stderr, "  emit %s %d/%d\n", state->name, dwords,
--		state->cmd_size);
+-	UNLOCK_HARDWARE(&r300->radeon);
 +	stride = type ? 4 : 6;
  
--	if (RADEON_DEBUG & DEBUG_VERBOSE) {
--		for (i = 0; i < dwords; i++) {
--			fprintf(stderr, "      %s[%d]: %08x\n",
--				state->name, i, state->cmd[i]);
+-	if (ret) {
+-		fprintf(stderr, "drmRadeonCmdBuffer: %d\n", ret);
+-		_mesa_exit(ret);
+-	}
 +	ndw = sz * stride;
 +	if (ndw) {
-+
+ 
+-	return ret;
 +		BEGIN_BATCH_NO_AUTOSTATE(3 + ndw);
 +		OUT_BATCH(CP_PACKET0(R500_GA_US_VECTOR_INDEX, 0));
 +		OUT_BATCH(addr);
 +		OUT_BATCH(CP_PACKET0(R500_GA_US_VECTOR_DATA, ndw-1) | RADEON_ONE_REG_WR);
 +		for (i = 0; i < ndw; i++) {
 +			OUT_BATCH(atom->cmd[i+1]);
++		}
++		END_BATCH();
++	}
+ }
+ 
+-static void r300PrintStateAtom(r300ContextPtr r300, struct r300_state_atom *state)
++static void emit_tex_offsets(GLcontext *ctx, struct radeon_state_atom * atom)
+ {
+-	int i;
+-	int dwords = (*state->check) (r300, state);
+-
+-	fprintf(stderr, "  emit %s %d/%d\n", state->name, dwords,
+-		state->cmd_size);
++	r300ContextPtr r300 = R300_CONTEXT(ctx);
++	BATCH_LOCALS(&r300->radeon);
++	int numtmus = packet0_count(r300, r300->hw.tex.offset.cmd);
++	int notexture = 0;
++
++	if (numtmus) {
++		int i;
++
++		for(i = 0; i < numtmus; ++i) {
++		    radeonTexObj *t = r300->hw.textures[i];
++		
++		    if (!t)
++			notexture = 1;
++		}
+ 
+-	if (RADEON_DEBUG & DEBUG_VERBOSE) {
+-		for (i = 0; i < dwords; i++) {
+-			fprintf(stderr, "      %s[%d]: %08x\n",
+-				state->name, i, state->cmd[i]);
++		if (r300->radeon.radeonScreen->kernel_mm && notexture) {
++			return;
  		}
++		BEGIN_BATCH_NO_AUTOSTATE(4 * numtmus);
++		for(i = 0; i < numtmus; ++i) {
++		    radeonTexObj *t = r300->hw.textures[i];
++		    OUT_BATCH_REGSEQ(R300_TX_OFFSET_0 + (i * 4), 1);
++		    if (t && !t->image_override) {
++			    OUT_BATCH_RELOC(t->tile_bits, t->mt->bo, 0,
++					    RADEON_GEM_DOMAIN_VRAM, 0, 0);
++		    } else if (!t) {
++			    OUT_BATCH(r300->radeon.radeonScreen->texOffset[0]);
++		    } else { /* override cases */
++			    if (t->bo) {
++				    OUT_BATCH_RELOC(t->tile_bits, t->bo, 0,
++						    RADEON_GEM_DOMAIN_VRAM, 0, 0);
++			    } else if (!r300->radeon.radeonScreen->kernel_mm) {
++				    OUT_BATCH(t->override_offset);
++			    }
++			    else
++			    	OUT_BATCH(r300->radeon.radeonScreen->texOffset[0]);
++		    }
++		}
 +		END_BATCH();
  	}
  }
@@ -9276,7 +9351,7 @@ index c9e1dfe..ac1c128 100644
 - * buffer.
 - */
 -static INLINE void r300EmitAtoms(r300ContextPtr r300, GLboolean dirty)
-+static void emit_tex_offsets(GLcontext *ctx, struct radeon_state_atom * atom)
++static void emit_cb_offset(GLcontext *ctx, struct radeon_state_atom * atom)
  {
 -	struct r300_state_atom *atom;
 -	uint32_t *dest;
@@ -9322,59 +9397,7 @@ index c9e1dfe..ac1c128 100644
 -						atom->name);
 -				}
 -			}
-+	r300ContextPtr r300 = R300_CONTEXT(ctx);
-+	BATCH_LOCALS(&r300->radeon);
-+	int numtmus = packet0_count(r300, r300->hw.tex.offset.cmd);
-+
-+	if (numtmus) {
-+		int i;
-+
-+		for(i = 0; i < numtmus; ++i) {
-+		    radeonTexObj *t = r300->hw.textures[i];
-+		    if (t && !t->image_override) {
-+		            BEGIN_BATCH_NO_AUTOSTATE(4);
-+		            OUT_BATCH_REGSEQ(R300_TX_OFFSET_0 + (i * 4), 1);
-+			    OUT_BATCH_RELOC(t->tile_bits, t->mt->bo, 0,
-+					    RADEON_GEM_DOMAIN_VRAM, 0, 0);
-+		            END_BATCH();
-+		    } else if (!t) {
-+			    //assert(0);
-+		            BEGIN_BATCH_NO_AUTOSTATE(4);
-+		            OUT_BATCH_REGSEQ(R300_TX_OFFSET_0 + (i * 4), 1);
-+			    OUT_BATCH(r300->radeon.radeonScreen->texOffset[0]);
-+			    END_BATCH();
-+		    } else {
-+			    if (t->bo) {
-+		            	    BEGIN_BATCH_NO_AUTOSTATE(4);
-+		                    OUT_BATCH_REGSEQ(R300_TX_OFFSET_0 + (i * 4), 1);
-+				    OUT_BATCH_RELOC(t->tile_bits, t->bo, 0,
-+						    RADEON_GEM_DOMAIN_VRAM, 0, 0);
-+		                    END_BATCH();
-+			    } else if (!r300->radeon.radeonScreen->kernel_mm) {
-+		            	    BEGIN_BATCH_NO_AUTOSTATE(2);
-+		                    OUT_BATCH_REGSEQ(R300_TX_OFFSET_0 + (i * 4), 1);
-+				    OUT_BATCH(t->override_offset);
-+				    END_BATCH();
-+			    }
-+		    }
- 		}
- 	}
- }
- 
--/**
-- * Copy dirty hardware state atoms into the command buffer.
-- *
-- * We also copy out clean state if we're at the start of a buffer. That makes
-- * it easy to recover from lost contexts.
-- */
--void r300EmitState(r300ContextPtr r300)
-+static void emit_cb_offset(GLcontext *ctx, struct radeon_state_atom * atom)
- {
--	if (RADEON_DEBUG & (DEBUG_STATE | DEBUG_PRIMS))
--		fprintf(stderr, "%s\n", __FUNCTION__);
--
--	if (r300->cmdbuf.count_used && !r300->hw.is_dirty
--	    && !r300->hw.all_dirty)
+-		}
 +	r300ContextPtr r300 = R300_CONTEXT(ctx);
 +	BATCH_LOCALS(&r300->radeon);
 +	struct radeon_renderbuffer *rrb;
@@ -9383,24 +9406,9 @@ index c9e1dfe..ac1c128 100644
 +	rrb = radeon_get_colorbuffer(&r300->radeon);
 +	if (!rrb || !rrb->bo) {
 +		fprintf(stderr, "no rrb\n");
- 		return;
--
--	/* To avoid going across the entire set of states multiple times, just check
--	 * for enough space for the case of emitting all state, and inline the
--	 * r300AllocCmdBuf code here without all the checks.
--	 */
--	r300EnsureCmdBufSpace(r300, r300->hw.max_state_size, __FUNCTION__);
--
--	if (!r300->cmdbuf.count_used) {
--		if (RADEON_DEBUG & DEBUG_STATE)
--			fprintf(stderr, "Begin reemit state\n");
--
--		r300EmitAtoms(r300, GL_FALSE);
--		r300->cmdbuf.count_reemit = r300->cmdbuf.count_used;
++		return;
  	}
- 
--	if (RADEON_DEBUG & DEBUG_STATE)
--		fprintf(stderr, "Begin dirty state\n");
++
 +	cbpitch = (rrb->pitch / rrb->cpp);
 +	if (rrb->cpp == 4)
 +		cbpitch |= R300_COLOR_FORMAT_ARGB8888;
@@ -9416,27 +9424,46 @@ index c9e1dfe..ac1c128 100644
 +	OUT_BATCH_REGSEQ(R300_RB3D_COLORPITCH0, 1);
 +	OUT_BATCH(cbpitch);
 +	END_BATCH();
-+}
+ }
  
--	r300EmitAtoms(r300, GL_TRUE);
+-/**
+- * Copy dirty hardware state atoms into the command buffer.
+- *
+- * We also copy out clean state if we're at the start of a buffer. That makes
+- * it easy to recover from lost contexts.
+- */
+-void r300EmitState(r300ContextPtr r300)
 +static void emit_zb_offset(GLcontext *ctx, struct radeon_state_atom * atom)
-+{
+ {
+-	if (RADEON_DEBUG & (DEBUG_STATE | DEBUG_PRIMS))
+-		fprintf(stderr, "%s\n", __FUNCTION__);
 +	r300ContextPtr r300 = R300_CONTEXT(ctx);
 +	BATCH_LOCALS(&r300->radeon);
 +	struct radeon_renderbuffer *rrb;
 +	uint32_t zbpitch;
  
--	assert(r300->cmdbuf.count_used < r300->cmdbuf.size);
+-	if (r300->cmdbuf.count_used && !r300->hw.is_dirty
+-	    && !r300->hw.all_dirty)
 +	rrb = radeon_get_depthbuffer(&r300->radeon);
 +	if (!rrb)
-+		return;
+ 		return;
  
--	r300->hw.is_dirty = GL_FALSE;
--	r300->hw.all_dirty = GL_FALSE;
+-	/* To avoid going across the entire set of states multiple times, just check
+-	 * for enough space for the case of emitting all state, and inline the
+-	 * r300AllocCmdBuf code here without all the checks.
+-	 */
+-	r300EnsureCmdBufSpace(r300, r300->hw.max_state_size, __FUNCTION__);
+-
+-	if (!r300->cmdbuf.count_used) {
+-		if (RADEON_DEBUG & DEBUG_STATE)
+-			fprintf(stderr, "Begin reemit state\n");
+-
+-		r300EmitAtoms(r300, GL_FALSE);
+-		r300->cmdbuf.count_reemit = r300->cmdbuf.count_used;
 +	zbpitch = (rrb->pitch / rrb->cpp);
 +	if (rrb->bo->flags & RADEON_BO_FLAGS_MACRO_TILE) {
 +		zbpitch |= R300_DEPTHMACROTILE_ENABLE;
-+	}
+ 	}
 +	if (rrb->bo->flags & RADEON_BO_FLAGS_MICRO_TILE){
 +		zbpitch |= R300_DEPTHMICROTILE_TILED;
 +	}
@@ -9446,6 +9473,41 @@ index c9e1dfe..ac1c128 100644
 +	OUT_BATCH_RELOC(0, rrb->bo, 0, 0, RADEON_GEM_DOMAIN_VRAM, 0);
 +	OUT_BATCH_REGVAL(R300_ZB_DEPTHPITCH, zbpitch);
 +	END_BATCH();
++}
+ 
+-	if (RADEON_DEBUG & DEBUG_STATE)
+-		fprintf(stderr, "Begin dirty state\n");
+-
+-	r300EmitAtoms(r300, GL_TRUE);
+-
+-	assert(r300->cmdbuf.count_used < r300->cmdbuf.size);
++static void emit_zstencil_format(GLcontext *ctx, struct radeon_state_atom * atom)
++{
++	r300ContextPtr r300 = R300_CONTEXT(ctx);
++	BATCH_LOCALS(&r300->radeon);
++	struct radeon_renderbuffer *rrb;
++	uint32_t zbpitch;
++	uint32_t format;
++
++	rrb = radeon_get_depthbuffer(&r300->radeon);
++	if (!rrb)
++	  format = 0;
++	else {
++	  if (rrb->cpp == 2)
++	    format = R300_DEPTHFORMAT_16BIT_INT_Z;
++	  else if (rrb->cpp == 4)
++	    format = R300_DEPTHFORMAT_24BIT_INT_Z_8BIT_STENCIL;
++	}
+ 
+-	r300->hw.is_dirty = GL_FALSE;
+-	r300->hw.all_dirty = GL_FALSE;
++	OUT_BATCH(atom->cmd[0]);
++	atom->cmd[1] &= ~(3 << 0);
++	atom->cmd[1] |= format;
++	OUT_BATCH(atom->cmd[1]);
++	OUT_BATCH(atom->cmd[2]);
++	OUT_BATCH(atom->cmd[3]);
++	OUT_BATCH(atom->cmd[4]);
  }
  
 -#define packet0_count(ptr) (((drm_r300_cmd_header_t*)(ptr))->packet0.count)
@@ -9497,7 +9559,7 @@ index c9e1dfe..ac1c128 100644
  	cnt = r500fp_count(atom->cmd);
  	return cnt ? (cnt * 4) + 1 : 0;
  }
-@@ -285,8 +302,8 @@ static int check_r500fp_const(r300ContextPtr r300, struct r300_state_atom *atom)
+@@ -285,8 +338,8 @@ static int check_r500fp_const(r300ContextPtr r300, struct r300_state_atom *atom)
        r300->hw.ATOM.idx = (IDX);					\
        r300->hw.ATOM.check = check_##CHK;				\
        r300->hw.ATOM.dirty = GL_FALSE;					\
@@ -9508,7 +9570,7 @@ index c9e1dfe..ac1c128 100644
     } while (0)
  /**
   * Allocate memory for the command buffer and initialize the state atom
-@@ -294,7 +311,7 @@ static int check_r500fp_const(r300ContextPtr r300, struct r300_state_atom *atom)
+@@ -294,7 +347,7 @@ static int check_r500fp_const(r300ContextPtr r300, struct r300_state_atom *atom)
   */
  void r300InitCmdBuf(r300ContextPtr r300)
  {
@@ -9517,7 +9579,7 @@ index c9e1dfe..ac1c128 100644
  	int has_tcl = 1;
  	int is_r500 = 0;
  	int i;
-@@ -305,7 +322,7 @@ void r300InitCmdBuf(r300ContextPtr r300)
+@@ -305,7 +358,7 @@ void r300InitCmdBuf(r300ContextPtr r300)
  	if (r300->radeon.radeonScreen->chip_family >= CHIP_FAMILY_RV515)
  		is_r500 = 1;
  
@@ -9526,7 +9588,7 @@ index c9e1dfe..ac1c128 100644
  
  	mtu = r300->radeon.glCtx->Const.MaxTextureUnits;
  	if (RADEON_DEBUG & DEBUG_TEXTURE) {
-@@ -313,97 +330,97 @@ void r300InitCmdBuf(r300ContextPtr r300)
+@@ -313,97 +366,97 @@ void r300InitCmdBuf(r300ContextPtr r300)
  	}
  
  	/* Setup the atom linked list */
@@ -9661,7 +9723,7 @@ index c9e1dfe..ac1c128 100644
  		for (i = 0; i < 8; i++) {
  			r300->hw.ri.cmd[R300_RI_CMD_0 + i +1] =
  			  (R500_RS_IP_PTR_K0 << R500_RS_IP_TEX_PTR_S_SHIFT) |
-@@ -412,133 +429,146 @@ void r300InitCmdBuf(r300ContextPtr r300)
+@@ -412,133 +465,149 @@ void r300InitCmdBuf(r300ContextPtr r300)
                            (R500_RS_IP_PTR_K1 << R500_RS_IP_TEX_PTR_Q_SHIFT);
  		}
  		ALLOC_STATE(rr, variable, R300_RR_CMDSIZE, 0);
@@ -9783,10 +9845,13 @@ index c9e1dfe..ac1c128 100644
  	r300->hw.zs.cmd[R300_ZS_CMD_0] =
 -	    cmdpacket0(R300_ZB_CNTL, 3);
 +	    cmdpacket0(r300->radeon.radeonScreen, R300_ZB_CNTL, 3);
++
  	ALLOC_STATE(zstencil_format, always, 5, 0);
  	r300->hw.zstencil_format.cmd[0] =
 -	    cmdpacket0(R300_ZB_FORMAT, 4);
 +	    cmdpacket0(r300->radeon.radeonScreen, R300_ZB_FORMAT, 4);
++	r300->hw.zstencil_format.emit = emit_zstencil_format;
++
  	ALLOC_STATE(zb, always, R300_ZB_CMDSIZE, 0);
 -	r300->hw.zb.cmd[R300_ZB_CMD_0] = cmdpacket0(R300_ZB_DEPTHOFFSET, 2);
 +	r300->hw.zb.emit = emit_zb_offset;
@@ -9864,7 +9929,7 @@ index c9e1dfe..ac1c128 100644
  			}
  		}
  	}
-@@ -546,61 +576,39 @@ void r300InitCmdBuf(r300ContextPtr r300)
+@@ -546,61 +615,39 @@ void r300InitCmdBuf(r300ContextPtr r300)
  	/* Textures */
  	ALLOC_STATE(tex.filter, variable, mtu + 1, 0);
  	r300->hw.tex.filter.cmd[R300_TEX_CMD_0] =
@@ -9904,12 +9969,10 @@ index c9e1dfe..ac1c128 100644
  	ALLOC_STATE(tex.border_color, variable, mtu + 1, 0);
  	r300->hw.tex.border_color.cmd[R300_TEX_CMD_0] =
 -	    cmdpacket0(R300_TX_BORDER_COLOR_0, 0);
-+	    cmdpacket0(r300->radeon.radeonScreen, R300_TX_BORDER_COLOR_0, 0);
- 
+-
 -	r300->hw.is_dirty = GL_TRUE;
 -	r300->hw.all_dirty = GL_TRUE;
-+	r300->radeon.hw.is_dirty = GL_TRUE;
-+	r300->radeon.hw.all_dirty = GL_TRUE;
++	    cmdpacket0(r300->radeon.radeonScreen, R300_TX_BORDER_COLOR_0, 0);
  
 -	/* Initialize command buffer */
 -	size =
@@ -9930,7 +9993,9 @@ index c9e1dfe..ac1c128 100644
 -			"Allocating %d bytes command buffer (max state is %d bytes)\n",
 -			size * 4, r300->hw.max_state_size * 4);
 -	}
--
++	r300->radeon.hw.is_dirty = GL_TRUE;
++	r300->radeon.hw.all_dirty = GL_TRUE;
+ 
 -	r300->cmdbuf.size = size;
 -	r300->cmdbuf.cmd_buf = (uint32_t *) CALLOC(size * 4);
 -	r300->cmdbuf.count_used = 0;
@@ -9939,15 +10004,15 @@ index c9e1dfe..ac1c128 100644
  }
  
  /**
-@@ -608,68 +616,10 @@ void r300InitCmdBuf(r300ContextPtr r300)
+@@ -608,68 +655,10 @@ void r300InitCmdBuf(r300ContextPtr r300)
   */
  void r300DestroyCmdBuf(r300ContextPtr r300)
  {
 -	struct r300_state_atom *atom;
--
--	FREE(r300->cmdbuf.cmd_buf);
 +	struct radeon_state_atom *atom;
  
+-	FREE(r300->cmdbuf.cmd_buf);
+-
 -	foreach(atom, &r300->hw.atomlist) {
 +	foreach(atom, &r300->radeon.hw.atomlist) {
  		FREE(atom->cmd);
@@ -10100,7 +10165,7 @@ index a8eaa58..b7798eb 100644
  
  #endif				/* __R300_CMDBUF_H__ */
 diff --git a/src/mesa/drivers/dri/r300/r300_context.c b/src/mesa/drivers/dri/r300/r300_context.c
-index 4c14c7e..dd63add 100644
+index 4c14c7e..5d497ef 100644
 --- a/src/mesa/drivers/dri/r300/r300_context.c
 +++ b/src/mesa/drivers/dri/r300/r300_context.c
 @@ -44,6 +44,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
@@ -10134,7 +10199,7 @@ index 4c14c7e..dd63add 100644
  
  #include "vblank.h"
  #include "utils.h"
-@@ -183,6 +182,78 @@ static const struct tnl_pipeline_stage *r300_pipeline[] = {
+@@ -183,6 +182,82 @@ static const struct tnl_pipeline_stage *r300_pipeline[] = {
  	0,
  };
  
@@ -10191,7 +10256,11 @@ index 4c14c7e..dd63add 100644
 +
 +static void r300_vtbl_pre_emit_atoms(radeonContextPtr radeon)
 +{
++   r300ContextPtr r300 = (r300ContextPtr)radeon;
 +   BATCH_LOCALS(radeon);
++
++   r300->vap_flush_needed = GL_TRUE;
++
 +   cp_wait(radeon, R300_WAIT_3D | R300_WAIT_3D_CLEAN);
 +   BEGIN_BATCH_NO_AUTOSTATE(2);
 +   OUT_BATCH_REGVAL(R300_TX_INVALTAGS, R300_TX_FLUSH);
@@ -10213,7 +10282,7 @@ index 4c14c7e..dd63add 100644
  /* Create the device specific rendering context.
   */
  GLboolean r300CreateContext(const __GLcontextModes * glVisual,
-@@ -194,7 +265,7 @@ GLboolean r300CreateContext(const __GLcontextModes * glVisual,
+@@ -194,7 +269,7 @@ GLboolean r300CreateContext(const __GLcontextModes * glVisual,
  	struct dd_function_table functions;
  	r300ContextPtr r300;
  	GLcontext *ctx;
@@ -10222,7 +10291,7 @@ index 4c14c7e..dd63add 100644
  
  	assert(glVisual);
  	assert(driContextPriv);
-@@ -208,13 +279,14 @@ GLboolean r300CreateContext(const __GLcontextModes * glVisual,
+@@ -208,13 +283,14 @@ GLboolean r300CreateContext(const __GLcontextModes * glVisual,
  	if (!(screen->chip_flags & RADEON_CHIPSET_TCL))
  		hw_tcl_on = future_hw_tcl_on = 0;
  
@@ -10238,7 +10307,7 @@ index 4c14c7e..dd63add 100644
  						     "def_max_anisotropy");
  
  	/* Init default driver functions then plug in our R300-specific functions
-@@ -226,10 +298,6 @@ GLboolean r300CreateContext(const __GLcontextModes * glVisual,
+@@ -226,10 +302,6 @@ GLboolean r300CreateContext(const __GLcontextModes * glVisual,
  	r300InitTextureFuncs(&functions);
  	r300InitShaderFuncs(&functions);
  
@@ -10249,7 +10318,7 @@ index 4c14c7e..dd63add 100644
  	if (!radeonInitContext(&r300->radeon, &functions,
  			       glVisual, driContextPriv,
  			       sharedContextPrivate)) {
-@@ -238,37 +306,10 @@ GLboolean r300CreateContext(const __GLcontextModes * glVisual,
+@@ -238,37 +310,10 @@ GLboolean r300CreateContext(const __GLcontextModes * glVisual,
  	}
  
  	/* Init r300 context data */
@@ -10290,7 +10359,7 @@ index 4c14c7e..dd63add 100644
  		    DRI_CONF_TEXTURE_DEPTH_32 : DRI_CONF_TEXTURE_DEPTH_16;
  
  	/* Set the maximum texture size small enough that we can guarentee that
-@@ -303,13 +344,11 @@ GLboolean r300CreateContext(const __GLcontextModes * glVisual,
+@@ -303,13 +348,11 @@ GLboolean r300CreateContext(const __GLcontextModes * glVisual,
  	ctx->Const.MaxLineWidth = R300_LINESIZE_MAX;
  	ctx->Const.MaxLineWidthAA = R300_LINESIZE_MAX;
  
@@ -10304,7 +10373,7 @@ index 4c14c7e..dd63add 100644
  
  	ctx->Const.MaxDrawBuffers = 1;
  
-@@ -384,13 +423,13 @@ GLboolean r300CreateContext(const __GLcontextModes * glVisual,
+@@ -384,13 +427,13 @@ GLboolean r300CreateContext(const __GLcontextModes * glVisual,
  	    driQueryOptionb(&r300->radeon.optionCache,
  			    "disable_lowimpact_fallback");
  
@@ -10320,7 +10389,7 @@ index 4c14c7e..dd63add 100644
  
  	tcl_mode = driQueryOptioni(&r300->radeon.optionCache, "tcl_mode");
  	if (driQueryOptionb(&r300->radeon.optionCache, "no_rast")) {
-@@ -413,72 +452,6 @@ GLboolean r300CreateContext(const __GLcontextModes * glVisual,
+@@ -413,72 +456,6 @@ GLboolean r300CreateContext(const __GLcontextModes * glVisual,
  	return GL_TRUE;
  }
  
@@ -10393,7 +10462,7 @@ index 4c14c7e..dd63add 100644
  /* Destroy the device specific context.
   */
  void r300DestroyContext(__DRIcontextPrivate * driContextPriv)
-@@ -502,55 +475,27 @@ void r300DestroyContext(__DRIcontextPrivate * driContextPriv)
+@@ -502,55 +479,27 @@ void r300DestroyContext(__DRIcontextPrivate * driContextPriv)
  	assert(r300);		/* should never be null */
  
  	if (r300) {
@@ -10453,7 +10522,7 @@ index 4c14c7e..dd63add 100644
  		FREE(r300);
  	}
 diff --git a/src/mesa/drivers/dri/r300/r300_context.h b/src/mesa/drivers/dri/r300/r300_context.h
-index c15e9fa..6d34727 100644
+index c15e9fa..37718f5 100644
 --- a/src/mesa/drivers/dri/r300/r300_context.h
 +++ b/src/mesa/drivers/dri/r300/r300_context.h
 @@ -42,21 +42,20 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
@@ -10942,7 +11011,7 @@ index c15e9fa..6d34727 100644
  };
  
  
-@@ -897,33 +670,13 @@ struct r300_context {
+@@ -897,40 +670,22 @@ struct r300_context {
  	struct radeon_context radeon;	/* parent class, must be first */
  
  	struct r300_hw_state hw;
@@ -10977,7 +11046,16 @@ index c15e9fa..6d34727 100644
  	GLvector4f dummy_attrib[_TNL_ATTRIB_MAX];
  	GLvector4f *temp_attrib[_TNL_ATTRIB_MAX];
  
-@@ -956,4 +709,7 @@ extern int r300VertexProgUpdateParams(GLcontext * ctx,
+ 	GLboolean disable_lowimpact_fallback;
+ 
+ 	DECLARE_RENDERINPUTS(tnl_index_bitset);	/* index of bits for last tnl_install_attrs */
++	
+ 	struct r300_swtcl_info swtcl;
++	GLboolean vap_flush_needed;
+ };
+ 
+ struct r300_buffer_object {
+@@ -956,4 +711,7 @@ extern int r300VertexProgUpdateParams(GLcontext * ctx,
  #define RADEON_D_PLAYBACK_RAW 2
  #define RADEON_D_T 3
  
@@ -11635,32 +11713,8 @@ index 89d7383..6bc8f8e 100644
  extern void r300ReleaseArrays(GLcontext * ctx);
  extern int r300PrimitiveType(r300ContextPtr rmesa, int prim);
  extern int r300NumVerts(r300ContextPtr rmesa, int num_verts, int prim);
-diff --git a/src/mesa/drivers/dri/r300/r300_fragprog.c b/src/mesa/drivers/dri/r300/r300_fragprog.c
-index 4ef7f2b..8d030c6 100644
---- a/src/mesa/drivers/dri/r300/r300_fragprog.c
-+++ b/src/mesa/drivers/dri/r300/r300_fragprog.c
-@@ -163,6 +163,19 @@ static GLboolean transform_TEX(
- 		}
- 	}
- 
-+	if (inst.SrcReg[0].File != PROGRAM_TEMPORARY && inst.SrcReg[0].File != PROGRAM_INPUT) {
-+		int tmpreg = radeonFindFreeTemporary(t);
-+		tgt = radeonAppendInstructions(t->Program, 1);
-+		tgt->Opcode = OPCODE_MOV;
-+		tgt->DstReg.File = PROGRAM_TEMPORARY;
-+		tgt->DstReg.Index = tmpreg;
-+		tgt->SrcReg[0] = inst.SrcReg[0];
-+
-+		reset_srcreg(&inst.SrcReg[0]);
-+		inst.SrcReg[0].File = PROGRAM_TEMPORARY;
-+		inst.SrcReg[0].Index = tmpreg;
-+	}
-+	
- 	tgt = radeonAppendInstructions(t->Program, 1);
- 	_mesa_copy_instructions(tgt, &inst, 1);
- 
 diff --git a/src/mesa/drivers/dri/r300/r300_ioctl.c b/src/mesa/drivers/dri/r300/r300_ioctl.c
-index ee85e22..90b85f0 100644
+index ee85e22..619d268 100644
 --- a/src/mesa/drivers/dri/r300/r300_ioctl.c
 +++ b/src/mesa/drivers/dri/r300/r300_ioctl.c
 @@ -46,8 +46,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
@@ -11939,7 +11993,7 @@ index ee85e22..90b85f0 100644
  	       (R300_SWIZZLE_SELECT_Y << R300_SWIZZLE_SELECT_Y_SHIFT) |
  	       (R300_SWIZZLE_SELECT_Z << R300_SWIZZLE_SELECT_Z_SHIFT) |
  	       (R300_SWIZZLE_SELECT_W << R300_SWIZZLE_SELECT_W_SHIFT) |
-@@ -226,238 +259,276 @@ static void r300EmitClearState(GLcontext * ctx)
+@@ -226,238 +259,278 @@ static void r300EmitClearState(GLcontext * ctx)
  	      << R300_SWIZZLE1_SHIFT)));
  
  	/* R300_VAP_INPUT_CNTL_0, R300_VAP_INPUT_CNTL_1 */
@@ -12385,11 +12439,13 @@ index ee85e22..90b85f0 100644
 +                                      PVS_SRC_SELECT_FORCE_0,
 +                                      PVS_SRC_REG_INPUT, VSF_FLAG_NONE);
 +		vpu.cmd[8] = 0x0;
++
++		r300->vap_flush_needed = GL_TRUE;
 +		emit_vpu(ctx, &vpu);
  	}
  }
  
-@@ -468,9 +539,11 @@ static void r300Clear(GLcontext * ctx, GLbitfield mask)
+@@ -468,9 +541,11 @@ static void r300Clear(GLcontext * ctx, GLbitfield mask)
  {
  	r300ContextPtr r300 = R300_CONTEXT(ctx);
  	__DRIdrawablePrivate *dPriv = r300->radeon.dri.drawable;
@@ -12402,7 +12458,7 @@ index ee85e22..90b85f0 100644
  
  	if (RADEON_DEBUG & DEBUG_IOCTL)
  		fprintf(stderr, "r300Clear\n");
-@@ -482,6 +555,12 @@ static void r300Clear(GLcontext * ctx, GLbitfield mask)
+@@ -482,6 +557,12 @@ static void r300Clear(GLcontext * ctx, GLbitfield mask)
  			return;
  	}
  
@@ -12415,7 +12471,7 @@ index ee85e22..90b85f0 100644
  	if (mask & BUFFER_BIT_FRONT_LEFT) {
  		flags |= BUFFER_BIT_FRONT_LEFT;
  		mask &= ~BUFFER_BIT_FRONT_LEFT;
-@@ -497,7 +576,7 @@ static void r300Clear(GLcontext * ctx, GLbitfield mask)
+@@ -497,7 +578,7 @@ static void r300Clear(GLcontext * ctx, GLbitfield mask)
  		mask &= ~BUFFER_BIT_DEPTH;
  	}
  
@@ -12424,7 +12480,7 @@ index ee85e22..90b85f0 100644
  		bits |= CLEARBUFFER_STENCIL;
  		mask &= ~BUFFER_BIT_STENCIL;
  	}
-@@ -509,26 +588,28 @@ static void r300Clear(GLcontext * ctx, GLbitfield mask)
+@@ -509,336 +590,33 @@ static void r300Clear(GLcontext * ctx, GLbitfield mask)
  		_swrast_Clear(ctx, mask);
  	}
  
@@ -12455,14 +12511,15 @@ index ee85e22..90b85f0 100644
 -		r300ClearBuffer(r300, bits, 0);
 +		r300ClearBuffer(r300, bits, NULL, rrbd);
  
-+	COMMIT_BATCH();
- }
- 
- void r300Flush(GLcontext * ctx)
-@@ -538,302 +619,13 @@ void r300Flush(GLcontext * ctx)
- 	if (RADEON_DEBUG & DEBUG_IOCTL)
- 		fprintf(stderr, "%s\n", __FUNCTION__);
- 
+-}
+-
+-void r300Flush(GLcontext * ctx)
+-{
+-	r300ContextPtr rmesa = R300_CONTEXT(ctx);
+-
+-	if (RADEON_DEBUG & DEBUG_IOCTL)
+-		fprintf(stderr, "%s\n", __FUNCTION__);
+-
 -	if (rmesa->dma.flush)
 -		rmesa->dma.flush( rmesa );
 -
@@ -12597,9 +12654,7 @@ index ee85e22..90b85f0 100644
 -
 -	if (rmesa->dma.flush) {
 -		rmesa->dma.flush(rmesa);
-+	if (rmesa->radeon.dma.flush) {
-+		rmesa->radeon.dma.flush(ctx);
- 	}
+-	}
 -
 -	if (rmesa->dma.current.buf)
 -		r300ReleaseDmaRegion(rmesa, &rmesa->dma.current, __FUNCTION__);
@@ -12686,10 +12741,7 @@ index ee85e22..90b85f0 100644
 -
 -		FREE(region->buf);
 -		rmesa->dma.nr_released_bufs++;
-+	
-+	if (rmesa->radeon.cmdbuf.cs->cdw) {
-+		rcommonFlushCmdBuf(&rmesa->radeon, __FUNCTION__);
- 	}
+-	}
 -
 -	region->buf = 0;
 -	region->start = 0;
@@ -12764,14 +12816,21 @@ index ee85e22..90b85f0 100644
 -		return ~0;
 -	else
 -		return rmesa->radeon.radeonScreen->gart_texture_offset + offset;
++	COMMIT_BATCH();
  }
  
  void r300InitIoctlFuncs(struct dd_function_table *functions)
+ {
+ 	functions->Clear = r300Clear;
+ 	functions->Finish = radeonFinish;
+-	functions->Flush = r300Flush;
++	functions->Flush = radeonFlush;
+ }
 diff --git a/src/mesa/drivers/dri/r300/r300_ioctl.h b/src/mesa/drivers/dri/r300/r300_ioctl.h
-index e1143fb..5f00264 100644
+index e1143fb..3abfa71 100644
 --- a/src/mesa/drivers/dri/r300/r300_ioctl.h
 +++ b/src/mesa/drivers/dri/r300/r300_ioctl.h
-@@ -39,20 +39,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+@@ -39,22 +39,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  #include "r300_context.h"
  #include "radeon_drm.h"
  
@@ -12781,19 +12840,19 @@ index e1143fb..5f00264 100644
 -extern GLuint r300GartOffsetFromVirtual(r300ContextPtr rmesa,
 -					const GLvoid * pointer);
 -
- extern void r300Flush(GLcontext * ctx);
- 
+-extern void r300Flush(GLcontext * ctx);
+-
 -extern void r300ReleaseDmaRegion(r300ContextPtr rmesa,
 -				 struct r300_dma_region *region,
 -				 const char *caller);
- extern void r300AllocDmaRegion(r300ContextPtr rmesa,
+-extern void r300AllocDmaRegion(r300ContextPtr rmesa,
 -			       struct r300_dma_region *region, int bytes,
 -			       int alignment);
-+			       struct radeon_bo **pbo, int *poffset,
-+			       int bytes, int alignment);
- 
+-
  extern void r300InitIoctlFuncs(struct dd_function_table *functions);
  
+-extern void r300RefillCurrentDmaRegion(r300ContextPtr rmesa, int size);
+ #endif				/* __R300_IOCTL_H__ */
 diff --git a/src/mesa/drivers/dri/r300/r300_mem.c b/src/mesa/drivers/dri/r300/r300_mem.c
 deleted file mode 100644
 index f8f9d4f..0000000
@@ -13545,7 +13604,7 @@ index 16ce4a1..f46477f 100644
  
  	vp = (struct r300_vertex_program *)CURRENT_VERTEX_SHADER(ctx);
 diff --git a/src/mesa/drivers/dri/r300/r300_state.c b/src/mesa/drivers/dri/r300/r300_state.c
-index c192fec..93ef06f 100644
+index ade45f5..03c0a14 100644
 --- a/src/mesa/drivers/dri/r300/r300_state.c
 +++ b/src/mesa/drivers/dri/r300/r300_state.c
 @@ -53,8 +53,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
@@ -13885,7 +13944,26 @@ index c192fec..93ef06f 100644
  		/* XXX: Turn off when clearing buffers ? */
  		r300->hw.zb.cmd[R300_ZB_PITCH] |= R300_DEPTHMACROTILE_ENABLE;
  
-@@ -2440,7 +2399,7 @@ static void r300ResetHwState(r300ContextPtr r300)
+@@ -2408,18 +2367,6 @@ static void r300ResetHwState(r300ContextPtr r300)
+ 
+ 	r300->hw.zb_depthclearvalue.cmd[1] = 0;
+ 
+-	switch (ctx->Visual.depthBits) {
+-	case 16:
+-		r300->hw.zstencil_format.cmd[1] = R300_DEPTHFORMAT_16BIT_INT_Z;
+-		break;
+-	case 24:
+-		r300->hw.zstencil_format.cmd[1] = R300_DEPTHFORMAT_24BIT_INT_Z_8BIT_STENCIL;
+-		break;
+-	default:
+-		fprintf(stderr, "Error: Unsupported depth %d... exiting\n", ctx->Visual.depthBits);
+-		_mesa_exit(-1);
+-	}
+-
+ 	r300->hw.zstencil_format.cmd[2] = R300_ZTOP_DISABLE;
+ 	r300->hw.zstencil_format.cmd[3] = 0x00000003;
+ 	r300->hw.zstencil_format.cmd[4] = 0x00000000;
+@@ -2440,7 +2387,7 @@ static void r300ResetHwState(r300ContextPtr r300)
  		r300->hw.vps.cmd[R300_VPS_ZERO_3] = 0;
  	}
  
@@ -13894,7 +13972,7 @@ index c192fec..93ef06f 100644
  }
  
  void r300UpdateShaders(r300ContextPtr rmesa)
-@@ -2451,8 +2410,8 @@ void r300UpdateShaders(r300ContextPtr rmesa)
+@@ -2451,8 +2398,8 @@ void r300UpdateShaders(r300ContextPtr rmesa)
  
  	ctx = rmesa->radeon.glCtx;
  
@@ -13905,7 +13983,7 @@ index c192fec..93ef06f 100644
  
  		for (i = _TNL_FIRST_MAT; i <= _TNL_LAST_MAT; i++) {
  			rmesa->temp_attrib[i] =
-@@ -2531,10 +2490,10 @@ static void r300SetupPixelShader(r300ContextPtr rmesa)
+@@ -2531,10 +2478,10 @@ static void r300SetupPixelShader(r300ContextPtr rmesa)
  	R300_STATECHANGE(rmesa, fpi[1]);
  	R300_STATECHANGE(rmesa, fpi[2]);
  	R300_STATECHANGE(rmesa, fpi[3]);
@@ -13920,7 +13998,7 @@ index c192fec..93ef06f 100644
  	for (i = 0; i < code->alu.length; i++) {
  		rmesa->hw.fpi[0].cmd[R300_FPI_INSTR_0 + i] = code->alu.inst[i].inst0;
  		rmesa->hw.fpi[1].cmd[R300_FPI_INSTR_0 + i] = code->alu.inst[i].inst1;
-@@ -2565,7 +2524,7 @@ static void r300SetupPixelShader(r300ContextPtr rmesa)
+@@ -2565,7 +2512,7 @@ static void r300SetupPixelShader(r300ContextPtr rmesa)
  	}
  
  	R300_STATECHANGE(rmesa, fpp);
@@ -13929,7 +14007,7 @@ index c192fec..93ef06f 100644
  	for (i = 0; i < code->const_nr; i++) {
  		const GLfloat *constant = get_fragmentprogram_constant(ctx,
  			&fp->mesa_program.Base, code->constant[i]);
-@@ -2667,7 +2626,6 @@ void r300UpdateShaderStates(r300ContextPtr rmesa)
+@@ -2667,7 +2614,6 @@ void r300UpdateShaderStates(r300ContextPtr rmesa)
  	GLcontext *ctx;
  	ctx = rmesa->radeon.glCtx;
  
@@ -13937,7 +14015,7 @@ index c192fec..93ef06f 100644
  	r300SetEarlyZState(ctx);
  
  	GLuint fgdepthsrc = R300_FG_DEPTH_SRC_SCAN;
-@@ -2712,7 +2670,7 @@ static void r300InvalidateState(GLcontext * ctx, GLuint new_state)
+@@ -2712,7 +2658,7 @@ static void r300InvalidateState(GLcontext * ctx, GLuint new_state)
  
  	r300UpdateStateParameters(ctx, new_state);
  
@@ -13946,27 +14024,27 @@ index c192fec..93ef06f 100644
  }
  
  /**
-@@ -2725,15 +2683,13 @@ void r300InitState(r300ContextPtr r300)
+@@ -2725,26 +2671,9 @@ void r300InitState(r300ContextPtr r300)
  	GLcontext *ctx = r300->radeon.glCtx;
  	GLuint depth_fmt;
  
 -	radeonInitState(&r300->radeon);
 -
- 	switch (ctx->Visual.depthBits) {
- 	case 16:
+-	switch (ctx->Visual.depthBits) {
+-	case 16:
 -		r300->state.depth.scale = 1.0 / (GLfloat) 0xffff;
-+		r300->radeon.state.depth.scale = 1.0 / (GLfloat) 0xffff;
- 		depth_fmt = R300_DEPTHFORMAT_16BIT_INT_Z;
- 		break;
- 	case 24:
+-		depth_fmt = R300_DEPTHFORMAT_16BIT_INT_Z;
+-		break;
+-	case 24:
 -		r300->state.depth.scale = 1.0 / (GLfloat) 0xffffff;
-+		r300->radeon.state.depth.scale = 1.0 / (GLfloat) 0xffffff;
- 		depth_fmt = R300_DEPTHFORMAT_24BIT_INT_Z_8BIT_STENCIL;
- 		break;
- 	default:
-@@ -2743,8 +2699,8 @@ void r300InitState(r300ContextPtr r300)
- 	}
- 
+-		depth_fmt = R300_DEPTHFORMAT_24BIT_INT_Z_8BIT_STENCIL;
+-		break;
+-	default:
+-		fprintf(stderr, "Error: Unsupported depth %d... exiting\n",
+-			ctx->Visual.depthBits);
+-		_mesa_exit(-1);
+-	}
+-
  	/* Only have hw stencil when depth buffer is 24 bits deep */
 -	r300->state.stencil.hw_stencil = (ctx->Visual.stencilBits > 0 &&
 -					  ctx->Visual.depthBits == 24);
@@ -13975,7 +14053,7 @@ index c192fec..93ef06f 100644
  
  	memset(&(r300->state.texture), 0, sizeof(r300->state.texture));
  
-@@ -2776,12 +2732,32 @@ void r300UpdateClipPlanes( GLcontext *ctx )
+@@ -2776,12 +2705,33 @@ void r300UpdateClipPlanes( GLcontext *ctx )
  	}
  }
  
@@ -13989,7 +14067,8 @@ index c192fec..93ef06f 100644
 +	radeon_firevertices(&rmesa->radeon);	/* don't pipeline cliprect changes */
 +
 +	radeonSetCliprects( &rmesa->radeon );
-+	radeonUpdatePageFlipping(&rmesa->radeon);
++        if (!rmesa->radeon.radeonScreen->driScreen->dri2.enabled) 
++		radeonUpdatePageFlipping(&rmesa->radeon);
 +}
 +
 +static void r300ReadBuffer( GLcontext *ctx, GLenum mode )
@@ -14009,7 +14088,7 @@ index c192fec..93ef06f 100644
  
  	functions->UpdateState = r300InvalidateState;
  	functions->AlphaFunc = r300AlphaFunc;
-@@ -2818,4 +2794,8 @@ void r300InitStateFuncs(struct dd_function_table *functions)
+@@ -2818,4 +2768,8 @@ void r300InitStateFuncs(struct dd_function_table *functions)
  	functions->RenderMode = r300RenderMode;
  
  	functions->ClipPlane = r300ClipPlane;
@@ -14506,7 +14585,7 @@ index 55df53c..23b4ce3 100644
 +extern void r300_swtcl_flush(GLcontext *ctx, uint32_t current_offset);
  #endif
 diff --git a/src/mesa/drivers/dri/r300/r300_tex.c b/src/mesa/drivers/dri/r300/r300_tex.c
-index 8ab382c..27b9070 100644
+index 8ab382c..0f5afbf 100644
 --- a/src/mesa/drivers/dri/r300/r300_tex.c
 +++ b/src/mesa/drivers/dri/r300/r300_tex.c
 @@ -38,6 +38,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
@@ -15405,7 +15484,7 @@ index 8ab382c..27b9070 100644
  
  	if (RADEON_DEBUG & (DEBUG_STATE | DEBUG_TEXTURE)) {
  		fprintf(stderr, "%s( %p (target = %s) )\n", __FUNCTION__,
-@@ -992,14 +261,19 @@ static void r300DeleteTexture(GLcontext * ctx, struct gl_texture_object *texObj)
+@@ -992,14 +261,24 @@ static void r300DeleteTexture(GLcontext * ctx, struct gl_texture_object *texObj)
  			_mesa_lookup_enum_by_nr(texObj->Target));
  	}
  
@@ -15416,11 +15495,16 @@ index 8ab382c..27b9070 100644
 +	if (rmesa) {
 +		int i;
 +		radeon_firevertices(&rmesa->radeon);
- 
--		driDestroyTextureObject(t);
++
 +		for(i = 0; i < R300_MAX_TEXTURE_UNITS; ++i)
 +			if (rmesa->hw.textures[i] == t)
 +				rmesa->hw.textures[i] = 0;
++	}
+ 
+-		driDestroyTextureObject(t);
++	if (t->bo) {
++		radeon_bo_unref(t->bo);
++		t->bo = NULL;
 +	}
 +
 +	if (t->mt) {
@@ -15431,7 +15515,7 @@ index 8ab382c..27b9070 100644
  	_mesa_delete_texture_object(ctx, texObj);
  }
  
-@@ -1008,8 +282,6 @@ static void r300DeleteTexture(GLcontext * ctx, struct gl_texture_object *texObj)
+@@ -1008,8 +287,6 @@ static void r300DeleteTexture(GLcontext * ctx, struct gl_texture_object *texObj)
   * Called via ctx->Driver.NewTextureObject.
   * Note: this function will be called during context creation to
   * allocate the default texture objects.
@@ -15440,7 +15524,7 @@ index 8ab382c..27b9070 100644
   * Fixup MaxAnisotropy according to user preference.
   */
  static struct gl_texture_object *r300NewTextureObject(GLcontext * ctx,
-@@ -1017,14 +289,23 @@ static struct gl_texture_object *r300NewTextureObject(GLcontext * ctx,
+@@ -1017,14 +294,23 @@ static struct gl_texture_object *r300NewTextureObject(GLcontext * ctx,
  						      GLenum target)
  {
  	r300ContextPtr rmesa = R300_CONTEXT(ctx);
@@ -15471,7 +15555,7 @@ index 8ab382c..27b9070 100644
  }
  
  void r300InitTextureFuncs(struct dd_function_table *functions)
-@@ -1032,22 +313,30 @@ void r300InitTextureFuncs(struct dd_function_table *functions)
+@@ -1032,22 +318,30 @@ void r300InitTextureFuncs(struct dd_function_table *functions)
  	/* Note: we only plug in the functions we implement in the driver
  	 * since _mesa_init_driver_functions() was already called.
  	 */
@@ -16111,7 +16195,7 @@ index b03eefa..0000000
 -	return 0;
 -}
 diff --git a/src/mesa/drivers/dri/r300/r300_texstate.c b/src/mesa/drivers/dri/r300/r300_texstate.c
-index e2329f0..25cd4d8 100644
+index e2329f0..8a90069 100644
 --- a/src/mesa/drivers/dri/r300/r300_texstate.c
 +++ b/src/mesa/drivers/dri/r300/r300_texstate.c
 @@ -47,7 +47,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
@@ -16156,7 +16240,7 @@ index e2329f0..25cd4d8 100644
  		break;
  	default:
  		/* Error...which should have already been caught by higher
-@@ -190,479 +189,296 @@ void r300SetDepthTexMode(struct gl_texture_object *tObj)
+@@ -190,479 +189,309 @@ void r300SetDepthTexMode(struct gl_texture_object *tObj)
  
  
  /**
@@ -16327,7 +16411,7 @@ index e2329f0..25cd4d8 100644
 -	log2Depth = tObj->Image[0][t->base.firstLevel]->DepthLog2;
 -
 -	numLevels = t->base.lastLevel - t->base.firstLevel + 1;
-+	if (t->image_override)
++	if (t->image_override && t->bo)
 +		return;
  
 -	assert(numLevels <= RADEON_MAX_TEXTURE_LEVELS);
@@ -16361,24 +16445,24 @@ index e2329f0..25cd4d8 100644
 -				t->tile_bits |= R300_TXO_MICRO_TILE;
 -			}
 -		}
--
++	if (t->base.Target == GL_TEXTURE_CUBE_MAP)
++		t->pp_txformat |= R300_TX_FORMAT_CUBIC_MAP;
++	if (t->base.Target == GL_TEXTURE_3D)
++		t->pp_txformat |= R300_TX_FORMAT_3D;
+ 
 -		if (tObj->Target != GL_TEXTURE_RECTANGLE_NV) {
 -			/* we can set macro tiling even for small textures, they will be untiled anyway */
 -			t->tile_bits |= R300_TXO_MACRO_TILE;
 -		}
 -	}
 -#endif
--
--	curOffset = 0;
-+	if (t->base.Target == GL_TEXTURE_CUBE_MAP)
-+		t->pp_txformat |= R300_TX_FORMAT_CUBIC_MAP;
-+	if (t->base.Target == GL_TEXTURE_3D)
-+		t->pp_txformat |= R300_TX_FORMAT_3D;
  
+-	curOffset = 0;
+-
 -	if (tObj->Target == GL_TEXTURE_CUBE_MAP) {
 -		ASSERT(log2Width == log2Height);
 -		t->format |= R300_TX_FORMAT_CUBIC_MAP;
- 
+-
 -		for(i = 0; i < numLevels; i++) {
 -			GLuint face;
 -			for(face = 0; face < 6; face++)
@@ -16461,10 +16545,10 @@ index e2329f0..25cd4d8 100644
 -	struct gl_texture_unit *texUnit = &ctx->Texture.Unit[unit];
 -	struct gl_texture_object *tObj = texUnit->_Current;
 -	r300TexObjPtr t = (r300TexObjPtr) tObj->DriverData;
+-
+-	ASSERT(tObj->Target == GL_TEXTURE_2D || tObj->Target == GL_TEXTURE_1D);
 +	radeonTexObj *t = radeon_tex_obj(texObj);
  
--	ASSERT(tObj->Target == GL_TEXTURE_2D || tObj->Target == GL_TEXTURE_1D);
--
 -	if (t->base.dirty_images[0]) {
 -		R300_FIREVERTICES(rmesa);
 +	if (!radeon_validate_texture_miptree(ctx, texObj))
@@ -16540,7 +16624,9 @@ index e2329f0..25cd4d8 100644
  
 -	return GL_TRUE;
 -}
--
++		if (!ctx->Texture.Unit[i]._ReallyEnabled)
++			continue;
+ 
 -static GLboolean r300EnableTextureCube(GLcontext * ctx, int unit)
 -{
 -	r300ContextPtr rmesa = R300_CONTEXT(ctx);
@@ -16559,9 +16645,7 @@ index e2329f0..25cd4d8 100644
 -		/* layout memory space, once for all faces */
 -		r300SetTexImages(rmesa, tObj);
 -	}
-+		if (!ctx->Texture.Unit[i]._ReallyEnabled)
-+			continue;
- 
+-
 -	/* upload (per face) */
 -	for (face = 0; face < 6; face++) {
 -		if (t->base.dirty_images[face]) {
@@ -16611,7 +16695,7 @@ index e2329f0..25cd4d8 100644
 -		if (!t->base.memBlock && !t->image_override &&
 -		    !rmesa->prefer_gart_client_texturing)
 +	if (ret == RADEON_CS_SPACE_FLUSH) {
-+		r300Flush(ctx);
++		radeonFlush(ctx);
 +		if (flushed)
  			return GL_FALSE;
 +		flushed = 1;
@@ -16789,9 +16873,15 @@ index e2329f0..25cd4d8 100644
 +	
 +	_mesa_lock_texture(radeon->glCtx, texObj);
 +	if (t->bo) {
++		radeon_bo_unref(t->bo);
 +		t->bo = NULL;
- 	}
++	}
++	if (rImage->bo) {
++		radeon_bo_unref(rImage->bo);
++		rImage->bo = NULL;
++	}
 +	if (t->mt) {
++		radeon_miptree_unreference(t->mt);
 +		t->mt = NULL;
 +	}
 +	if (rImage->mt) {
@@ -16803,7 +16893,7 @@ index e2329f0..25cd4d8 100644
 +				   rb->width, rb->height, 1, 0, rb->cpp);
 +	texImage->TexFormat = &_mesa_texformat_rgba8888_rev;
 +	rImage->bo = rb->bo;
-+	
++	radeon_bo_ref(rImage->bo);
 +	t->bo = rb->bo;
 +	radeon_bo_ref(t->bo);
 +	t->tile_bits = 0;
@@ -16834,47 +16924,17 @@ index e2329f0..25cd4d8 100644
 +              ((rb->height - 1) << R300_TX_HEIGHTMASK_SHIFT);
 +	t->pp_txsize |= R300_TX_SIZE_TXPITCH_EN;
 +	t->pp_txpitch |= pitch_val;
++
++	if (rmesa->radeon.radeonScreen->chip_family >= CHIP_FAMILY_RV515) {
++	    if (rb->width > 2048)
++		t->pp_txpitch |= R500_TXWIDTH_BIT11;
++	    if (rb->height > 2048)
++		t->pp_txpitch |= R500_TXHEIGHT_BIT11;
+ 	}
 +	t->validated = GL_TRUE;
 +	_mesa_unlock_texture(radeon->glCtx, texObj);
 +	return;
  }
-diff --git a/src/mesa/drivers/dri/r300/r500_fragprog.c b/src/mesa/drivers/dri/r300/r500_fragprog.c
-index 75dae86..926ddd5 100644
---- a/src/mesa/drivers/dri/r300/r500_fragprog.c
-+++ b/src/mesa/drivers/dri/r300/r500_fragprog.c
-@@ -31,6 +31,12 @@
- #include "radeon_program_alu.h"
- 
- 
-+static void reset_srcreg(struct prog_src_register* reg)
-+{
-+	_mesa_bzero(reg, sizeof(*reg));
-+	reg->Swizzle = SWIZZLE_NOOP;
-+}
-+
- static struct prog_src_register shadow_ambient(struct gl_program *program, int tmu)
- {
- 	gl_state_index fail_value_tokens[STATE_LENGTH] = {
-@@ -99,6 +105,19 @@ static GLboolean transform_TEX(
- 		destredirect = GL_TRUE;
- 	}
- 
-+	if (inst.SrcReg[0].File != PROGRAM_TEMPORARY && inst.SrcReg[0].File != PROGRAM_INPUT) {
-+		int tmpreg = radeonFindFreeTemporary(t);
-+		tgt = radeonAppendInstructions(t->Program, 1);
-+		tgt->Opcode = OPCODE_MOV;
-+		tgt->DstReg.File = PROGRAM_TEMPORARY;
-+		tgt->DstReg.Index = tmpreg;
-+		tgt->SrcReg[0] = inst.SrcReg[0];
-+
-+		reset_srcreg(&inst.SrcReg[0]);
-+		inst.SrcReg[0].File = PROGRAM_TEMPORARY;
-+		inst.SrcReg[0].Index = tmpreg;
-+	}
-+
- 	tgt = radeonAppendInstructions(t->Program, 1);
- 	_mesa_copy_instructions(tgt, &inst, 1);
- 
 diff --git a/src/mesa/drivers/dri/r300/radeon_context.c b/src/mesa/drivers/dri/r300/radeon_context.c
 deleted file mode 100644
 index 5267fe9..0000000
@@ -18122,6 +18182,14 @@ index a344837..64bdf94
 -	} while (0)
 -
 -#endif				/* __RADEON_LOCK_H__ */
+diff --git a/src/mesa/drivers/dri/r300/radeon_lock.h b/src/mesa/drivers/dri/r300/radeon_lock.h
+new file mode 120000
+index a344837..64bdf94
+--- /dev/null
++++ b/src/mesa/drivers/dri/r300/radeon_lock.h
+@@ -0,0 +1 @@
++../radeon/radeon_lock.h
+\ No newline at end of file
 diff --git a/src/mesa/drivers/dri/r300/radeon_program_pair.c b/src/mesa/drivers/dri/r300/radeon_program_pair.c
 index 58bc0d5..8a945d8 100644
 --- a/src/mesa/drivers/dri/r300/radeon_program_pair.c
@@ -24667,7 +24735,7 @@ index 0000000..cee3744
 +void *rcommonAllocDmaLowVerts(radeonContextPtr rmesa, int nverts, int vsize);
 +#endif
 diff --git a/src/mesa/drivers/dri/radeon/radeon_ioctl.c b/src/mesa/drivers/dri/radeon/radeon_ioctl.c
-index 09acf6b..fb3a236 100644
+index 09acf6b..b5ab923 100644
 --- a/src/mesa/drivers/dri/radeon/radeon_ioctl.c
 +++ b/src/mesa/drivers/dri/radeon/radeon_ioctl.c
 @@ -43,6 +43,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
@@ -24754,7 +24822,7 @@ index 09acf6b..fb3a236 100644
  /* =============================================================
   * Kernel command buffer handling
   */
-@@ -134,893 +66,308 @@ static void radeonBackUpAndEmitLostStateLocked( radeonContextPtr rmesa )
+@@ -134,893 +66,340 @@ static void radeonBackUpAndEmitLostStateLocked( radeonContextPtr rmesa )
  /* The state atoms will be emitted in the order they appear in the atom list,
   * so this step is important.
   */
@@ -24938,13 +25006,26 @@ index 09acf6b..fb3a236 100644
 -	      cmd[1].i, cmd[2].i, cmd[3].i);
 +   BEGIN_BATCH(8);
 +   OUT_BATCH_PACKET3_CLIP(RADEON_CP_PACKET3_3D_RNDR_GEN_INDX_PRIM, 3);
-+   OUT_BATCH_RELOC(rmesa->ioctl.vertex_offset, rmesa->ioctl.bo, rmesa->ioctl.vertex_offset, RADEON_GEM_DOMAIN_GTT, 0, 0);
++   if (!rmesa->radeon.radeonScreen->kernel_mm) {
++     OUT_BATCH_RELOC(rmesa->ioctl.vertex_offset, rmesa->ioctl.bo, rmesa->ioctl.vertex_offset, RADEON_GEM_DOMAIN_GTT, 0, 0);
++   } else {
++     OUT_BATCH(rmesa->ioctl.vertex_offset);
++   }
++    
 +   OUT_BATCH(vertex_nr);
 +   OUT_BATCH(vertex_format);
 +   OUT_BATCH(primitive |  RADEON_CP_VC_CNTL_PRIM_WALK_LIST |
 +	     RADEON_CP_VC_CNTL_COLOR_ORDER_RGBA |
 +	     RADEON_CP_VC_CNTL_VTX_FMT_RADEON_MODE |
 +	     (vertex_nr << RADEON_CP_VC_CNTL_NUM_SHIFT));
++
++   if (rmesa->radeon.radeonScreen->kernel_mm) {
++     radeon_cs_write_reloc(rmesa->radeon.cmdbuf.cs,
++			   rmesa->ioctl.bo,
++			   RADEON_GEM_DOMAIN_GTT,
++			   0, 0);
++   }
++   
 +   END_BATCH();
 +   
 +#else   
@@ -24992,11 +25073,15 @@ index 09acf6b..fb3a236 100644
 -   rmesa->store.cmd_used = (rmesa->store.cmd_used + 2) & ~2;
 -   dwords = (rmesa->store.cmd_used - rmesa->store.elts_start) / 4;
 +   nr = rmesa->tcl.elt_used;
-+
-+   rmesa->radeon.cmdbuf.cs->cdw += dwords;
  
  #if RADEON_OLD_PACKETS
 -   cmd[1] |= (dwords - 3) << 16;
++   if (rmesa->radeon.radeonScreen->kernel_mm) {
++     dwords -= 2;
++   }
++#endif
++
++#if RADEON_OLD_PACKETS
 +   cmd[1] |= (dwords + 3) << 16;
     cmd[5] |= nr << RADEON_CP_VC_CNTL_NUM_SHIFT;
  #else
@@ -25005,7 +25090,18 @@ index 09acf6b..fb3a236 100644
     cmd[3] |= nr << RADEON_CP_VC_CNTL_NUM_SHIFT;
  #endif
  
++   rmesa->radeon.cmdbuf.cs->cdw += dwords;
 +   rmesa->radeon.cmdbuf.cs->section_cdw += dwords;
++
++#if RADEON_OLD_PACKETS
++   if (rmesa->radeon.radeonScreen->kernel_mm) {
++      radeon_cs_write_reloc(rmesa->radeon.cmdbuf.cs,
++			    rmesa->ioctl.bo,
++			    RADEON_GEM_DOMAIN_GTT,
++			    0, 0);
++   }
++#endif
++
 +   END_BATCH();
 +
     if (RADEON_DEBUG & DEBUG_SYNC) {
@@ -25072,7 +25168,11 @@ index 09acf6b..fb3a236 100644
 -   retval = (GLushort *)(cmd+4);
 +   BEGIN_BATCH_NO_AUTOSTATE(2+ELTS_BUFSZ(align_min_nr)/4);
 +   OUT_BATCH_PACKET3_CLIP(RADEON_CP_PACKET3_3D_RNDR_GEN_INDX_PRIM, 0);
-+   OUT_BATCH_RELOC(rmesa->ioctl.vertex_offset, rmesa->ioctl.bo, rmesa->ioctl.vertex_offset, RADEON_GEM_DOMAIN_GTT, 0, 0);
++   if (!rmesa->radeon.radeonScreen->kernel_mm) {
++     OUT_BATCH_RELOC(rmesa->ioctl.vertex_offset, rmesa->ioctl.bo, rmesa->ioctl.vertex_offset, RADEON_GEM_DOMAIN_GTT, 0, 0);
++   } else {
++     OUT_BATCH(rmesa->ioctl.vertex_offset);
++   }
 +   OUT_BATCH(0xffff);
 +   OUT_BATCH(vertex_format);
 +   OUT_BATCH(primitive | 
@@ -25641,30 +25741,17 @@ index 09acf6b..fb3a236 100644
 -	    LOCK_HARDWARE( rmesa ); 
 -	 }
 -	 rmesa->irqsEmitted = 10;
+-      }
+-
+-      if (rmesa->irqsEmitted) {
+-	 radeonEmitIrqLocked( rmesa );
+-	 rmesa->irqsEmitted--;
 +      if (nr & 1) {
 +	 OUT_BATCH((rmesa->tcl.aos[nr - 1].components << 0) |
 +		   (rmesa->tcl.aos[nr - 1].stride << 8));
 +	 voffset =  rmesa->tcl.aos[nr - 1].offset +
 +	    offset * 4 * rmesa->tcl.aos[nr - 1].stride;
 +	 OUT_BATCH(voffset);
-       }
--
--      if (rmesa->irqsEmitted) {
--	 radeonEmitIrqLocked( rmesa );
--	 rmesa->irqsEmitted--;
-+      for (i = 0; i + 1 < nr; i += 2) {
-+	 voffset =  rmesa->tcl.aos[i + 0].offset +
-+	    offset * 4 * rmesa->tcl.aos[i + 0].stride;
-+	 radeon_cs_write_reloc(rmesa->radeon.cmdbuf.cs,
-+			       rmesa->tcl.aos[i+0].bo,
-+			       RADEON_GEM_DOMAIN_GTT,
-+			       0, 0);
-+	 voffset =  rmesa->tcl.aos[i + 1].offset +
-+	    offset * 4 * rmesa->tcl.aos[i + 1].stride;
-+	 radeon_cs_write_reloc(rmesa->radeon.cmdbuf.cs,
-+			       rmesa->tcl.aos[i+1].bo,
-+			       RADEON_GEM_DOMAIN_GTT,
-+			       0, 0);
        }
 -   } 
 -   else {
@@ -25673,15 +25760,8 @@ index 09acf6b..fb3a236 100644
 -	 if (rmesa->do_usleeps) 
 -	    DO_USLEEP( 1 );
 -	 LOCK_HARDWARE( rmesa ); 
-+      if (nr & 1) {
-+	 voffset =  rmesa->tcl.aos[nr - 1].offset +
-+	    offset * 4 * rmesa->tcl.aos[nr - 1].stride;
-+	 radeon_cs_write_reloc(rmesa->radeon.cmdbuf.cs,
-+			       rmesa->tcl.aos[nr-1].bo,
-+			       RADEON_GEM_DOMAIN_GTT,
-+			       0, 0);
-       }
-    }
+-      }
+-   }
 -}
 -
 -/* Copy the back color buffer to the front color buffer.
@@ -25718,8 +25798,7 @@ index 09acf6b..fb3a236 100644
 -       driWaitForVBlank( dPriv, & missed_target );
 -       LOCK_HARDWARE( rmesa );
 -   }
-+   END_BATCH();
- 
+-
 -   nbox = dPriv->numClipRects; /* must be in locked region */
 -
 -   for ( i = 0 ; i < nbox ; ) {
@@ -25749,7 +25828,20 @@ index 09acf6b..fb3a236 100644
 -
 -	  b++;
 -	  n++;
--      }
++      for (i = 0; i + 1 < nr; i += 2) {
++	 voffset =  rmesa->tcl.aos[i + 0].offset +
++	    offset * 4 * rmesa->tcl.aos[i + 0].stride;
++	 radeon_cs_write_reloc(rmesa->radeon.cmdbuf.cs,
++			       rmesa->tcl.aos[i+0].bo,
++			       RADEON_GEM_DOMAIN_GTT,
++			       0, 0);
++	 voffset =  rmesa->tcl.aos[i + 1].offset +
++	    offset * 4 * rmesa->tcl.aos[i + 1].stride;
++	 radeon_cs_write_reloc(rmesa->radeon.cmdbuf.cs,
++			       rmesa->tcl.aos[i+1].bo,
++			       RADEON_GEM_DOMAIN_GTT,
++			       0, 0);
+       }
 -      rmesa->sarea->nbox = n;
 -
 -      if (!n)
@@ -25761,9 +25853,17 @@ index 09acf6b..fb3a236 100644
 -	 fprintf( stderr, "DRM_RADEON_SWAP_BUFFERS: return = %d\n", ret );
 -	 UNLOCK_HARDWARE( rmesa );
 -	 exit( 1 );
--      }
--   }
--
++      if (nr & 1) {
++	 voffset =  rmesa->tcl.aos[nr - 1].offset +
++	    offset * 4 * rmesa->tcl.aos[nr - 1].stride;
++	 radeon_cs_write_reloc(rmesa->radeon.cmdbuf.cs,
++			       rmesa->tcl.aos[nr-1].bo,
++			       RADEON_GEM_DOMAIN_GTT,
++			       0, 0);
+       }
+    }
++   END_BATCH();
+ 
 -   UNLOCK_HARDWARE( rmesa );
 -   if (!rect)
 -   {
@@ -25850,7 +25950,7 @@ index 09acf6b..fb3a236 100644
  /* ================================================================
   * Buffer clear
   */
-@@ -1028,9 +375,9 @@ void radeonPageFlip( __DRIdrawablePrivate *dPriv )
+@@ -1028,9 +407,9 @@ void radeonPageFlip( __DRIdrawablePrivate *dPriv )
  
  static void radeonClear( GLcontext *ctx, GLbitfield mask )
  {
@@ -25863,7 +25963,7 @@ index 09acf6b..fb3a236 100644
     uint32_t clear;
     GLuint flags = 0;
     GLuint color_mask = 0;
-@@ -1042,8 +389,8 @@ static void radeonClear( GLcontext *ctx, GLbitfield mask )
+@@ -1042,8 +421,8 @@ static void radeonClear( GLcontext *ctx, GLbitfield mask )
     }
  
     {
@@ -25874,7 +25974,7 @@ index 09acf6b..fb3a236 100644
        if ( dPriv->numClipRects == 0 ) 
  	 return;
     }
-@@ -1067,7 +414,7 @@ static void radeonClear( GLcontext *ctx, GLbitfield mask )
+@@ -1067,7 +446,7 @@ static void radeonClear( GLcontext *ctx, GLbitfield mask )
        mask &= ~BUFFER_BIT_DEPTH;
     }
  
@@ -25883,7 +25983,7 @@ index 09acf6b..fb3a236 100644
        flags |= RADEON_STENCIL;
        mask &= ~BUFFER_BIT_STENCIL;
     }
-@@ -1083,16 +430,16 @@ static void radeonClear( GLcontext *ctx, GLbitfield mask )
+@@ -1083,16 +462,16 @@ static void radeonClear( GLcontext *ctx, GLbitfield mask )
  
     if (rmesa->using_hyperz) {
        flags |= RADEON_USE_COMP_ZBUF;
@@ -25904,7 +26004,7 @@ index 09acf6b..fb3a236 100644
  
     /* compute region after locking: */
     cx = ctx->DrawBuffer->_Xmin;
-@@ -1112,7 +459,7 @@ static void radeonClear( GLcontext *ctx, GLbitfield mask )
+@@ -1112,7 +491,7 @@ static void radeonClear( GLcontext *ctx, GLbitfield mask )
  
        gp.param = RADEON_PARAM_LAST_CLEAR;
        gp.value = (int *)&clear;
@@ -25913,7 +26013,7 @@ index 09acf6b..fb3a236 100644
  				 DRM_RADEON_GETPARAM, &gp, sizeof(gp) );
  
        if ( ret ) {
-@@ -1124,20 +471,20 @@ static void radeonClear( GLcontext *ctx, GLbitfield mask )
+@@ -1124,20 +503,20 @@ static void radeonClear( GLcontext *ctx, GLbitfield mask )
  	 break;
        }
  
@@ -25939,7 +26039,7 @@ index 09acf6b..fb3a236 100644
        drm_radeon_clear_t clear;
        drm_radeon_clear_rect_t depth_boxes[RADEON_NR_SAREA_CLIPRECTS];
        GLint n = 0;
-@@ -1172,106 +519,40 @@ static void radeonClear( GLcontext *ctx, GLbitfield mask )
+@@ -1172,106 +551,40 @@ static void radeonClear( GLcontext *ctx, GLbitfield mask )
  	 }
        }
  
@@ -27596,7 +27696,7 @@ index 1ec06bc..f30eb1c 100644
  				  drm_clip_rect_t *boxes );
  
 diff --git a/src/mesa/drivers/dri/radeon/radeon_screen.c b/src/mesa/drivers/dri/radeon/radeon_screen.c
-index 56c22fa..086a268 100644
+index f7cba50..78f0bc2 100644
 --- a/src/mesa/drivers/dri/radeon/radeon_screen.c
 +++ b/src/mesa/drivers/dri/radeon/radeon_screen.c
 @@ -35,6 +35,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
@@ -27850,7 +27950,7 @@ index 56c22fa..086a268 100644
     case PCI_CHIP_RADEON_LY:
     case PCI_CHIP_RADEON_LZ:
     case PCI_CHIP_RADEON_QY:
-@@ -813,9 +698,162 @@ radeonCreateScreen( __DRIscreenPrivate *sPriv )
+@@ -819,9 +704,162 @@ radeonCreateScreen( __DRIscreenPrivate *sPriv )
  
     default:
        fprintf(stderr, "unknown chip id 0x%x, can't guess.\n",
@@ -28014,28 +28114,41 @@ index 56c22fa..086a268 100644
     if ((screen->chip_family == CHIP_FAMILY_R350 || screen->chip_family == CHIP_FAMILY_R300) &&
         sPriv->ddx_version.minor < 2) {
        fprintf(stderr, "xf86-video-ati-6.6.2 or newer needed for Radeon 9500/9700/9800 cards.\n");
-@@ -843,7 +881,7 @@ radeonCreateScreen( __DRIscreenPrivate *sPriv )
+@@ -849,7 +887,7 @@ radeonCreateScreen( __DRIscreenPrivate *sPriv )
     ret = radeonGetParam( sPriv->fd, RADEON_PARAM_FB_LOCATION,
                           &temp);
     if (ret) {
--       if (screen->chip_family < CHIP_FAMILY_RS690)
-+       if (screen->chip_family < CHIP_FAMILY_RS690 && !screen->kernel_mm)
+-       if (screen->chip_family < CHIP_FAMILY_RS600)
++       if (screen->chip_family < CHIP_FAMILY_RS600 && !screen->kernel_mm)
  	   screen->fbLocation      = ( INREG( RADEON_MC_FB_LOCATION ) & 0xffff) << 16;
         else {
             FREE( screen );
-@@ -957,7 +995,7 @@ radeonCreateScreen( __DRIscreenPrivate *sPriv )
- #endif
+@@ -951,6 +989,103 @@ radeonCreateScreen( __DRIscreenPrivate *sPriv )
+        screen->extensions[i++] = &driMediaStreamCounterExtension.base;
+    }
  
- #if RADEON_COMMON && defined(RADEON_COMMON_FOR_R300)
--   screen->extensions[i++] = &r300texOffsetExtension.base;
-+   //screen->extensions[i++] = &r300texOffsetExtension.base;
- #endif
- 
-    screen->extensions[i++] = NULL;
-@@ -965,6 +1003,106 @@ radeonCreateScreen( __DRIscreenPrivate *sPriv )
- 
-    screen->driScreen = sPriv;
-    screen->sarea_priv_offset = dri_priv->sarea_priv_offset;
++   if (!screen->kernel_mm) {
++#if !RADEON_COMMON
++   	screen->extensions[i++] = &radeonTexOffsetExtension.base;
++#endif
++
++#if RADEON_COMMON && defined(RADEON_COMMON_FOR_R200)
++        if (IS_R200_CLASS(screen))
++            screen->extensions[i++] = &r200AllocateExtension.base;
++
++        screen->extensions[i++] = &r200texOffsetExtension.base;
++#endif
++
++#if RADEON_COMMON && defined(RADEON_COMMON_FOR_R300)
++        screen->extensions[i++] = &r300texOffsetExtension.base;
++#endif
++   }
++
++   screen->extensions[i++] = NULL;
++   sPriv->extensions = screen->extensions;
++
++   screen->driScreen = sPriv;
++   screen->sarea_priv_offset = dri_priv->sarea_priv_offset;
 +   screen->sarea = (drm_radeon_sarea_t *) ((GLubyte *) sPriv->pSAREA +
 +					       screen->sarea_priv_offset);
 +
@@ -28111,26 +28224,23 @@ index 56c22fa..086a268 100644
 +       screen->extensions[i++] = &driMediaStreamCounterExtension.base;
 +   }
 +
-+#if !RADEON_COMMON
-+   screen->extensions[i++] = &radeonTexOffsetExtension.base;
-+#endif
-+
-+#if RADEON_COMMON && defined(RADEON_COMMON_FOR_R200)
-+   if (IS_R200_CLASS(screen))
-+       screen->extensions[i++] = &r200AllocateExtension.base;
-+
-+   screen->extensions[i++] = &r200texOffsetExtension.base;
-+#endif
-+
-+#if RADEON_COMMON && defined(RADEON_COMMON_FOR_R300)
-+   screen->extensions[i++] = &r300texOffsetExtension.base;
+ #if !RADEON_COMMON
+    screen->extensions[i++] = &radeonTexOffsetExtension.base;
+ #endif
+@@ -963,14 +1098,19 @@ radeonCreateScreen( __DRIscreenPrivate *sPriv )
+ #endif
+ 
+ #if RADEON_COMMON && defined(RADEON_COMMON_FOR_R300)
+-   screen->extensions[i++] = &r300texOffsetExtension.base;
++   //screen->extensions[i++] = &r300texOffsetExtension.base;
 +   screen->extensions[i++] = &r300TexBufferExtension.base;
-+#endif
-+
-+   screen->extensions[i++] = NULL;
-+   sPriv->extensions = screen->extensions;
-+
-+   screen->driScreen = sPriv;
+ #endif
+ 
+    screen->extensions[i++] = NULL;
+    sPriv->extensions = screen->extensions;
+ 
+    screen->driScreen = sPriv;
+-   screen->sarea_priv_offset = dri_priv->sarea_priv_offset;
 +   screen->bom = radeon_bo_manager_gem_ctor(sPriv->fd);
 +   if (screen->bom == NULL) {
 +       free(screen);
@@ -28139,7 +28249,7 @@ index 56c22fa..086a268 100644
     return screen;
  }
  
-@@ -973,23 +1111,32 @@ radeonCreateScreen( __DRIscreenPrivate *sPriv )
+@@ -979,23 +1119,32 @@ radeonCreateScreen( __DRIscreenPrivate *sPriv )
  static void
  radeonDestroyScreen( __DRIscreenPrivate *sPriv )
  {
@@ -28185,7 +28295,7 @@ index 56c22fa..086a268 100644
  }
  
  
-@@ -998,16 +1145,103 @@ radeonDestroyScreen( __DRIscreenPrivate *sPriv )
+@@ -1004,15 +1153,102 @@ radeonDestroyScreen( __DRIscreenPrivate *sPriv )
  static GLboolean
  radeonInitDriver( __DRIscreenPrivate *sPriv )
  {
@@ -28203,11 +28313,11 @@ index 56c22fa..086a268 100644
 +        radeonDestroyScreen( sPriv );
 +        return GL_FALSE;
 +    }
-+
-+    return GL_TRUE;
-+}
  
 -   return GL_TRUE;
++    return GL_TRUE;
+ }
+ 
 +static GLboolean
 +radeon_alloc_window_storage(GLcontext *ctx, struct gl_renderbuffer *rb,
 +			    GLenum intFormat, GLuint w, GLuint h)
@@ -28217,9 +28327,9 @@ index 56c22fa..086a268 100644
 +    rb->_ActualFormat = intFormat;
 +
 +    return GL_TRUE;
- }
- 
- 
++}
++
++
 +static struct radeon_renderbuffer *
 +radeon_create_renderbuffer(GLenum format, __DRIdrawablePrivate *driDrawPriv)
 +{
@@ -28291,11 +28401,10 @@ index 56c22fa..086a268 100644
 +    ret->bo = NULL;
 +    return ret;
 +}
-+
+ 
  /**
   * Create the Mesa framebuffer and renderbuffers for a given window/drawable.
-  *
-@@ -1022,95 +1256,86 @@ radeonCreateBuffer( __DRIscreenPrivate *driScrnPriv,
+@@ -1028,95 +1264,86 @@ radeonCreateBuffer( __DRIscreenPrivate *driScrnPriv,
  {
     radeonScreenPtr screen = (radeonScreenPtr) driScrnPriv->private;
  
@@ -28461,7 +28570,7 @@ index 56c22fa..086a268 100644
     _mesa_unreference_framebuffer((GLframebuffer **)(&(driDrawPriv->driverPrivate)));
  }
  
-@@ -1205,13 +1430,48 @@ radeonInitScreen(__DRIscreenPrivate *psp)
+@@ -1211,13 +1438,102 @@ radeonInitScreen(__DRIscreenPrivate *psp)
     if (!radeonInitDriver(psp))
         return NULL;
  
@@ -28473,7 +28582,8 @@ index 56c22fa..086a268 100644
 -			     (dri_priv->backOffset != dri_priv->depthOffset) );
 +			     (dri_priv->bpp == 16) ? 0  : 8, 1);
  }
- 
++#define ARRAY_SIZE(a) (sizeof (a) / sizeof ((a)[0]))
++
 +/**
 + * This is the driver specific part of the createNewScreen entry point.
 + * Called when using DRI2.
@@ -28483,6 +28593,18 @@ index 56c22fa..086a268 100644
 +static const
 +__DRIconfig **radeonInitScreen2(__DRIscreenPrivate *psp)
 +{
++   GLenum fb_format[3];
++   GLenum fb_type[3];
++   /* GLX_SWAP_COPY_OML is only supported because the Intel driver doesn't
++    * support pageflipping at all.
++    */
++   static const GLenum back_buffer_modes[] = {
++     GLX_NONE, GLX_SWAP_UNDEFINED_OML, /*, GLX_SWAP_COPY_OML*/
++   };
++   uint8_t depth_bits[4], stencil_bits[4], msaa_samples_array[1];
++   int color;
++   __DRIconfig **configs = NULL;
++
 +   /* Calling driInitExtensions here, with a NULL context pointer,
 +    * does not actually enable the extensions.  It just makes sure
 +    * that all the dispatch offsets for all the extensions that
@@ -28505,14 +28627,55 @@ index 56c22fa..086a268 100644
 +   if (!radeonInitDriver(psp)) {
 +       return NULL;
 +    }
++   depth_bits[0] = 0;
++   stencil_bits[0] = 0;
++   depth_bits[1] = 16;
++   stencil_bits[1] = 0;
++   depth_bits[2] = 24;
++   stencil_bits[2] = 0;
++   depth_bits[3] = 24;
++   stencil_bits[3] = 8;
 +
-+   /* for now fill in all modes */
-+   return radeonFillInModes( psp, 24, 24, 8, 1);
++   msaa_samples_array[0] = 0;
++
++   fb_format[0] = GL_RGB;
++   fb_type[0] = GL_UNSIGNED_SHORT_5_6_5;
++
++   fb_format[1] = GL_BGR;
++   fb_type[1] = GL_UNSIGNED_INT_8_8_8_8_REV;
++
++   fb_format[2] = GL_BGRA;
++   fb_type[2] = GL_UNSIGNED_INT_8_8_8_8_REV;
++
++   for (color = 0; color < ARRAY_SIZE(fb_format); color++) {
++      __DRIconfig **new_configs;
++
++      new_configs = driCreateConfigs(fb_format[color], fb_type[color],
++				     depth_bits,
++				     stencil_bits,
++				     ARRAY_SIZE(depth_bits),
++				     back_buffer_modes,
++				     ARRAY_SIZE(back_buffer_modes),
++				     msaa_samples_array,
++				     ARRAY_SIZE(msaa_samples_array));
++      if (configs == NULL)
++	 configs = new_configs;
++      else
++	 configs = driConcatConfigs(configs, new_configs);
++   }
++
++   if (configs == NULL) {
++      fprintf(stderr, "[%s:%u] Error creating FBConfig!\n", __func__,
++              __LINE__);
++      return NULL;
++   }
+ 
++   return (const __DRIconfig **)configs;
 +}
  
  /**
   * Get information about previous buffer swaps.
-@@ -1219,11 +1479,7 @@ radeonInitScreen(__DRIscreenPrivate *psp)
+@@ -1225,11 +1541,7 @@ radeonInitScreen(__DRIscreenPrivate *psp)
  static int
  getSwapInfo( __DRIdrawablePrivate *dPriv, __DRIswapInfo * sInfo )
  {
@@ -28524,7 +28687,7 @@ index 56c22fa..086a268 100644
  
     if ( (dPriv == NULL) || (dPriv->driContextPriv == NULL)
  	|| (dPriv->driContextPriv->driverPrivate == NULL)
-@@ -1260,6 +1516,8 @@ const struct __DriverAPIRec driDriverAPI = {
+@@ -1266,6 +1578,8 @@ const struct __DriverAPIRec driDriverAPI = {
     .WaitForSBC      = NULL,
     .SwapBuffersMSC  = NULL,
     .CopySubBuffer   = radeonCopySubBuffer,
@@ -28533,7 +28696,7 @@ index 56c22fa..086a268 100644
  };
  #else
  const struct __DriverAPIRec driDriverAPI = {
-@@ -1269,14 +1527,15 @@ const struct __DriverAPIRec driDriverAPI = {
+@@ -1275,14 +1589,16 @@ const struct __DriverAPIRec driDriverAPI = {
     .DestroyContext  = r200DestroyContext,
     .CreateBuffer    = radeonCreateBuffer,
     .DestroyBuffer   = radeonDestroyBuffer,
@@ -28550,6 +28713,7 @@ index 56c22fa..086a268 100644
     .SwapBuffersMSC  = NULL,
 -   .CopySubBuffer   = r200CopySubBuffer,
 +   .CopySubBuffer   = radeonCopySubBuffer,
++   .InitScreen2     = radeonInitScreen2,
  };
  #endif
 +
@@ -29096,7 +29260,7 @@ index 9abe086..dd44ab5 100644
 +extern void radeonSetSpanFunctions(struct radeon_renderbuffer *rrb);
  #endif
 diff --git a/src/mesa/drivers/dri/radeon/radeon_state.c b/src/mesa/drivers/dri/radeon/radeon_state.c
-index 32bcff3..86d8720 100644
+index 32bcff3..5fffa28 100644
 --- a/src/mesa/drivers/dri/radeon/radeon_state.c
 +++ b/src/mesa/drivers/dri/radeon/radeon_state.c
 @@ -62,7 +62,7 @@ static void radeonUpdateSpecular( GLcontext *ctx );
@@ -29693,18 +29857,19 @@ index 32bcff3..86d8720 100644
  
     if (ctx->DrawBuffer->_NumColorDrawBuffers != 1) {
        /* 0 (GL_NONE) buffers or multiple color drawing buffers */
-@@ -1707,8 +1562,8 @@ static void radeonDrawBuffer( GLcontext *ctx, GLenum mode )
+@@ -1707,8 +1562,9 @@ static void radeonDrawBuffer( GLcontext *ctx, GLenum mode )
        return;
     }
  
 -   radeonSetCliprects( rmesa );
 -
 +   radeonSetCliprects( &rmesa->radeon );
-+   radeonUpdatePageFlipping(&rmesa->radeon);
++   if (!rmesa->radeon.radeonScreen->driScreen->dri2.enabled)
++      radeonUpdatePageFlipping(&rmesa->radeon);
     /* We'll set the drawing engine's offset/pitch parameters later
      * when we update other state.
      */
-@@ -1726,7 +1581,7 @@ static void radeonReadBuffer( GLcontext *ctx, GLenum mode )
+@@ -1726,7 +1582,7 @@ static void radeonReadBuffer( GLcontext *ctx, GLenum mode )
  
  static void radeonEnable( GLcontext *ctx, GLenum cap, GLboolean state )
  {
@@ -29713,7 +29878,7 @@ index 32bcff3..86d8720 100644
     GLuint p, flag;
  
     if ( RADEON_DEBUG & DEBUG_STATE )
-@@ -1821,10 +1676,10 @@ static void radeonEnable( GLcontext *ctx, GLenum cap, GLboolean state )
+@@ -1821,10 +1677,10 @@ static void radeonEnable( GLcontext *ctx, GLenum cap, GLboolean state )
        RADEON_STATECHANGE(rmesa, ctx );
        if ( state ) {
  	 rmesa->hw.ctx.cmd[CTX_RB3D_CNTL] |=  RADEON_DITHER_ENABLE;
@@ -29726,7 +29891,7 @@ index 32bcff3..86d8720 100644
        }
        break;
  
-@@ -1971,13 +1826,13 @@ static void radeonEnable( GLcontext *ctx, GLenum cap, GLboolean state )
+@@ -1971,13 +1827,13 @@ static void radeonEnable( GLcontext *ctx, GLenum cap, GLboolean state )
     }
  
     case GL_SCISSOR_TEST:
@@ -29743,7 +29908,7 @@ index 32bcff3..86d8720 100644
  	 RADEON_STATECHANGE( rmesa, ctx );
  	 if ( state ) {
  	    rmesa->hw.ctx.cmd[CTX_RB3D_CNTL] |=  RADEON_STENCIL_ENABLE;
-@@ -2010,7 +1865,7 @@ static void radeonEnable( GLcontext *ctx, GLenum cap, GLboolean state )
+@@ -2010,7 +1866,7 @@ static void radeonEnable( GLcontext *ctx, GLenum cap, GLboolean state )
  
  static void radeonLightingSpaceChange( GLcontext *ctx )
  {
@@ -29752,7 +29917,7 @@ index 32bcff3..86d8720 100644
     GLboolean tmp;
     RADEON_STATECHANGE( rmesa, tcl );
  
-@@ -2039,7 +1894,7 @@ static void radeonLightingSpaceChange( GLcontext *ctx )
+@@ -2039,7 +1895,7 @@ static void radeonLightingSpaceChange( GLcontext *ctx )
   */
  
  
@@ -29761,7 +29926,7 @@ index 32bcff3..86d8720 100644
  			    int unit, GLboolean swapcols )
  {
  /* Here's how this works: on r100, only 3 tex coords can be submitted, so the
-@@ -2065,7 +1920,7 @@ void radeonUploadTexMatrix( radeonContextPtr rmesa,
+@@ -2065,7 +1921,7 @@ void radeonUploadTexMatrix( radeonContextPtr rmesa,
     int idx = TEXMAT_0 + unit;
     float *dest = ((float *)RADEON_DB_STATE( mat[idx] )) + MAT_ELT_0;
     int i;
@@ -29770,7 +29935,7 @@ index 32bcff3..86d8720 100644
     GLfloat *src = rmesa->tmpmat[unit].m;
  
     rmesa->TexMatColSwap &= ~(1 << unit);
-@@ -2119,7 +1974,7 @@ void radeonUploadTexMatrix( radeonContextPtr rmesa,
+@@ -2119,7 +1975,7 @@ void radeonUploadTexMatrix( radeonContextPtr rmesa,
  }
  
  
@@ -29779,7 +29944,7 @@ index 32bcff3..86d8720 100644
  {
     float *dest = ((float *)RADEON_DB_STATE( mat[idx] ))+MAT_ELT_0;
     int i;
-@@ -2135,7 +1990,7 @@ static void upload_matrix( radeonContextPtr rmesa, GLfloat *src, int idx )
+@@ -2135,7 +1991,7 @@ static void upload_matrix( radeonContextPtr rmesa, GLfloat *src, int idx )
     RADEON_DB_STATECHANGE( rmesa, &rmesa->hw.mat[idx] );
  }
  
@@ -29788,7 +29953,7 @@ index 32bcff3..86d8720 100644
  {
     float *dest = ((float *)RADEON_DB_STATE( mat[idx] ))+MAT_ELT_0;
     memcpy(dest, src, 16*sizeof(float));
-@@ -2145,7 +2000,7 @@ static void upload_matrix_t( radeonContextPtr rmesa, GLfloat *src, int idx )
+@@ -2145,7 +2001,7 @@ static void upload_matrix_t( radeonContextPtr rmesa, GLfloat *src, int idx )
  
  static void update_texturematrix( GLcontext *ctx )
  {
@@ -29797,7 +29962,7 @@ index 32bcff3..86d8720 100644
     GLuint tpc = rmesa->hw.tcl.cmd[TCL_TEXTURE_PROC_CTL];
     GLuint vs = rmesa->hw.tcl.cmd[TCL_OUTPUT_VTXSEL];
     int unit;
-@@ -2217,43 +2072,32 @@ static void update_texturematrix( GLcontext *ctx )
+@@ -2217,43 +2073,32 @@ static void update_texturematrix( GLcontext *ctx )
  void
  radeonUpdateDrawBuffer(GLcontext *ctx)
  {
@@ -29855,7 +30020,7 @@ index 32bcff3..86d8720 100644
  
     if (new_state & (_NEW_BUFFERS | _NEW_COLOR | _NEW_PIXEL)) {
       radeonUpdateDrawBuffer(ctx);
-@@ -2261,7 +2105,7 @@ void radeonValidateState( GLcontext *ctx )
+@@ -2261,7 +2106,7 @@ void radeonValidateState( GLcontext *ctx )
  
     if (new_state & _NEW_TEXTURE) {
        radeonUpdateTextureState( ctx );
@@ -29864,7 +30029,7 @@ index 32bcff3..86d8720 100644
     }
  
     /* Need an event driven matrix update?
-@@ -2295,7 +2139,7 @@ void radeonValidateState( GLcontext *ctx )
+@@ -2295,7 +2140,7 @@ void radeonValidateState( GLcontext *ctx )
     }
  
  
@@ -29873,7 +30038,7 @@ index 32bcff3..86d8720 100644
  }
  
  
-@@ -2306,7 +2150,7 @@ static void radeonInvalidateState( GLcontext *ctx, GLuint new_state )
+@@ -2306,7 +2151,7 @@ static void radeonInvalidateState( GLcontext *ctx, GLuint new_state )
     _vbo_InvalidateState( ctx, new_state );
     _tnl_InvalidateState( ctx, new_state );
     _ae_invalidate_state( ctx, new_state );
@@ -29882,7 +30047,7 @@ index 32bcff3..86d8720 100644
  }
  
  
-@@ -2330,15 +2174,15 @@ static GLboolean check_material( GLcontext *ctx )
+@@ -2330,15 +2175,15 @@ static GLboolean check_material( GLcontext *ctx )
  
  static void radeonWrapRunPipeline( GLcontext *ctx )
  {
@@ -29941,7 +30106,7 @@ index 2171879..17c2b11 100644
  
  
 diff --git a/src/mesa/drivers/dri/radeon/radeon_state_init.c b/src/mesa/drivers/dri/radeon/radeon_state_init.c
-index 57dc380..617e731 100644
+index 57dc380..7ff0eb4 100644
 --- a/src/mesa/drivers/dri/radeon/radeon_state_init.c
 +++ b/src/mesa/drivers/dri/radeon/radeon_state_init.c
 @@ -38,39 +38,156 @@
@@ -30133,7 +30298,7 @@ index 57dc380..617e731 100644
  }
  
  
-@@ -146,17 +263,244 @@ CHECK( txr0, (ctx->Texture.Unit[0]._ReallyEnabled & TEXTURE_RECT_BIT))
+@@ -146,42 +263,290 @@ CHECK( txr0, (ctx->Texture.Unit[0]._ReallyEnabled & TEXTURE_RECT_BIT))
  CHECK( txr1, (ctx->Texture.Unit[1]._ReallyEnabled & TEXTURE_RECT_BIT))
  CHECK( txr2, (ctx->Texture.Unit[2]._ReallyEnabled & TEXTURE_RECT_BIT))
  
@@ -30162,21 +30327,53 @@ index 57dc380..617e731 100644
 +   r100ContextPtr r100 = R100_CONTEXT(ctx);
 +   BATCH_LOCALS(&r100->radeon);
 +   uint32_t dwords = atom->cmd_size;
-+
++   
++   dwords += 2;
 +   BEGIN_BATCH_NO_AUTOSTATE(dwords);
 +   OUT_SCL(atom->cmd[0], atom->cmd+1);
 +   END_BATCH();
 +}
-+
-+
+ 
+ 
+-/* Initialize the context's hardware state.
+- */
+-void radeonInitState( radeonContextPtr rmesa )
 +static void vec_emit(GLcontext *ctx, struct radeon_state_atom *atom)
+ {
+-   GLcontext *ctx = rmesa->glCtx;
+-   GLuint color_fmt, depth_fmt, i;
+-   GLint drawPitch, drawOffset;
++   r100ContextPtr r100 = R100_CONTEXT(ctx);
++   BATCH_LOCALS(&r100->radeon);
++   uint32_t dwords = atom->cmd_size;
++
++   dwords += 4;
++   BEGIN_BATCH_NO_AUTOSTATE(dwords);
++   OUT_VEC(atom->cmd[0], atom->cmd+1);
++   END_BATCH();
++}
+ 
+-   switch ( rmesa->radeonScreen->cpp ) {
+-   case 2:
+-      color_fmt = RADEON_COLOR_FORMAT_RGB565;
+-      break;
+-   case 4:
+-      color_fmt = RADEON_COLOR_FORMAT_ARGB8888;
+-      break;
+-   default:
+-      fprintf( stderr, "Error: Unsupported pixel depth... exiting\n" );
+-      exit( -1 );
++
++static void lit_emit(GLcontext *ctx, struct radeon_state_atom *atom)
 +{
 +   r100ContextPtr r100 = R100_CONTEXT(ctx);
 +   BATCH_LOCALS(&r100->radeon);
 +   uint32_t dwords = atom->cmd_size;
 +
++   dwords += 6;
 +   BEGIN_BATCH_NO_AUTOSTATE(dwords);
-+   OUT_VEC(atom->cmd[0], atom->cmd+1);
++   OUT_VEC(atom->cmd[LIT_CMD_0], atom->cmd+1);
++   OUT_SCL(atom->cmd[LIT_CMD_1], atom->cmd+LIT_CMD_1+1);
 +   END_BATCH();
 +}
 +
@@ -30186,51 +30383,59 @@ index 57dc380..617e731 100644
 +   BATCH_LOCALS(&r100->radeon);
 +   struct radeon_renderbuffer *rrb;
 +   uint32_t cbpitch;
-+   uint32_t zbpitch;
++   uint32_t zbpitch, depth_fmt;
 +   uint32_t dwords = atom->cmd_size;
-+   GLframebuffer *fb = r100->radeon.dri.drawable->driverPrivate;
 +
 +   /* output the first 7 bytes of context */
 +   BEGIN_BATCH_NO_AUTOSTATE(dwords + 4);
 +   OUT_BATCH_TABLE(atom->cmd, 5);
 +
-+   rrb = r100->radeon.state.depth.rrb;
++   rrb = radeon_get_depthbuffer(&r100->radeon);
 +   if (!rrb) {
 +     OUT_BATCH(0);
 +     OUT_BATCH(0);
 +   } else {
 +     zbpitch = (rrb->pitch / rrb->cpp);
++     if (r100->using_hyperz)
++       zbpitch |= RADEON_DEPTH_HYPERZ;
++
 +     OUT_BATCH_RELOC(0, rrb->bo, 0, 0, RADEON_GEM_DOMAIN_VRAM, 0);
 +     OUT_BATCH(zbpitch);
++     if (rrb->cpp == 4)
++        depth_fmt = RADEON_DEPTH_FORMAT_24BIT_INT_Z;
++     else
++        depth_fmt = RADEON_DEPTH_FORMAT_16BIT_INT_Z;
++     atom->cmd[CTX_RB3D_ZSTENCILCNTL] &= ~RADEON_DEPTH_FORMAT_MASK;
++     atom->cmd[CTX_RB3D_ZSTENCILCNTL] |= depth_fmt;
 +   }
 +     
 +   OUT_BATCH(atom->cmd[CTX_RB3D_ZSTENCILCNTL]);
 +   OUT_BATCH(atom->cmd[CTX_CMD_1]);
 +   OUT_BATCH(atom->cmd[CTX_PP_CNTL]);
-+   OUT_BATCH(atom->cmd[CTX_RB3D_CNTL]);
 +
-+   rrb = r100->radeon.state.color.rrb;
-+   if (r100->radeon.radeonScreen->driScreen->dri2.enabled) {
-+      rrb = (struct radeon_renderbuffer *)fb->Attachment[BUFFER_BACK_LEFT].Renderbuffer;
-+   }
++   rrb = radeon_get_colorbuffer(&r100->radeon);
 +   if (!rrb || !rrb->bo) {
-+     OUT_BATCH(atom->cmd[CTX_RB3D_COLOROFFSET]);
++      OUT_BATCH(atom->cmd[CTX_RB3D_CNTL]);
++      OUT_BATCH(atom->cmd[CTX_RB3D_COLOROFFSET]);
 +   } else {
-+     OUT_BATCH_RELOC(0, rrb->bo, 0, 0, RADEON_GEM_DOMAIN_VRAM, 0);
++      atom->cmd[CTX_RB3D_CNTL] &= ~(0xf << 10);
++      if (rrb->cpp == 4)
++         atom->cmd[CTX_RB3D_CNTL] |= RADEON_COLOR_FORMAT_ARGB8888;
++      else
++         atom->cmd[CTX_RB3D_CNTL] |= RADEON_COLOR_FORMAT_RGB565;
++
++      OUT_BATCH(atom->cmd[CTX_RB3D_CNTL]);
++      OUT_BATCH_RELOC(0, rrb->bo, 0, 0, RADEON_GEM_DOMAIN_VRAM, 0);
 +   }
- 
++
 +   OUT_BATCH(atom->cmd[CTX_CMD_2]);
 +
 +   if (!rrb || !rrb->bo) {
 +     OUT_BATCH(atom->cmd[CTX_RB3D_COLORPITCH]);
 +   } else {
 +     cbpitch = (rrb->pitch / rrb->cpp);
-+     if (rrb->cpp == 4)
-+       ;
-+     else
-+       ;
-+     if (r100->radeon.sarea->tiling_enabled)
-+       cbpitch |= R200_COLOR_TILE_ENABLE;
++     if (rrb->bo->flags & RADEON_BO_FLAGS_MACRO_TILE)
++       cbpitch |= RADEON_COLOR_TILE_ENABLE;
 +     OUT_BATCH(cbpitch);
 +   }
 +
@@ -30245,24 +30450,41 @@ index 57dc380..617e731 100644
 +   uint32_t cbpitch = 0;
 +   uint32_t zbpitch = 0;
 +   uint32_t dwords = atom->cmd_size;
-+   GLframebuffer *fb = r100->radeon.dri.drawable->driverPrivate;
++   uint32_t depth_fmt;
 +
-+   rrb = r100->radeon.state.color.rrb;
-+   if (r100->radeon.radeonScreen->driScreen->dri2.enabled) {
-+      rrb = (struct radeon_renderbuffer *)fb->Attachment[BUFFER_BACK_LEFT].Renderbuffer;
++   rrb = radeon_get_colorbuffer(&r100->radeon);
++   if (!rrb || !rrb->bo) {
++      fprintf(stderr, "no rrb\n");
++      return;
 +   }
-+   if (rrb) {
-+     assert(rrb->bo != NULL);
-+     cbpitch = (rrb->pitch / rrb->cpp);
-+     if (r100->radeon.sarea->tiling_enabled)
++
++   atom->cmd[CTX_RB3D_CNTL] &= ~(0xf << 10);
++   if (rrb->cpp == 4)
++	atom->cmd[CTX_RB3D_CNTL] |= RADEON_COLOR_FORMAT_ARGB8888;
++   else
++	atom->cmd[CTX_RB3D_CNTL] |= RADEON_COLOR_FORMAT_RGB565;
++
++   cbpitch = (rrb->pitch / rrb->cpp);
++   if (rrb->bo->flags & RADEON_BO_FLAGS_MACRO_TILE)
 +       cbpitch |= R200_COLOR_TILE_ENABLE;
-+   }
 +
-+   drb = r100->radeon.state.depth.rrb;
-+   if (drb)
++   drb = radeon_get_depthbuffer(&r100->radeon);
++   if (drb) {
 +     zbpitch = (drb->pitch / drb->cpp);
++     if (drb->cpp == 4)
++        depth_fmt = RADEON_DEPTH_FORMAT_24BIT_INT_Z;
++     else
++        depth_fmt = RADEON_DEPTH_FORMAT_16BIT_INT_Z;
++     atom->cmd[CTX_RB3D_ZSTENCILCNTL] &= ~RADEON_DEPTH_FORMAT_MASK;
++     atom->cmd[CTX_RB3D_ZSTENCILCNTL] |= depth_fmt;
++     
++   }
 +
 +   /* output the first 7 bytes of context */
++   if (drb)
++     dwords += 4;
++   if (rrb)
++     dwords += 4;
 +   BEGIN_BATCH_NO_AUTOSTATE(dwords);
 +
 +   /* In the CS case we need to split this up */
@@ -30283,17 +30505,13 @@ index 57dc380..617e731 100644
 +   OUT_BATCH(atom->cmd[CTX_PP_CNTL]);
 +   OUT_BATCH(atom->cmd[CTX_RB3D_CNTL]);
 +
-+
 +   if (rrb) {
 +     OUT_BATCH(CP_PACKET0(RADEON_RB3D_COLOROFFSET, 0));
 +     OUT_BATCH_RELOC(0, rrb->bo, 0, 0, RADEON_GEM_DOMAIN_VRAM, 0);
-+   }
-+
+    }
+ 
+-   rmesa->state.color.clear = 0x00000000;
 +   if (rrb) {
-+     if (rrb->cpp == 4)
-+       ;
-+     else
-+       ;
 +     OUT_BATCH(CP_PACKET0(RADEON_RB3D_COLORPITCH, 0));
 +     OUT_BATCH(cbpitch);
 +   }
@@ -30365,51 +30583,38 @@ index 57dc380..617e731 100644
 +   OUT_BATCH_TABLE((atom->cmd+4), 5);
 +   END_BATCH();
 +}
- 
- /* Initialize the context's hardware state.
-  */
--void radeonInitState( radeonContextPtr rmesa )
++
++/* Initialize the context's hardware state.
++ */
 +void radeonInitState( r100ContextPtr rmesa )
- {
--   GLcontext *ctx = rmesa->glCtx;
++{
 +   GLcontext *ctx = rmesa->radeon.glCtx;
-    GLuint color_fmt, depth_fmt, i;
-    GLint drawPitch, drawOffset;
- 
--   switch ( rmesa->radeonScreen->cpp ) {
-+   switch ( rmesa->radeon.radeonScreen->cpp ) {
-    case 2:
-       color_fmt = RADEON_COLOR_FORMAT_RGB565;
-       break;
-@@ -168,20 +512,20 @@ void radeonInitState( radeonContextPtr rmesa )
-       exit( -1 );
-    }
- 
--   rmesa->state.color.clear = 0x00000000;
++   GLuint i;
++
 +   rmesa->radeon.state.color.clear = 0x00000000;
  
     switch ( ctx->Visual.depthBits ) {
     case 16:
 -      rmesa->state.depth.clear = 0x0000ffff;
 -      rmesa->state.depth.scale = 1.0 / (GLfloat)0xffff;
+-      depth_fmt = RADEON_DEPTH_FORMAT_16BIT_INT_Z;
+-      rmesa->state.stencil.clear = 0x00000000;
 +      rmesa->radeon.state.depth.clear = 0x0000ffff;
 +      rmesa->radeon.state.depth.scale = 1.0 / (GLfloat)0xffff;
-       depth_fmt = RADEON_DEPTH_FORMAT_16BIT_INT_Z;
--      rmesa->state.stencil.clear = 0x00000000;
 +      rmesa->radeon.state.stencil.clear = 0x00000000;
        break;
     case 24:
 -      rmesa->state.depth.clear = 0x00ffffff;
 -      rmesa->state.depth.scale = 1.0 / (GLfloat)0xffffff;
+-      depth_fmt = RADEON_DEPTH_FORMAT_24BIT_INT_Z;
+-      rmesa->state.stencil.clear = 0xffff0000;
 +      rmesa->radeon.state.depth.clear = 0x00ffffff;
 +      rmesa->radeon.state.depth.scale = 1.0 / (GLfloat)0xffffff;
-       depth_fmt = RADEON_DEPTH_FORMAT_24BIT_INT_Z;
--      rmesa->state.stencil.clear = 0xffff0000;
 +      rmesa->radeon.state.stencil.clear = 0xffff0000;
        break;
     default:
        fprintf( stderr, "Error: Unsupported depth %d... exiting\n",
-@@ -190,37 +534,44 @@ void radeonInitState( radeonContextPtr rmesa )
+@@ -190,37 +555,37 @@ void radeonInitState( radeonContextPtr rmesa )
     }
  
     /* Only have hw stencil when depth buffer is 24 bits deep */
@@ -30423,15 +30628,10 @@ index 57dc380..617e731 100644
 -   if ( ctx->Visual.doubleBufferMode && rmesa->sarea->pfCurrentPage == 0 ) {
 -      drawOffset = rmesa->radeonScreen->backOffset;
 -      drawPitch  = rmesa->radeonScreen->backPitch;
-+   if ( ctx->Visual.doubleBufferMode && rmesa->radeon.sarea->pfCurrentPage == 0 ) {
-+      drawOffset = rmesa->radeon.radeonScreen->backOffset;
-+      drawPitch  = rmesa->radeon.radeonScreen->backPitch;
-    } else {
+-   } else {
 -      drawOffset = rmesa->radeonScreen->frontOffset;
 -      drawPitch  = rmesa->radeonScreen->frontPitch;
-+      drawOffset = rmesa->radeon.radeonScreen->frontOffset;
-+      drawPitch  = rmesa->radeon.radeonScreen->frontPitch;
-    }
+-   }
  
 -   rmesa->hw.max_state_size = 0;
 +   rmesa->radeon.hw.max_state_size = 0;
@@ -30470,7 +30670,7 @@ index 57dc380..617e731 100644
     ALLOC_STATE( lin, always, LIN_STATE_SIZE, "LIN/line", 0 );
     ALLOC_STATE( msk, always, MSK_STATE_SIZE, "MSK/mask", 0 );
     ALLOC_STATE( vpt, always, VPT_STATE_SIZE, "VPT/viewport", 0 );
-@@ -233,20 +584,25 @@ void radeonInitState( radeonContextPtr rmesa )
+@@ -233,20 +598,25 @@ void radeonInitState( radeonContextPtr rmesa )
     ALLOC_STATE( fog, fog, FOG_STATE_SIZE, "FOG/fog", 1 );
     ALLOC_STATE( glt, tcl_lighting, GLT_STATE_SIZE, "GLT/light-global", 1 );
     ALLOC_STATE( eye, tcl_lighting, EYE_STATE_SIZE, "EYE/eye-vector", 1 );
@@ -30506,7 +30706,7 @@ index 57dc380..617e731 100644
     }
     ALLOC_STATE( mat[0], tcl, MAT_STATE_SIZE, "MAT/modelproject", 1 );
     ALLOC_STATE( mat[1], tcl_eyespace_or_fog, MAT_STATE_SIZE, "MAT/modelview", 1 );
-@@ -268,43 +624,43 @@ void radeonInitState( radeonContextPtr rmesa )
+@@ -268,43 +638,43 @@ void radeonInitState( radeonContextPtr rmesa )
     ALLOC_STATE( lit[5], tcl_lit5, LIT_STATE_SIZE, "LIT/light-5", 1 );
     ALLOC_STATE( lit[6], tcl_lit6, LIT_STATE_SIZE, "LIT/light-6", 1 );
     ALLOC_STATE( lit[7], tcl_lit7, LIT_STATE_SIZE, "LIT/light-7", 1 );
@@ -30581,20 +30781,51 @@ index 57dc380..617e731 100644
     rmesa->hw.grd.cmd[GRD_CMD_0] = 
        cmdscl( RADEON_SS_VERT_GUARD_CLIP_ADJ_ADDR, 1, 4 );
     rmesa->hw.fog.cmd[FOG_CMD_0] = 
-@@ -353,10 +709,10 @@ void radeonInitState( radeonContextPtr rmesa )
+@@ -331,6 +701,22 @@ void radeonInitState( radeonContextPtr rmesa )
+ 	 cmdvec( RADEON_VS_UCP_ADDR + i, 1, 4 );
+    }
+ 
++   if (rmesa->radeon.radeonScreen->kernel_mm) {
++      rmesa->hw.grd.emit = scl_emit;
++      rmesa->hw.fog.emit = vec_emit;
++      rmesa->hw.glt.emit = vec_emit;
++      rmesa->hw.eye.emit = vec_emit;
++      
++      for (i = 0; i <= 6; i++)
++	 rmesa->hw.mat[i].emit = vec_emit;
++
++      for (i = 0; i < 8; i++)
++	 rmesa->hw.lit[i].emit = lit_emit;
++
++      for (i = 0; i < 6; i++)
++	 rmesa->hw.ucp[i].emit = vec_emit;
++   }
++
+    rmesa->last_ReallyEnabled = -1;
+ 
+    /* Initial Harware state:
+@@ -352,19 +738,7 @@ void radeonInitState( radeonContextPtr rmesa )
+ 					    RADEON_SRC_BLEND_GL_ONE |
  					    RADEON_DST_BLEND_GL_ZERO );
  
-    rmesa->hw.ctx.cmd[CTX_RB3D_DEPTHOFFSET] =
+-   rmesa->hw.ctx.cmd[CTX_RB3D_DEPTHOFFSET] =
 -      rmesa->radeonScreen->depthOffset + rmesa->radeonScreen->fbLocation;
-+      rmesa->radeon.radeonScreen->depthOffset + rmesa->radeon.radeonScreen->fbLocation;
- 
-    rmesa->hw.ctx.cmd[CTX_RB3D_DEPTHPITCH] = 
+-
+-   rmesa->hw.ctx.cmd[CTX_RB3D_DEPTHPITCH] = 
 -      ((rmesa->radeonScreen->depthPitch &
-+      ((rmesa->radeon.radeonScreen->depthPitch &
- 	RADEON_DEPTHPITCH_MASK) |
-        RADEON_DEPTH_ENDIAN_NO_SWAP);
-        
-@@ -374,7 +730,7 @@ void radeonInitState( radeonContextPtr rmesa )
+-	RADEON_DEPTHPITCH_MASK) |
+-       RADEON_DEPTH_ENDIAN_NO_SWAP);
+-       
+-   if (rmesa->using_hyperz)
+-       rmesa->hw.ctx.cmd[CTX_RB3D_DEPTHPITCH] |= RADEON_DEPTH_HYPERZ;
+-
+-   rmesa->hw.ctx.cmd[CTX_RB3D_ZSTENCILCNTL] = (depth_fmt |
+-					       RADEON_Z_TEST_LESS |
++   rmesa->hw.ctx.cmd[CTX_RB3D_ZSTENCILCNTL] = (RADEON_Z_TEST_LESS |
+ 					       RADEON_STENCIL_TEST_ALWAYS |
+ 					       RADEON_STENCIL_FAIL_KEEP |
+ 					       RADEON_STENCIL_ZPASS_KEEP |
+@@ -374,7 +748,7 @@ void radeonInitState( radeonContextPtr rmesa )
     if (rmesa->using_hyperz) {
         rmesa->hw.ctx.cmd[CTX_RB3D_ZSTENCILCNTL] |= RADEON_Z_COMPRESSION_ENABLE |
  						   RADEON_Z_DECOMPRESSION_ENABLE;
@@ -30603,8 +30834,11 @@ index 57dc380..617e731 100644
  	 /* works for q3, but slight rendering errors with glxgears ? */
  /*	 rmesa->hw.ctx.cmd[CTX_RB3D_ZSTENCILCNTL] |= RADEON_Z_HIERARCHY_ENABLE;*/
  	 /* need this otherwise get lots of lockups with q3 ??? */
-@@ -389,7 +745,7 @@ void radeonInitState( radeonContextPtr rmesa )
- 				       color_fmt |
+@@ -386,10 +760,9 @@ void radeonInitState( radeonContextPtr rmesa )
+ 				     RADEON_ANTI_ALIAS_NONE);
+ 
+    rmesa->hw.ctx.cmd[CTX_RB3D_CNTL] = (RADEON_PLANE_MASK_ENABLE |
+-				       color_fmt |
  				       RADEON_ZBLOCK16);
  
 -   switch ( driQueryOptioni( &rmesa->optionCache, "dither_mode" ) ) {
@@ -30612,7 +30846,7 @@ index 57dc380..617e731 100644
     case DRI_CONF_DITHER_XERRORDIFFRESET:
        rmesa->hw.ctx.cmd[CTX_RB3D_CNTL] |= RADEON_DITHER_INIT;
        break;
-@@ -397,19 +753,19 @@ void radeonInitState( radeonContextPtr rmesa )
+@@ -397,30 +770,17 @@ void radeonInitState( radeonContextPtr rmesa )
        rmesa->hw.ctx.cmd[CTX_RB3D_CNTL] |= RADEON_SCALE_DITHER_ENABLE;
        break;
     }
@@ -30632,22 +30866,23 @@ index 57dc380..617e731 100644
 -      rmesa->hw.ctx.cmd[CTX_RB3D_CNTL] |= rmesa->state.color.roundEnable;
 +      rmesa->hw.ctx.cmd[CTX_RB3D_CNTL] |= rmesa->radeon.state.color.roundEnable;
  
-    rmesa->hw.ctx.cmd[CTX_RB3D_COLOROFFSET] = ((drawOffset +
+-   rmesa->hw.ctx.cmd[CTX_RB3D_COLOROFFSET] = ((drawOffset +
 -					       rmesa->radeonScreen->fbLocation)
-+					       rmesa->radeon.radeonScreen->fbLocation)
- 					      & RADEON_COLOROFFSET_MASK);
- 
-    rmesa->hw.ctx.cmd[CTX_RB3D_COLORPITCH] = ((drawPitch &
-@@ -418,7 +774,7 @@ void radeonInitState( radeonContextPtr rmesa )
- 
- 
-    /* (fixed size) sarea is initialized to zero afaics so can omit version check. Phew! */
+-					      & RADEON_COLOROFFSET_MASK);
+-
+-   rmesa->hw.ctx.cmd[CTX_RB3D_COLORPITCH] = ((drawPitch &
+-					      RADEON_COLORPITCH_MASK) |
+-					     RADEON_COLOR_ENDIAN_NO_SWAP);
+-
+-
+-   /* (fixed size) sarea is initialized to zero afaics so can omit version check. Phew! */
 -   if (rmesa->sarea->tiling_enabled) {
-+   if (rmesa->radeon.sarea->tiling_enabled) {
-       rmesa->hw.ctx.cmd[CTX_RB3D_COLORPITCH] |= RADEON_COLOR_TILE_ENABLE;
-    }
+-      rmesa->hw.ctx.cmd[CTX_RB3D_COLORPITCH] |= RADEON_COLOR_TILE_ENABLE;
+-   }
  
-@@ -444,7 +800,7 @@ void radeonInitState( radeonContextPtr rmesa )
+    rmesa->hw.set.cmd[SET_SE_CNTL] = (RADEON_FFACE_CULL_CCW |
+ 				     RADEON_BFACE_SOLID |
+@@ -444,7 +804,7 @@ void radeonInitState( radeonContextPtr rmesa )
    					    RADEON_VC_NO_SWAP;
  #endif
  
@@ -30656,7 +30891,7 @@ index 57dc380..617e731 100644
       rmesa->hw.set.cmd[SET_SE_CNTL_STATUS] |= RADEON_TCL_BYPASS;
     }
  
-@@ -491,8 +847,8 @@ void radeonInitState( radeonContextPtr rmesa )
+@@ -491,8 +851,8 @@ void radeonInitState( radeonContextPtr rmesa )
  	   (2 << RADEON_TXFORMAT_HEIGHT_SHIFT));
  
        /* Initialize the texture offset to the start of the card texture heap */
@@ -30667,7 +30902,7 @@ index 57dc380..617e731 100644
  
        rmesa->hw.tex[i].cmd[TEX_PP_BORDER_COLOR] = 0;
        rmesa->hw.tex[i].cmd[TEX_PP_TXCBLEND] =  
-@@ -513,15 +869,15 @@ void radeonInitState( radeonContextPtr rmesa )
+@@ -513,15 +873,15 @@ void radeonInitState( radeonContextPtr rmesa )
  
        rmesa->hw.cube[i].cmd[CUBE_PP_CUBIC_FACES] = 0;
        rmesa->hw.cube[i].cmd[CUBE_PP_CUBIC_OFFSET_0] =
@@ -30688,7 +30923,7 @@ index 57dc380..617e731 100644
     }
  
     /* Can only add ST1 at the time of doing some multitex but can keep
-@@ -613,5 +969,7 @@ void radeonInitState( radeonContextPtr rmesa )
+@@ -613,5 +973,7 @@ void radeonInitState( radeonContextPtr rmesa )
     rmesa->hw.eye.cmd[EYE_Z] = IEEE_ONE;
     rmesa->hw.eye.cmd[EYE_RESCALE_FACTOR] = IEEE_ONE;
     
@@ -32423,7 +32658,7 @@ index 5f7bbe6..0000000
 -   return 0;
 -}
 diff --git a/src/mesa/drivers/dri/radeon/radeon_texstate.c b/src/mesa/drivers/dri/radeon/radeon_texstate.c
-index 1e2f654..6a34f1e 100644
+index b165205..2b0ebbc 100644
 --- a/src/mesa/drivers/dri/radeon/radeon_texstate.c
 +++ b/src/mesa/drivers/dri/radeon/radeon_texstate.c
 @@ -43,6 +43,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.

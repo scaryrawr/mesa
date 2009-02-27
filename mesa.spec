@@ -20,7 +20,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.3
-Release: 7%{?dist}
+Release: 8%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -37,17 +37,16 @@ Source3: make-git-snapshot.sh
 Source5: http://www.x.org/pub/individual/app/%{xdriinfo}.tar.bz2
 
 Patch0: mesa-7.1-osmesa-version.patch
+Patch1: mesa-7.3-dri-drivers-master.patch
 Patch2: mesa-7.1-nukeglthread-debug.patch
 Patch3: mesa-no-mach64.patch
 
 Patch5: radeon-rewrite.patch
-Patch6: radeon-dri2-fixes.patch
 
 Patch7: mesa-7.1-link-shared.patch
 Patch9: intel-revert-vbl.patch
 
 Patch12: mesa-7.1-disable-intel-classic-warn.patch
-Patch13: mesa-7.3-965-texture-size.patch
 
 BuildRequires: pkgconfig autoconf automake
 %if %{with_dri}
@@ -169,14 +168,13 @@ This package provides some demo applications for testing Mesa.
 %setup -q -n Mesa-%{version}%{?snapshot} -b0 -b1 -b2 -b5
 #%setup -q -n mesa-%{gitdate} -b2 -b5
 %patch0 -p1 -b .osmesa
+%patch1 -p1 -b .mesa-dri-master
 %patch2 -p1 -b .intel-glthread
 %patch3 -p0 -b .no-mach64
 %patch5 -p1 -b .radeon-rewrite
-%patch6 -p1 -b .radeon-dri2
 %patch7 -p1 -b .dricore
 %patch9 -p1 -b .intel-vbl
 %patch12 -p1 -b .intel-nowarn
-%patch13 -p1 -b .965-texture
 
 # Hack the demos to use installed data files
 sed -i 's,../images,%{_libdir}/mesa-demos-data,' progs/demos/*.c
@@ -425,6 +423,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/mesa-demos-data
 
 %changelog
+* Fri Feb 27 2009 Dave Airlie <airlied@redhat.com> 7.3-8
+- mesa-7.3-dri-drivers-master.patch - pull in DRI drivers from master
+
 * Fri Feb 27 2009 Dave Airlie <airlied@redhat.com> 7.3-7
 - radeon-dri2-fixes.patch: add some fixes to radeon code
 
