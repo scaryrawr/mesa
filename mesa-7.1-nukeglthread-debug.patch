@@ -1,8 +1,7 @@
-diff --git a/src/mesa/drivers/dri/intel/intel_fbo.c b/src/mesa/drivers/dri/intel/intel_fbo.c
-index 787c290..be81b65 100644
---- a/src/mesa/drivers/dri/intel/intel_fbo.c
-+++ b/src/mesa/drivers/dri/intel/intel_fbo.c
-@@ -573,11 +573,6 @@ intel_render_texture(GLcontext * ctx,
+diff -up Mesa-7.1/src/mesa/drivers/dri/intel/intel_fbo.c.intel-glthread Mesa-7.1/src/mesa/drivers/dri/intel/intel_fbo.c
+--- Mesa-7.1/src/mesa/drivers/dri/intel/intel_fbo.c.intel-glthread	2008-08-25 10:49:40.000000000 -0400
++++ Mesa-7.1/src/mesa/drivers/dri/intel/intel_fbo.c	2008-08-28 14:26:17.000000000 -0400
+@@ -633,11 +633,6 @@ intel_render_texture(GLcontext * ctx,
         return;
     }
  
@@ -14,3 +13,12 @@ index 787c290..be81b65 100644
     /* point the renderbufer's region to the texture image region */
     intel_image = intel_texture_image(newImage);
     if (irb->region != intel_image->mt->region) {
+@@ -674,8 +669,6 @@ intel_finish_render_texture(GLcontext * 
+ {
+    struct intel_renderbuffer *irb = intel_renderbuffer(att->Renderbuffer);
+ 
+-   DBG("End render texture (tid %x) tex %u\n", _glthread_GetID(), att->Texture->Name);
+-
+    if (irb) {
+       /* just release the region */
+       intel_region_release(&irb->region);
