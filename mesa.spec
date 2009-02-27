@@ -41,6 +41,7 @@ Patch2: mesa-7.1-nukeglthread-debug.patch
 Patch3: mesa-no-mach64.patch
 
 Patch5: radeon-rewrite.patch
+Patch6: radeon-dri2-fixes.patch
 
 Patch7: mesa-7.1-link-shared.patch
 Patch9: intel-revert-vbl.patch
@@ -171,6 +172,7 @@ This package provides some demo applications for testing Mesa.
 %patch2 -p1 -b .intel-glthread
 %patch3 -p0 -b .no-mach64
 %patch5 -p1 -b .radeon-rewrite
+%patch6 -p1 -b .radeon-dri2
 %patch7 -p1 -b .dricore
 %patch9 -p1 -b .intel-vbl
 %patch12 -p1 -b .intel-nowarn
@@ -423,6 +425,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/mesa-demos-data
 
 %changelog
+* Fri Feb 27 2009 Dave Airlie <airlied@redhat.com> 7.3-7
+- radeon-dri2-fixes.patch: add some fixes to radeon code
+
 * Tue Feb 24 2009 Adam Jackson <ajax@redhat.com> 7.3-6
 - Fix text relocations in OSMesa build. (#475146)
 - Re-enable textrel checks, for OSMesa only.
