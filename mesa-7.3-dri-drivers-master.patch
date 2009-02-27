@@ -588,47 +588,6 @@ index b977ebf..0d641f2 100644
      { NULL, 0, 0 }
  };
  #endif
-diff --git a/src/mesa/drivers/dri/common/texmem.c b/src/mesa/drivers/dri/common/texmem.c
-index ff174a2..b64618a 100644
---- a/src/mesa/drivers/dri/common/texmem.c
-+++ b/src/mesa/drivers/dri/common/texmem.c
-@@ -1063,31 +1063,31 @@ void driInitTextureObjects( GLcontext *ctx, driTextureObject * swapped,
-       ctx->Texture.CurrentUnit = i;
- 
-       if ( (targets & DRI_TEXMGR_DO_TEXTURE_1D) != 0 ) {
--	 texObj = ctx->Texture.Unit[i].Current1D;
-+	 texObj = ctx->Texture.Unit[i].CurrentTex[TEXTURE_1D_INDEX];
- 	 ctx->Driver.BindTexture( ctx, GL_TEXTURE_1D, texObj );
- 	 move_to_tail( swapped, (driTextureObject *) texObj->DriverData );
-       }
- 
-       if ( (targets & DRI_TEXMGR_DO_TEXTURE_2D) != 0 ) {
--	 texObj = ctx->Texture.Unit[i].Current2D;
-+	 texObj = ctx->Texture.Unit[i].CurrentTex[TEXTURE_2D_INDEX];
- 	 ctx->Driver.BindTexture( ctx, GL_TEXTURE_2D, texObj );
- 	 move_to_tail( swapped, (driTextureObject *) texObj->DriverData );
-       }
- 
-       if ( (targets & DRI_TEXMGR_DO_TEXTURE_3D) != 0 ) {
--	 texObj = ctx->Texture.Unit[i].Current3D;
-+	 texObj = ctx->Texture.Unit[i].CurrentTex[TEXTURE_3D_INDEX];
- 	 ctx->Driver.BindTexture( ctx, GL_TEXTURE_3D, texObj );
- 	 move_to_tail( swapped, (driTextureObject *) texObj->DriverData );
-       }
- 
-       if ( (targets & DRI_TEXMGR_DO_TEXTURE_CUBE) != 0 ) {
--	 texObj = ctx->Texture.Unit[i].CurrentCubeMap;
-+	 texObj = ctx->Texture.Unit[i].CurrentTex[TEXTURE_CUBE_INDEX];
- 	 ctx->Driver.BindTexture( ctx, GL_TEXTURE_CUBE_MAP_ARB, texObj );
- 	 move_to_tail( swapped, (driTextureObject *) texObj->DriverData );
-       }
- 
-       if ( (targets & DRI_TEXMGR_DO_TEXTURE_RECT) != 0 ) {
--	 texObj = ctx->Texture.Unit[i].CurrentRect;
-+	 texObj = ctx->Texture.Unit[i].CurrentTex[TEXTURE_RECT_INDEX];
- 	 ctx->Driver.BindTexture( ctx, GL_TEXTURE_RECTANGLE_NV, texObj );
- 	 move_to_tail( swapped, (driTextureObject *) texObj->DriverData );
-       }
 diff --git a/src/mesa/drivers/dri/common/utils.c b/src/mesa/drivers/dri/common/utils.c
 index 30c860b..6b44ed9 100644
 --- a/src/mesa/drivers/dri/common/utils.c
@@ -940,34 +899,6 @@ index c91bedc..b0ac299 100644
     gmesa->texHeap = mmInit( 0, gmesa->gammaScreen->textureSize );
  
     make_empty_list(&gmesa->TexObjList);
-diff --git a/src/mesa/drivers/dri/gamma/gamma_tex.c b/src/mesa/drivers/dri/gamma/gamma_tex.c
-index 2ffb790..ca33c17 100644
---- a/src/mesa/drivers/dri/gamma/gamma_tex.c
-+++ b/src/mesa/drivers/dri/gamma/gamma_tex.c
-@@ -400,19 +400,19 @@ void gammaInitTextureObjects( GLcontext *ctx )
- 
-    ctx->Texture.CurrentUnit = 0;
- 
--   texObj = ctx->Texture.Unit[0].Current1D;
-+   texObj = ctx->Texture.Unit[0].CurrentTex[TEXTURE_1D_INDEX];
-    gammaBindTexture( ctx, GL_TEXTURE_1D, texObj );
- 
--   texObj = ctx->Texture.Unit[0].Current2D;
-+   texObj = ctx->Texture.Unit[0].CurrentTex[TEXTURE_2D_INDEX];
-    gammaBindTexture( ctx, GL_TEXTURE_2D, texObj );
- 
- #if 0
-    ctx->Texture.CurrentUnit = 1;
- 
--   texObj = ctx->Texture.Unit[1].Current1D;
-+   texObj = ctx->Texture.Unit[1].CurrentTex[TEXTURE_1D_INDEX];
-    gammaBindTexture( ctx, GL_TEXTURE_1D, texObj );
- 
--   texObj = ctx->Texture.Unit[1].Current2D;
-+   texObj = ctx->Texture.Unit[1].CurrentTex[TEXTURE_2D_INDEX];
-    gammaBindTexture( ctx, GL_TEXTURE_2D, texObj );
- #endif
- 
 diff --git a/src/mesa/drivers/dri/glcore/Makefile b/src/mesa/drivers/dri/glcore/Makefile
 new file mode 100644
 index 0000000..ac7e1de
@@ -10754,30 +10685,6 @@ index 1f9d3c5..9fe267e 100644
        else
 diff --git a/src/mesa/drivers/dri/mga/mga_texstate.c b/src/mesa/drivers/dri/mga/mga_texstate.c
 index d4c5b6f..ad765d1 100644
---- a/src/mesa/drivers/dri/mga/mga_texstate.c
-+++ b/src/mesa/drivers/dri/mga/mga_texstate.c
-@@ -206,8 +206,8 @@ static void mgaUpdateTextureEnvG200( GLcontext *ctx, GLuint unit )
-    mgaTextureObjectPtr t = (mgaTextureObjectPtr) tObj->DriverData;
-    GLenum format = tObj->Image[0][tObj->BaseLevel]->_BaseFormat;
- 
--   if (tObj != ctx->Texture.Unit[0].Current2D &&
--       tObj != ctx->Texture.Unit[0].CurrentRect)
-+   if (tObj != ctx->Texture.Unit[0].CurrentTex[TEXTURE_2D_INDEX] &&
-+       tObj != ctx->Texture.Unit[0].CurrentTex[TEXTURE_RECT_INDEX])
-       return;
- 
- 
-@@ -635,8 +635,8 @@ static void mgaUpdateTextureEnvG400( GLcontext *ctx, GLuint unit )
-    mgaTextureObjectPtr t = (mgaTextureObjectPtr) tObj->DriverData;
-    GLenum format = tObj->Image[0][tObj->BaseLevel]->_BaseFormat;
- 
--   if (tObj != ctx->Texture.Unit[source].Current2D &&
--       tObj != ctx->Texture.Unit[source].CurrentRect)
-+   if (tObj != ctx->Texture.Unit[source].CurrentTex[TEXTURE_2D_INDEX] &&
-+       tObj != ctx->Texture.Unit[source].CurrentTex[TEXTURE_RECT_INDEX])
-       return;
- 
-    switch (ctx->Texture.Unit[source].EnvMode) {
 diff --git a/src/mesa/drivers/dri/mga/mga_xmesa.c b/src/mesa/drivers/dri/mga/mga_xmesa.c
 index 86da3a2..926534d 100644
 --- a/src/mesa/drivers/dri/mga/mga_xmesa.c
@@ -11562,15 +11469,6 @@ index a63dbac..ade45f5 100644
  }
  
  /* =============================================================
-@@ -1214,7 +1199,7 @@ r300FetchStateParameter(GLcontext * ctx,
- 
- 		case STATE_R300_TEXRECT_FACTOR:{
- 				struct gl_texture_object *t =
--				    ctx->Texture.Unit[state[2]].CurrentRect;
-+				    ctx->Texture.Unit[state[2]].CurrentTex[TEXTURE_RECT_INDEX];
- 
- 				if (t && t->Image[0][t->BaseLevel]) {
- 					struct gl_texture_image *image =
 diff --git a/src/mesa/drivers/dri/r300/r500_fragprog.c b/src/mesa/drivers/dri/r300/r500_fragprog.c
 index 75dae86..926ddd5 100644
 --- a/src/mesa/drivers/dri/r300/r500_fragprog.c
@@ -11836,35 +11734,6 @@ index 14502f9..0a3bf72 100644
  	vmesa->texHeap = mmInit( 0, vmesa->s3vScreen->textureSize );
  	DEBUG(("vmesa->s3vScreen->textureSize = 0x%x\n",
  		vmesa->s3vScreen->textureSize));
-diff --git a/src/mesa/drivers/dri/s3v/s3v_tex.c b/src/mesa/drivers/dri/s3v/s3v_tex.c
-index 8bf2ea9..db66026 100644
---- a/src/mesa/drivers/dri/s3v/s3v_tex.c
-+++ b/src/mesa/drivers/dri/s3v/s3v_tex.c
-@@ -502,20 +502,20 @@ static void s3vInitTextureObjects( GLcontext *ctx )
- #if 1
- 	ctx->Texture.CurrentUnit = 0;
- 
--	texObj = ctx->Texture.Unit[0].Current1D;
-+	texObj = ctx->Texture.Unit[0].CurrentTex[TEXTURE_1D_INDEX];
- 	s3vBindTexture( ctx, GL_TEXTURE_1D, texObj );
- 
--	texObj = ctx->Texture.Unit[0].Current2D;
-+	texObj = ctx->Texture.Unit[0].CurrentTex[TEXTURE_2D_INDEX];
- 	s3vBindTexture( ctx, GL_TEXTURE_2D, texObj );
- #endif
- 
- #if 0
- 	ctx->Texture.CurrentUnit = 1;
- 
--	texObj = ctx->Texture.Unit[1].Current1D;
-+	texObj = ctx->Texture.Unit[1].CurrentTex[TEXTURE_1D_INDEX];
- 	s3vBindTexture( ctx, GL_TEXTURE_1D, texObj );
- 
--	texObj = ctx->Texture.Unit[1].Current2D;
-+	texObj = ctx->Texture.Unit[1].CurrentTex[TEXTURE_2D_INDEX];
- 	s3vBindTexture( ctx, GL_TEXTURE_2D, texObj );
- #endif
- 
 diff --git a/src/mesa/drivers/dri/savage/savage_xmesa.c b/src/mesa/drivers/dri/savage/savage_xmesa.c
 index a344aab..326d595 100644
 --- a/src/mesa/drivers/dri/savage/savage_xmesa.c
