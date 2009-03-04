@@ -1,0 +1,1001 @@
+diff --git a/src/mesa/drivers/dri/common/utils.c b/src/mesa/drivers/dri/common/utils.c
+index 30c860b..fb2efbb 100644
+--- a/src/mesa/drivers/dri/common/utils.c
++++ b/src/mesa/drivers/dri/common/utils.c
+@@ -523,7 +523,8 @@ __DRIconfig **
+ driCreateConfigs(GLenum fb_format, GLenum fb_type,
+ 		 const uint8_t * depth_bits, const uint8_t * stencil_bits,
+ 		 unsigned num_depth_stencil_bits,
+-		 const GLenum * db_modes, unsigned num_db_modes)
++		 const GLenum * db_modes, unsigned num_db_modes,
++	 	 const u_int8_t * msaa_samples, unsigned num_msaa_modes)
+ {
+    static const uint8_t bits_table[4][4] = {
+      /* R  G  B  A */
+@@ -583,9 +584,7 @@ driCreateConfigs(GLenum fb_format, GLenum fb_type,
+    int index;
+    __DRIconfig **configs, **c;
+    __GLcontextModes *modes;
+-   unsigned i;
+-   unsigned j;
+-   unsigned k;
++   unsigned i, j, k, h;
+    unsigned num_modes;
+    unsigned num_accum_bits = 2;
+ 
+@@ -666,66 +665,74 @@ driCreateConfigs(GLenum fb_format, GLenum fb_type,
+     c = configs;
+     for ( k = 0 ; k < num_depth_stencil_bits ; k++ ) {
+ 	for ( i = 0 ; i < num_db_modes ; i++ ) {
+-	    for ( j = 0 ; j < num_accum_bits ; j++ ) {
+-		*c = _mesa_malloc (sizeof **c);
+-		modes = &(*c)->modes;
+-		c++;
+-
+-		memset(modes, 0, sizeof *modes);
+-		modes->redBits   = bits[0];
+-		modes->greenBits = bits[1];
+-		modes->blueBits  = bits[2];
+-		modes->alphaBits = bits[3];
+-		modes->redMask   = masks[0];
+-		modes->greenMask = masks[1];
+-		modes->blueMask  = masks[2];
+-		modes->alphaMask = masks[3];
+-		modes->rgbBits   = modes->redBits + modes->greenBits
+-		    + modes->blueBits + modes->alphaBits;
+-
+-		modes->accumRedBits   = 16 * j;
+-		modes->accumGreenBits = 16 * j;
+-		modes->accumBlueBits  = 16 * j;
+-		modes->accumAlphaBits = (masks[3] != 0) ? 16 * j : 0;
+-		modes->visualRating = (j == 0) ? GLX_NONE : GLX_SLOW_CONFIG;
+-
+-		modes->stencilBits = stencil_bits[k];
+-		modes->depthBits = depth_bits[k];
+-
+-		modes->transparentPixel = GLX_NONE;
+-		modes->transparentRed = GLX_DONT_CARE;
+-		modes->transparentGreen = GLX_DONT_CARE;
+-		modes->transparentBlue = GLX_DONT_CARE;
+-		modes->transparentAlpha = GLX_DONT_CARE;
+-		modes->transparentIndex = GLX_DONT_CARE;
+-		modes->visualType = GLX_DONT_CARE;
+-		modes->renderType = GLX_RGBA_BIT;
+-		modes->drawableType = GLX_WINDOW_BIT;
+-		modes->rgbMode = GL_TRUE;
+-
+-		if ( db_modes[i] == GLX_NONE ) {
+-		    modes->doubleBufferMode = GL_FALSE;
+-		}
+-		else {
+-		    modes->doubleBufferMode = GL_TRUE;
+-		    modes->swapMethod = db_modes[i];
+-		}
+-
+-		modes->haveAccumBuffer = ((modes->accumRedBits +
++	    for ( h = 0 ; h < num_msaa_modes; h++ ) {
++	    	for ( j = 0 ; j < num_accum_bits ; j++ ) {
++		    *c = _mesa_malloc (sizeof **c);
++		    modes = &(*c)->modes;
++		    c++;
++
++		    memset(modes, 0, sizeof *modes);
++		    modes->redBits   = bits[0];
++		    modes->greenBits = bits[1];
++		    modes->blueBits  = bits[2];
++		    modes->alphaBits = bits[3];
++		    modes->redMask   = masks[0];
++		    modes->greenMask = masks[1];
++		    modes->blueMask  = masks[2];
++		    modes->alphaMask = masks[3];
++		    modes->rgbBits   = modes->redBits + modes->greenBits
++		    	+ modes->blueBits + modes->alphaBits;
++
++		    modes->accumRedBits   = 16 * j;
++		    modes->accumGreenBits = 16 * j;
++		    modes->accumBlueBits  = 16 * j;
++		    modes->accumAlphaBits = (masks[3] != 0) ? 16 * j : 0;
++		    modes->visualRating = (j == 0) ? GLX_NONE : GLX_SLOW_CONFIG;
++
++		    modes->stencilBits = stencil_bits[k];
++		    modes->depthBits = depth_bits[k];
++
++		    modes->transparentPixel = GLX_NONE;
++		    modes->transparentRed = GLX_DONT_CARE;
++		    modes->transparentGreen = GLX_DONT_CARE;
++		    modes->transparentBlue = GLX_DONT_CARE;
++		    modes->transparentAlpha = GLX_DONT_CARE;
++		    modes->transparentIndex = GLX_DONT_CARE;
++		    modes->visualType = GLX_DONT_CARE;
++		    modes->renderType = GLX_RGBA_BIT;
++		    modes->drawableType = GLX_WINDOW_BIT;
++		    modes->rgbMode = GL_TRUE;
++
++		    if ( db_modes[i] == GLX_NONE ) {
++		    	modes->doubleBufferMode = GL_FALSE;
++		    }
++		    else {
++		    	modes->doubleBufferMode = GL_TRUE;
++		    	modes->swapMethod = db_modes[i];
++		    }
++
++		    modes->samples = msaa_samples[h];
++		    modes->sampleBuffers = modes->samples ? 1 : 0;
++
++
++		    modes->haveAccumBuffer = ((modes->accumRedBits +
+ 					   modes->accumGreenBits +
+ 					   modes->accumBlueBits +
+ 					   modes->accumAlphaBits) > 0);
+-		modes->haveDepthBuffer = (modes->depthBits > 0);
+-		modes->haveStencilBuffer = (modes->stencilBits > 0);
+-
+-		modes->bindToTextureRgb = GL_TRUE;
+-		modes->bindToTextureRgba = GL_TRUE;
+-		modes->bindToMipmapTexture = GL_FALSE;
+-		modes->bindToTextureTargets = modes->rgbMode ?
+-		    __DRI_ATTRIB_TEXTURE_1D_BIT |
+-		    __DRI_ATTRIB_TEXTURE_2D_BIT |
+-		    __DRI_ATTRIB_TEXTURE_RECTANGLE_BIT :
+-		    0;
++		    modes->haveDepthBuffer = (modes->depthBits > 0);
++		    modes->haveStencilBuffer = (modes->stencilBits > 0);
++
++		    modes->bindToTextureRgb = GL_TRUE;
++		    modes->bindToTextureRgba = GL_TRUE;
++		    modes->bindToMipmapTexture = GL_FALSE;
++		    modes->bindToTextureTargets = modes->rgbMode ?
++		    	__DRI_ATTRIB_TEXTURE_1D_BIT |
++		    	__DRI_ATTRIB_TEXTURE_2D_BIT |
++		    	__DRI_ATTRIB_TEXTURE_RECTANGLE_BIT :
++		    	0;
++
++		    modes = modes->next;
++		}
+ 	    }
+ 	}
+     }
+@@ -734,9 +741,10 @@ driCreateConfigs(GLenum fb_format, GLenum fb_type,
+     return configs;
+ }
+ 
+-const __DRIconfig **driConcatConfigs(__DRIconfig **a, __DRIconfig **b)
++__DRIconfig **driConcatConfigs(__DRIconfig **a,
++			       __DRIconfig **b)
+ {
+-    const __DRIconfig **all;
++    __DRIconfig **all;
+     int i, j, index;
+ 
+     i = 0;
+diff --git a/src/mesa/drivers/dri/common/utils.h b/src/mesa/drivers/dri/common/utils.h
+index 0c974db..9e9e5bc 100644
+--- a/src/mesa/drivers/dri/common/utils.h
++++ b/src/mesa/drivers/dri/common/utils.h
+@@ -131,9 +131,11 @@ extern __DRIconfig **
+ driCreateConfigs(GLenum fb_format, GLenum fb_type,
+ 		 const uint8_t * depth_bits, const uint8_t * stencil_bits,
+ 		 unsigned num_depth_stencil_bits,
+-		 const GLenum * db_modes, unsigned num_db_modes);
++		 const GLenum * db_modes, unsigned num_db_modes,
++    		 const uint8_t * msaa_samples, unsigned num_msaa_modes);
+ 
+-const __DRIconfig **driConcatConfigs(__DRIconfig **a, __DRIconfig **b);
++__DRIconfig **driConcatConfigs(__DRIconfig **a,
++			       __DRIconfig **b);
+ 
+ int
+ driGetConfigAttrib(const __DRIconfig *config,
+diff --git a/src/mesa/drivers/dri/ffb/ffb_xmesa.c b/src/mesa/drivers/dri/ffb/ffb_xmesa.c
+index 679f856..b1bb010 100644
+--- a/src/mesa/drivers/dri/ffb/ffb_xmesa.c
++++ b/src/mesa/drivers/dri/ffb/ffb_xmesa.c
+@@ -626,6 +626,7 @@ ffbFillInModes( __DRIscreenPrivate *psp,
+ 
+    uint8_t depth_bits_array[3];
+    uint8_t stencil_bits_array[3];
++   uint8_t msaa_samples_array[1];
+ 
+    depth_bits_array[0] = 0;
+    depth_bits_array[1] = depth_bits;
+@@ -639,6 +640,8 @@ ffbFillInModes( __DRIscreenPrivate *psp,
+    stencil_bits_array[1] = 0;
+    stencil_bits_array[2] = (stencil_bits == 0) ? 8 : stencil_bits;
+ 
++   msaa_samples_array[0] = 0;
++
+    depth_buffer_factor = ((depth_bits != 0) || (stencil_bits != 0)) ? 3 : 1;
+    back_buffer_factor  = (have_back_buffer) ? 3 : 1;
+ 
+@@ -654,9 +657,10 @@ ffbFillInModes( __DRIscreenPrivate *psp,
+    configs = driCreateConfigs(fb_format, fb_type,
+ 			      depth_bits_array, stencil_bits_array,
+ 			      depth_buffer_factor, back_buffer_modes,
+-			      back_buffer_factor);
++			      back_buffer_factor,
++                               msaa_samples_array, 1);
+    if (configs == NULL) {
+-    fprintf(stderr, "[%s:%u] Error creating FBConfig!\n", __func__,
++      fprintf(stderr, "[%s:%u] Error creating FBConfig!\n", __func__,
+               __LINE__);
+       return NULL;
+    }
+diff --git a/src/mesa/drivers/dri/i810/i810screen.c b/src/mesa/drivers/dri/i810/i810screen.c
+index 48603f5..9a5a39c 100644
+--- a/src/mesa/drivers/dri/i810/i810screen.c
++++ b/src/mesa/drivers/dri/i810/i810screen.c
+@@ -77,6 +77,7 @@ i810FillInModes( __DRIscreenPrivate *psp,
+ 
+     uint8_t depth_bits_array[2];
+     uint8_t stencil_bits_array[2];
++    uint8_t msaa_samples_array[1];
+ 
+     depth_bits_array[0] = depth_bits;
+     depth_bits_array[1] = depth_bits;
+@@ -88,13 +89,16 @@ i810FillInModes( __DRIscreenPrivate *psp,
+     stencil_bits_array[0] = 0;
+     stencil_bits_array[1] = (stencil_bits == 0) ? 8 : stencil_bits;
+ 
++    msaa_samples_array[0] = 0;
++
+     depth_buffer_factor = ((depth_bits != 0) || (stencil_bits != 0)) ? 2 : 1;
+     back_buffer_factor  = (have_back_buffer) ? 2 : 1;
+ 
+     configs = driCreateConfigs(GL_RGB, GL_UNSIGNED_SHORT_5_6_5,
+ 			       depth_bits_array, stencil_bits_array,
+ 			       depth_buffer_factor,
+-			       back_buffer_modes, back_buffer_factor);
++			       back_buffer_modes, back_buffer_factor,
++                               msaa_samples_array, 1);
+     if (configs == NULL) {
+ 	fprintf( stderr, "[%s:%u] Error creating FBConfig!\n",
+ 		 __func__, __LINE__ );
+diff --git a/src/mesa/drivers/dri/intel/intel_screen.c b/src/mesa/drivers/dri/intel/intel_screen.c
+index 7042c25..52a28b3 100644
+--- a/src/mesa/drivers/dri/intel/intel_screen.c
++++ b/src/mesa/drivers/dri/intel/intel_screen.c
+@@ -467,8 +467,6 @@ intelFillInModes(__DRIscreenPrivate *psp,
+    __GLcontextModes *m;
+    unsigned depth_buffer_factor;
+    unsigned back_buffer_factor;
+-   GLenum fb_format;
+-   GLenum fb_type;
+    int i;
+ 
+    /* GLX_SWAP_COPY_OML is only supported because the Intel driver doesn't
+@@ -480,6 +478,7 @@ intelFillInModes(__DRIscreenPrivate *psp,
+ 
+    uint8_t depth_bits_array[3];
+    uint8_t stencil_bits_array[3];
++   uint8_t msaa_samples_array[1];
+ 
+    depth_bits_array[0] = 0;
+    depth_bits_array[1] = depth_bits;
+@@ -496,22 +495,39 @@ intelFillInModes(__DRIscreenPrivate *psp,
+ 
+    stencil_bits_array[2] = (stencil_bits == 0) ? 8 : stencil_bits;
+ 
++   msaa_samples_array[0] = 0;
++
+    depth_buffer_factor = ((depth_bits != 0) || (stencil_bits != 0)) ? 3 : 1;
+    back_buffer_factor = (have_back_buffer) ? 3 : 1;
+ 
+    if (pixel_bits == 16) {
+-      fb_format = GL_RGB;
+-      fb_type = GL_UNSIGNED_SHORT_5_6_5;
++      configs = driCreateConfigs(GL_RGB, GL_UNSIGNED_SHORT_5_6_5,
++				 depth_bits_array, stencil_bits_array,
++				 depth_buffer_factor, back_buffer_modes,
++				 back_buffer_factor,
++				 msaa_samples_array, 1);
+    }
+    else {
+-      fb_format = GL_BGRA;
+-      fb_type = GL_UNSIGNED_INT_8_8_8_8_REV;
++      __DRIconfig **configs_a8r8g8b8;
++      __DRIconfig **configs_x8r8g8b8;
++
++      configs_a8r8g8b8 = driCreateConfigs(GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV,
++					  depth_bits_array,
++					  stencil_bits_array,
++					  depth_buffer_factor,
++					  back_buffer_modes,
++					  back_buffer_factor,
++					  msaa_samples_array, 1);
++      configs_x8r8g8b8 = driCreateConfigs(GL_BGR, GL_UNSIGNED_INT_8_8_8_8_REV,
++					  depth_bits_array,
++					  stencil_bits_array,
++					  depth_buffer_factor,
++					  back_buffer_modes,
++					  back_buffer_factor,
++					  msaa_samples_array, 1);
++      configs = driConcatConfigs(configs_a8r8g8b8, configs_x8r8g8b8);
+    }
+ 
+-   configs = driCreateConfigs(fb_format, fb_type,
+-			      depth_bits_array, stencil_bits_array,
+-			      depth_buffer_factor, back_buffer_modes,
+-			      back_buffer_factor);
+    if (configs == NULL) {
+     fprintf(stderr, "[%s:%u] Error creating FBConfig!\n", __func__,
+               __LINE__);
+@@ -673,6 +689,17 @@ static const
+ __DRIconfig **intelInitScreen2(__DRIscreenPrivate *psp)
+ {
+    intelScreenPrivate *intelScreen;
++   GLenum fb_format[3];
++   GLenum fb_type[3];
++   /* GLX_SWAP_COPY_OML is only supported because the Intel driver doesn't
++    * support pageflipping at all.
++    */
++   static const GLenum back_buffer_modes[] = {
++      GLX_NONE, GLX_SWAP_UNDEFINED_OML, GLX_SWAP_COPY_OML
++   };
++   uint8_t depth_bits[4], stencil_bits[4], msaa_samples_array[1];
++   int color;
++   __DRIconfig **configs = NULL;
+ 
+    /* Calling driInitExtensions here, with a NULL context pointer,
+     * does not actually enable the extensions.  It just makes sure
+@@ -712,8 +739,50 @@ __DRIconfig **intelInitScreen2(__DRIscreenPrivate *psp)
+    intelScreen->irq_active = 1;
+    psp->extensions = intelScreenExtensions;
+ 
+-   return driConcatConfigs(intelFillInModes(psp, 16, 16, 0, 1),
+-			   intelFillInModes(psp, 32, 24, 8, 1));
++   depth_bits[0] = 0;
++   stencil_bits[0] = 0;
++   depth_bits[1] = 16;
++   stencil_bits[1] = 0;
++   depth_bits[2] = 24;
++   stencil_bits[2] = 0;
++   depth_bits[3] = 24;
++   stencil_bits[3] = 8;
++
++   msaa_samples_array[0] = 0;
++
++   fb_format[0] = GL_RGB;
++   fb_type[0] = GL_UNSIGNED_SHORT_5_6_5;
++
++   fb_format[1] = GL_BGR;
++   fb_type[1] = GL_UNSIGNED_INT_8_8_8_8_REV;
++
++   fb_format[2] = GL_BGRA;
++   fb_type[2] = GL_UNSIGNED_INT_8_8_8_8_REV;
++
++   for (color = 0; color < ARRAY_SIZE(fb_format); color++) {
++      __DRIconfig **new_configs;
++
++      new_configs = driCreateConfigs(fb_format[color], fb_type[color],
++				     depth_bits,
++				     stencil_bits,
++				     ARRAY_SIZE(depth_bits),
++				     back_buffer_modes,
++				     ARRAY_SIZE(back_buffer_modes),
++				     msaa_samples_array,
++				     ARRAY_SIZE(msaa_samples_array));
++      if (configs == NULL)
++	 configs = new_configs;
++      else
++	 configs = driConcatConfigs(configs, new_configs);
++   }
++
++   if (configs == NULL) {
++      fprintf(stderr, "[%s:%u] Error creating FBConfig!\n", __func__,
++              __LINE__);
++      return NULL;
++   }
++
++   return (const __DRIconfig **)configs;
+ }
+ 
+ const struct __DriverAPIRec driDriverAPI = {
+diff --git a/src/mesa/drivers/dri/mach64/mach64_screen.c b/src/mesa/drivers/dri/mach64/mach64_screen.c
+index 6bfb4c3..43e5959 100644
+--- a/src/mesa/drivers/dri/mach64/mach64_screen.c
++++ b/src/mesa/drivers/dri/mach64/mach64_screen.c
+@@ -93,6 +93,7 @@ mach64FillInModes( __DRIscreenPrivate *psp,
+ 
+     uint8_t depth_bits_array[2];
+     uint8_t stencil_bits_array[2];
++    uint8_t msaa_samples_array[1];
+ 
+     depth_bits_array[0] = depth_bits;
+     depth_bits_array[1] = depth_bits;
+@@ -104,6 +105,8 @@ mach64FillInModes( __DRIscreenPrivate *psp,
+     stencil_bits_array[0] = 0;
+     stencil_bits_array[1] = (stencil_bits == 0) ? 8 : stencil_bits;
+ 
++    msaa_samples_array[0] = 0;
++
+     depth_buffer_factor = ((depth_bits != 0) || (stencil_bits != 0)) ? 2 : 1;
+     back_buffer_factor  = (have_back_buffer) ? 2 : 1;
+ 
+@@ -119,7 +122,8 @@ mach64FillInModes( __DRIscreenPrivate *psp,
+     configs = driCreateConfigs(fb_format, fb_type,
+ 			       depth_bits_array, stencil_bits_array,
+ 			       depth_buffer_factor, back_buffer_modes,
+-			       back_buffer_factor);
++			       back_buffer_factor,
++                               msaa_samples_array, 1);
+     if (configs == NULL) {
+        fprintf(stderr, "[%s:%u] Error creating FBConfig!\n",
+ 	       __func__, __LINE__);
+diff --git a/src/mesa/drivers/dri/mga/mga_xmesa.c b/src/mesa/drivers/dri/mga/mga_xmesa.c
+index 86da3a2..af706b3 100644
+--- a/src/mesa/drivers/dri/mga/mga_xmesa.c
++++ b/src/mesa/drivers/dri/mga/mga_xmesa.c
+@@ -133,6 +133,7 @@ mgaFillInModes( __DRIscreenPrivate *psp,
+ 
+     uint8_t depth_bits_array[3];
+     uint8_t stencil_bits_array[3];
++    uint8_t msaa_samples_array[1];
+ 
+ 
+     depth_bits_array[0] = 0;
+@@ -147,6 +148,8 @@ mgaFillInModes( __DRIscreenPrivate *psp,
+     stencil_bits_array[1] = 0;
+     stencil_bits_array[2] = (stencil_bits == 0) ? 8 : stencil_bits;
+ 
++    msaa_samples_array[0] = 0;
++
+     depth_buffer_factor = ((depth_bits != 0) || (stencil_bits != 0)) ? 3 : 1;
+     back_buffer_factor  = (have_back_buffer) ? 2 : 1;
+ 
+@@ -162,7 +165,8 @@ mgaFillInModes( __DRIscreenPrivate *psp,
+     configs = driCreateConfigs(fb_format, fb_type,
+ 			       depth_bits_array, stencil_bits_array,
+ 			       depth_buffer_factor,
+-			       back_buffer_modes, back_buffer_factor);
++			       back_buffer_modes, back_buffer_factor,
++                               msaa_samples_array, 1);
+     if (configs == NULL) {
+ 	fprintf( stderr, "[%s:%u] Error creating FBConfig!\n",
+ 		 __func__, __LINE__ );
+diff --git a/src/mesa/drivers/dri/r128/r128_screen.c b/src/mesa/drivers/dri/r128/r128_screen.c
+index cb3a147..7cda4ca 100644
+--- a/src/mesa/drivers/dri/r128/r128_screen.c
++++ b/src/mesa/drivers/dri/r128/r128_screen.c
+@@ -422,7 +422,7 @@ r128FillInModes( __DRIscreenPrivate *psp,
+ 
+     uint8_t depth_bits_array[2];
+     uint8_t stencil_bits_array[2];
+-
++    uint8_t msaa_samples_array[1];
+ 
+     depth_bits_array[0] = depth_bits;
+     depth_bits_array[1] = depth_bits;
+@@ -434,6 +434,8 @@ r128FillInModes( __DRIscreenPrivate *psp,
+     stencil_bits_array[0] = 0;
+     stencil_bits_array[1] = (stencil_bits == 0) ? 8 : stencil_bits;
+ 
++    msaa_samples_array[0] = 0;
++
+     depth_buffer_factor = ((depth_bits != 0) || (stencil_bits != 0)) ? 2 : 1;
+     back_buffer_factor  = (have_back_buffer) ? 2 : 1;
+ 
+@@ -446,26 +448,27 @@ r128FillInModes( __DRIscreenPrivate *psp,
+         fb_type = GL_UNSIGNED_INT_8_8_8_8_REV;
+     }
+ 
+-   configs = driCreateConfigs(fb_format, fb_type,
+-			      depth_bits_array, stencil_bits_array,
+-			      depth_buffer_factor, back_buffer_modes,
+-			      back_buffer_factor);
+-   if (configs == NULL) {
+-    fprintf(stderr, "[%s:%u] Error creating FBConfig!\n", __func__,
+-              __LINE__);
+-      return NULL;
+-   }
++    configs = driCreateConfigs(fb_format, fb_type,
++                               depth_bits_array, stencil_bits_array,
++                               depth_buffer_factor, back_buffer_modes,
++                               back_buffer_factor,
++                               msaa_samples_array, 1);
++    if (configs == NULL) {
++        fprintf(stderr, "[%s:%u] Error creating FBConfig!\n", __func__,
++                __LINE__);
++        return NULL;
++    }
+ 
+-   /* Mark the visual as slow if there are "fake" stencil bits.
+-    */
+-   for (i = 0; configs[i]; i++) {
+-      m = &configs[i]->modes;
+-      if ((m->stencilBits != 0) && (m->stencilBits != stencil_bits)) {
+-         m->visualRating = GLX_SLOW_CONFIG;
+-      }
+-   }
++    /* Mark the visual as slow if there are "fake" stencil bits.
++     */
++    for (i = 0; configs[i]; i++) {
++        m = &configs[i]->modes;
++        if ((m->stencilBits != 0) && (m->stencilBits != stencil_bits)) {
++            m->visualRating = GLX_SLOW_CONFIG;
++        }
++    }
+ 
+-   return (const __DRIconfig **) configs;
++    return (const __DRIconfig **) configs;
+ }
+ 
+ 
+diff --git a/src/mesa/drivers/dri/radeon/radeon_screen.c b/src/mesa/drivers/dri/radeon/radeon_screen.c
+index 81337da..e3afaa9 100644
+--- a/src/mesa/drivers/dri/radeon/radeon_screen.c
++++ b/src/mesa/drivers/dri/radeon/radeon_screen.c
+@@ -274,7 +274,7 @@ radeonFillInModes( __DRIscreenPrivate *psp,
+ 
+     uint8_t depth_bits_array[2];
+     uint8_t stencil_bits_array[2];
+-
++    uint8_t msaa_samples_array[1];
+ 
+     depth_bits_array[0] = depth_bits;
+     depth_bits_array[1] = depth_bits;
+@@ -286,6 +286,8 @@ radeonFillInModes( __DRIscreenPrivate *psp,
+     stencil_bits_array[0] = 0;
+     stencil_bits_array[1] = (stencil_bits == 0) ? 8 : stencil_bits;
+ 
++    msaa_samples_array[0] = 0;
++
+     depth_buffer_factor = ((depth_bits != 0) || (stencil_bits != 0)) ? 2 : 1;
+     back_buffer_factor  = (have_back_buffer) ? 2 : 1;
+ 
+@@ -301,7 +303,8 @@ radeonFillInModes( __DRIscreenPrivate *psp,
+     configs = driCreateConfigs(fb_format, fb_type,
+ 			       depth_bits_array, stencil_bits_array,
+ 			       depth_buffer_factor,
+-			       back_buffer_modes, back_buffer_factor);
++			       back_buffer_modes, back_buffer_factor,
++			       msaa_samples_array, 1);
+     if (configs == NULL) {
+ 	fprintf( stderr, "[%s:%u] Error creating FBConfig!\n",
+ 		 __func__, __LINE__ );
+diff --git a/src/mesa/drivers/dri/savage/savage_xmesa.c b/src/mesa/drivers/dri/savage/savage_xmesa.c
+index a344aab..5c835ac 100644
+--- a/src/mesa/drivers/dri/savage/savage_xmesa.c
++++ b/src/mesa/drivers/dri/savage/savage_xmesa.c
+@@ -914,7 +914,7 @@ savageFillInModes( __DRIscreenPrivate *psp,
+ 
+     uint8_t depth_bits_array[2];
+     uint8_t stencil_bits_array[2];
+-
++    uint8_t msaa_samples_array[1];
+ 
+     depth_bits_array[0] = depth_bits;
+     depth_bits_array[1] = depth_bits;
+@@ -926,6 +926,8 @@ savageFillInModes( __DRIscreenPrivate *psp,
+     stencil_bits_array[0] = 0;
+     stencil_bits_array[1] = (stencil_bits == 0) ? 8 : stencil_bits;
+ 
++    msaa_samples_array[0] = 0;
++
+     depth_buffer_factor = ((depth_bits != 0) || (stencil_bits != 0)) ? 2 : 1;
+     back_buffer_factor  = (have_back_buffer) ? 2 : 1;
+ 
+@@ -941,7 +943,8 @@ savageFillInModes( __DRIscreenPrivate *psp,
+     configs = driCreateConfigs(fb_format, fb_type,
+ 			       depth_bits_array, stencil_bits_array,
+ 			       depth_buffer_factor,
+-			       back_buffer_modes, back_buffer_factor);
++			       back_buffer_modes, back_buffer_factor,
++                               msaa_samples_array, 1);
+     if (configs == NULL) {
+ 	fprintf( stderr, "[%s:%u] Error creating FBConfig!\n",
+ 		 __func__, __LINE__ );
+diff --git a/src/mesa/drivers/dri/sis/sis_screen.c b/src/mesa/drivers/dri/sis/sis_screen.c
+index b1a5d15..9eb27fe 100644
+--- a/src/mesa/drivers/dri/sis/sis_screen.c
++++ b/src/mesa/drivers/dri/sis/sis_screen.c
+@@ -77,6 +77,7 @@ sisFillInModes(__DRIscreenPrivate *psp, int bpp)
+    };
+    uint8_t depth_bits_array[4];
+    uint8_t stencil_bits_array[4];
++   uint8_t msaa_samples_array[1];
+ 
+    depth_bits_array[0] = 0;
+    stencil_bits_array[0] = 0;
+@@ -87,6 +88,8 @@ sisFillInModes(__DRIscreenPrivate *psp, int bpp)
+    depth_bits_array[3] = 32;
+    stencil_bits_array[3] = 0;
+ 
++   msaa_samples_array[0] = 0;
++
+    depth_buffer_factor = 4;
+    back_buffer_factor = 2;
+ 
+@@ -100,7 +103,8 @@ sisFillInModes(__DRIscreenPrivate *psp, int bpp)
+ 
+    configs = driCreateConfigs(fb_format, fb_type, depth_bits_array,
+ 			      stencil_bits_array, depth_buffer_factor,
+-			      back_buffer_modes, back_buffer_factor);
++			      back_buffer_modes, back_buffer_factor,
++                              msaa_samples_array, 1);
+    if (configs == NULL) {
+       fprintf(stderr, "[%s:%u] Error creating FBConfig!\n", __func__, __LINE__);
+       return NULL;
+diff --git a/src/mesa/drivers/dri/swrast/swrast.c b/src/mesa/drivers/dri/swrast/swrast.c
+index 15b5724..6bfb866 100644
+--- a/src/mesa/drivers/dri/swrast/swrast.c
++++ b/src/mesa/drivers/dri/swrast/swrast.c
+@@ -147,6 +147,7 @@ swrastFillInModes(__DRIscreen *psp,
+ 
+     uint8_t depth_bits_array[4];
+     uint8_t stencil_bits_array[4];
++    uint8_t msaa_samples_array[1];
+ 
+     depth_bits_array[0] = 0;
+     depth_bits_array[1] = 0;
+@@ -161,26 +162,38 @@ swrastFillInModes(__DRIscreen *psp,
+     stencil_bits_array[2] = 0;
+     stencil_bits_array[3] = (stencil_bits == 0) ? 8 : stencil_bits;
+ 
++    msaa_samples_array[0] = 0;
++
+     depth_buffer_factor = 4;
+     back_buffer_factor = 2;
+ 
+-    if (pixel_bits == 8) {
++    switch (pixel_bits) {
++    case 8:
+ 	fb_format = GL_RGB;
+ 	fb_type = GL_UNSIGNED_BYTE_2_3_3_REV;
+-    }
+-    else if (pixel_bits == 16) {
++	break;
++    case 16:
+ 	fb_format = GL_RGB;
+ 	fb_type = GL_UNSIGNED_SHORT_5_6_5;
+-    }
+-    else {
++	break;
++    case 24:
++	fb_format = GL_BGR;
++	fb_type = GL_UNSIGNED_INT_8_8_8_8_REV;
++	break;
++    case 32:
+ 	fb_format = GL_BGRA;
+ 	fb_type = GL_UNSIGNED_INT_8_8_8_8_REV;
++	break;
++    default:
++	fprintf(stderr, "[%s:%u] bad depth %d\n", __func__, __LINE__,
++		pixel_bits);
++	return NULL;
+     }
+ 
+     configs = driCreateConfigs(fb_format, fb_type,
+ 			       depth_bits_array, stencil_bits_array,
+ 			       depth_buffer_factor, back_buffer_modes,
+-			       back_buffer_factor);
++			       back_buffer_factor, msaa_samples_array, 1);
+     if (configs == NULL) {
+ 	fprintf(stderr, "[%s:%u] Error creating FBConfig!\n", __func__,
+ 		__LINE__);
+@@ -196,7 +209,7 @@ driCreateNewScreen(int scrn, const __DRIextension **extensions,
+ {
+     static const __DRIextension *emptyExtensionList[] = { NULL };
+     __DRIscreen *psp;
+-    __DRIconfig **configs8, **configs16, **configs32;
++    __DRIconfig **configs8, **configs16, **configs24, **configs32;
+ 
+     (void) data;
+ 
+@@ -213,11 +226,13 @@ driCreateNewScreen(int scrn, const __DRIextension **extensions,
+ 
+     configs8  = swrastFillInModes(psp,  8,  8, 0, 1);
+     configs16 = swrastFillInModes(psp, 16, 16, 0, 1);
++    configs24 = swrastFillInModes(psp, 24, 24, 8, 1);
+     configs32 = swrastFillInModes(psp, 32, 24, 8, 1);
+ 
+-    configs16 = (__DRIconfig **)driConcatConfigs(configs8, configs16);
+-
+-    *driver_configs = driConcatConfigs(configs16, configs32);
++    configs16 = driConcatConfigs(configs8, configs16);
++    configs24 = driConcatConfigs(configs16, configs24);
++    *driver_configs = (const __DRIconfig **)
++       driConcatConfigs(configs24, configs32);
+ 
+     driInitExtensions( NULL, card_extensions, GL_FALSE );
+ 
+@@ -249,19 +264,24 @@ static GLuint
+ choose_pixel_format(const GLvisual *v)
+ {
+     if (v->rgbMode) {
+-	int bpp = v->rgbBits;
++	int depth = v->rgbBits;
+ 
+-	if (bpp == 32
++	if (depth == 32
+ 	    && v->redMask   == 0xff0000
+ 	    && v->greenMask == 0x00ff00
+ 	    && v->blueMask  == 0x0000ff)
+ 	    return PF_A8R8G8B8;
+-	else if (bpp == 16
++	else if (depth == 24
++	    && v->redMask   == 0xff0000
++	    && v->greenMask == 0x00ff00
++	    && v->blueMask  == 0x0000ff)
++	    return PF_X8R8G8B8;
++	else if (depth == 16
+ 	    && v->redMask   == 0xf800
+ 	    && v->greenMask == 0x07e0
+ 	    && v->blueMask  == 0x001f)
+ 	    return PF_R5G6B5;
+-	else if (bpp == 8
++	else if (depth == 8
+ 	    && v->redMask   == 0x07
+ 	    && v->greenMask == 0x38
+ 	    && v->blueMask  == 0xc0)
+@@ -290,7 +310,6 @@ swrast_alloc_front_storage(GLcontext *ctx, struct gl_renderbuffer *rb,
+ 			   GLenum internalFormat, GLuint width, GLuint height)
+ {
+     struct swrast_renderbuffer *xrb = swrast_renderbuffer(rb);
+-    int bpp;
+     unsigned mask = PITCH_ALIGN_BITS - 1;
+ 
+     TRACE;
+@@ -299,23 +318,8 @@ swrast_alloc_front_storage(GLcontext *ctx, struct gl_renderbuffer *rb,
+     rb->Width = width;
+     rb->Height = height;
+ 
+-    switch (internalFormat) {
+-    case GL_RGB:
+-	bpp = rb->RedBits + rb->GreenBits + rb->BlueBits;
+-	break;
+-    case GL_RGBA:
+-	bpp = rb->RedBits + rb->GreenBits + rb->BlueBits + rb->AlphaBits;
+-	break;
+-    case GL_COLOR_INDEX8_EXT:
+-	bpp = rb->IndexBits;
+-	break;
+-    default:
+-	_mesa_problem( NULL, "unexpected format in %s", __FUNCTION__ );
+-	return GL_FALSE;
+-    }
+-
+     /* always pad to PITCH_ALIGN_BITS */
+-    xrb->pitch = ((width * bpp + mask) & ~mask) / 8;
++    xrb->pitch = ((width * xrb->bpp + mask) & ~mask) / 8;
+ 
+     return GL_TRUE;
+ }
+@@ -371,6 +375,17 @@ swrast_new_renderbuffer(const GLvisual *visual, GLboolean front)
+ 	xrb->Base.GreenBits = 8 * sizeof(GLubyte);
+ 	xrb->Base.BlueBits  = 8 * sizeof(GLubyte);
+ 	xrb->Base.AlphaBits = 8 * sizeof(GLubyte);
++	xrb->bpp = 32;
++	break;
++    case PF_X8R8G8B8:
++	xrb->Base.InternalFormat = GL_RGB;
++	xrb->Base._BaseFormat = GL_RGB;
++	xrb->Base.DataType = GL_UNSIGNED_BYTE;
++	xrb->Base.RedBits   = 8 * sizeof(GLubyte);
++	xrb->Base.GreenBits = 8 * sizeof(GLubyte);
++	xrb->Base.BlueBits  = 8 * sizeof(GLubyte);
++	xrb->Base.AlphaBits = 0;
++	xrb->bpp = 32;
+ 	break;
+     case PF_R5G6B5:
+ 	xrb->Base.InternalFormat = GL_RGB;
+@@ -380,6 +395,7 @@ swrast_new_renderbuffer(const GLvisual *visual, GLboolean front)
+ 	xrb->Base.GreenBits = 6 * sizeof(GLubyte);
+ 	xrb->Base.BlueBits  = 5 * sizeof(GLubyte);
+ 	xrb->Base.AlphaBits = 0;
++	xrb->bpp = 16;
+ 	break;
+     case PF_R3G3B2:
+ 	xrb->Base.InternalFormat = GL_RGB;
+@@ -389,12 +405,14 @@ swrast_new_renderbuffer(const GLvisual *visual, GLboolean front)
+ 	xrb->Base.GreenBits = 3 * sizeof(GLubyte);
+ 	xrb->Base.BlueBits  = 2 * sizeof(GLubyte);
+ 	xrb->Base.AlphaBits = 0;
++	xrb->bpp = 8;
+ 	break;
+     case PF_CI8:
+ 	xrb->Base.InternalFormat = GL_COLOR_INDEX8_EXT;
+ 	xrb->Base._BaseFormat = GL_COLOR_INDEX;
+ 	xrb->Base.DataType = GL_UNSIGNED_BYTE;
+ 	xrb->Base.IndexBits = 8 * sizeof(GLubyte);
++	xrb->bpp = 8;
+ 	break;
+     default:
+ 	return NULL;
+diff --git a/src/mesa/drivers/dri/swrast/swrast_priv.h b/src/mesa/drivers/dri/swrast/swrast_priv.h
+index a707ffc..1a5fb31 100644
+--- a/src/mesa/drivers/dri/swrast/swrast_priv.h
++++ b/src/mesa/drivers/dri/swrast/swrast_priv.h
+@@ -90,6 +90,8 @@ struct swrast_renderbuffer {
+ 
+     /* renderbuffer pitch (in bytes) */
+     GLuint pitch;
++   /* bits per pixel of storage */
++    GLuint bpp;
+ };
+ 
+ static INLINE __DRIcontext *
+@@ -115,10 +117,10 @@ swrast_renderbuffer(struct gl_renderbuffer *rb)
+  * Pixel formats we support
+  */
+ #define PF_CI8        1		/**< Color Index mode */
+-#define PF_A8R8G8B8   2		/**< 32-bit TrueColor:  8-A, 8-R, 8-G, 8-B bits */
+-#define PF_R5G6B5     3		/**< 16-bit TrueColor:  5-R, 6-G, 5-B bits */
+-#define PF_R3G3B2     4		/**<  8-bit TrueColor:  3-R, 3-G, 2-B bits */
+-
++#define PF_A8R8G8B8   2		/**< 32bpp TrueColor:  8-A, 8-R, 8-G, 8-B bits */
++#define PF_R5G6B5     3		/**< 16bpp TrueColor:  5-R, 6-G, 5-B bits */
++#define PF_R3G3B2     4		/**<  8bpp TrueColor:  3-R, 3-G, 2-B bits */
++#define PF_X8R8G8B8   5		/**< 32bpp TrueColor:  8-R, 8-G, 8-B bits */
+ 
+ /**
+  * Renderbuffer pitch alignment (in bits).
+diff --git a/src/mesa/drivers/dri/swrast/swrast_span.c b/src/mesa/drivers/dri/swrast/swrast_span.c
+index 5e99036..2d3c25d 100644
+--- a/src/mesa/drivers/dri/swrast/swrast_span.c
++++ b/src/mesa/drivers/dri/swrast/swrast_span.c
+@@ -79,6 +79,24 @@ static const GLubyte kernel[16] = {
+    DST[BCOMP] = SRC[0]
+ 
+ 
++/* 32-bit BGRX */
++#define STORE_PIXEL_X8R8G8B8(DST, X, Y, VALUE) \
++   DST[3] = 0xff; \
++   DST[2] = VALUE[RCOMP]; \
++   DST[1] = VALUE[GCOMP]; \
++   DST[0] = VALUE[BCOMP]
++#define STORE_PIXEL_RGB_X8R8G8B8(DST, X, Y, VALUE) \
++   DST[3] = 0xff; \
++   DST[2] = VALUE[RCOMP]; \
++   DST[1] = VALUE[GCOMP]; \
++   DST[0] = VALUE[BCOMP]
++#define FETCH_PIXEL_X8R8G8B8(DST, SRC) \
++   DST[ACOMP] = 0xff; \
++   DST[RCOMP] = SRC[2]; \
++   DST[GCOMP] = SRC[1]; \
++   DST[BCOMP] = SRC[0]
++
++
+ /* 16-bit BGR */
+ #define STORE_PIXEL_R5G6B5(DST, X, Y, VALUE) \
+    do { \
+@@ -139,6 +157,24 @@ static const GLubyte kernel[16] = {
+ #include "swrast/s_spantemp.h"
+ 
+ 
++/* 32-bit BGRX */
++#define NAME(FUNC) FUNC##_X8R8G8B8
++#define RB_TYPE GLubyte
++#define SPAN_VARS \
++   struct swrast_renderbuffer *xrb = swrast_renderbuffer(rb);
++#define INIT_PIXEL_PTR(P, X, Y) \
++   GLubyte *P = (GLubyte *)xrb->Base.Data + YFLIP(xrb, Y) * xrb->pitch + (X) * 4;
++#define INC_PIXEL_PTR(P) P += 4
++#define STORE_PIXEL(DST, X, Y, VALUE) \
++   STORE_PIXEL_X8R8G8B8(DST, X, Y, VALUE)
++#define STORE_PIXEL_RGB(DST, X, Y, VALUE) \
++   STORE_PIXEL_RGB_X8R8G8B8(DST, X, Y, VALUE)
++#define FETCH_PIXEL(DST, SRC) \
++   FETCH_PIXEL_X8R8G8B8(DST, SRC)
++
++#include "swrast/s_spantemp.h"
++
++
+ /* 16-bit BGR */
+ #define NAME(FUNC) FUNC##_R5G6B5
+ #define RB_TYPE GLubyte
+@@ -210,6 +246,24 @@ static const GLubyte kernel[16] = {
+ #include "swrast_spantemp.h"
+ 
+ 
++/* 32-bit BGRX */
++#define NAME(FUNC) FUNC##_X8R8G8B8_front
++#define RB_TYPE GLubyte
++#define SPAN_VARS \
++   struct swrast_renderbuffer *xrb = swrast_renderbuffer(rb);
++#define INIT_PIXEL_PTR(P, X, Y) \
++   GLubyte *P = (GLubyte *)row;
++#define INC_PIXEL_PTR(P) P += 4
++#define STORE_PIXEL(DST, X, Y, VALUE) \
++   STORE_PIXEL_X8R8G8B8(DST, X, Y, VALUE)
++#define STORE_PIXEL_RGB(DST, X, Y, VALUE) \
++   STORE_PIXEL_RGB_X8R8G8B8(DST, X, Y, VALUE)
++#define FETCH_PIXEL(DST, SRC) \
++   FETCH_PIXEL_X8R8G8B8(DST, SRC)
++
++#include "swrast_spantemp.h"
++
++
+ /* 16-bit BGR */
+ #define NAME(FUNC) FUNC##_R5G6B5_front
+ #define RB_TYPE GLubyte
+@@ -279,6 +333,15 @@ swrast_set_span_funcs_back(struct swrast_renderbuffer *xrb,
+ 	xrb->Base.PutValues = put_values_A8R8G8B8;
+ 	xrb->Base.PutMonoValues = put_mono_values_A8R8G8B8;
+ 	break;
++    case PF_X8R8G8B8:
++	xrb->Base.GetRow = get_row_X8R8G8B8;
++	xrb->Base.GetValues = get_values_X8R8G8B8;
++	xrb->Base.PutRow = put_row_X8R8G8B8;
++	xrb->Base.PutRowRGB = put_row_rgb_X8R8G8B8;
++	xrb->Base.PutMonoRow = put_mono_row_X8R8G8B8;
++	xrb->Base.PutValues = put_values_X8R8G8B8;
++	xrb->Base.PutMonoValues = put_mono_values_X8R8G8B8;
++	break;
+     case PF_R5G6B5:
+ 	xrb->Base.GetRow = get_row_R5G6B5;
+ 	xrb->Base.GetValues = get_values_R5G6B5;
+@@ -334,6 +397,15 @@ swrast_set_span_funcs_front(struct swrast_renderbuffer *xrb,
+ 	xrb->Base.PutValues = put_values_A8R8G8B8_front;
+ 	xrb->Base.PutMonoValues = put_mono_values_A8R8G8B8_front;
+ 	break;
++    case PF_X8R8G8B8:
++	xrb->Base.GetRow = get_row_X8R8G8B8_front;
++	xrb->Base.GetValues = get_values_X8R8G8B8_front;
++	xrb->Base.PutRow = put_row_X8R8G8B8_front;
++	xrb->Base.PutRowRGB = put_row_rgb_X8R8G8B8_front;
++	xrb->Base.PutMonoRow = put_mono_row_X8R8G8B8_front;
++	xrb->Base.PutValues = put_values_X8R8G8B8_front;
++	xrb->Base.PutMonoValues = put_mono_values_X8R8G8B8_front;
++	break;
+     case PF_R5G6B5:
+ 	xrb->Base.GetRow = get_row_R5G6B5_front;
+ 	xrb->Base.GetValues = get_values_R5G6B5_front;
+diff --git a/src/mesa/drivers/dri/tdfx/tdfx_screen.c b/src/mesa/drivers/dri/tdfx/tdfx_screen.c
+index cd22b84..5f2f5cf 100644
+--- a/src/mesa/drivers/dri/tdfx/tdfx_screen.c
++++ b/src/mesa/drivers/dri/tdfx/tdfx_screen.c
+@@ -361,6 +361,7 @@ tdfxFillInModes(__DRIscreenPrivate *psp,
+ 	static const GLenum db_modes[2] = { GLX_NONE, GLX_SWAP_UNDEFINED_OML };
+ 	uint8_t depth_bits_array[4];
+ 	uint8_t stencil_bits_array[4];
++        uint8_t msaa_samples_array[1];
+ 	if(deep) {
+ 		depth_bits_array[0] = 0;
+ 		depth_bits_array[1] = 24;
+@@ -377,13 +378,17 @@ tdfxFillInModes(__DRIscreenPrivate *psp,
+ 		stencil_bits_array[3] = 8;
+ 	}
+ 
+-	return driCreateConfigs(
+-		deep ? GL_RGBA : GL_RGB,
+-		deep ? GL_UNSIGNED_INT_8_8_8_8 : GL_UNSIGNED_SHORT_5_6_5,
+-		depth_bits_array,
+-		stencil_bits_array,
+-		deep ? 2 : 4,
+-		db_modes, 2);
++	msaa_samples_array[0] = 0;
++
++	return (const __DRIconfig **)
++	   driCreateConfigs(deep ? GL_RGBA : GL_RGB,
++			    deep ? GL_UNSIGNED_INT_8_8_8_8 :
++				   GL_UNSIGNED_SHORT_5_6_5,
++			    depth_bits_array,
++			    stencil_bits_array,
++			    deep ? 2 : 4,
++			    db_modes, 2,
++			    msaa_samples_array, 1);
+ }
+ 
+ /**
+diff --git a/src/mesa/drivers/dri/unichrome/via_screen.c b/src/mesa/drivers/dri/unichrome/via_screen.c
+index 988f993..e9f5661 100644
+--- a/src/mesa/drivers/dri/unichrome/via_screen.c
++++ b/src/mesa/drivers/dri/unichrome/via_screen.c
+@@ -342,6 +342,7 @@ viaFillInModes( __DRIscreenPrivate *psp,
+      */
+     static const uint8_t depth_bits_array[4]   = { 0, 16, 24, 32 };
+     static const uint8_t stencil_bits_array[4] = { 0,  0,  8,  0 };
++    uint8_t msaa_samples_array[1] = { 0 };
+     const unsigned depth_buffer_factor = 3;
+ 
+     if ( pixel_bits == 16 ) {
+@@ -356,7 +357,8 @@ viaFillInModes( __DRIscreenPrivate *psp,
+     configs = driCreateConfigs(fb_format, fb_type,
+ 			       depth_bits_array, stencil_bits_array,
+ 			       depth_buffer_factor, back_buffer_modes,
+-			       back_buffer_factor);
++			       back_buffer_factor,
++                               msaa_samples_array, 1);
+     if (configs == NULL) {
+ 	fprintf(stderr, "[%s:%u] Error creating FBConfig!\n", __func__,
+ 		__LINE__);
