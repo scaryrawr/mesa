@@ -18642,14 +18642,6 @@ index 4f47afd..af4108a
 -
 -	rmesa->lost_context = GL_TRUE;
 -}
-diff --git a/src/mesa/drivers/dri/r300/radeon_lock.c b/src/mesa/drivers/dri/r300/radeon_lock.c
-new file mode 120000
-index 4f47afd..af4108a
---- /dev/null
-+++ b/src/mesa/drivers/dri/r300/radeon_lock.c
-@@ -0,0 +1 @@
-+../radeon/radeon_lock.c
-\ No newline at end of file
 diff --git a/src/mesa/drivers/dri/r300/radeon_lock.h b/src/mesa/drivers/dri/r300/radeon_lock.h
 deleted file mode 100644
 index a344837..64bdf94
@@ -19139,14 +19131,6 @@ index 16f9fb9..232868c
 -		radeonInitStencilPointers_z24_s8(&drb->Base);
 -	}
 -}
-diff --git a/src/mesa/drivers/dri/r300/radeon_span.c b/src/mesa/drivers/dri/r300/radeon_span.c
-new file mode 120000
-index 16f9fb9..232868c
---- /dev/null
-+++ b/src/mesa/drivers/dri/r300/radeon_span.c
-@@ -0,0 +1 @@
-+../radeon/radeon_span.c
-\ No newline at end of file
 diff --git a/src/mesa/drivers/dri/r300/radeon_state.c b/src/mesa/drivers/dri/r300/radeon_state.c
 deleted file mode 100644
 index c401da6..0000000
