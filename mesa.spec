@@ -427,6 +427,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/mesa-demos-data
 
 %changelog
+* Mon Mar 09 2009 Dave Airlie <airlied@redhat.com> 7.3-11
+- radeon-rewrite.patch: update with swtcl and r100 bugfixes
+
 * Thu Mar 05 2009 Dave Airlie <airlied@redhat.com> 7.3-10
 - radeon-rewrite.patch: fixup link against libdrm_radeon
 
