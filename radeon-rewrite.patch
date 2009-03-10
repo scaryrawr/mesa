@@ -1,3 +1,9 @@
+commit 2ea80bec3da9c62a3abc1d88b0edf9d2f1c9f258
+Author: Dave Airlie <airlied@redhat.com>
+Date:   Tue Mar 10 11:01:57 2009 +1000
+
+    r200: add hw clears
+
 commit 6c28708e141d047fc44369eac08cfb9a47f22c87
 Author: Dave Airlie <airlied@redhat.com>
 Date:   Mon Mar 9 13:51:39 2009 +1000
@@ -1395,7 +1401,7 @@ index 5531e0a..10a6362 100644
     return GL_TRUE;
  }
 diff --git a/src/mesa/drivers/dri/r200/r200_context.h b/src/mesa/drivers/dri/r200/r200_context.h
-index 14a1dda..fcbe725 100644
+index 14a1dda..f7bad2a 100644
 --- a/src/mesa/drivers/dri/r200/r200_context.h
 +++ b/src/mesa/drivers/dri/r200/r200_context.h
 @@ -53,51 +53,17 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
@@ -1766,23 +1772,23 @@ index 14a1dda..fcbe725 100644
 -    * installed in the Mesa state vector.
 -    */
 -   GLuint vertex_size;
- 
+-
 -   /**
 -    * Attributes instructing the Mesa TCL pipeline where / how to put vertex
 -    * data in the hardware buffer.
 -    */
 -   struct tnl_attr_map vertex_attrs[VERT_ATTRIB_MAX];
- 
+-
 -   /**
 -    * Number of elements of \c ::vertex_attrs that are actually used.
 -    */
 -   GLuint vertex_attr_count;
--
+ 
 -   /**
 -    * Cached pointer to the buffer where Mesa will store vertex data.
 -    */
 -   GLubyte *verts;
--
+ 
 -   /* Fallback rasterization functions
 -    */
 -   r200_point_func draw_point;
@@ -1912,7 +1918,7 @@ index 14a1dda..fcbe725 100644
     /* r200_tcl.c
      */
     struct r200_tcl_info tcl;
-@@ -910,14 +617,6 @@ struct r200_context {
+@@ -910,45 +617,34 @@ struct r200_context {
      */
     struct r200_swtcl_info swtcl;
  
@@ -1927,9 +1933,18 @@ index 14a1dda..fcbe725 100644
     GLboolean using_hyperz;
     GLboolean texmicrotile;
  
-@@ -927,28 +626,10 @@ struct r200_context {
- #define R200_CONTEXT(ctx)		((r200ContextPtr)(ctx->DriverCtx))
+   struct ati_fragment_shader *afs_loaded;
+-};
  
+-#define R200_CONTEXT(ctx)		((r200ContextPtr)(ctx->DriverCtx))
++  struct {
++      struct gl_fragment_program *bitmap_fp;
++      struct gl_vertex_program *passthrough_vp;
+ 
++      struct gl_fragment_program *saved_fp;
++      GLboolean saved_fp_enable;
++      struct gl_vertex_program *saved_vp;
++      GLboolean saved_vp_enable;
  
 -static INLINE GLuint r200PackColor( GLuint cpp,
 -					GLubyte r, GLubyte g,
@@ -1944,8 +1959,16 @@ index 14a1dda..fcbe725 100644
 -      return 0;
 -   }
 -}
--
--
++      GLint saved_vp_x, saved_vp_y;
++      GLsizei saved_vp_width, saved_vp_height;
++      GLenum saved_matrix_mode;
++   } meta;
++
++};
++
++#define R200_CONTEXT(ctx)		((r200ContextPtr)(ctx->DriverCtx))
+ 
+ 
  extern void r200DestroyContext( __DRIcontextPrivate *driContextPriv );
  extern GLboolean r200CreateContext( const __GLcontextModes *glVisual,
  				    __DRIcontextPrivate *driContextPriv,
@@ -1956,7 +1979,7 @@ index 14a1dda..fcbe725 100644
  extern GLboolean r200MakeCurrent( __DRIcontextPrivate *driContextPriv,
  				  __DRIdrawablePrivate *driDrawPriv,
  				  __DRIdrawablePrivate *driReadPriv );
-@@ -957,28 +638,9 @@ extern GLboolean r200UnbindContext( __DRIcontextPrivate *driContextPriv );
+@@ -957,28 +653,9 @@ extern GLboolean r200UnbindContext( __DRIcontextPrivate *driContextPriv );
  /* ================================================================
   * Debugging:
   */
@@ -2001,19 +2024,33 @@ index d514b28..85c1b7b 100644
     }
  }
 diff --git a/src/mesa/drivers/dri/r200/r200_ioctl.c b/src/mesa/drivers/dri/r200/r200_ioctl.c
-index 0741e57..1ab5a82 100644
+index 0741e57..96ed496 100644
 --- a/src/mesa/drivers/dri/r200/r200_ioctl.c
 +++ b/src/mesa/drivers/dri/r200/r200_ioctl.c
-@@ -41,6 +41,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+@@ -41,6 +41,22 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  #include "main/context.h"
  #include "swrast/swrast.h"
  
++#include "main/blend.h"
++#include "main/bufferobj.h"
++#include "main/buffers.h"
++#include "main/depth.h"
++#include "main/shaders.h"
++#include "main/texstate.h"
++#include "main/varray.h"
++#include "glapi/dispatch.h"
++#include "swrast/swrast.h"
++#include "main/stencil.h"
++#include "main/matrix.h"
++#include "main/attrib.h"
++#include "main/enable.h"
++
 +#include "radeon_common.h"
 +#include "radeon_lock.h"
  #include "r200_context.h"
  #include "r200_state.h"
  #include "r200_ioctl.h"
-@@ -54,635 +56,45 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+@@ -54,635 +70,230 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  #define R200_TIMEOUT             512
  #define R200_IDLE_RETRY           16
  
@@ -2027,18 +2064,31 @@ index 0741e57..1ab5a82 100644
 - * start of a cmdbuf can rely on the state being kept from the previous one.
 - */
 -static void r200BackUpAndEmitLostStateLocked( r200ContextPtr rmesa )
--{
++static void
++r200_meta_set_passthrough_transform(r200ContextPtr r200)
+ {
 -   GLuint nr_released_bufs;
 -   struct r200_store saved_store;
--
++   GLcontext *ctx = r200->radeon.glCtx;
+ 
 -   if (rmesa->backup_store.cmd_used == 0)
 -      return;
--
++   r200->meta.saved_vp_x = ctx->Viewport.X;
++   r200->meta.saved_vp_y = ctx->Viewport.Y;
++   r200->meta.saved_vp_width = ctx->Viewport.Width;
++   r200->meta.saved_vp_height = ctx->Viewport.Height;
++   r200->meta.saved_matrix_mode = ctx->Transform.MatrixMode;
+ 
 -   if (R200_DEBUG & DEBUG_STATE)
 -      fprintf(stderr, "Emitting backup state on lost context\n");
--
++   _mesa_Viewport(0, 0, ctx->DrawBuffer->Width, ctx->DrawBuffer->Height);
+ 
 -   rmesa->lost_context = GL_FALSE;
--
++   _mesa_MatrixMode(GL_PROJECTION);
++   _mesa_PushMatrix();
++   _mesa_LoadIdentity();
++   _mesa_Ortho(0, ctx->DrawBuffer->Width, 0, ctx->DrawBuffer->Height, 1, -1);
+ 
 -   nr_released_bufs = rmesa->dma.nr_released_bufs;
 -   saved_store = rmesa->store;
 -   rmesa->dma.nr_released_bufs = 0;
@@ -2046,10 +2096,15 @@ index 0741e57..1ab5a82 100644
 -   r200FlushCmdBufLocked( rmesa, __FUNCTION__ );
 -   rmesa->dma.nr_released_bufs = nr_released_bufs;
 -   rmesa->store = saved_store;
--}
--
++   _mesa_MatrixMode(GL_MODELVIEW);
++   _mesa_PushMatrix();
++   _mesa_LoadIdentity();
+ }
+ 
 -int r200FlushCmdBufLocked( r200ContextPtr rmesa, const char * caller )
--{
++static void
++r200_meta_restore_transform(r200ContextPtr r200)
+ {
 -   int ret, i;
 -   drm_radeon_cmd_buffer_t cmd;
 -
@@ -2093,8 +2148,13 @@ index 0741e57..1ab5a82 100644
 -		  "mangled textures\n", __FUNCTION__ );
 -      }
 -   }
--
--
++   _mesa_MatrixMode(GL_PROJECTION);
++   _mesa_PopMatrix();
++   _mesa_MatrixMode(GL_MODELVIEW);
++   _mesa_PopMatrix();
+ 
++   _mesa_MatrixMode(r200->meta.saved_matrix_mode);
+ 
 -   cmd.bufsz = rmesa->store.cmd_used;
 -   cmd.buf = rmesa->store.cmd_buf;
 -
@@ -2127,8 +2187,10 @@ index 0741e57..1ab5a82 100644
 -   rmesa->save_on_next_emit = 1;
 -
 -   return ret;
--}
--
++   _mesa_Viewport(r200->meta.saved_vp_x, r200->meta.saved_vp_y,
++		  r200->meta.saved_vp_width, r200->meta.saved_vp_height);
+ }
+ 
 -
 -/* Note: does not emit any commands to avoid recursion on
 - * r200AllocCmdBuf.
@@ -2152,11 +2214,19 @@ index 0741e57..1ab5a82 100644
 -
 -/* =============================================================
 - * Hardware vertex buffer handling
-- */
++/**
++ * Perform glClear where mask contains only color, depth, and/or stencil.
++ *
++ * The implementation is based on calling into Mesa to set GL state and
++ * performing normal triangle rendering.  The intent of this path is to
++ * have as generic a path as possible, so that any driver could make use of
++ * it.
+  */
 -
 -
 -void r200RefillCurrentDmaRegion( r200ContextPtr rmesa )
--{
++static void radeon_clear_tris(GLcontext *ctx, GLbitfield mask)
+ {
 -   struct r200_dma_buffer *dmabuf;
 -   int fd = rmesa->dri.fd;
 -   int index = 0;
@@ -2194,7 +2264,16 @@ index 0741e57..1ab5a82 100644
 -      ret = drmDMA( fd, &dma );
 -      if (ret == 0)
 -	 break;
--   
++   r200ContextPtr rmesa = R200_CONTEXT(ctx);
++   GLfloat vertices[4][3];
++   GLfloat color[4][4];
++   GLfloat dst_z;
++   struct gl_framebuffer *fb = ctx->DrawBuffer;
++   int i;
++   GLboolean saved_fp_enable = GL_FALSE, saved_vp_enable = GL_FALSE;
++   GLboolean saved_shader_program = 0;
++   unsigned int saved_active_texture;
+    
 -      if (rmesa->dma.nr_released_bufs) {
 -	 r200FlushCmdBufLocked( rmesa, __FUNCTION__ );
 -      }
@@ -2204,7 +2283,46 @@ index 0741e57..1ab5a82 100644
 -	 DO_USLEEP( 1 );
 -	 LOCK_HARDWARE( rmesa );
 -      }
--   }
++   assert((mask & ~(BUFFER_BIT_BACK_LEFT | BUFFER_BIT_FRONT_LEFT |
++		    BUFFER_BIT_DEPTH | BUFFER_BIT_STENCIL)) == 0);
++
++   _mesa_PushAttrib(GL_COLOR_BUFFER_BIT |
++		    GL_CURRENT_BIT |
++		    GL_DEPTH_BUFFER_BIT |
++		    GL_ENABLE_BIT |
++		    GL_STENCIL_BUFFER_BIT |
++		    GL_TRANSFORM_BIT |
++		    GL_CURRENT_BIT);
++   _mesa_PushClientAttrib(GL_CLIENT_VERTEX_ARRAY_BIT);
++   saved_active_texture = ctx->Texture.CurrentUnit;
++  
++  /* Disable existing GL state we don't want to apply to a clear. */
++   _mesa_Disable(GL_ALPHA_TEST);
++   _mesa_Disable(GL_BLEND);
++   _mesa_Disable(GL_CULL_FACE);
++   _mesa_Disable(GL_FOG);
++   _mesa_Disable(GL_POLYGON_SMOOTH);
++   _mesa_Disable(GL_POLYGON_STIPPLE);
++   _mesa_Disable(GL_POLYGON_OFFSET_FILL);
++   _mesa_Disable(GL_LIGHTING);
++   _mesa_Disable(GL_CLIP_PLANE0);
++   _mesa_Disable(GL_CLIP_PLANE1);
++   _mesa_Disable(GL_CLIP_PLANE2);
++   _mesa_Disable(GL_CLIP_PLANE3);
++   _mesa_Disable(GL_CLIP_PLANE4);
++   _mesa_Disable(GL_CLIP_PLANE5);
++   if (ctx->Extensions.ARB_fragment_program && ctx->FragmentProgram.Enabled) {
++      saved_fp_enable = GL_TRUE;
++      _mesa_Disable(GL_FRAGMENT_PROGRAM_ARB);
++   }
++   if (ctx->Extensions.ARB_vertex_program && ctx->VertexProgram.Enabled) {
++      saved_vp_enable = GL_TRUE;
++      _mesa_Disable(GL_VERTEX_PROGRAM_ARB);
++   }
++   if (ctx->Extensions.ARB_shader_objects && ctx->Shader.CurrentProgram) {
++      saved_shader_program = ctx->Shader.CurrentProgram->Name;
++      _mesa_UseProgramObjectARB(0);
+    }
 -
 -   UNLOCK_HARDWARE(rmesa);
 -
@@ -2228,7 +2346,7 @@ index 0741e57..1ab5a82 100644
 -{
 -   if (R200_DEBUG & DEBUG_IOCTL)
 -      fprintf(stderr, "%s from %s\n", __FUNCTION__, caller); 
--   
+    
 -   if (!region->buf)
 -      return;
 -
@@ -2241,7 +2359,9 @@ index 0741e57..1ab5a82 100644
 -      if (R200_DEBUG & (DEBUG_IOCTL|DEBUG_DMA))
 -	 fprintf(stderr, "%s -- DISCARD BUF %d\n", __FUNCTION__,
 -		 region->buf->buf->idx);  
--      
++   if (ctx->Texture._EnabledUnits != 0) {
++      int i;
+       
 -      cmd = (drm_radeon_cmd_header_t *)r200AllocCmdBuf( rmesa, sizeof(*cmd), 
 -						     __FUNCTION__ );
 -      cmd->dma.cmd_type = RADEON_CMD_DMA_DISCARD;
@@ -2359,7 +2479,19 @@ index 0741e57..1ab5a82 100644
 -	    UNLOCK_HARDWARE( rmesa ); 
 -	    r200WaitIrq( rmesa );	
 -	    LOCK_HARDWARE( rmesa ); 
--	 }
++      for (i = 0; i < ctx->Const.MaxTextureUnits; i++) {
++	 _mesa_ActiveTextureARB(GL_TEXTURE0 + i);
++	 _mesa_Disable(GL_TEXTURE_1D);
++	 _mesa_Disable(GL_TEXTURE_2D);
++	 _mesa_Disable(GL_TEXTURE_3D);
++	 if (ctx->Extensions.ARB_texture_cube_map)
++	    _mesa_Disable(GL_TEXTURE_CUBE_MAP_ARB);
++	 if (ctx->Extensions.NV_texture_rectangle)
++	    _mesa_Disable(GL_TEXTURE_RECTANGLE_NV);
++	 if (ctx->Extensions.MESA_texture_array) {
++	    _mesa_Disable(GL_TEXTURE_1D_ARRAY_EXT);
++	    _mesa_Disable(GL_TEXTURE_2D_ARRAY_EXT);
+ 	 }
 -	 rmesa->irqsEmitted = 10;
 -      }
 -
@@ -2374,8 +2506,8 @@ index 0741e57..1ab5a82 100644
 -	 if (rmesa->do_usleeps) 
 -	    DO_USLEEP( 1 );
 -	 LOCK_HARDWARE( rmesa ); 
--      }
--   }
+       }
+    }
 -}
 -
 -
@@ -2399,8 +2531,16 @@ index 0741e57..1ab5a82 100644
 -
 -   if ( R200_DEBUG & DEBUG_IOCTL ) {
 -      fprintf( stderr, "\n%s( %p )\n\n", __FUNCTION__, (void *)rmesa->glCtx );
--   }
--
++  
++   r200_meta_set_passthrough_transform(rmesa);
++   
++   for (i = 0; i < 4; i++) {
++      color[i][0] = ctx->Color.ClearColor[0];
++      color[i][1] = ctx->Color.ClearColor[1];
++      color[i][2] = ctx->Color.ClearColor[2];
++      color[i][3] = ctx->Color.ClearColor[3];
+    }
+ 
 -   R200_FIREVERTICES( rmesa );
 -
 -   LOCK_HARDWARE( rmesa );
@@ -2408,7 +2548,12 @@ index 0741e57..1ab5a82 100644
 -
 -   /* Throttle the frame rate -- only allow one pending swap buffers
 -    * request at a time.
--    */
++   /* convert clear Z from [0,1] to NDC coord in [-1,1] */
++   dst_z = -1.0 + 2.0 * ctx->Depth.Clear;
++   
++   /* Prepare the vertices, which are the same regardless of which buffer we're
++    * drawing to.
+     */
 -   r200WaitForFrameCompletion( rmesa );
 -   if (!rect)
 -   {
@@ -2443,56 +2588,118 @@ index 0741e57..1ab5a82 100644
 -	     if (b->x1 >= b->x2 || b->y1 >= b->y2)
 -		 continue;
 -	  }
--
++   vertices[0][0] = fb->_Xmin;
++   vertices[0][1] = fb->_Ymin;
++   vertices[0][2] = dst_z;
++   vertices[1][0] = fb->_Xmax;
++   vertices[1][1] = fb->_Ymin;
++   vertices[1][2] = dst_z;
++   vertices[2][0] = fb->_Xmax;
++   vertices[2][1] = fb->_Ymax;
++   vertices[2][2] = dst_z;
++   vertices[3][0] = fb->_Xmin;
++   vertices[3][1] = fb->_Ymax;
++   vertices[3][2] = dst_z;
++
++   _mesa_ColorPointer(4, GL_FLOAT, 4 * sizeof(GLfloat), &color);
++   _mesa_VertexPointer(3, GL_FLOAT, 3 * sizeof(GLfloat), &vertices);
++   _mesa_Enable(GL_COLOR_ARRAY);
++   _mesa_Enable(GL_VERTEX_ARRAY);
++
++   while (mask != 0) {
++      GLuint this_mask = 0;
++
++      if (mask & BUFFER_BIT_BACK_LEFT)
++	 this_mask = BUFFER_BIT_BACK_LEFT;
++      else if (mask & BUFFER_BIT_FRONT_LEFT)
++	 this_mask = BUFFER_BIT_FRONT_LEFT;
++
++      /* Clear depth/stencil in the same pass as color. */
++      this_mask |= (mask & (BUFFER_BIT_DEPTH | BUFFER_BIT_STENCIL));
++
++      /* Select the current color buffer and use the color write mask if
++       * we have one, otherwise don't write any color channels.
++       */
++      if (this_mask & BUFFER_BIT_FRONT_LEFT)
++	 _mesa_DrawBuffer(GL_FRONT_LEFT);
++      else if (this_mask & BUFFER_BIT_BACK_LEFT)
++	 _mesa_DrawBuffer(GL_BACK_LEFT);
++      else
++	 _mesa_ColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+ 
 -	  b++;
 -	  n++;
--      }
++      /* Control writing of the depth clear value to depth. */
++      if (this_mask & BUFFER_BIT_DEPTH) {
++	 _mesa_DepthFunc(GL_ALWAYS);
++	 _mesa_Enable(GL_DEPTH_TEST);
++      } else {
++	 _mesa_Disable(GL_DEPTH_TEST);
++	 _mesa_DepthMask(GL_FALSE);
+       }
 -      rmesa->sarea->nbox = n;
 -
 -      if (!n)
 -	 continue;
--
+ 
 -      ret = drmCommandNone( rmesa->dri.fd, DRM_RADEON_SWAP );
 -
 -      if ( ret ) {
 -	 fprintf( stderr, "DRM_R200_SWAP_BUFFERS: return = %d\n", ret );
 -	 UNLOCK_HARDWARE( rmesa );
 -	 exit( 1 );
--      }
++      /* Control writing of the stencil clear value to stencil. */
++      if (this_mask & BUFFER_BIT_STENCIL) {
++	 _mesa_Enable(GL_STENCIL_TEST);
++	 _mesa_StencilOp(GL_REPLACE, GL_REPLACE, GL_REPLACE);
++	 _mesa_StencilFuncSeparate(GL_FRONT, GL_ALWAYS, ctx->Stencil.Clear,
++				   ctx->Stencil.WriteMask[0]);
++      } else {
++	 _mesa_Disable(GL_STENCIL_TEST);
+       }
 -   }
 -
 -   UNLOCK_HARDWARE( rmesa );
 -   if (!rect)
 -   {
 -       rmesa->hw.all_dirty = GL_TRUE;
--
+ 
 -       rmesa->swap_count++;
 -       (*psp->systemTime->getUST)( & ust );
 -       if ( missed_target ) {
 -	   rmesa->swap_missed_count++;
 -	   rmesa->swap_missed_ust = ust - rmesa->swap_ust;
 -       }
--
++      CALL_DrawArrays(ctx->Exec, (GL_TRIANGLE_FAN, 0, 4));
+ 
 -       rmesa->swap_ust = ust;
 -
 -       sched_yield();
--   }
++      mask &= ~this_mask;
+    }
 -}
--
+ 
 -void r200PageFlip( __DRIdrawablePrivate *dPriv )
-+static void r200UserClear(GLcontext *ctx, GLuint flags)
- {
+-{
 -   r200ContextPtr rmesa;
 -   GLint ret;
 -   GLboolean   missed_target;
 -   __DRIscreenPrivate *psp = dPriv->driScreenPriv;
--
++   r200_meta_restore_transform(rmesa);
+ 
 -   assert(dPriv);
 -   assert(dPriv->driContextPriv);
 -   assert(dPriv->driContextPriv->driverPrivate);
--
++   _mesa_ActiveTextureARB(GL_TEXTURE0 + saved_active_texture);
++   if (saved_fp_enable)
++      _mesa_Enable(GL_FRAGMENT_PROGRAM_ARB);
++   if (saved_vp_enable)
++      _mesa_Enable(GL_VERTEX_PROGRAM_ARB);
+ 
 -   rmesa = (r200ContextPtr) dPriv->driContextPriv->driverPrivate;
--
++   if (saved_shader_program)
++      _mesa_UseProgramObjectARB(saved_shader_program);
+ 
 -   if ( R200_DEBUG & DEBUG_IOCTL ) {
 -      fprintf(stderr, "%s: pfCurrentPage: %d\n", __FUNCTION__,
 -	      rmesa->sarea->pfCurrentPage);
@@ -2506,8 +2713,7 @@ index 0741e57..1ab5a82 100644
 -      usleep( 10000 );		/* throttle invisible client 10ms */
 -      return;
 -   }
-+  GLuint mask = 0;
- 
+-
 -   /* Need to do this for the perf box placement:
 -    */
 -   {
@@ -2516,9 +2722,7 @@ index 0741e57..1ab5a82 100644
 -      b[0] = box[0];
 -      rmesa->sarea->nbox = 1;
 -   }
-+  if (flags & RADEON_FRONT)
-+    mask |= BUFFER_BIT_FRONT_LEFT;
- 
+-
 -   /* Throttle the frame rate -- only allow a few pending swap buffers
 -    * request at a time.
 -    */
@@ -2530,29 +2734,19 @@ index 0741e57..1ab5a82 100644
 -      (void) (*psp->systemTime->getUST)( & rmesa->swap_missed_ust );
 -   }
 -   LOCK_HARDWARE( rmesa );
-+  if (flags & RADEON_BACK)
-+    mask |= BUFFER_BIT_BACK_LEFT;
- 
+-
 -   ret = drmCommandNone( rmesa->dri.fd, DRM_RADEON_FLIP );
-+  if (flags & RADEON_DEPTH)
-+    mask |= BUFFER_BIT_DEPTH;
- 
+-
 -   UNLOCK_HARDWARE( rmesa );
-+  if (flags & RADEON_STENCIL)
-+    mask |= BUFFER_BIT_STENCIL;
- 
+-
 -   if ( ret ) {
 -      fprintf( stderr, "DRM_RADEON_FLIP: return = %d\n", ret );
 -      exit( 1 );
 -   }
-+#if 1
-+  _swrast_Clear(ctx, mask);
-+#else
-+   if (flags & (RADEON_FRONT | RADEON_BACK)) {
- 
+-
 -   rmesa->swap_count++;
 -   (void) (*psp->systemTime->getUST)( & rmesa->swap_ust );
- 
+-
 -#if 000
 -   if ( rmesa->sarea->pfCurrentPage == 1 ) {
 -	 rmesa->state.color.drawOffset = rmesa->r200Screen->frontOffset;
@@ -2560,28 +2754,31 @@ index 0741e57..1ab5a82 100644
 -   } else {
 -	 rmesa->state.color.drawOffset = rmesa->r200Screen->backOffset;
 -	 rmesa->state.color.drawPitch  = rmesa->r200Screen->backPitch;
-    }
-+	  
-+   if ((flags & (RADEON_DEPTH | RADEON_STENCIL))
-+       && (flags & RADEON_CLEAR_FASTZ)) {
- 
+-   }
+-
 -   R200_STATECHANGE( rmesa, ctx );
 -   rmesa->hw.ctx.cmd[CTX_RB3D_COLOROFFSET] = rmesa->state.color.drawOffset
 -					   + rmesa->r200Screen->fbLocation;
 -   rmesa->hw.ctx.cmd[CTX_RB3D_COLORPITCH]  = rmesa->state.color.drawPitch;
 -   if (rmesa->sarea->tiling_enabled) {
 -      rmesa->hw.ctx.cmd[CTX_RB3D_COLORPITCH] |= R200_COLOR_TILE_ENABLE;
-    }
+-   }
 -#else
 -   /* Get ready for drawing next frame.  Update the renderbuffers'
 -    * flippedOffset/Pitch fields so we draw into the right place.
 -    */
 -   driFlipRenderbuffers(rmesa->glCtx->WinSysDrawBuffer,
 -                        rmesa->sarea->pfCurrentPage);
--
--
++   _mesa_PopClientAttrib();
++   _mesa_PopAttrib();
++}
+ 
+ 
 -   r200UpdateDrawBuffer(rmesa->glCtx);
- #endif
+-#endif
++static void r200UserClear(GLcontext *ctx, GLuint mask)
++{
++   radeon_clear_tris(ctx, mask);
  }
  
 -
@@ -2627,10 +2824,7 @@ index 0741e57..1ab5a82 100644
 -      flags |= RADEON_DEPTH;
 -      mask &= ~BUFFER_BIT_DEPTH;
 -   }
-+   __DRIdrawablePrivate *dPriv = rmesa->radeon.dri.drawable;
-+   GLint cx, cy, cw, ch, ret;
-+   GLuint i;
- 
+-
 -   if ( (mask & BUFFER_BIT_STENCIL) && rmesa->state.stencil.hwBuffer ) {
 -      flags |= RADEON_STENCIL;
 -      mask &= ~BUFFER_BIT_STENCIL;
@@ -2655,7 +2849,10 @@ index 0741e57..1ab5a82 100644
 -	  flags |= RADEON_CLEAR_FASTZ;
 -      }
 -   }
--
++   __DRIdrawablePrivate *dPriv = rmesa->radeon.dri.drawable;
++   GLint cx, cy, cw, ch, ret;
++   GLuint i;
+ 
 -   LOCK_HARDWARE( rmesa );
 -
 -   /* compute region after locking: */
@@ -2671,7 +2868,7 @@ index 0741e57..1ab5a82 100644
  
     /* Throttle the number of clear ioctls we do.
      */
-@@ -693,7 +105,7 @@ static void r200Clear( GLcontext *ctx, GLbitfield mask )
+@@ -693,7 +304,7 @@ static void r200Clear( GLcontext *ctx, GLbitfield mask )
  
        gp.param = RADEON_PARAM_LAST_CLEAR;
        gp.value = (int *)&clear;
@@ -2680,7 +2877,7 @@ index 0741e57..1ab5a82 100644
  		      DRM_RADEON_GETPARAM, &gp, sizeof(gp) );
  
        if ( ret ) {
-@@ -703,24 +115,34 @@ static void r200Clear( GLcontext *ctx, GLbitfield mask )
+@@ -703,24 +314,34 @@ static void r200Clear( GLcontext *ctx, GLbitfield mask )
  
        /* Clear throttling needs more thought.
         */
@@ -2703,13 +2900,13 @@ index 0741e57..1ab5a82 100644
 -   r200FlushCmdBufLocked( rmesa, __FUNCTION__ );
 +   rcommonFlushCmdBufLocked( &rmesa->radeon, __FUNCTION__ );
 +
-+
+ 
 +  /* compute region after locking: */
 +   cx = ctx->DrawBuffer->_Xmin;
 +   cy = ctx->DrawBuffer->_Ymin;
 +   cw = ctx->DrawBuffer->_Xmax - cx;
 +   ch = ctx->DrawBuffer->_Ymax - cy;
- 
++
 +   /* Flip top to bottom */
 +   cx += dPriv->x;
 +   cy  = dPriv->y + dPriv->h - cy - ch;
@@ -2721,7 +2918,7 @@ index 0741e57..1ab5a82 100644
        drm_radeon_clear_t clear;
        drm_radeon_clear_rect_t depth_boxes[RADEON_NR_SAREA_CLIPRECTS];
        GLint n = 0;
-@@ -755,17 +177,17 @@ static void r200Clear( GLcontext *ctx, GLbitfield mask )
+@@ -755,17 +376,17 @@ static void r200Clear( GLcontext *ctx, GLbitfield mask )
  	 }
        }
  
@@ -2744,7 +2941,7 @@ index 0741e57..1ab5a82 100644
        for ( ; n >= 0 ; n-- ) {
  	 depth_boxes[n].f[CLEAR_X1] = (float)b[n].x1;
  	 depth_boxes[n].f[CLEAR_Y1] = (float)b[n].y1;
-@@ -774,83 +196,91 @@ static void r200Clear( GLcontext *ctx, GLbitfield mask )
+@@ -774,83 +395,92 @@ static void r200Clear( GLcontext *ctx, GLbitfield mask )
  	 depth_boxes[n].f[CLEAR_DEPTH] = ctx->Depth.Clear;
        }
  
@@ -2793,6 +2990,7 @@ index 0741e57..1ab5a82 100644
 +   GLuint flags = 0;
 +   GLuint color_mask = 0;
 +   GLint ret;
++   GLuint orig_mask = mask;
  
 +   if ( R200_DEBUG & DEBUG_IOCTL ) {
 +       fprintf( stderr, "r200Clear %x %d\n", mask, rmesa->radeon.sarea->pfCurrentPage);
@@ -2883,7 +3081,7 @@ index 0741e57..1ab5a82 100644
 -}
  
 +   if (rmesa->radeon.radeonScreen->kernel_mm)
-+      r200UserClear(ctx, flags);
++      r200UserClear(ctx, orig_mask);
 +   else
 +      r200KernelClear(ctx, flags);
 +
@@ -2892,7 +3090,7 @@ index 0741e57..1ab5a82 100644
  
  /* This version of AllocateMemoryMESA allocates only GART memory, and
   * only does so after the point at which the driver has been
-@@ -875,7 +305,7 @@ void *r200AllocateMemoryMESA(__DRIscreen *screen, GLsizei size,
+@@ -875,7 +505,7 @@ void *r200AllocateMemoryMESA(__DRIscreen *screen, GLsizei size,
        fprintf(stderr, "%s sz %d %f/%f/%f\n", __FUNCTION__, size, readfreq, 
  	      writefreq, priority);
  
@@ -2901,7 +3099,7 @@ index 0741e57..1ab5a82 100644
        return NULL;
  
     if (getenv("R200_NO_ALLOC"))
-@@ -886,7 +316,7 @@ void *r200AllocateMemoryMESA(__DRIscreen *screen, GLsizei size,
+@@ -886,7 +516,7 @@ void *r200AllocateMemoryMESA(__DRIscreen *screen, GLsizei size,
     alloc.size = size;
     alloc.region_offset = &region_offset;
  
@@ -2910,7 +3108,7 @@ index 0741e57..1ab5a82 100644
  			      DRM_RADEON_ALLOC,
  			      &alloc, sizeof(alloc));
     
-@@ -896,7 +326,7 @@ void *r200AllocateMemoryMESA(__DRIscreen *screen, GLsizei size,
+@@ -896,7 +526,7 @@ void *r200AllocateMemoryMESA(__DRIscreen *screen, GLsizei size,
     }
     
     {
@@ -2919,7 +3117,7 @@ index 0741e57..1ab5a82 100644
        return (void *)(region_start + region_offset);
     }
  }
-@@ -914,24 +344,24 @@ void r200FreeMemoryMESA(__DRIscreen *screen, GLvoid *pointer)
+@@ -914,24 +544,24 @@ void r200FreeMemoryMESA(__DRIscreen *screen, GLvoid *pointer)
     if (R200_DEBUG & DEBUG_IOCTL)
        fprintf(stderr, "%s %p\n", __FUNCTION__, pointer);
  
@@ -2949,7 +3147,7 @@ index 0741e57..1ab5a82 100644
  			  DRM_RADEON_FREE,
  			  &memfree, sizeof(memfree));
     
-@@ -956,16 +386,16 @@ GLuint r200GetMemoryOffsetMESA(__DRIscreen *screen, const GLvoid *pointer)
+@@ -956,16 +586,16 @@ GLuint r200GetMemoryOffsetMESA(__DRIscreen *screen, const GLvoid *pointer)
  
     card_offset = r200GartOffsetFromVirtual( rmesa, pointer );
  
@@ -2969,7 +3167,7 @@ index 0741e57..1ab5a82 100644
  
     if (R200_DEBUG & DEBUG_IOCTL)
        fprintf(stderr, "r200IsGartMemory( %p ) : %d\n", pointer, valid );
-@@ -976,12 +406,12 @@ GLboolean r200IsGartMemory( r200ContextPtr rmesa, const GLvoid *pointer,
+@@ -976,12 +606,12 @@ GLboolean r200IsGartMemory( r200ContextPtr rmesa, const GLvoid *pointer,
  
  GLuint r200GartOffsetFromVirtual( r200ContextPtr rmesa, const GLvoid *pointer )
  {
@@ -2985,7 +3183,7 @@ index 0741e57..1ab5a82 100644
  }
  
  
-@@ -989,7 +419,7 @@ GLuint r200GartOffsetFromVirtual( r200ContextPtr rmesa, const GLvoid *pointer )
+@@ -989,7 +619,7 @@ GLuint r200GartOffsetFromVirtual( r200ContextPtr rmesa, const GLvoid *pointer )
  void r200InitIoctlFuncs( struct dd_function_table *functions )
  {
      functions->Clear = r200Clear;

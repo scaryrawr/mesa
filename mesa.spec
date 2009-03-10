@@ -20,7 +20,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.3
-Release: 11%{?dist}
+Release: 12%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -427,6 +427,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/mesa-demos-data
 
 %changelog
+* Tue Mar 10 2009 Dave Airlie <airlied@redhat.com> 7.3-12
+- radeon-rewrite.patch: enable R200 hw clears
+
 * Mon Mar 09 2009 Dave Airlie <airlied@redhat.com> 7.3-11
 - radeon-rewrite.patch: update with swtcl and r100 bugfixes
 
