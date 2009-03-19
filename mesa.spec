@@ -20,7 +20,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.3
-Release: 12%{?dist}
+Release: 13%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -52,7 +52,7 @@ Patch13: mesa-7.3-965-texture-size.patch
 
 BuildRequires: pkgconfig autoconf automake
 %if %{with_dri}
-BuildRequires: libdrm-devel >= 2.4.0-0.21
+BuildRequires: libdrm-devel >= 2.4.3
 BuildRequires: kernel-headers >= 2.6.27-0.305.rc5.git6
 %endif
 BuildRequires: libXxf86vm-devel
@@ -78,7 +78,7 @@ Requires(post): /sbin/ldconfig
 Requires(postun): /sbin/ldconfig
 Provides: libGL
 %if %{with_dri}
-Requires: libdrm >= 2.4.0-0.21
+Requires: libdrm >= 2.4.3
 Requires: mesa-dri-drivers%{?_isa} = %{version}-%{release}
 Conflicts: xorg-x11-server-Xorg < 1.4.99.901-14
 %endif
@@ -427,6 +427,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/mesa-demos-data
 
 %changelog
+* Thu Mar 19 2009 Orion Poplawski <orion@cora.nwra.com> 7.3-13
+- Update libdrm requirement to >= 2.4.3 to match source
+
 * Tue Mar 10 2009 Dave Airlie <airlied@redhat.com> 7.3-12
 - radeon-rewrite.patch: enable R200 hw clears
 
