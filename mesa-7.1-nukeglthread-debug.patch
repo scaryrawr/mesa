@@ -13,12 +13,3 @@ diff -up Mesa-7.1/src/mesa/drivers/dri/intel/intel_fbo.c.intel-glthread Mesa-7.1
     /* point the renderbufer's region to the texture image region */
     intel_image = intel_texture_image(newImage);
     if (irb->region != intel_image->mt->region) {
-@@ -674,8 +669,6 @@ intel_finish_render_texture(GLcontext * 
- {
-    struct intel_renderbuffer *irb = intel_renderbuffer(att->Renderbuffer);
- 
--   DBG("End render texture (tid %x) tex %u\n", _glthread_GetID(), att->Texture->Name);
--
-    if (irb) {
-       /* just release the region */
-       intel_region_release(&irb->region);

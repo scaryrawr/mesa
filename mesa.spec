@@ -14,41 +14,38 @@
 
 %define manpages gl-manpages-1.0.1
 %define xdriinfo xdriinfo-1.0.2
-%define gitdate 20081220
+%define gitdate 20090322
 #% define snapshot 
 
 Summary: Mesa graphics libraries
 Name: mesa
-Version: 7.3
-Release: 13%{?dist}
+Version: 7.5
+Release: 0.1%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
-Source0: http://downloads.sf.net/mesa3d/MesaLib-%{version}.tar.bz2
-Source1: http://downloads.sf.net/mesa3d/MesaDemos-%{version}.tar.bz2
+#Source0: http://downloads.sf.net/mesa3d/MesaLib-%{version}.tar.bz2
 #Source0: http://www.mesa3d.org/beta/MesaLib-%{version}%{?snapshot}.tar.bz2
 #Source1: http://www.mesa3d.org/beta/MesaDemos-%{version}%{?snapshot}.tar.bz2
-#Source0: %{name}-%{gitdate}.tar.bz2
+Source0: %{name}-%{gitdate}.tar.bz2
+#Source1: http://downloads.sf.net/mesa3d/MesaDemos-%{version}.tar.bz2
 Source2: %{manpages}.tar.bz2
 Source3: make-git-snapshot.sh
 
 Source5: http://www.x.org/pub/individual/app/%{xdriinfo}.tar.bz2
 
-Patch0: mesa-7.3-fixes-from-7.4-branch.patch
 Patch1: mesa-7.1-osmesa-version.patch
 Patch2: mesa-7.1-nukeglthread-debug.patch
 Patch3: mesa-no-mach64.patch
 
-Patch5: mesa-7.3-dri-configs-fixes.patch
 Patch6: radeon-rewrite.patch
 
 Patch7: mesa-7.1-link-shared.patch
 Patch9: intel-revert-vbl.patch
 
 Patch12: mesa-7.1-disable-intel-classic-warn.patch
-Patch13: mesa-7.3-965-texture-size.patch
 
 BuildRequires: pkgconfig autoconf automake
 %if %{with_dri}
@@ -167,18 +164,15 @@ This package provides some demo applications for testing Mesa.
 
 
 %prep
-%setup -q -n Mesa-%{version}%{?snapshot} -b0 -b1 -b2 -b5
-#%setup -q -n mesa-%{gitdate} -b2 -b5
-%patch0 -p1 -b .mesa74
+#%setup -q -n mesa-%{version}%{?snapshot} -b0 -b2 -b5
+%setup -q -n mesa-%{gitdate} -b2 -b5
 %patch1 -p1 -b .osmesa
 %patch2 -p1 -b .intel-glthread
 %patch3 -p0 -b .no-mach64
-%patch5 -p1 -b .driconfigs
 %patch6 -p1 -b .radeon-rewrite
 %patch7 -p1 -b .dricore
 %patch9 -p1 -b .intel-vbl
 %patch12 -p1 -b .intel-nowarn
-%patch13 -p1 -b .965-texture
 
 # Hack the demos to use installed data files
 sed -i 's,../images,%{_libdir}/mesa-demos-data,' progs/demos/*.c
@@ -225,6 +219,7 @@ export CXXFLAGS="$RPM_OPT_FLAGS -Os"
 %configure %{common_flags} \
     --disable-glw \
     --disable-glut \
+    --disable-gallium \
     --disable-gl-osmesa \
     --with-driver=%{driver} \
     --with-dri-driverdir=%{_libdir}/dri
@@ -262,7 +257,11 @@ done | xargs install -m 0755 -t $RPM_BUILD_ROOT%{_libdir}/dri >& /dev/null || :
 
 # strip out undesirable headers
 pushd $RPM_BUILD_ROOT%{_includedir}/GL 
-rm [a-fh-np-wyz]*.h gg*.h glf*.h
+rm [a-fh-np-wyz]*.h gg*.h glf*.h glew.h glut*.h glxew.h
+popd
+
+pushd $RPM_BUILD_ROOT%{_libdir}
+rm libEGL* demodriver.so
 popd
 
 # XXX demos, since they don't install automatically.  should fix that.
@@ -419,6 +418,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/texdown
 %{_bindir}/texenv
 %{_bindir}/texobj
+%{_bindir}/textures
 %{_bindir}/trispd
 %{_bindir}/tunnel
 %{_bindir}/tunnel2
@@ -427,6 +427,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/mesa-demos-data
 
 %changelog
+* Fri Mar 20 2009 Dave Airlie <airlied@redhat.com> 7.5-0.1
+- bump to snapshot of mesa master
+- mainly has intel dri2 tfp fixes + radeon rewrite patch
+
 * Thu Mar 19 2009 Orion Poplawski <orion@cora.nwra.com> 7.3-13
 - Update libdrm requirement to >= 2.4.3 to match source
 
