@@ -20,7 +20,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.5
-Release: 0.1%{?dist}
+Release: 0.2%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -309,7 +309,7 @@ rm -rf $RPM_BUILD_ROOT
 %files libGL
 %defattr(-,root,root,-)
 %{_libdir}/libGL.so.1
-%{_libdir}/libGL.so.1.2
+%{_libdir}/libGL.so.1.*
 
 %if %{with_dri}
 %files dri-drivers
@@ -327,10 +327,12 @@ rm -rf $RPM_BUILD_ROOT
 %{_includedir}/GL/glx.h
 %{_includedir}/GL/glx_mangle.h
 %{_includedir}/GL/glxext.h
+%if %{with_dri}
 %dir %{_includedir}/GL/internal
 %{_includedir}/GL/internal/dri_interface.h
-%{_libdir}/libGL.so
 %{_libdir}/pkgconfig/dri.pc
+%endif
+%{_libdir}/libGL.so
 %{_libdir}/pkgconfig/gl.pc
 %{_datadir}/man/man3/gl[^uX]*.3gl*
 %{_datadir}/man/man3/glX*.3gl*
@@ -427,6 +429,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/mesa-demos-data
 
 %changelog
+* Mon Mar 23 2009 Karsten Hopp <karsten@redhat.com> 7.5-0.2
+- fix filelist on s390x where dri isn't available and
+  where libGL.so has a different version
+
 * Fri Mar 20 2009 Dave Airlie <airlied@redhat.com> 7.5-0.1
 - bump to snapshot of mesa master
 - mainly has intel dri2 tfp fixes + radeon rewrite patch
