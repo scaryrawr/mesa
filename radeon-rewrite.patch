@@ -18573,14 +18573,6 @@ index a344837..0000000
 -	} while (0)
 -
 -#endif				/* __RADEON_LOCK_H__ */
-diff --git a/src/mesa/drivers/dri/r300/radeon_lock.h b/src/mesa/drivers/dri/r300/radeon_lock.h
-new file mode 120000
-index 0000000..64bdf94
---- /dev/null
-+++ b/src/mesa/drivers/dri/r300/radeon_lock.h
-@@ -0,0 +1 @@
-+../radeon/radeon_lock.h
-\ No newline at end of file
 diff --git a/src/mesa/drivers/dri/r300/radeon_program_pair.c b/src/mesa/drivers/dri/r300/radeon_program_pair.c
 index f398404..49aa90d 100644
 --- a/src/mesa/drivers/dri/r300/radeon_program_pair.c

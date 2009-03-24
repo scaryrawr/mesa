@@ -20,7 +20,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.5
-Release: 0.2%{?dist}
+Release: 0.3%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -429,6 +429,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/mesa-demos-data
 
 %changelog
+* Tue Mar 24 2009 Dave Airlie <airlied@redhat.com> 7.5-0.3
+- radeon-rewrite: add FBO support for radeon on KMS/DRI2
+
 * Mon Mar 23 2009 Karsten Hopp <karsten@redhat.com> 7.5-0.2
 - fix filelist on s390x where dri isn't available and
   where libGL.so has a different version
