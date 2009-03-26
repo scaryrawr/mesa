@@ -20,7 +20,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.5
-Release: 0.3%{?dist}
+Release: 0.4%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -75,7 +75,7 @@ Requires(post): /sbin/ldconfig
 Requires(postun): /sbin/ldconfig
 Provides: libGL
 %if %{with_dri}
-Requires: libdrm >= 2.4.3
+Requires: libdrm >= 2.4.5-1
 Requires: mesa-dri-drivers%{?_isa} = %{version}-%{release}
 Conflicts: xorg-x11-server-Xorg < 1.4.99.901-14
 %endif
@@ -429,6 +429,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/mesa-demos-data
 
 %changelog
+* Thu Mar 26 2009 Dave Airlie <airlied@redhat.com> 7.5-0.4
+- fix r200 fbo + vram sizing bug
+
 * Tue Mar 24 2009 Dave Airlie <airlied@redhat.com> 7.5-0.3
 - radeon-rewrite: add FBO support for radeon on KMS/DRI2
 
