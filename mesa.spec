@@ -20,7 +20,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.5
-Release: 0.4%{?dist}
+Release: 0.5%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -429,6 +429,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/mesa-demos-data
 
 %changelog
+* Tue Mar 31 2009 Dave Airlie <airlied@redhat.com> 7.5-0.5
+- radeon-rewrite.patch: misc radeon fixes with buffer readbacks
+
 * Thu Mar 26 2009 Dave Airlie <airlied@redhat.com> 7.5-0.4
 - fix r200 fbo + vram sizing bug
 
