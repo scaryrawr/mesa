@@ -1,0 +1,13 @@
+diff -up mesa-20090322/src/mesa/drivers/dri/radeon/Makefile.dma mesa-20090322/src/mesa/drivers/dri/radeon/Makefile
+--- mesa-20090322/src/mesa/drivers/dri/radeon/Makefile.dma	2009-04-01 22:18:56.000000000 +1000
++++ mesa-20090322/src/mesa/drivers/dri/radeon/Makefile	2009-04-01 22:19:05.000000000 +1000
+@@ -19,7 +19,8 @@ RADEON_COMMON_SOURCES = \
+ 	radeon_bo_legacy.c \
+ 	radeon_cs_legacy.c \
+ 	radeon_mipmap_tree.c \
+-	radeon_span.c
++	radeon_span.c \
++	radeon_fbo.c
+ 
+ DRIVER_SOURCES = \
+ 	radeon_context.c \
