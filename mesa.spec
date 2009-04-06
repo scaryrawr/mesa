@@ -20,7 +20,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.5
-Release: 0.6%{?dist}
+Release: 0.7%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -46,7 +46,6 @@ Patch7: mesa-7.1-link-shared.patch
 Patch9: intel-revert-vbl.patch
 
 Patch12: mesa-7.1-disable-intel-classic-warn.patch
-Patch13: radeon-fix-r100.patch
 
 BuildRequires: pkgconfig autoconf automake
 %if %{with_dri}
@@ -174,7 +173,6 @@ This package provides some demo applications for testing Mesa.
 %patch7 -p1 -b .dricore
 %patch9 -p1 -b .intel-vbl
 %patch12 -p1 -b .intel-nowarn
-%patch13 -p1 -b .r100
 
 # Hack the demos to use installed data files
 sed -i 's,../images,%{_libdir}/mesa-demos-data,' progs/demos/*.c
@@ -431,6 +429,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/mesa-demos-data
 
 %changelog
+* Mon Apr 06 2009 Dave Airlie <airlied@redhat.com> 7.5-0.7
+- rebase to latest radeon-rewrite
+
 * Wed Apr 01 2009 Dave Airlie <airlied@redhat.com> 7.5-0.6
 - Build fbo files for r100
 
