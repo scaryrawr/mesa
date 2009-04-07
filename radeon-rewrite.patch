@@ -4354,7 +4354,7 @@ index bae5644..0000000
 -
 -#endif
 diff --git a/src/mesa/drivers/dri/r200/r200_state.c b/src/mesa/drivers/dri/r200/r200_state.c
-index 0eaaaf6..f040713 100644
+index 0eaaaf6..1b9724d 100644
 --- a/src/mesa/drivers/dri/r200/r200_state.c
 +++ b/src/mesa/drivers/dri/r200/r200_state.c
 @@ -47,6 +47,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
@@ -4849,7 +4849,7 @@ index 0eaaaf6..f040713 100644
        }
        break;
  
-@@ -2432,64 +2270,70 @@ static void update_texturematrix( GLcontext *ctx )
+@@ -2432,64 +2270,73 @@ static void update_texturematrix( GLcontext *ctx )
     }
  }
  
@@ -4922,7 +4922,9 @@ index 0eaaaf6..f040713 100644
 +			   RADEON_GEM_DOMAIN_GTT | RADEON_GEM_DOMAIN_VRAM, 0);
     }
 -}
--
+ 
++   if (rmesa->radeon.dma.current)
++      radeon_validate_bo(&rmesa->radeon, rmesa->radeon.dma.current, RADEON_GEM_DOMAIN_GTT, 0);
  
 +   return radeon_revalidate_bos(ctx);
 +}
@@ -4957,7 +4959,7 @@ index 0eaaaf6..f040713 100644
  /* FIXME: don't really need most of these when vertex progs are enabled */
  
     /* Need an event driven matrix update?
-@@ -2533,7 +2377,8 @@ void r200ValidateState( GLcontext *ctx )
+@@ -2533,7 +2380,8 @@ void r200ValidateState( GLcontext *ctx )
        else TCL_FALLBACK(ctx, R200_TCL_FALLBACK_VERTEX_PROGRAM, 0);
     }
  
@@ -4967,7 +4969,7 @@ index 0eaaaf6..f040713 100644
  }
  
  
-@@ -2544,7 +2389,7 @@ static void r200InvalidateState( GLcontext *ctx, GLuint new_state )
+@@ -2544,7 +2392,7 @@ static void r200InvalidateState( GLcontext *ctx, GLuint new_state )
     _vbo_InvalidateState( ctx, new_state );
     _tnl_InvalidateState( ctx, new_state );
     _ae_invalidate_state( ctx, new_state );
@@ -4976,7 +4978,7 @@ index 0eaaaf6..f040713 100644
  }
  
  /* A hack.  The r200 can actually cope just fine with materials
-@@ -2573,12 +2418,13 @@ static void r200WrapRunPipeline( GLcontext *ctx )
+@@ -2573,12 +2421,13 @@ static void r200WrapRunPipeline( GLcontext *ctx )
     GLboolean has_material;
  
     if (0)
@@ -4993,7 +4995,7 @@ index 0eaaaf6..f040713 100644
  
     has_material = !ctx->VertexProgram._Enabled && ctx->Light.Enabled && check_material( ctx );
  
-@@ -2603,8 +2449,8 @@ void r200InitStateFuncs( struct dd_function_table *functions )
+@@ -2603,8 +2452,8 @@ void r200InitStateFuncs( struct dd_function_table *functions )
     functions->UpdateState		= r200InvalidateState;
     functions->LightingSpaceChange	= r200LightingSpaceChange;
  
@@ -5004,7 +5006,7 @@ index 0eaaaf6..f040713 100644
  
     functions->AlphaFunc			= r200AlphaFunc;
     functions->BlendColor		= r200BlendColor;
-@@ -2636,7 +2482,7 @@ void r200InitStateFuncs( struct dd_function_table *functions )
+@@ -2636,7 +2485,7 @@ void r200InitStateFuncs( struct dd_function_table *functions )
     functions->PointParameterfv		= r200PointParameter;
     functions->PointSize			= r200PointSize;
     functions->RenderMode		= r200RenderMode;
@@ -9409,10 +9411,10 @@ index 6ca9342..0dff9a1 100644
  ##### TARGETS #####
  
 diff --git a/src/mesa/drivers/dri/r300/r300_cmdbuf.c b/src/mesa/drivers/dri/r300/r300_cmdbuf.c
-index 3eb2dc8..1ecbeea 100644
+index 3eb2dc8..2dd2c6a 100644
 --- a/src/mesa/drivers/dri/r300/r300_cmdbuf.c
 +++ b/src/mesa/drivers/dri/r300/r300_cmdbuf.c
-@@ -44,245 +44,288 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+@@ -44,245 +44,306 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  #include "drm.h"
  #include "radeon_drm.h"
  
@@ -9739,6 +9741,24 @@ index 3eb2dc8..1ecbeea 100644
 +	OUT_BATCH_REGSEQ(R300_RB3D_COLORPITCH0, 1);
 +	OUT_BATCH_RELOC(cbpitch, rrb->bo, cbpitch, 0, RADEON_GEM_DOMAIN_VRAM, 0);
 +	END_BATCH();
++    if (r300->radeon.radeonScreen->driScreen->dri2.enabled) {
++        if (r300->radeon.radeonScreen->chip_family >= CHIP_FAMILY_RV515) {
++            BEGIN_BATCH_NO_AUTOSTATE(3);
++            OUT_BATCH_REGSEQ(R300_SC_SCISSORS_TL, 2);
++            OUT_BATCH(0);
++            OUT_BATCH((rrb->width << R300_SCISSORS_X_SHIFT) |
++                    (rrb->height << R300_SCISSORS_Y_SHIFT));
++            END_BATCH();
++        } else {
++            BEGIN_BATCH_NO_AUTOSTATE(3);
++            OUT_BATCH_REGSEQ(R300_SC_SCISSORS_TL, 2);
++            OUT_BATCH((R300_SCISSORS_OFFSET << R300_SCISSORS_X_SHIFT) |
++                    (R300_SCISSORS_OFFSET << R300_SCISSORS_Y_SHIFT));
++            OUT_BATCH(((rrb->width + R300_SCISSORS_OFFSET) << R300_SCISSORS_X_SHIFT) |
++                    ((rrb->height + R300_SCISSORS_OFFSET) << R300_SCISSORS_Y_SHIFT));
++            END_BATCH();
++        }
++    }
  }
  
 -/**
@@ -9873,7 +9893,7 @@ index 3eb2dc8..1ecbeea 100644
  	cnt = r500fp_count(atom->cmd);
  	return cnt ? (cnt * 4) + 1 : 0;
  }
-@@ -295,8 +338,8 @@ static int check_r500fp_const(r300ContextPtr r300, struct r300_state_atom *atom)
+@@ -295,8 +356,8 @@ static int check_r500fp_const(r300ContextPtr r300, struct r300_state_atom *atom)
        r300->hw.ATOM.idx = (IDX);					\
        r300->hw.ATOM.check = check_##CHK;				\
        r300->hw.ATOM.dirty = GL_FALSE;					\
@@ -9884,7 +9904,7 @@ index 3eb2dc8..1ecbeea 100644
     } while (0)
  /**
   * Allocate memory for the command buffer and initialize the state atom
-@@ -304,7 +347,7 @@ static int check_r500fp_const(r300ContextPtr r300, struct r300_state_atom *atom)
+@@ -304,7 +365,7 @@ static int check_r500fp_const(r300ContextPtr r300, struct r300_state_atom *atom)
   */
  void r300InitCmdBuf(r300ContextPtr r300)
  {
@@ -9893,7 +9913,7 @@ index 3eb2dc8..1ecbeea 100644
  	int has_tcl = 1;
  	int is_r500 = 0;
  	int i;
-@@ -315,7 +358,7 @@ void r300InitCmdBuf(r300ContextPtr r300)
+@@ -315,7 +376,7 @@ void r300InitCmdBuf(r300ContextPtr r300)
  	if (r300->radeon.radeonScreen->chip_family >= CHIP_FAMILY_RV515)
  		is_r500 = 1;
  
@@ -9902,7 +9922,7 @@ index 3eb2dc8..1ecbeea 100644
  
  	mtu = r300->radeon.glCtx->Const.MaxTextureUnits;
  	if (RADEON_DEBUG & DEBUG_TEXTURE) {
-@@ -323,97 +366,97 @@ void r300InitCmdBuf(r300ContextPtr r300)
+@@ -323,97 +384,97 @@ void r300InitCmdBuf(r300ContextPtr r300)
  	}
  
  	/* Setup the atom linked list */
@@ -10037,7 +10057,7 @@ index 3eb2dc8..1ecbeea 100644
  		for (i = 0; i < 8; i++) {
  			r300->hw.ri.cmd[R300_RI_CMD_0 + i +1] =
  			  (R500_RS_IP_PTR_K0 << R500_RS_IP_TEX_PTR_S_SHIFT) |
-@@ -422,133 +465,149 @@ void r300InitCmdBuf(r300ContextPtr r300)
+@@ -422,133 +483,149 @@ void r300InitCmdBuf(r300ContextPtr r300)
                            (R500_RS_IP_PTR_K1 << R500_RS_IP_TEX_PTR_Q_SHIFT);
  		}
  		ALLOC_STATE(rr, variable, R300_RR_CMDSIZE, 0);
@@ -10243,7 +10263,7 @@ index 3eb2dc8..1ecbeea 100644
  			}
  		}
  	}
-@@ -556,130 +615,37 @@ void r300InitCmdBuf(r300ContextPtr r300)
+@@ -556,130 +633,37 @@ void r300InitCmdBuf(r300ContextPtr r300)
  	/* Textures */
  	ALLOC_STATE(tex.filter, variable, mtu + 1, 0);
  	r300->hw.tex.filter.cmd[R300_TEX_CMD_0] =
@@ -16613,7 +16633,7 @@ index b03eefa..0000000
 -	return 0;
 -}
 diff --git a/src/mesa/drivers/dri/r300/r300_texstate.c b/src/mesa/drivers/dri/r300/r300_texstate.c
-index e2329f0..5a87b5d 100644
+index e2329f0..cf4cad7 100644
 --- a/src/mesa/drivers/dri/r300/r300_texstate.c
 +++ b/src/mesa/drivers/dri/r300/r300_texstate.c
 @@ -47,7 +47,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
@@ -16658,7 +16678,7 @@ index e2329f0..5a87b5d 100644
  		break;
  	default:
  		/* Error...which should have already been caught by higher
-@@ -190,399 +189,132 @@ void r300SetDepthTexMode(struct gl_texture_object *tObj)
+@@ -190,399 +189,134 @@ void r300SetDepthTexMode(struct gl_texture_object *tObj)
  
  
  /**
@@ -17129,13 +17149,15 @@ index e2329f0..5a87b5d 100644
 +			radeon_validate_bo(&rmesa->radeon, t->mt->bo,
 +					   RADEON_GEM_DOMAIN_GTT | RADEON_GEM_DOMAIN_VRAM, 0);
  	}
++	if (rmesa->radeon.dma.current)
++		radeon_validate_bo(&rmesa->radeon, rmesa->radeon.dma.current, RADEON_GEM_DOMAIN_GTT, 0);
  
 -	return !t->border_fallback;
 +	return radeon_revalidate_bos(ctx);
  }
  
  void r300SetTexOffset(__DRIcontext * pDRICtx, GLint texname,
-@@ -591,78 +323,164 @@ void r300SetTexOffset(__DRIcontext * pDRICtx, GLint texname,
+@@ -591,78 +325,164 @@ void r300SetTexOffset(__DRIcontext * pDRICtx, GLint texname,
  	r300ContextPtr rmesa = pDRICtx->driverPrivate;
  	struct gl_texture_object *tObj =
  	    _mesa_lookup_texture(rmesa->radeon.glCtx, texname);
@@ -20609,10 +20631,10 @@ index 0000000..4b5116c
 +#endif
 diff --git a/src/mesa/drivers/dri/radeon/radeon_common.c b/src/mesa/drivers/dri/radeon/radeon_common.c
 new file mode 100644
-index 0000000..4f7bfeb
+index 0000000..756c09f
 --- /dev/null
 +++ b/src/mesa/drivers/dri/radeon/radeon_common.c
-@@ -0,0 +1,1409 @@
+@@ -0,0 +1,1407 @@
 +/**************************************************************************
 +
 +Copyright (C) The Weather Channel, Inc.  2002.  All Rights Reserved.
@@ -20992,9 +21014,11 @@ index 0000000..4f7bfeb
 +
 +static void radeonWaitForIdle(radeonContextPtr radeon)
 +{
-+	LOCK_HARDWARE(radeon);
-+	radeonWaitForIdleLocked(radeon);
-+	UNLOCK_HARDWARE(radeon);
++	if (!radeon->radeonScreen->driScreen->dri2.enabled) {
++        LOCK_HARDWARE(radeon);
++	    radeonWaitForIdleLocked(radeon);
++	    UNLOCK_HARDWARE(radeon);
++    }
 +}
 +
 +static void radeon_flip_renderbuffers(struct radeon_framebuffer *rfb)
@@ -21402,13 +21426,9 @@ index 0000000..4f7bfeb
 + */
 +void radeonDrawBuffer( GLcontext *ctx, GLenum mode )
 +{
-+	radeonContextPtr radeon = RADEON_CONTEXT(ctx);
-+	
 +	if (RADEON_DEBUG & DEBUG_DRI)
 +		fprintf(stderr, "%s %s\n", __FUNCTION__,
 +			_mesa_lookup_enum_by_nr( mode ));
-+	
-+	radeon_firevertices(radeon);	/* don't pipeline cliprect changes */
 +	
 +	radeon_draw_buffer(ctx, ctx->DrawBuffer);
 +}
@@ -29616,7 +29636,7 @@ index 1ec06bc..f30eb1c 100644
  				  drm_clip_rect_t *boxes );
  
 diff --git a/src/mesa/drivers/dri/radeon/radeon_screen.c b/src/mesa/drivers/dri/radeon/radeon_screen.c
-index e964feb..ecfdce9 100644
+index e964feb..49c7eae 100644
 --- a/src/mesa/drivers/dri/radeon/radeon_screen.c
 +++ b/src/mesa/drivers/dri/radeon/radeon_screen.c
 @@ -35,6 +35,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
@@ -29725,7 +29745,7 @@ index e964feb..ecfdce9 100644
  
  static const struct dri_debug_control debug_control[] = {
  	{"fall", DEBUG_FALLBACKS},
-@@ -236,6 +241,7 @@ static const struct dri_debug_control debug_control[] = {
+@@ -236,19 +241,36 @@ static const struct dri_debug_control debug_control[] = {
  #endif /* RADEON_COMMON && defined(RADEON_COMMON_FOR_R300) */
  
  extern const struct dri_extension card_extensions[];
@@ -29733,7 +29753,41 @@ index e964feb..ecfdce9 100644
  
  static int getSwapInfo( __DRIdrawablePrivate *dPriv, __DRIswapInfo * sInfo );
  
-@@ -330,6 +336,12 @@ static const __DRItexOffsetExtension radeonTexOffsetExtension = {
+ static int
+-radeonGetParam(int fd, int param, void *value)
++radeonGetParam(__DRIscreenPrivate *sPriv, int param, void *value)
+ {
+   int ret;
+   drm_radeon_getparam_t gp;
++  struct drm_radeon_info info;
++
++  if (sPriv->drm_version.major >= 2) {
++      info.value = (uint64_t)value;
++      switch (param) {
++      case RADEON_PARAM_DEVICE_ID:
++          info.request = RADEON_INFO_DEVICE_ID;
++          break;
++      case RADEON_PARAM_NUM_GB_PIPES:
++          info.request = RADEON_INFO_NUM_GB_PIPES;
++          break;
++      default:
++          return -EINVAL;
++      }
++      ret = drmCommandWriteRead(sPriv->fd, DRM_RADEON_INFO, &info, sizeof(info));
++  } else {
++      gp.param = param;
++      gp.value = value;
+ 
+-  gp.param = param;
+-  gp.value = value;
+-
+-  ret = drmCommandWriteRead( fd, DRM_RADEON_GETPARAM, &gp, sizeof(gp));
++      ret = drmCommandWriteRead(sPriv->fd, DRM_RADEON_GETPARAM, &gp, sizeof(gp));
++  }
+   return ret;
+ }
+ 
+@@ -330,6 +352,12 @@ static const __DRItexOffsetExtension radeonTexOffsetExtension = {
      { __DRI_TEX_OFFSET, __DRI_TEX_OFFSET_VERSION },
      radeonSetTexOffset,
  };
@@ -29746,7 +29800,7 @@ index e964feb..ecfdce9 100644
  #endif
  
  #if RADEON_COMMON && defined(RADEON_COMMON_FOR_R200)
-@@ -344,6 +356,12 @@ static const __DRItexOffsetExtension r200texOffsetExtension = {
+@@ -344,6 +372,12 @@ static const __DRItexOffsetExtension r200texOffsetExtension = {
      { __DRI_TEX_OFFSET, __DRI_TEX_OFFSET_VERSION },
     r200SetTexOffset,
  };
@@ -29759,7 +29813,7 @@ index e964feb..ecfdce9 100644
  #endif
  
  #if RADEON_COMMON && defined(RADEON_COMMON_FOR_R300)
-@@ -351,137 +369,18 @@ static const __DRItexOffsetExtension r300texOffsetExtension = {
+@@ -351,137 +385,18 @@ static const __DRItexOffsetExtension r300texOffsetExtension = {
      { __DRI_TEX_OFFSET, __DRI_TEX_OFFSET_VERSION },
     r300SetTexOffset,
  };
@@ -29905,7 +29959,7 @@ index e964feb..ecfdce9 100644
     case PCI_CHIP_RADEON_LY:
     case PCI_CHIP_RADEON_LZ:
     case PCI_CHIP_RADEON_QY:
-@@ -819,9 +718,162 @@ radeonCreateScreen( __DRIscreenPrivate *sPriv )
+@@ -819,9 +734,161 @@ radeonCreateScreen( __DRIscreenPrivate *sPriv )
  
     default:
        fprintf(stderr, "unknown chip id 0x%x, can't guess.\n",
@@ -29959,8 +30013,7 @@ index e964feb..ecfdce9 100644
 +      int ret;
 +
 +#ifdef RADEON_PARAM_KERNEL_MM
-+     ret = radeonGetParam( sPriv->fd, RADEON_PARAM_KERNEL_MM,
-+                            &screen->kernel_mm);
++     ret = radeonGetParam(sPriv, RADEON_PARAM_KERNEL_MM, &screen->kernel_mm);
 +
 +      if (ret && ret != -EINVAL) {
 +         FREE( screen );
@@ -29972,7 +30025,7 @@ index e964feb..ecfdce9 100644
 +          screen->kernel_mm = 0;
 +#endif
 +
-+      ret = radeonGetParam( sPriv->fd, RADEON_PARAM_GART_BUFFER_OFFSET,
++      ret = radeonGetParam(sPriv, RADEON_PARAM_GART_BUFFER_OFFSET,
 +			    &screen->gart_buffer_offset);
 +
 +      if (ret) {
@@ -29981,7 +30034,7 @@ index e964feb..ecfdce9 100644
 +	 return NULL;
 +      }
 +
-+      ret = radeonGetParam( sPriv->fd, RADEON_PARAM_GART_BASE,
++      ret = radeonGetParam(sPriv, RADEON_PARAM_GART_BASE,
 +			    &screen->gart_base);
 +      if (ret) {
 +	 FREE( screen );
@@ -29989,7 +30042,7 @@ index e964feb..ecfdce9 100644
 +	 return NULL;
 +      }
 +
-+      ret = radeonGetParam( sPriv->fd, RADEON_PARAM_IRQ_NR,
++      ret = radeonGetParam(sPriv, RADEON_PARAM_IRQ_NR,
 +			    &screen->irq);
 +      if (ret) {
 +	 FREE( screen );
@@ -30069,22 +30122,35 @@ index e964feb..ecfdce9 100644
     if ((screen->chip_family == CHIP_FAMILY_R350 || screen->chip_family == CHIP_FAMILY_R300) &&
         sPriv->ddx_version.minor < 2) {
        fprintf(stderr, "xf86-video-ati-6.6.2 or newer needed for Radeon 9500/9700/9800 cards.\n");
-@@ -849,7 +901,7 @@ radeonCreateScreen( __DRIscreenPrivate *sPriv )
-    ret = radeonGetParam( sPriv->fd, RADEON_PARAM_FB_LOCATION,
-                          &temp);
+@@ -846,10 +913,9 @@ radeonCreateScreen( __DRIscreenPrivate *sPriv )
+    screen->cpp = dri_priv->bpp / 8;
+    screen->AGPMode = dri_priv->AGPMode;
+ 
+-   ret = radeonGetParam( sPriv->fd, RADEON_PARAM_FB_LOCATION,
+-                         &temp);
++   ret = radeonGetParam(sPriv, RADEON_PARAM_FB_LOCATION, &temp);
     if (ret) {
 -       if (screen->chip_family < CHIP_FAMILY_RS600)
 +       if (screen->chip_family < CHIP_FAMILY_RS600 && !screen->kernel_mm)
  	   screen->fbLocation      = ( INREG( RADEON_MC_FB_LOCATION ) & 0xffff) << 16;
         else {
             FREE( screen );
-@@ -951,26 +1003,161 @@ radeonCreateScreen( __DRIscreenPrivate *sPriv )
+@@ -861,8 +927,7 @@ radeonCreateScreen( __DRIscreenPrivate *sPriv )
+    }
+ 
+    if (screen->chip_family >= CHIP_FAMILY_R300) {
+-       ret = radeonGetParam( sPriv->fd, RADEON_PARAM_NUM_GB_PIPES,
+-			     &temp);
++       ret = radeonGetParam(sPriv, RADEON_PARAM_NUM_GB_PIPES, &temp);
+        if (ret) {
+ 	   fprintf(stderr, "Unable to get num_pipes, need newer drm\n");
+ 	   switch (screen->chip_family) {
+@@ -951,26 +1016,158 @@ radeonCreateScreen( __DRIscreenPrivate *sPriv )
         screen->extensions[i++] = &driMediaStreamCounterExtension.base;
     }
  
 +   if (!screen->kernel_mm) {
- #if !RADEON_COMMON
--   screen->extensions[i++] = &radeonTexOffsetExtension.base;
++#if !RADEON_COMMON
 +   	screen->extensions[i++] = &radeonTexOffsetExtension.base;
 +#endif
 +
@@ -30149,11 +30215,9 @@ index e964feb..ecfdce9 100644
 +   screen->kernel_mm = 1;
 +   screen->chip_flags = 0;
 +
-+   ret = radeonGetParam( sPriv->fd, RADEON_PARAM_IRQ_NR,
-+			 &screen->irq);
++   ret = radeonGetParam(sPriv, RADEON_PARAM_IRQ_NR, &screen->irq);
 +
-+   ret = radeonGetParam( sPriv->fd, RADEON_PARAM_DEVICE_ID,
-+			 &device_id);
++   ret = radeonGetParam(sPriv, RADEON_PARAM_DEVICE_ID, &device_id);
 +   if (ret) {
 +     FREE( screen );
 +     fprintf(stderr, "drm_radeon_getparam_t (RADEON_PARAM_DEVICE_ID): %d\n", ret);
@@ -30165,8 +30229,7 @@ index e964feb..ecfdce9 100644
 +     return NULL;
 +
 +   if (screen->chip_family >= CHIP_FAMILY_R300) {
-+       ret = radeonGetParam( sPriv->fd, RADEON_PARAM_NUM_GB_PIPES,
-+			     &temp);
++       ret = radeonGetParam(sPriv, RADEON_PARAM_NUM_GB_PIPES, &temp);
 +       if (ret) {
 +	   fprintf(stderr, "Unable to get num_pipes, need newer drm\n");
 +	   switch (screen->chip_family) {
@@ -30214,7 +30277,8 @@ index e964feb..ecfdce9 100644
 +       screen->extensions[i++] = &driMediaStreamCounterExtension.base;
 +   }
 +
-+#if !RADEON_COMMON
+ #if !RADEON_COMMON
+-   screen->extensions[i++] = &radeonTexOffsetExtension.base;
 +   screen->extensions[i++] = &radeonTexBufferExtension.base;
  #endif
  
@@ -30244,7 +30308,7 @@ index e964feb..ecfdce9 100644
     return screen;
  }
  
-@@ -979,23 +1166,32 @@ radeonCreateScreen( __DRIscreenPrivate *sPriv )
+@@ -979,23 +1176,32 @@ radeonCreateScreen( __DRIscreenPrivate *sPriv )
  static void
  radeonDestroyScreen( __DRIscreenPrivate *sPriv )
  {
@@ -30290,7 +30354,7 @@ index e964feb..ecfdce9 100644
  }
  
  
-@@ -1004,16 +1200,21 @@ radeonDestroyScreen( __DRIscreenPrivate *sPriv )
+@@ -1004,16 +1210,21 @@ radeonDestroyScreen( __DRIscreenPrivate *sPriv )
  static GLboolean
  radeonInitDriver( __DRIscreenPrivate *sPriv )
  {
@@ -30318,7 +30382,7 @@ index e964feb..ecfdce9 100644
  /**
   * Create the Mesa framebuffer and renderbuffers for a given window/drawable.
   *
-@@ -1026,101 +1227,111 @@ radeonCreateBuffer( __DRIscreenPrivate *driScrnPriv,
+@@ -1026,101 +1237,111 @@ radeonCreateBuffer( __DRIscreenPrivate *driScrnPriv,
                      const __GLcontextModes *mesaVis,
                      GLboolean isPixmap )
  {
@@ -30510,7 +30574,7 @@ index e964feb..ecfdce9 100644
  /**
   * Choose the appropriate CreateContext function based on the chipset.
   * Eventually, all drivers will go through this process.
-@@ -1131,25 +1342,21 @@ static GLboolean radeonCreateContext(const __GLcontextModes * glVisual,
+@@ -1131,25 +1352,21 @@ static GLboolean radeonCreateContext(const __GLcontextModes * glVisual,
  {
  	__DRIscreenPrivate *sPriv = driContextPriv->driScreenPriv;
  	radeonScreenPtr screen = (radeonScreenPtr) (sPriv->private);
@@ -30546,7 +30610,7 @@ index e964feb..ecfdce9 100644
  
  
  /**
-@@ -1211,13 +1418,103 @@ radeonInitScreen(__DRIscreenPrivate *psp)
+@@ -1211,13 +1428,103 @@ radeonInitScreen(__DRIscreenPrivate *psp)
     if (!radeonInitDriver(psp))
         return NULL;
  
@@ -30559,7 +30623,7 @@ index e964feb..ecfdce9 100644
 +			     (dri_priv->bpp == 16) ? 0  : 8, 1);
  }
 +#define ARRAY_SIZE(a) (sizeof (a) / sizeof ((a)[0]))
- 
++
 +/**
 + * This is the driver specific part of the createNewScreen entry point.
 + * Called when using DRI2.
@@ -30600,7 +30664,7 @@ index e964feb..ecfdce9 100644
 +   driInitSingleExtension( NULL, ATI_fs_extension );
 +   driInitExtensions( NULL, point_extensions, GL_FALSE );
 +#endif
-+
+ 
 +   if (!radeonInitDriver(psp)) {
 +       return NULL;
 +    }
@@ -30652,7 +30716,7 @@ index e964feb..ecfdce9 100644
  
  /**
   * Get information about previous buffer swaps.
-@@ -1225,31 +1522,26 @@ radeonInitScreen(__DRIscreenPrivate *psp)
+@@ -1225,31 +1532,26 @@ radeonInitScreen(__DRIscreenPrivate *psp)
  static int
  getSwapInfo( __DRIdrawablePrivate *dPriv, __DRIswapInfo * sInfo )
  {
@@ -30694,7 +30758,7 @@ index e964feb..ecfdce9 100644
  const struct __DriverAPIRec driDriverAPI = {
     .InitScreen      = radeonInitScreen,
     .DestroyScreen   = radeonDestroyScreen,
-@@ -1266,23 +1558,7 @@ const struct __DriverAPIRec driDriverAPI = {
+@@ -1266,23 +1568,7 @@ const struct __DriverAPIRec driDriverAPI = {
     .WaitForSBC      = NULL,
     .SwapBuffersMSC  = NULL,
     .CopySubBuffer   = radeonCopySubBuffer,
@@ -30755,7 +30819,7 @@ index b84c70b..8605eb4 100644
 +extern void radeonDestroyBuffer(__DRIdrawablePrivate *driDrawPriv);
  #endif /* __RADEON_SCREEN_H__ */
 diff --git a/src/mesa/drivers/dri/radeon/radeon_span.c b/src/mesa/drivers/dri/radeon/radeon_span.c
-index 12051ff..b0c77be 100644
+index 12051ff..e28f286 100644
 --- a/src/mesa/drivers/dri/radeon/radeon_span.c
 +++ b/src/mesa/drivers/dri/radeon/radeon_span.c
 @@ -43,46 +43,203 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
@@ -31223,7 +31287,7 @@ index 12051ff..b0c77be 100644
     d = (tmp & 0xff000000) >> 24;					\
  } while (0)
  #endif
-@@ -271,29 +433,103 @@ do {									\
+@@ -271,29 +433,105 @@ do {									\
  #define TAG(x) radeon##x##_z24_s8
  #include "stenciltmp.h"
  
@@ -31298,6 +31362,8 @@ index 12051ff..b0c77be 100644
 -#else
 -	RADEON_FIREVERTICES(rmesa);
 -#endif
+-	LOCK_HARDWARE(rmesa);
+-	radeonWaitForIdleLocked(rmesa);
 +	int i;
 +
 +	radeon_firevertices(rmesa);
@@ -31307,9 +31373,10 @@ index 12051ff..b0c77be 100644
 +	 * unnecessary due to the fact that mapping our buffers, textures, etc.
 +	 * should implicitly wait for any previous rendering commands that must
 +	 * be waited on. */
- 	LOCK_HARDWARE(rmesa);
- 	radeonWaitForIdleLocked(rmesa);
-+
++	if (!rmesa->radeonScreen->driScreen->dri2.enabled) {
++		LOCK_HARDWARE(rmesa);
++		radeonWaitForIdleLocked(rmesa);
++	}
 +	for (i = 0; i < ctx->Const.MaxTextureImageUnits; i++) {
 +		if (ctx->Texture.Unit[i]._ReallyEnabled)
 +			ctx->Driver.MapTexture(ctx, ctx->Texture.Unit[i]._Current);
@@ -31326,8 +31393,10 @@ index 12051ff..b0c77be 100644
  	radeonContextPtr rmesa = RADEON_CONTEXT(ctx);
 +	int i;
  	_swrast_flush(ctx);
- 	UNLOCK_HARDWARE(rmesa);
-+
+-	UNLOCK_HARDWARE(rmesa);
++	if (!rmesa->radeonScreen->driScreen->dri2.enabled) {
++		UNLOCK_HARDWARE(rmesa);
++	}
 +	for (i = 0; i < ctx->Const.MaxTextureImageUnits; i++) {
 +		if (ctx->Texture.Unit[i]._ReallyEnabled)
 +			ctx->Driver.UnmapTexture(ctx, ctx->Texture.Unit[i]._Current);
@@ -31337,7 +31406,7 @@ index 12051ff..b0c77be 100644
  }
  
  void radeonInitSpanFuncs(GLcontext * ctx)
-@@ -307,20 +543,21 @@ void radeonInitSpanFuncs(GLcontext * ctx)
+@@ -307,20 +545,21 @@ void radeonInitSpanFuncs(GLcontext * ctx)
  /**
   * Plug in the Get/Put routines for the given driRenderbuffer.
   */
@@ -31388,7 +31457,7 @@ index 9abe086..ea6a2e7 100644
  
  #endif
 diff --git a/src/mesa/drivers/dri/radeon/radeon_state.c b/src/mesa/drivers/dri/radeon/radeon_state.c
-index 32bcff3..dcca326 100644
+index 32bcff3..28eea44 100644
 --- a/src/mesa/drivers/dri/radeon/radeon_state.c
 +++ b/src/mesa/drivers/dri/radeon/radeon_state.c
 @@ -47,6 +47,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
@@ -32160,7 +32229,7 @@ index 32bcff3..dcca326 100644
     GLuint tpc = rmesa->hw.tcl.cmd[TCL_TEXTURE_PROC_CTL];
     GLuint vs = rmesa->hw.tcl.cmd[TCL_OUTPUT_VTXSEL];
     int unit;
-@@ -2209,61 +2044,68 @@ static void update_texturematrix( GLcontext *ctx )
+@@ -2209,61 +2044,72 @@ static void update_texturematrix( GLcontext *ctx )
     }
  }
  
@@ -32234,10 +32303,14 @@ index 32bcff3..dcca326 100644
     }
 -}
  
-+   return radeon_revalidate_bos(ctx);
-+}
++   if (rmesa->radeon.dma.current)
++       radeon_validate_bo(&rmesa->radeon, rmesa->radeon.dma.current,
++			  RADEON_GEM_DOMAIN_GTT, 0);
  
 -void radeonValidateState( GLcontext *ctx )
++   return radeon_revalidate_bos(ctx);
++}
++
 +GLboolean radeonValidateState( GLcontext *ctx )
  {
 -   radeonContextPtr rmesa = RADEON_CONTEXT(ctx);
@@ -32266,7 +32339,7 @@ index 32bcff3..dcca326 100644
     /* Need an event driven matrix update?
      */
     if (new_state & (_NEW_MODELVIEW|_NEW_PROJECTION)) 
-@@ -2295,7 +2137,7 @@ void radeonValidateState( GLcontext *ctx )
+@@ -2295,7 +2141,7 @@ void radeonValidateState( GLcontext *ctx )
     }
  
  
@@ -32275,7 +32348,7 @@ index 32bcff3..dcca326 100644
  }
  
  
-@@ -2306,7 +2148,7 @@ static void radeonInvalidateState( GLcontext *ctx, GLuint new_state )
+@@ -2306,7 +2152,7 @@ static void radeonInvalidateState( GLcontext *ctx, GLuint new_state )
     _vbo_InvalidateState( ctx, new_state );
     _tnl_InvalidateState( ctx, new_state );
     _ae_invalidate_state( ctx, new_state );
@@ -32284,7 +32357,7 @@ index 32bcff3..dcca326 100644
  }
  
  
-@@ -2330,16 +2172,17 @@ static GLboolean check_material( GLcontext *ctx )
+@@ -2330,16 +2176,17 @@ static GLboolean check_material( GLcontext *ctx )
  
  static void radeonWrapRunPipeline( GLcontext *ctx )
  {

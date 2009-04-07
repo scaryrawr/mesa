@@ -20,7 +20,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.5
-Release: 0.7%{?dist}
+Release: 0.8%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -429,6 +429,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/mesa-demos-data
 
 %changelog
+* Tue Apr 07 2009 Dave Airlie <airlied@redhat.com> 7.5-0.8
+- radeon: fix gnome-shell startup
+
 * Mon Apr 06 2009 Dave Airlie <airlied@redhat.com> 7.5-0.7
 - rebase to latest radeon-rewrite
 
