@@ -1,0 +1,12 @@
+diff -up mesa-20090428/src/mesa/drivers/dri/r300/r300_cmdbuf.c.jx mesa-20090428/src/mesa/drivers/dri/r300/r300_cmdbuf.c
+--- mesa-20090428/src/mesa/drivers/dri/r300/r300_cmdbuf.c.jx	2009-05-18 11:17:36.000000000 -0400
++++ mesa-20090428/src/mesa/drivers/dri/r300/r300_cmdbuf.c	2009-05-21 16:32:32.000000000 -0400
+@@ -251,7 +251,7 @@ static void emit_cb_offset(GLcontext *ct
+             OUT_BATCH(((rrb->width - 1) << R300_SCISSORS_X_SHIFT) |
+                     ((rrb->height - 1) << R300_SCISSORS_Y_SHIFT));
+             END_BATCH();
+-            BEGIN_BATCH_NO_AUTOSTATE(16);
++            BEGIN_BATCH_NO_AUTOSTATE(7);
+             for (i = 0; i < 1; i++) {
+                 OUT_BATCH_REGSEQ(R300_SC_CLIPRECT_TL_0 + (i * 8), 2);
+                 OUT_BATCH((0 << R300_CLIPRECT_X_SHIFT) | (0 << R300_CLIPRECT_Y_SHIFT));
