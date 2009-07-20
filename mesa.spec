@@ -1,26 +1,27 @@
 
 # When bootstrapping an arch, omit the -demos subpackage.
 
-# S390 doesn't have video cards, so it's not much use building DRI there.
+# S390 doesn't have video cards, but we need swrast for xserver's GLX
 %ifarch s390 s390x
-%define with_dri 0
-%define driver xlib
+%define with_hardware 0
+%define dri_drivers --with-dri-drivers=swrast
 %else
-%define with_dri 1
-%define driver dri
+%define with_hardware 1
 %endif
 
 %define _default_patch_fuzz 2
 
 %define manpages gl-manpages-1.0.1
 %define xdriinfo xdriinfo-1.0.2
-%define gitdate 20090428
+%define gitdate 20090612
 #% define snapshot 
+
+%define demodir %{_libdir}/mesa
 
 Summary: Mesa graphics libraries
 Name: mesa
-Version: 7.5
-Release: 0.15%{?dist}
+Version: 7.6
+Release: 0.3%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -40,22 +41,17 @@ Patch1: mesa-7.1-osmesa-version.patch
 Patch2: mesa-7.1-nukeglthread-debug.patch
 Patch3: mesa-no-mach64.patch
 
-Patch6: radeon-rewrite.patch
-
 Patch7: mesa-7.1-link-shared.patch
 Patch9: intel-revert-vbl.patch
 
 Patch12: mesa-7.1-disable-intel-classic-warn.patch
 Patch13: mesa-7.5-sparc64.patch
 
-Patch15: radeon-rewrite-emit1clip.patch
-Patch16: mesa-7.5-r300-batch-accounting.patch
-
 BuildRequires: pkgconfig autoconf automake
-%if %{with_dri}
-BuildRequires: libdrm-devel >= 2.4.5-1
+%if %{with_hardware}
 BuildRequires: kernel-headers >= 2.6.27-0.305.rc5.git6
 %endif
+BuildRequires: libdrm-devel >= 2.4.5-1
 BuildRequires: libXxf86vm-devel
 BuildRequires: expat-devel >= 2.0
 BuildRequires: xorg-x11-proto-devel >= 7.1-10
@@ -78,9 +74,9 @@ Group: System Environment/Libraries
 Requires(post): /sbin/ldconfig
 Requires(postun): /sbin/ldconfig
 Provides: libGL
-%if %{with_dri}
-Requires: libdrm >= 2.4.5-1
 Requires: mesa-dri-drivers%{?_isa} = %{version}-%{release}
+Requires: libdrm >= 2.4.5-1
+%if %{with_hardware}
 Conflicts: xorg-x11-server-Xorg < 1.4.99.901-14
 %endif
 
@@ -88,13 +84,11 @@ Conflicts: xorg-x11-server-Xorg < 1.4.99.901-14
 Mesa libGL runtime library.
 
 
-%if %{with_dri}
 %package dri-drivers
 Summary: Mesa-based DRI drivers
 Group: User Interface/X Hardware Support
 %description dri-drivers
 Mesa-based DRI drivers.
-%endif
 
 
 %package libGL-devel
@@ -168,24 +162,21 @@ This package provides some demo applications for testing Mesa.
 
 
 %prep
-#%setup -q -n mesa-%{version}%{?snapshot} -b0 -b2 -b5
+#setup -q -n mesa-%{version}%{?snapshot} -b0 -b2 -b5
 %setup -q -n mesa-%{gitdate} -b2 -b5
 %patch1 -p1 -b .osmesa
 %patch2 -p1 -b .intel-glthread
 %patch3 -p0 -b .no-mach64
-%patch6 -p1 -b .radeon-rewrite
 %patch7 -p1 -b .dricore
 %patch9 -p1 -b .intel-vbl
 %patch12 -p1 -b .intel-nowarn
 %patch13 -p1 -b .sparc64
-%patch15 -p1 -b .fix-clip
-%patch16 -p1 -b .r300-accounting
 
 # Hack the demos to use installed data files
-sed -i 's,../images,%{_libdir}/mesa-demos-data,' progs/demos/*.c
-sed -i 's,geartrain.dat,%{_libdir}/mesa-demos-data/&,' progs/demos/geartrain.c
-sed -i 's,isosurf.dat,%{_libdir}/mesa-demos-data/&,' progs/demos/isosurf.c
-sed -i 's,terrain.dat,%{_libdir}/mesa-demos-data/&,' progs/demos/terrain.c
+sed -i 's,../images,%{_libdir}/mesa,' progs/demos/*.c
+sed -i 's,geartrain.dat,%{_libdir}/mesa/&,' progs/demos/geartrain.c
+sed -i 's,isosurf.dat,%{_libdir}/mesa/&,' progs/demos/isosurf.c
+sed -i 's,terrain.dat,%{_libdir}/mesa/&,' progs/demos/terrain.c
 
 %build
 
@@ -228,8 +219,9 @@ export CXXFLAGS="$RPM_OPT_FLAGS -Os"
     --disable-glut \
     --disable-gallium \
     --disable-gl-osmesa \
-    --with-driver=%{driver} \
-    --with-dri-driverdir=%{_libdir}/dri
+    --with-driver=dri \
+    --with-dri-driverdir=%{_libdir}/dri \
+    %{dri_drivers}
 
 make #{?_smp_mflags}
 
@@ -253,14 +245,12 @@ rm -rf $RPM_BUILD_ROOT
 make install DESTDIR=$RPM_BUILD_ROOT DRI_DIRS=
 
 # just the DRI drivers that are sane
-%if %{with_dri}
 install -d $RPM_BUILD_ROOT%{_libdir}/dri
 install -m 0755 -t $RPM_BUILD_ROOT%{_libdir}/dri %{_lib}/libdricore.so >& /dev/null
 for f in i810 i915 i965 mach64 mga r128 r200 r300 radeon savage sis swrast tdfx unichrome; do
     so=%{_lib}/${f}_dri.so
     test -e $so && echo $so
 done | xargs install -m 0755 -t $RPM_BUILD_ROOT%{_libdir}/dri >& /dev/null || :
-%endif
 
 # strip out undesirable headers
 pushd $RPM_BUILD_ROOT%{_includedir}/GL 
@@ -268,20 +258,18 @@ rm [a-fh-np-wyz]*.h gg*.h glf*.h glew.h glut*.h glxew.h
 popd
 
 pushd $RPM_BUILD_ROOT%{_libdir}
-rm libEGL* demodriver.so
+rm -f libEGL*
 popd
 
 # XXX demos, since they don't install automatically.  should fix that.
 install -d $RPM_BUILD_ROOT%{_bindir}
 install -m 0755 progs/xdemos/glxgears $RPM_BUILD_ROOT%{_bindir}
 install -m 0755 progs/xdemos/glxinfo $RPM_BUILD_ROOT%{_bindir}
+install -d $RPM_BUILD_ROOT%{demodir}
 find progs/demos/ -type f -perm /0111 |
-    xargs install -m 0755 -t $RPM_BUILD_ROOT/%{_bindir}
-# bah, name conflicts
-mv $RPM_BUILD_ROOT/%{_bindir}/{rain,mesa-rain}
-install -d $RPM_BUILD_ROOT/%{_libdir}/mesa-demos-data
-install -m 0644 progs/images/*.rgb $RPM_BUILD_ROOT/%{_libdir}/mesa-demos-data
-install -m 0644 progs/demos/*.dat $RPM_BUILD_ROOT/%{_libdir}/mesa-demos-data
+    xargs install -m 0755 -t $RPM_BUILD_ROOT/%{demodir}
+install -m 0644 progs/images/*.rgb $RPM_BUILD_ROOT/%{demodir}
+install -m 0644 progs/demos/*.dat $RPM_BUILD_ROOT/%{demodir}
 
 # and osmesa
 mv osmesa*/* $RPM_BUILD_ROOT%{_libdir}
@@ -318,13 +306,11 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libGL.so.1
 %{_libdir}/libGL.so.1.*
 
-%if %{with_dri}
 %files dri-drivers
 %defattr(-,root,root,-)
 %dir %{_libdir}/dri
 %{_libdir}/dri/libdricore.so
 %{_libdir}/dri/*_dri.so
-%endif
 
 %files libGL-devel
 %defattr(-,root,root,-)
@@ -334,11 +320,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_includedir}/GL/glx.h
 %{_includedir}/GL/glx_mangle.h
 %{_includedir}/GL/glxext.h
-%if %{with_dri}
 %dir %{_includedir}/GL/internal
 %{_includedir}/GL/internal/dri_interface.h
 %{_libdir}/pkgconfig/dri.pc
-%endif
 %{_libdir}/libGL.so
 %{_libdir}/pkgconfig/gl.pc
 %{_datadir}/man/man3/gl[^uX]*.3gl*
@@ -379,61 +363,21 @@ rm -rf $RPM_BUILD_ROOT
 
 %files demos
 %defattr(-,root,root,-)
-%{_bindir}/arbfplight
-%{_bindir}/arbfslight
-%{_bindir}/arbocclude
-%{_bindir}/bounce
-%{_bindir}/clearspd
-%{_bindir}/copypix
-%{_bindir}/cubemap
-%{_bindir}/dinoshade
-%{_bindir}/drawpix
-%{_bindir}/engine
-%{_bindir}/fbo_firecube
-%{_bindir}/fbotexture
-%{_bindir}/fire
-%{_bindir}/fogcoord
-%{_bindir}/fplight
-%{_bindir}/fslight
-%{_bindir}/gamma
-%{_bindir}/gearbox
-%{_bindir}/gears
-%{_bindir}/geartrain
-%{_bindir}/glinfo
-%{_bindir}/gloss
-%{_bindir}/gltestperf
-%{_bindir}/ipers
-%{_bindir}/isosurf
-%{_bindir}/lodbias
-%{_bindir}/morph3d
-%{_bindir}/multiarb
-%{_bindir}/paltex
-%{_bindir}/pointblast
-%{_bindir}/projtex
-%{_bindir}/mesa-rain
-%{_bindir}/ray
-%{_bindir}/readpix
-%{_bindir}/reflect
-%{_bindir}/renormal
-%{_bindir}/shadowtex
-%{_bindir}/singlebuffer
-%{_bindir}/spectex
-%{_bindir}/spriteblast
-%{_bindir}/stex3d
-%{_bindir}/teapot
-%{_bindir}/terrain
-%{_bindir}/tessdemo
-%{_bindir}/texcyl
-%{_bindir}/texenv
-%{_bindir}/textures
-%{_bindir}/trispd
-%{_bindir}/tunnel
-%{_bindir}/tunnel2
-%{_bindir}/vao_demo
-%{_bindir}/winpos
-%{_libdir}/mesa-demos-data
+%{demodir}
 
 %changelog
+* Tue Jun 16 2009 Karsten Hopp <karsten@redhat.com> 7.6-0.3
+- some more fixes for s390(x)
+
+* Tue Jun 16 2009 Adam Jackson <ajax@redhat.com> 7.6-0.2
+- Rework the DRI driver support for s390 and friends.
+
+* Fri Jun 12 2009 Dave Airlie <airlied@redhat.com> 7.6-0.1
+- rebase mesa to latest git snapshot - fixes a lot of radeon issues
+
+* Thu Jun 11 2009 Adam Jackson <ajax@redhat.com> 7.5-0.16
+- Install demos to %%{_libdir}/mesa
+
 * Thu May 21 2009 Adam Jackson <ajax@redhat.com> 7.5-0.15
 - mesa-7.5-r300-batch-accounting.patch: Fix cmdbuf sizing (#501312)
 
