@@ -13,7 +13,7 @@
 
 %define manpages gl-manpages-1.0.1
 %define xdriinfo xdriinfo-1.0.2
-%define gitdate 20090612
+%define gitdate 20090723
 #% define snapshot 
 
 %define demodir %{_libdir}/mesa
@@ -166,7 +166,7 @@ This package provides some demo applications for testing Mesa.
 %setup -q -n mesa-%{gitdate} -b2 -b5
 %patch1 -p1 -b .osmesa
 %patch2 -p1 -b .intel-glthread
-%patch3 -p0 -b .no-mach64
+%patch3 -p1 -b .no-mach64
 %patch7 -p1 -b .dricore
 %patch9 -p1 -b .intel-vbl
 %patch12 -p1 -b .intel-nowarn
@@ -366,6 +366,9 @@ rm -rf $RPM_BUILD_ROOT
 %{demodir}
 
 %changelog
+* Thu Jul 23 2009 Dave Airlie <airlied@redhat.com> 7.6-0.4
+- rebase to latest upstream snapshot
+
 * Tue Jun 16 2009 Karsten Hopp <karsten@redhat.com> 7.6-0.3
 - some more fixes for s390(x)
 
