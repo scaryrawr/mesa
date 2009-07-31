@@ -21,7 +21,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.6
-Release: 0.5%{?dist}
+Release: 0.6%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -46,6 +46,8 @@ Patch9: intel-revert-vbl.patch
 
 Patch12: mesa-7.1-disable-intel-classic-warn.patch
 Patch13: mesa-7.5-sparc64.patch
+
+Patch20: mesa-7.6-dri2-page-flip.patch
 
 BuildRequires: pkgconfig autoconf automake
 %if %{with_hardware}
@@ -171,6 +173,7 @@ This package provides some demo applications for testing Mesa.
 %patch9 -p1 -b .intel-vbl
 %patch12 -p1 -b .intel-nowarn
 %patch13 -p1 -b .sparc64
+%patch20 -p1 -b .dri2-page-flip
 
 # Hack the demos to use installed data files
 sed -i 's,../images,%{_libdir}/mesa,' progs/demos/*.c
@@ -366,6 +369,9 @@ rm -rf $RPM_BUILD_ROOT
 %{demodir}
 
 %changelog
+* Fri Jul 31 2009 Kristian Høgsberg <krh@redhat.com> 7.6-0.6
+- Add DRI2 pageflipping patch.
+
 * Sat Jul 25 2009 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 7.6-0.5
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_12_Mass_Rebuild
 
