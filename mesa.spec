@@ -21,7 +21,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.6
-Release: 0.6%{?dist}
+Release: 0.7%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -369,7 +369,7 @@ rm -rf $RPM_BUILD_ROOT
 %{demodir}
 
 %changelog
-* Fri Jul 31 2009 Kristian Høgsberg <krh@redhat.com> 7.6-0.6
+* Fri Jul 31 2009 Kristian Høgsberg <krh@redhat.com> 7.6-0.7
 - Add DRI2 pageflipping patch.
 
 * Sat Jul 25 2009 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 7.6-0.5
