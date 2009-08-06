@@ -21,7 +21,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.6
-Release: 0.7%{?dist}
+Release: 0.8%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -187,8 +187,13 @@ autoreconf --install
 
 export CFLAGS="$RPM_OPT_FLAGS -fvisibility=hidden -Os"
 export CXXFLAGS="$RPM_OPT_FLAGS -fvisibility=hidden -Os"
+%ifarch %{ix86}
+# i do not have words for how much the assembly dispatch code infuriates me
+%define common_flags --enable-selinux --enable-pic --disable-asm
+%else
 %define common_flags --enable-selinux --enable-pic
-%define osmesa_flags --with-driver=osmesa --disable-asm %{common_flags}
+%endif
+%define osmesa_flags --with-driver=osmesa %{common_flags}
 
 # first, build the osmesa variants. XXX this is overkill.  osmesa32 is
 # sufficient to render to any of the channel sizes, according to the
@@ -288,7 +293,7 @@ popd
 
 # this keeps breaking, check it early.  note that the exit from eu-ftr is odd.
 pushd $RPM_BUILD_ROOT%{_libdir}
-for i in libOSMesa*.so ; do
+for i in libOSMesa*.so libGL.so ; do
     eu-findtextrel $i && exit 1
 done
 
@@ -369,6 +374,11 @@ rm -rf $RPM_BUILD_ROOT
 %{demodir}
 
 %changelog
+* Thu Aug 06 2009 Adam Jackson <ajax@redhat.com> 7.6-0.8
+- Build --disable-asm on x86 since it makes everything all textrel'y and
+  that makes selinux unhappy.  Strictly we only need to disable the asm
+  dispatch code, but the build system doesn't make that an option yet.
+
 * Fri Jul 31 2009 Kristian Høgsberg <krh@redhat.com> 7.6-0.7
 - Add DRI2 pageflipping patch.
 
