@@ -13,7 +13,7 @@
 
 %define manpages gl-manpages-1.0.1
 %define xdriinfo xdriinfo-1.0.2
-%define gitdate 20090723
+%define gitdate 20090813
 #% define snapshot 
 
 %define demodir %{_libdir}/mesa
@@ -21,7 +21,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.6
-Release: 0.8%{?dist}
+Release: 0.9%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -44,10 +44,10 @@ Patch3: mesa-no-mach64.patch
 Patch7: mesa-7.1-link-shared.patch
 Patch9: intel-revert-vbl.patch
 
-Patch12: mesa-7.1-disable-intel-classic-warn.patch
 Patch13: mesa-7.5-sparc64.patch
 
 Patch20: mesa-7.6-dri2-page-flip.patch
+Patch30: mesa-7.6-hush-vblank-warning.patch
 
 BuildRequires: pkgconfig autoconf automake
 %if %{with_hardware}
@@ -91,6 +91,13 @@ Summary: Mesa-based DRI drivers
 Group: User Interface/X Hardware Support
 %description dri-drivers
 Mesa-based DRI drivers.
+
+
+%package dri-drivers-experimental
+Summary: Mesa-based DRI drivers (experimental)
+Group: User Interface/X Hardware Support
+%description dri-drivers-experimental
+Mesa-based DRI drivers (experimental).
 
 
 %package libGL-devel
@@ -171,9 +178,9 @@ This package provides some demo applications for testing Mesa.
 %patch3 -p1 -b .no-mach64
 %patch7 -p1 -b .dricore
 %patch9 -p1 -b .intel-vbl
-%patch12 -p1 -b .intel-nowarn
 %patch13 -p1 -b .sparc64
 %patch20 -p1 -b .dri2-page-flip
+%patch30 -p1 -b .vblank-warning
 
 # Hack the demos to use installed data files
 sed -i 's,../images,%{_libdir}/mesa,' progs/demos/*.c
@@ -229,7 +236,7 @@ export CXXFLAGS="$RPM_OPT_FLAGS -Os"
     --disable-gl-osmesa \
     --with-driver=dri \
     --with-dri-driverdir=%{_libdir}/dri \
-    %{dri_drivers}
+    %{?dri_drivers}
 
 make #{?_smp_mflags}
 
@@ -242,6 +249,7 @@ make %{?_smp_mflags}
 popd
 
 pushd ../%{manpages}
+autoreconf -v --install
 %configure
 make %{?_smp_mflags}
 popd
@@ -255,7 +263,7 @@ make install DESTDIR=$RPM_BUILD_ROOT DRI_DIRS=
 # just the DRI drivers that are sane
 install -d $RPM_BUILD_ROOT%{_libdir}/dri
 install -m 0755 -t $RPM_BUILD_ROOT%{_libdir}/dri %{_lib}/libdricore.so >& /dev/null
-for f in i810 i915 i965 mach64 mga r128 r200 r300 radeon savage sis swrast tdfx unichrome; do
+for f in i810 i915 i965 mach64 mga r128 r200 r300 r600 radeon savage sis swrast tdfx unichrome; do
     so=%{_lib}/${f}_dri.so
     test -e $so && echo $so
 done | xargs install -m 0755 -t $RPM_BUILD_ROOT%{_libdir}/dri >& /dev/null || :
@@ -319,6 +327,11 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_libdir}/dri
 %{_libdir}/dri/libdricore.so
 %{_libdir}/dri/*_dri.so
+%exclude %{_libdir}/dri/r600_dri.so
+
+%files dri-drivers-experimental
+%defattr(-,root,root,-)
+%{_libdir}/dri/r600_dri.so
 
 %files libGL-devel
 %defattr(-,root,root,-)
@@ -374,6 +387,13 @@ rm -rf $RPM_BUILD_ROOT
 %{demodir}
 
 %changelog
+* Thu Aug 13 2009 Adam Jackson <ajax@redhat.com> 7.6-0.9
+- Today's git snap.
+- mesa-7.1-disable-intel-classic-warn.patch: Drop.
+- mesa-7.6-hush-vblank-warning.patch: Hush the drmWaitVBlank() warning.
+- Add -dri-drivers-experimental package, add r600 to it.  Note: experimental
+  means it doesn't work, don't file bugs unless they contain patches.
+
 * Thu Aug 06 2009 Adam Jackson <ajax@redhat.com> 7.6-0.8
 - Build --disable-asm on x86 since it makes everything all textrel'y and
   that makes selinux unhappy.  Strictly we only need to disable the asm
