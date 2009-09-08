@@ -1,7 +1,6 @@
-diff --git a/include/GL/internal/dri_interface.h b/include/GL/internal/dri_interface.h
-index 910c916..ec6238f 100644
---- a/include/GL/internal/dri_interface.h
-+++ b/include/GL/internal/dri_interface.h
+diff -up mesa-20090909/include/GL/internal/dri_interface.h.da mesa-20090909/include/GL/internal/dri_interface.h
+--- mesa-20090909/include/GL/internal/dri_interface.h.da	2009-09-09 09:43:36.000000000 +1000
++++ mesa-20090909/include/GL/internal/dri_interface.h	2009-09-09 08:56:48.000000000 +1000
 @@ -262,10 +262,22 @@ struct __DRItexBufferExtensionRec {
   * Used by drivers that implement DRI2
   */
@@ -26,13 +25,12 @@ index 910c916..ec6238f 100644
  };
  
  
-diff --git a/src/glx/x11/dri2.c b/src/glx/x11/dri2.c
-index ebb2985..a7863ee 100644
---- a/src/glx/x11/dri2.c
-+++ b/src/glx/x11/dri2.c
-@@ -369,3 +369,19 @@ void DRI2CopyRegion(Display *dpy, XID drawable, XserverRegion region,
-     UnlockDisplay(dpy);
-     SyncHandle();
+diff -up mesa-20090909/src/glx/x11/dri2.c.da mesa-20090909/src/glx/x11/dri2.c
+--- mesa-20090909/src/glx/x11/dri2.c.da	2009-09-09 09:43:36.000000000 +1000
++++ mesa-20090909/src/glx/x11/dri2.c	2009-09-09 08:56:48.000000000 +1000
+@@ -377,3 +377,19 @@ DRI2CopyRegion(Display * dpy, XID drawab
+    UnlockDisplay(dpy);
+    SyncHandle();
  }
 +
 +void DRI2SwapBuffers(Display *dpy, XID drawable)
@@ -50,22 +48,9 @@ index ebb2985..a7863ee 100644
 +    UnlockDisplay(dpy);
 +    SyncHandle();
 +}
-diff --git a/src/glx/x11/dri2.h b/src/glx/x11/dri2.h
-index b0e61f8..fc80649 100644
---- a/src/glx/x11/dri2.h
-+++ b/src/glx/x11/dri2.h
-@@ -77,4 +77,7 @@ extern void
- DRI2CopyRegion(Display *dpy, XID drawable, XserverRegion region,
- 	       CARD32 dest, CARD32 src);
- 
-+extern void
-+DRI2SwapBuffers(Display *dpy, XID drawable);
-+
- #endif
-diff --git a/src/glx/x11/dri2_glx.c b/src/glx/x11/dri2_glx.c
-index f4865ae..48c8c71 100644
---- a/src/glx/x11/dri2_glx.c
-+++ b/src/glx/x11/dri2_glx.c
+diff -up mesa-20090909/src/glx/x11/dri2_glx.c.da mesa-20090909/src/glx/x11/dri2_glx.c
+--- mesa-20090909/src/glx/x11/dri2_glx.c.da	2009-09-09 09:43:36.000000000 +1000
++++ mesa-20090909/src/glx/x11/dri2_glx.c	2009-09-09 09:01:13.000000000 +1000
 @@ -35,6 +35,7 @@
  #include <X11/Xlib.h>
  #include <X11/extensions/Xfixes.h>
@@ -74,30 +59,31 @@ index f4865ae..48c8c71 100644
  #include "glxclient.h"
  #include "glcontextmodes.h"
  #include "xf86dri.h"
-@@ -63,6 +64,8 @@ struct __GLXDRIdisplayPrivateRec {
-     int driMajor;
-     int driMinor;
-     int driPatch;
+@@ -64,6 +65,8 @@ struct __GLXDRIdisplayPrivateRec
+    int driMajor;
+    int driMinor;
+    int driPatch;
 +
-+    int swapAvailable;
++   int swapAvailable;
  };
  
- struct __GLXDRIcontextPrivateRec {
-@@ -224,13 +227,6 @@ static void dri2CopySubBuffer(__GLXDRIdrawable *pdraw,
-     dri2WaitX(pdraw);
+ struct __GLXDRIcontextPrivateRec
+@@ -232,14 +235,6 @@ dri2CopySubBuffer(__GLXDRIdrawable * pdr
  }
  
--static void dri2SwapBuffers(__GLXDRIdrawable *pdraw)
+ static void
+-dri2SwapBuffers(__GLXDRIdrawable * pdraw)
 -{
--    __GLXDRIdrawablePrivate *priv = (__GLXDRIdrawablePrivate *) pdraw;
+-   __GLXDRIdrawablePrivate *priv = (__GLXDRIdrawablePrivate *) pdraw;
 -
--    dri2CopySubBuffer(pdraw, 0, 0, priv->width, priv->height);
+-   dri2CopySubBuffer(pdraw, 0, 0, priv->width, priv->height);
 -}
 -
- static void dri2WaitX(__GLXDRIdrawable *pdraw)
+-static void
+ dri2WaitX(__GLXDRIdrawable * pdraw)
  {
-     __GLXDRIdrawablePrivate *priv = (__GLXDRIdrawablePrivate *) pdraw;
-@@ -331,6 +327,31 @@ process_buffers(__GLXDRIdrawablePrivate *pdraw, DRI2Buffer *buffers,
+    __GLXDRIdrawablePrivate *priv = (__GLXDRIdrawablePrivate *) pdraw;
+@@ -342,6 +337,31 @@ process_buffers(__GLXDRIdrawablePrivate 
  
  }
  
@@ -127,23 +113,33 @@ index f4865ae..48c8c71 100644
 +}
 +
  static __DRIbuffer *
- dri2GetBuffers(__DRIdrawable *driDrawable,
- 	       int *width, int *height,
-@@ -544,6 +565,9 @@ _X_HIDDEN __GLXDRIdisplay *dri2CreateDisplay(Display *dpy)
-     }
+ dri2GetBuffers(__DRIdrawable * driDrawable,
+                int *width, int *height,
+@@ -559,6 +579,9 @@ dri2CreateDisplay(Display * dpy)
+    }
  
-     pdp->driPatch = 0;
-+    pdp->swapAvailable = 0;
-+    if (pdp->driMinor >= 2)
-+	pdp->swapAvailable = 1;
+    pdp->driPatch = 0;
++   pdp->swapAvailable = 0;
++   if (pdp->driMinor >= 2)
++      pdp->swapAvailable = 1;
  
-     pdp->base.destroyDisplay = dri2DestroyDisplay;
-     pdp->base.createScreen = dri2CreateScreen;
-diff --git a/src/mesa/drivers/dri/common/dri_util.c b/src/mesa/drivers/dri/common/dri_util.c
-index 1d94060..3c5e580 100644
---- a/src/mesa/drivers/dri/common/dri_util.c
-+++ b/src/mesa/drivers/dri/common/dri_util.c
-@@ -453,6 +453,7 @@ driCreateNewDrawable(__DRIscreen *psp, const __DRIconfig *config,
+    pdp->base.destroyDisplay = dri2DestroyDisplay;
+    pdp->base.createScreen = dri2CreateScreen;
+diff -up mesa-20090909/src/glx/x11/dri2.h.da mesa-20090909/src/glx/x11/dri2.h
+--- mesa-20090909/src/glx/x11/dri2.h.da	2009-09-09 09:43:36.000000000 +1000
++++ mesa-20090909/src/glx/x11/dri2.h	2009-09-09 08:56:48.000000000 +1000
+@@ -85,4 +85,7 @@ DRI2CopyRegion(Display * dpy, XID drawab
+                XserverRegion region,
+                CARD32 dest, CARD32 src);
+ 
++extern void
++DRI2SwapBuffers(Display *dpy, XID drawable);
++
+ #endif
+diff -up mesa-20090909/src/mesa/drivers/dri/common/dri_util.c.da mesa-20090909/src/mesa/drivers/dri/common/dri_util.c
+--- mesa-20090909/src/mesa/drivers/dri/common/dri_util.c.da	2009-09-09 09:43:36.000000000 +1000
++++ mesa-20090909/src/mesa/drivers/dri/common/dri_util.c	2009-09-09 08:56:48.000000000 +1000
+@@ -453,6 +453,7 @@ driCreateNewDrawable(__DRIscreen *psp, c
  
      pdp->driScreenPriv = psp;
      pdp->driContextPriv = &psp->dummyContextPriv;
@@ -151,10 +147,9 @@ index 1d94060..3c5e580 100644
  
      if (!(*psp->DriverAPI.CreateBuffer)(psp, pdp, &config->modes,
  					renderType == GLX_PIXMAP_BIT)) {
-diff --git a/src/mesa/drivers/dri/common/dri_util.h b/src/mesa/drivers/dri/common/dri_util.h
-index c95a5c8..c3046d6 100644
---- a/src/mesa/drivers/dri/common/dri_util.h
-+++ b/src/mesa/drivers/dri/common/dri_util.h
+diff -up mesa-20090909/src/mesa/drivers/dri/common/dri_util.h.da mesa-20090909/src/mesa/drivers/dri/common/dri_util.h
+--- mesa-20090909/src/mesa/drivers/dri/common/dri_util.h.da	2009-09-09 09:43:36.000000000 +1000
++++ mesa-20090909/src/mesa/drivers/dri/common/dri_util.h	2009-09-09 08:56:48.000000000 +1000
 @@ -380,6 +380,8 @@ struct __DRIdrawableRec {
       * GLX_MESA_swap_control.
       */
@@ -164,11 +159,10 @@ index c95a5c8..c3046d6 100644
  };
  
  /**
-diff --git a/src/mesa/drivers/dri/intel/intel_context.c b/src/mesa/drivers/dri/intel/intel_context.c
-index 4abb525..42e946f 100644
---- a/src/mesa/drivers/dri/intel/intel_context.c
-+++ b/src/mesa/drivers/dri/intel/intel_context.c
-@@ -71,8 +71,6 @@ int INTEL_DEBUG = (0);
+diff -up mesa-20090909/src/mesa/drivers/dri/intel/intel_context.c.da mesa-20090909/src/mesa/drivers/dri/intel/intel_context.c
+--- mesa-20090909/src/mesa/drivers/dri/intel/intel_context.c.da	2009-09-09 09:43:36.000000000 +1000
++++ mesa-20090909/src/mesa/drivers/dri/intel/intel_context.c	2009-09-09 08:56:48.000000000 +1000
+@@ -72,8 +72,6 @@ int INTEL_DEBUG = (0);
  #define DRIVER_DATE_GEM                 "GEM " DRIVER_DATE
  
  
@@ -177,7 +171,7 @@ index 4abb525..42e946f 100644
  static const GLubyte *
  intelGetString(GLcontext * ctx, GLenum name)
  {
-@@ -390,6 +388,7 @@ intel_update_renderbuffers(__DRIcontext *context, __DRIdrawable *drawable)
+@@ -391,6 +389,7 @@ intel_update_renderbuffers(__DRIcontext 
         }
     }
  
@@ -185,7 +179,7 @@ index 4abb525..42e946f 100644
     driUpdateFramebufferSize(&intel->ctx, drawable);
  }
  
-@@ -477,7 +476,7 @@ intelInvalidateState(GLcontext * ctx, GLuint new_state)
+@@ -478,7 +477,7 @@ intelInvalidateState(GLcontext * ctx, GL
        intel->vtbl.invalidate_state( intel, new_state );
  }
  
@@ -194,7 +188,7 @@ index 4abb525..42e946f 100644
  intel_flush(GLcontext *ctx, GLboolean needs_mi_flush)
  {
     struct intel_context *intel = intel_context(ctx);
-@@ -908,11 +907,7 @@ intelMakeCurrent(__DRIcontextPrivate * driContextPriv,
+@@ -936,11 +935,7 @@ intelMakeCurrent(__DRIcontextPrivate * d
  	 (struct intel_framebuffer *) driDrawPriv->driverPrivate;
        GLframebuffer *readFb = (GLframebuffer *) driReadPriv->driverPrivate;
   
@@ -207,7 +201,7 @@ index 4abb525..42e946f 100644
            /* XXX FBO temporary fix-ups!  These are released in 
             * intelDextroyContext(), above.  Changes here should be
             * reflected there.
-@@ -1067,6 +1062,10 @@ void LOCK_HARDWARE( struct intel_context *intel )
+@@ -1095,6 +1090,10 @@ void LOCK_HARDWARE( struct intel_context
      if (intel->driDrawable) {
         intel_fb = intel->driDrawable->driverPrivate;
  
@@ -218,11 +212,10 @@ index 4abb525..42e946f 100644
         if (intel_fb)
  	  intel_rb =
  	     intel_get_renderbuffer(&intel_fb->Base,
-diff --git a/src/mesa/drivers/dri/intel/intel_context.h b/src/mesa/drivers/dri/intel/intel_context.h
-index 08bea88..57cb247 100644
---- a/src/mesa/drivers/dri/intel/intel_context.h
-+++ b/src/mesa/drivers/dri/intel/intel_context.h
-@@ -462,6 +462,7 @@ extern void intelGetLock(struct intel_context *intel, GLuint flags);
+diff -up mesa-20090909/src/mesa/drivers/dri/intel/intel_context.h.da mesa-20090909/src/mesa/drivers/dri/intel/intel_context.h
+--- mesa-20090909/src/mesa/drivers/dri/intel/intel_context.h.da	2009-09-09 09:43:36.000000000 +1000
++++ mesa-20090909/src/mesa/drivers/dri/intel/intel_context.h	2009-09-09 08:56:48.000000000 +1000
+@@ -473,6 +473,7 @@ extern void intelGetLock(struct intel_co
  
  extern void intelFinish(GLcontext * ctx);
  extern void intelFlush(GLcontext * ctx);
@@ -230,10 +223,9 @@ index 08bea88..57cb247 100644
  
  extern void intelInitDriverFunctions(struct dd_function_table *functions);
  
-diff --git a/src/mesa/drivers/dri/intel/intel_extensions.h b/src/mesa/drivers/dri/intel/intel_extensions.h
-index 97147ec..9283ee9 100644
---- a/src/mesa/drivers/dri/intel/intel_extensions.h
-+++ b/src/mesa/drivers/dri/intel/intel_extensions.h
+diff -up mesa-20090909/src/mesa/drivers/dri/intel/intel_extensions.h.da mesa-20090909/src/mesa/drivers/dri/intel/intel_extensions.h
+--- mesa-20090909/src/mesa/drivers/dri/intel/intel_extensions.h.da	2009-09-09 09:43:36.000000000 +1000
++++ mesa-20090909/src/mesa/drivers/dri/intel/intel_extensions.h	2009-09-09 08:56:48.000000000 +1000
 @@ -32,5 +32,8 @@
  extern void
  intelInitExtensions(GLcontext *ctx, GLboolean enable_imaging);
@@ -243,11 +235,10 @@ index 97147ec..9283ee9 100644
 +
  
  #endif
-diff --git a/src/mesa/drivers/dri/intel/intel_screen.c b/src/mesa/drivers/dri/intel/intel_screen.c
-index 6bbc995..7767ff9 100644
---- a/src/mesa/drivers/dri/intel/intel_screen.c
-+++ b/src/mesa/drivers/dri/intel/intel_screen.c
-@@ -225,6 +225,28 @@ static const __DRItexBufferExtension intelTexBufferExtension = {
+diff -up mesa-20090909/src/mesa/drivers/dri/intel/intel_screen.c.da mesa-20090909/src/mesa/drivers/dri/intel/intel_screen.c
+--- mesa-20090909/src/mesa/drivers/dri/intel/intel_screen.c.da	2009-09-09 08:56:16.000000000 +1000
++++ mesa-20090909/src/mesa/drivers/dri/intel/intel_screen.c	2009-09-09 08:56:48.000000000 +1000
+@@ -229,6 +229,28 @@ static const __DRItexBufferExtension int
     intelSetTexBuffer2,
  };
  
@@ -276,7 +267,7 @@ index 6bbc995..7767ff9 100644
  static const __DRIextension *intelScreenExtensions[] = {
      &driReadDrawableExtension,
      &driCopySubBufferExtension.base,
-@@ -233,6 +255,7 @@ static const __DRIextension *intelScreenExtensions[] = {
+@@ -237,6 +259,7 @@ static const __DRIextension *intelScreen
      &driMediaStreamCounterExtension.base,
      &intelTexOffsetExtension.base,
      &intelTexBufferExtension.base,
@@ -284,7 +275,7 @@ index 6bbc995..7767ff9 100644
      NULL
  };
  
-@@ -513,11 +536,9 @@ intelFillInModes(__DRIscreenPrivate *psp,
+@@ -517,11 +540,9 @@ intelFillInModes(__DRIscreenPrivate *psp
     unsigned back_buffer_factor;
     int i;
  
@@ -298,7 +289,7 @@ index 6bbc995..7767ff9 100644
     };
  
     uint8_t depth_bits_array[3];
-@@ -738,11 +759,10 @@ __DRIconfig **intelInitScreen2(__DRIscreenPrivate *psp)
+@@ -742,11 +763,10 @@ __DRIconfig **intelInitScreen2(__DRIscre
     intelScreenPrivate *intelScreen;
     GLenum fb_format[3];
     GLenum fb_type[3];
@@ -313,11 +304,10 @@ index 6bbc995..7767ff9 100644
     };
     uint8_t depth_bits[4], stencil_bits[4], msaa_samples_array[1];
     int color;
-diff --git a/src/mesa/drivers/dri/intel/intel_tex_image.c b/src/mesa/drivers/dri/intel/intel_tex_image.c
-index c5f5220..54c3d16 100644
---- a/src/mesa/drivers/dri/intel/intel_tex_image.c
-+++ b/src/mesa/drivers/dri/intel/intel_tex_image.c
-@@ -751,7 +751,8 @@ intelSetTexBuffer2(__DRIcontext *pDRICtx, GLint target,
+diff -up mesa-20090909/src/mesa/drivers/dri/intel/intel_tex_image.c.da mesa-20090909/src/mesa/drivers/dri/intel/intel_tex_image.c
+--- mesa-20090909/src/mesa/drivers/dri/intel/intel_tex_image.c.da	2009-09-09 09:43:36.000000000 +1000
++++ mesa-20090909/src/mesa/drivers/dri/intel/intel_tex_image.c	2009-09-09 08:56:48.000000000 +1000
+@@ -747,7 +747,8 @@ intelSetTexBuffer2(__DRIcontext *pDRICtx
     if (!intelObj)
        return;
  

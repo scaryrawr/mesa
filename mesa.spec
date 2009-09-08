@@ -13,7 +13,7 @@
 
 %define manpages gl-manpages-1.0.1
 %define xdriinfo xdriinfo-1.0.2
-%define gitdate 20090813
+%define gitdate 20090909
 #% define snapshot 
 
 %define demodir %{_libdir}/mesa
@@ -21,7 +21,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.6
-Release: 0.9%{?dist}
+Release: 0.10%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -387,6 +387,9 @@ rm -rf $RPM_BUILD_ROOT
 %{demodir}
 
 %changelog
+* Wed Sep 09 2009 Dave Airlie <airlied@redhat.com> 7.6-0.10
+- new git snap for 090909
+
 * Thu Aug 13 2009 Adam Jackson <ajax@redhat.com> 7.6-0.9
 - Today's git snap.
 - mesa-7.1-disable-intel-classic-warn.patch: Drop.
