@@ -21,7 +21,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.6
-Release: 0.10%{?dist}
+Release: 0.11%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -43,6 +43,7 @@ Patch3: mesa-no-mach64.patch
 
 Patch7: mesa-7.1-link-shared.patch
 Patch9: intel-revert-vbl.patch
+Patch10: r600-fix-tfp.patch
 
 Patch13: mesa-7.5-sparc64.patch
 
@@ -178,6 +179,7 @@ This package provides some demo applications for testing Mesa.
 %patch3 -p1 -b .no-mach64
 %patch7 -p1 -b .dricore
 %patch9 -p1 -b .intel-vbl
+%patch10 -p1 -b .r600_tfp
 %patch13 -p1 -b .sparc64
 %patch20 -p1 -b .dri2-page-flip
 %patch30 -p1 -b .vblank-warning
@@ -387,6 +389,9 @@ rm -rf $RPM_BUILD_ROOT
 %{demodir}
 
 %changelog
+* Wed Sep 09 2009 Dave Airlie <airlied@redhat.com> 7.6-0.11
+- r600 fix for TFP from irc
+
 * Wed Sep 09 2009 Dave Airlie <airlied@redhat.com> 7.6-0.10
 - new git snap for 090909
 
