@@ -21,7 +21,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.6
-Release: 0.11%{?dist}
+Release: 0.12%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -47,7 +47,6 @@ Patch10: r600-fix-tfp.patch
 
 Patch13: mesa-7.5-sparc64.patch
 
-Patch20: mesa-7.6-dri2-page-flip.patch
 Patch30: mesa-7.6-hush-vblank-warning.patch
 
 BuildRequires: pkgconfig autoconf automake
@@ -181,7 +180,6 @@ This package provides some demo applications for testing Mesa.
 %patch9 -p1 -b .intel-vbl
 %patch10 -p1 -b .r600_tfp
 %patch13 -p1 -b .sparc64
-%patch20 -p1 -b .dri2-page-flip
 %patch30 -p1 -b .vblank-warning
 
 # Hack the demos to use installed data files
@@ -389,6 +387,9 @@ rm -rf $RPM_BUILD_ROOT
 %{demodir}
 
 %changelog
+* Thu Sep 17 2009 Kristian Høgsberg <krh@redhat.com> - 7.6-0.12
+- Back out page flip patch.
+
 * Wed Sep 09 2009 Dave Airlie <airlied@redhat.com> 7.6-0.11
 - r600 fix for TFP from irc
 
