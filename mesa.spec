@@ -12,7 +12,7 @@
 %define _default_patch_fuzz 2
 
 %define manpages gl-manpages-1.0.1
-%define xdriinfo xdriinfo-1.0.2
+%define xdriinfo xdriinfo-1.0.3
 %define gitdate 20090921
 #% define snapshot 
 
@@ -387,6 +387,9 @@ rm -rf $RPM_BUILD_ROOT
 %{demodir}
 
 %changelog
+* Mon Oct 19 2009 Adam Jackson <ajax@redhat.com>
+- xdriinfo 1.0.3
+
 * Mon Sep 21 2009 Adam Jackson <ajax@redhat.com> 7.6-0.13
 - Today's git snap.  Fixes picking in clutter apps on Intel chips (#524338)
 
