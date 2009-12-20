@@ -26,3 +26,16 @@ index 2967baf..1d21068 100644
 -- 
 1.6.5.2
 
+diff --git a/src/mesa/shader/slang/library/Makefile b/src/mesa/shader/slang/library/Makefile
+index c696451..8ac7fd6 100644
+--- a/src/mesa/shader/slang/library/Makefile
++++ b/src/mesa/shader/slang/library/Makefile
+@@ -12,7 +12,7 @@ GLSL_CL = $(TOP)/src/glsl/apps/compile
+ 
+ .PHONY: default clean
+ 
+-default: builtin
++default: $(GLSL_CL) builtin
+ 
+ clean:
+ 	-rm -f *_gc.h
