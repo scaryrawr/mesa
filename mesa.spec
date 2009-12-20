@@ -13,15 +13,15 @@
 
 %define manpages gl-manpages-1.0.1
 %define xdriinfo xdriinfo-1.0.3
-%define gitdate 20090921
+%define gitdate 20091221
 #% define snapshot 
 
 %define demodir %{_libdir}/mesa
 
 Summary: Mesa graphics libraries
 Name: mesa
-Version: 7.6
-Release: 0.13%{?dist}
+Version: 7.8
+Release: 0.1%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -43,9 +43,6 @@ Patch3: mesa-no-mach64.patch
 
 Patch7: mesa-7.1-link-shared.patch
 Patch9: intel-revert-vbl.patch
-Patch10: r600-fix-tfp.patch
-
-Patch13: mesa-7.5-sparc64.patch
 
 Patch30: mesa-7.6-hush-vblank-warning.patch
 
@@ -178,8 +175,6 @@ This package provides some demo applications for testing Mesa.
 %patch3 -p1 -b .no-mach64
 %patch7 -p1 -b .dricore
 %patch9 -p1 -b .intel-vbl
-%patch10 -p1 -b .r600_tfp
-%patch13 -p1 -b .sparc64
 %patch30 -p1 -b .vblank-warning
 
 # Hack the demos to use installed data files
@@ -387,6 +382,9 @@ rm -rf $RPM_BUILD_ROOT
 %{demodir}
 
 %changelog
+* Mon Dec 21 2009 Dave Airlie <airlied@redhat.com> 7.8-0.1
+- resnapshot from upstream for libdrm_radeon changes
+
 * Mon Oct 19 2009 Adam Jackson <ajax@redhat.com>
 - xdriinfo 1.0.3
 
