@@ -21,7 +21,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.8
-Release: 0.3%{?dist}
+Release: 0.4%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -198,24 +198,24 @@ export CXXFLAGS="$RPM_OPT_FLAGS -fvisibility=hidden -Os"
 %else
 %define common_flags --enable-selinux --enable-pic
 %endif
-%define osmesa_flags --with-driver=osmesa %{common_flags}
+%define osmesa_flags --with-driver=osmesa %{common_flags} --disable-gallium --with-dri-drivers="" --disable-glu --disable-egl
 
 # first, build the osmesa variants. XXX this is overkill.  osmesa32 is
 # sufficient to render to any of the channel sizes, according to the
 # docs.  should fix this someday.
 
 %configure %{osmesa_flags} --with-osmesa-bits=8
-make %{_smp_mflags} SRC_DIRS=mesa
+make %{_smp_mflags}
 mv %{_lib} osmesa8
 make clean
 
 %configure %{osmesa_flags} --with-osmesa-bits=16
-make %{_smp_mflags} SRC_DIRS=mesa
+make %{_smp_mflags}
 mv %{_lib} osmesa16
 make clean
 
 %configure %{osmesa_flags} --with-osmesa-bits=32
-make %{_smp_mflags} SRC_DIRS=mesa
+make %{_smp_mflags}
 mv %{_lib} osmesa32
 make clean
 
@@ -385,6 +385,9 @@ rm -rf $RPM_BUILD_ROOT
 %{demodir}
 
 %changelog
+* Mon Dec 21 2009 Dave Airlie <airlied@redhat.com> 7.8-0.4
+- fix OSmesa builds hopefully
+
 * Mon Dec 21 2009 Dave Airlie <airlied@redhat.com> 7.8-0.3
 - another attempt at GLSL build fix
 
