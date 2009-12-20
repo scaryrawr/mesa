@@ -21,7 +21,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.8
-Release: 0.1%{?dist}
+Release: 0.2%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -44,13 +44,15 @@ Patch3: mesa-no-mach64.patch
 Patch7: mesa-7.1-link-shared.patch
 Patch9: intel-revert-vbl.patch
 
+Patch20: glsl-build-fix.patch
+
 Patch30: mesa-7.6-hush-vblank-warning.patch
 
 BuildRequires: pkgconfig autoconf automake
 %if %{with_hardware}
 BuildRequires: kernel-headers >= 2.6.27-0.305.rc5.git6
 %endif
-BuildRequires: libdrm-devel >= 2.4.5-1
+BuildRequires: libdrm-devel >= 2.4.17-0.1
 BuildRequires: libXxf86vm-devel
 BuildRequires: expat-devel >= 2.0
 BuildRequires: xorg-x11-proto-devel >= 7.1-10
@@ -74,7 +76,7 @@ Requires(post): /sbin/ldconfig
 Requires(postun): /sbin/ldconfig
 Provides: libGL
 Requires: mesa-dri-drivers%{?_isa} = %{version}-%{release}
-Requires: libdrm >= 2.4.5-1
+Requires: libdrm >= 2.4.17-0.1
 %if %{with_hardware}
 Conflicts: xorg-x11-server-Xorg < 1.4.99.901-14
 %endif
@@ -175,6 +177,7 @@ This package provides some demo applications for testing Mesa.
 %patch3 -p1 -b .no-mach64
 %patch7 -p1 -b .dricore
 %patch9 -p1 -b .intel-vbl
+%patch20 -p1 -b .glsl-bf
 %patch30 -p1 -b .vblank-warning
 
 # Hack the demos to use installed data files
@@ -382,6 +385,9 @@ rm -rf $RPM_BUILD_ROOT
 %{demodir}
 
 %changelog
+* Mon Dec 21 2009 Dave Airlie <airlied@redhat.com> 7.8-0.2
+- add GLSL build fix from upstream + bump libdrm requires
+
 * Mon Dec 21 2009 Dave Airlie <airlied@redhat.com> 7.8-0.1
 - resnapshot from upstream for libdrm_radeon changes
 
