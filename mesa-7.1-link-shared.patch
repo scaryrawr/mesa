@@ -60,7 +60,7 @@ diff -up mesa-20091221/src/mesa/drivers/dri/Makefile.template.da mesa-20091221/s
  	$(MKLIB) -o $@ -noprefix -linker '$(CC)' -ldflags '$(LDFLAGS)' \
 -		$(OBJECTS) $(MESA_MODULES) $(EXTRA_MODULES) $(WINOBJ) \
 +		$(OBJECTS) $(EXTRA_MODULES) $(WINOBJ) \
-+		-L$(TOP)/$(LIB_DIR) -Wl,-R$(DRI_DRIVER_INSTALL_DIR) -ldricore
++		-L$(TOP)/$(LIB_DIR) -Wl,-R$(DRI_DRIVER_INSTALL_DIR) -ldricore \
  		$(DRI_LIB_DEPS)
  
  
