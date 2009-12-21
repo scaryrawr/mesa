@@ -21,7 +21,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.8
-Release: 0.4%{?dist}
+Release: 0.5%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -230,8 +230,8 @@ export CXXFLAGS="$RPM_OPT_FLAGS -Os"
 %configure %{common_flags} \
     --disable-glw \
     --disable-glut \
-    --disable-gallium \
     --disable-gl-osmesa \
+    --enable-gallium-nouveau \
     --with-driver=dri \
     --with-dri-driverdir=%{_libdir}/dri \
     %{?dri_drivers}
@@ -286,7 +286,7 @@ install -m 0644 progs/images/*.rgb $RPM_BUILD_ROOT/%{demodir}
 install -m 0644 progs/demos/*.dat $RPM_BUILD_ROOT/%{demodir}
 
 # and osmesa
-mv osmesa*/* $RPM_BUILD_ROOT%{_libdir}
+mv osmesa*/libOS* $RPM_BUILD_ROOT%{_libdir}
 
 pushd ../%{xdriinfo}
 make %{?_smp_mflags} install DESTDIR=$RPM_BUILD_ROOT
@@ -325,11 +325,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_libdir}/dri
 %{_libdir}/dri/libdricore.so
 %{_libdir}/dri/*_dri.so
-%exclude %{_libdir}/dri/r600_dri.so
 
 %files dri-drivers-experimental
 %defattr(-,root,root,-)
-%{_libdir}/dri/r600_dri.so
 
 %files libGL-devel
 %defattr(-,root,root,-)
@@ -385,6 +383,9 @@ rm -rf $RPM_BUILD_ROOT
 %{demodir}
 
 %changelog
+* Mon Dec 21 2009 Dave Airlie <airlied@redhat.com> 7.8-0.5
+- one more libOSMesa build fix
+
 * Mon Dec 21 2009 Dave Airlie <airlied@redhat.com> 7.8-0.4
 - fix OSmesa builds hopefully
 
