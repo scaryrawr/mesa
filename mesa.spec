@@ -230,8 +230,8 @@ export CXXFLAGS="$RPM_OPT_FLAGS -Os"
 %configure %{common_flags} \
     --disable-glw \
     --disable-glut \
+    --disable-gallium \
     --disable-gl-osmesa \
-    --enable-gallium-nouveau \
     --with-driver=dri \
     --with-dri-driverdir=%{_libdir}/dri \
     %{?dri_drivers}
@@ -325,9 +325,11 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_libdir}/dri
 %{_libdir}/dri/libdricore.so
 %{_libdir}/dri/*_dri.so
+%exclude %{_libdir}/dri/r600_dri.so
 
 %files dri-drivers-experimental
 %defattr(-,root,root,-)
+%{_libdir}/dri/r600_dri.so
 
 %files libGL-devel
 %defattr(-,root,root,-)
