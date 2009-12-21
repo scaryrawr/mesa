@@ -21,7 +21,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.8
-Release: 0.6%{?dist}
+Release: 0.7%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -168,6 +168,12 @@ Group: Development/Libraries
 %description demos
 This package provides some demo applications for testing Mesa.
 
+%package -n xorg-x11-drv-vmwgfx
+Summary: VMware GFX DDX driver
+Group: User Interface/X Hardware Support
+
+%description -n xorg-x11-drv-vmwgfx
+2D driver for VMware SVGA vGPU
 
 %prep
 #setup -q -n mesa-%{version}%{?snapshot} -b0 -b2 -b5
@@ -230,7 +236,6 @@ export CXXFLAGS="$RPM_OPT_FLAGS -Os"
 %configure %{common_flags} \
     --disable-glw \
     --disable-glut \
-    --disable-gallium \
     --disable-gl-osmesa \
     --with-driver=dri \
     --with-dri-driverdir=%{_libdir}/dri \
@@ -261,7 +266,7 @@ make install DESTDIR=$RPM_BUILD_ROOT DRI_DIRS=
 # just the DRI drivers that are sane
 install -d $RPM_BUILD_ROOT%{_libdir}/dri
 install -m 0755 -t $RPM_BUILD_ROOT%{_libdir}/dri %{_lib}/libdricore.so >& /dev/null
-for f in i810 i915 i965 mach64 mga r128 r200 r300 r600 radeon savage sis swrast tdfx unichrome; do
+for f in i810 i915 i965 mach64 mga r128 r200 r300 r600 radeon savage sis swrast tdfx unichrome gallium/vmwgfx; do
     so=%{_lib}/${f}_dri.so
     test -e $so && echo $so
 done | xargs install -m 0755 -t $RPM_BUILD_ROOT%{_libdir}/dri >& /dev/null || :
@@ -272,7 +277,7 @@ rm [a-fh-np-wyz]*.h gg*.h glf*.h glew.h glut*.h glxew.h
 popd
 
 pushd $RPM_BUILD_ROOT%{_libdir}
-rm -f libEGL*
+rm -f libEGL* dri/EGL*
 popd
 
 # XXX demos, since they don't install automatically.  should fix that.
@@ -325,11 +330,11 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_libdir}/dri
 %{_libdir}/dri/libdricore.so
 %{_libdir}/dri/*_dri.so
-%exclude %{_libdir}/dri/r600_dri.so
+%exclude %{_libdir}/dri/vmwgfx_dri.so
 
 %files dri-drivers-experimental
 %defattr(-,root,root,-)
-%{_libdir}/dri/r600_dri.so
+%{_libdir}/dri/vmwgfx_dri.so
 
 %files libGL-devel
 %defattr(-,root,root,-)
@@ -384,7 +389,14 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 %{demodir}
 
+%files -n xorg-x11-drv-vmwgfx
+%defattr(-,root,root,-)
+%{_libdir}/xorg/modules/drivers/vmwgfx_drv.so
+
 %changelog
+* Mon Dec 21 2009 Dave Airlie <airlied@redhat.com> 7.8-0.7
+- enable vmwgfx dri drivers in experimental + xorg DDX + move r600 out
+
 * Mon Dec 21 2009 Dave Airlie <airlied@redhat.com> 7.8-0.6
 - mesa fix link shared to actually link
 
