@@ -13,7 +13,7 @@
 
 %define manpages gl-manpages-1.0.1
 %define xdriinfo xdriinfo-1.0.3
-%define gitdate 20091221
+%define gitdate 20100106
 #% define snapshot 
 
 %define demodir %{_libdir}/mesa
@@ -21,7 +21,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.8
-Release: 0.7%{?dist}
+Release: 0.9%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -41,10 +41,7 @@ Patch1: mesa-7.1-osmesa-version.patch
 Patch2: mesa-7.1-nukeglthread-debug.patch
 Patch3: mesa-no-mach64.patch
 
-Patch7: mesa-7.1-link-shared.patch
-Patch9: intel-revert-vbl.patch
-
-Patch20: glsl-build-fix.patch
+#Patch7: mesa-7.1-link-shared.patch
 
 Patch30: mesa-7.6-hush-vblank-warning.patch
 
@@ -65,6 +62,8 @@ BuildRequires: libXdamage-devel
 BuildRequires: libXi-devel
 BuildRequires: libXmu-devel
 BuildRequires: elfutils
+BuildRequires: python
+BuildRequires: xorg-x11-server-devel
 
 %description
 Mesa
@@ -181,9 +180,7 @@ Group: User Interface/X Hardware Support
 %patch1 -p1 -b .osmesa
 %patch2 -p1 -b .intel-glthread
 %patch3 -p1 -b .no-mach64
-%patch7 -p1 -b .dricore
-%patch9 -p1 -b .intel-vbl
-%patch20 -p1 -b .glsl-bf
+#%patch7 -p1 -b .dricore
 %patch30 -p1 -b .vblank-warning
 
 # Hack the demos to use installed data files
@@ -239,6 +236,8 @@ export CXXFLAGS="$RPM_OPT_FLAGS -Os"
     --disable-gl-osmesa \
     --with-driver=dri \
     --with-dri-driverdir=%{_libdir}/dri \
+    --with-state-trackers=dri,xorg,glx \
+    --enable-gallium-svga \
     %{?dri_drivers}
 
 make #{?_smp_mflags}
@@ -394,6 +393,12 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/xorg/modules/drivers/vmwgfx_drv.so
 
 %changelog
+* Thu Jan 07 2010 Dave Airlie <airlied@redhat.com> 7.8-0.9
+- Disable dricore for now as it conflicts with upstream vis changes
+
+* Wed Jan 06 2010 Dave Airlie <airlied@redhat.com> 7.8-0.8
+- update to latest snapshot and fixup build
+
 * Mon Dec 21 2009 Dave Airlie <airlied@redhat.com> 7.8-0.7
 - enable vmwgfx dri drivers in experimental + xorg DDX + move r600 out
 
