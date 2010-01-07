@@ -264,8 +264,7 @@ make install DESTDIR=$RPM_BUILD_ROOT DRI_DIRS=
 
 # just the DRI drivers that are sane
 install -d $RPM_BUILD_ROOT%{_libdir}/dri
-install -m 0755 -t $RPM_BUILD_ROOT%{_libdir}/dri >& /dev/null
-#%{_lib}/libdricore.so  <- readd for dricore
+#install -m 0755 -t $RPM_BUILD_ROOT%{_libdir}/dri %{_lib}/libdricore.so >& /dev/null
 for f in i810 i915 i965 mach64 mga r128 r200 r300 r600 radeon savage sis swrast tdfx unichrome gallium/vmwgfx; do
     so=%{_lib}/${f}_dri.so
     test -e $so && echo $so
