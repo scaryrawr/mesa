@@ -13,7 +13,7 @@
 
 %define manpages gl-manpages-1.0.1
 %define xdriinfo xdriinfo-1.0.3
-%define gitdate 20100106
+%define gitdate 20100108
 #% define snapshot 
 
 %define demodir %{_libdir}/mesa
@@ -21,7 +21,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.8
-Release: 0.9%{?dist}
+Release: 0.10%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -393,6 +393,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/xorg/modules/drivers/vmwgfx_drv.so
 
 %changelog
+* Fri Jan 08 2010 Dave Airlie <airlied@redhat.com> 7.8-0.10
+- rebase to new snapshot with fix for radeon in it
+
 * Thu Jan 07 2010 Dave Airlie <airlied@redhat.com> 7.8-0.9
 - Disable dricore for now as it conflicts with upstream vis changes
 
