@@ -276,7 +276,7 @@ rm [a-fh-np-wyz]*.h gg*.h glf*.h glew.h glut*.h glxew.h
 popd
 
 pushd $RPM_BUILD_ROOT%{_libdir}
-rm -f libEGL* dri/EGL*
+rm -f libEGL* dri/EGL* egl_glx*
 popd
 
 # XXX demos, since they don't install automatically.  should fix that.
