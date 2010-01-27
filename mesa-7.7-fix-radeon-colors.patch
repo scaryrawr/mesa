@@ -1,0 +1,37 @@
+From 395e08a839bca94b8c0cd7fca4b48bb06bc02952 Mon Sep 17 00:00:00 2001
+From: Dave Airlie <airlied@redhat.com>
+Date: Wed, 27 Jan 2010 11:46:26 +1000
+Subject: [PATCH] radeon/r200/r300: don't clean non-emitted state.
+
+So if we don't actually emit an atom to the hw because we don't
+need it in the current state (e.g. lighting related atoms when
+lighting is off) then don't mark it as clean, because when
+lighting gets switched on we won't emit it at all.
+
+This fixes funky gears colors.
+
+Signed-off-by: Dave Airlie <airlied@redhat.com>
+---
+ src/mesa/drivers/dri/radeon/radeon_common.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+
+diff --git a/src/mesa/drivers/dri/radeon/radeon_common.c b/src/mesa/drivers/dri/radeon/radeon_common.c
+index e0b853b..79f3ff7 100644
+--- a/src/mesa/drivers/dri/radeon/radeon_common.c
++++ b/src/mesa/drivers/dri/radeon/radeon_common.c
+@@ -1036,10 +1036,11 @@ static INLINE void radeon_emit_atom(radeonContextPtr radeon, struct radeon_state
+ 			OUT_BATCH_TABLE(atom->cmd, dwords);
+ 			END_BATCH();
+ 		}
++		atom->dirty = GL_FALSE;
++
+ 	} else {
+ 		radeon_print(RADEON_STATE, RADEON_VERBOSE, "  skip state %s\n", atom->name);
+ 	}
+-	atom->dirty = GL_FALSE;
+ 
+ }
+ 
+-- 
+1.6.5.2
+

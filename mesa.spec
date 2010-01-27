@@ -21,7 +21,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.8
-Release: 0.11%{?dist}
+Release: 0.12%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -41,6 +41,7 @@ Patch1: mesa-7.1-osmesa-version.patch
 Patch2: mesa-7.1-nukeglthread-debug.patch
 Patch3: mesa-no-mach64.patch
 
+Patch5: mesa-7.7-fix-radeon-colors.patch
 #Patch7: mesa-7.1-link-shared.patch
 
 Patch30: mesa-7.6-hush-vblank-warning.patch
@@ -180,6 +181,7 @@ Group: User Interface/X Hardware Support
 %patch1 -p1 -b .osmesa
 %patch2 -p1 -b .intel-glthread
 %patch3 -p1 -b .no-mach64
+%patch5 -p1 -b .r100-color
 #%patch7 -p1 -b .dricore
 %patch30 -p1 -b .vblank-warning
 
@@ -393,6 +395,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/xorg/modules/drivers/vmwgfx_drv.so
 
 %changelog
+* Wed Jan 27 2010 Dave Airlie <airlied@redhat.com> 7.8-0.12
+- Fix radeon colors for rawhide
+
 * Thu Jan 21 2010 Dave Airlie <airlied@redhat.com> 7.8-0.11
 - rebase for new DRI2 API
 
