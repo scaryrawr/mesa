@@ -277,7 +277,7 @@ rm [a-fh-np-wyz]*.h gg*.h glf*.h glew.h glut*.h glxew.h
 popd
 
 pushd $RPM_BUILD_ROOT%{_includedir}/
-rm -f EGL/ KHR/
+rm -rf EGL KHR
 popd
 
 pushd $RPM_BUILD_ROOT%{_libdir}
