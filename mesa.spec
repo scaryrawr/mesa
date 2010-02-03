@@ -274,6 +274,9 @@ done | xargs install -m 0755 -t $RPM_BUILD_ROOT%{_libdir}/dri >& /dev/null || :
 # strip out undesirable headers
 pushd $RPM_BUILD_ROOT%{_includedir}/GL 
 rm [a-fh-np-wyz]*.h gg*.h glf*.h glew.h glut*.h glxew.h 
+popd
+
+pushd $RPM_BUILD_ROOT%{_includedir}/
 rm -f EGL/ KHR/
 popd
 
