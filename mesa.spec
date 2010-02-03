@@ -13,7 +13,7 @@
 
 %define manpages gl-manpages-1.0.1
 %define xdriinfo xdriinfo-1.0.3
-%define gitdate 20100203
+%define gitdate 20100204
 #% define snapshot 
 
 %define demodir %{_libdir}/mesa
@@ -21,7 +21,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.8
-Release: 0.13%{?dist}
+Release: 0.14%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -400,6 +400,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/xorg/modules/drivers/vmwgfx_drv.so
 
 %changelog
+* Thu Feb 04 2010 Dave Airlie <airlied@redhat.com> 7.8-0.14
+- rebase again to fix r300
+
 * Wed Feb 03 2010 Dave Airlie <airlied@redhat.com> 7.8-0.13
 - update dri2proto requirement
 - add nouveau to experimental drivers set
