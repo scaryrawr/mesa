@@ -13,7 +13,7 @@
 
 %define manpages gl-manpages-1.0.1
 %define xdriinfo xdriinfo-1.0.3
-%define gitdate 20100121
+%define gitdate 20100203
 #% define snapshot 
 
 %define demodir %{_libdir}/mesa
@@ -21,7 +21,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.8
-Release: 0.12%{?dist}
+Release: 0.13%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -41,7 +41,6 @@ Patch1: mesa-7.1-osmesa-version.patch
 Patch2: mesa-7.1-nukeglthread-debug.patch
 Patch3: mesa-no-mach64.patch
 
-Patch5: mesa-7.7-fix-radeon-colors.patch
 #Patch7: mesa-7.1-link-shared.patch
 
 Patch30: mesa-7.6-hush-vblank-warning.patch
@@ -53,7 +52,7 @@ BuildRequires: kernel-headers >= 2.6.27-0.305.rc5.git6
 BuildRequires: libdrm-devel >= 2.4.17-0.1
 BuildRequires: libXxf86vm-devel
 BuildRequires: expat-devel >= 2.0
-BuildRequires: xorg-x11-proto-devel >= 7.1-10
+BuildRequires: xorg-x11-proto-devel >= 7.4-35
 BuildRequires: makedepend
 BuildRequires: libselinux-devel
 BuildRequires: libXext-devel
@@ -181,7 +180,6 @@ Group: User Interface/X Hardware Support
 %patch1 -p1 -b .osmesa
 %patch2 -p1 -b .intel-glthread
 %patch3 -p1 -b .no-mach64
-%patch5 -p1 -b .r100-color
 #%patch7 -p1 -b .dricore
 %patch30 -p1 -b .vblank-warning
 
@@ -240,6 +238,7 @@ export CXXFLAGS="$RPM_OPT_FLAGS -Os"
     --with-dri-driverdir=%{_libdir}/dri \
     --with-state-trackers=dri,xorg,glx \
     --enable-gallium-svga \
+    --enable-gallium-nouveau \
     %{?dri_drivers}
 
 make #{?_smp_mflags}
@@ -332,10 +331,12 @@ rm -rf $RPM_BUILD_ROOT
 #%{_libdir}/dri/libdricore.so
 %{_libdir}/dri/*_dri.so
 %exclude %{_libdir}/dri/vmwgfx_dri.so
+%exclude %{_libdir}/dri/nouveau_dri.so
 
 %files dri-drivers-experimental
 %defattr(-,root,root,-)
 %{_libdir}/dri/vmwgfx_dri.so
+%{_libdir}/dri/nouveau_dri.so
 
 %files libGL-devel
 %defattr(-,root,root,-)
@@ -395,6 +396,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/xorg/modules/drivers/vmwgfx_drv.so
 
 %changelog
+* Wed Feb 03 2010 Dave Airlie <airlied@redhat.com> 7.8-0.13
+- update dri2proto requirement
+- add nouveau to experimental drivers set
+
 * Wed Jan 27 2010 Dave Airlie <airlied@redhat.com> 7.8-0.12
 - Fix radeon colors for rawhide
 
