@@ -273,11 +273,12 @@ done | xargs install -m 0755 -t $RPM_BUILD_ROOT%{_libdir}/dri >& /dev/null || :
 
 # strip out undesirable headers
 pushd $RPM_BUILD_ROOT%{_includedir}/GL 
-rm [a-fh-np-wyz]*.h gg*.h glf*.h glew.h glut*.h glxew.h
+rm [a-fh-np-wyz]*.h gg*.h glf*.h glew.h glut*.h glxew.h 
+rm -f EGL/ KHR/
 popd
 
 pushd $RPM_BUILD_ROOT%{_libdir}
-rm -f libEGL* dri/EGL* egl_glx*
+rm -f libEGL* dri/EGL* egl/egl_glx* xorg/modules/drivers/modesetting_drv.so
 popd
 
 # XXX demos, since they don't install automatically.  should fix that.
