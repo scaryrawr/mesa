@@ -1,22 +1,19 @@
-From adf4c1ae10c172222690bf8ec2496cec8ce151dd Mon Sep 17 00:00:00 2001
-From: Dave Airlie <airlied@redhat.com>
-Date: Thu, 4 Feb 2010 10:00:13 +1000
-Subject: [PATCH] nouveau: include stdio.h and u_inlines.h in all context files since embedded changes
-
-fixes nouveau build for me.
-
-Signed-off-by: Dave Airlie <airlied@redhat.com>
----
- src/gallium/drivers/nv04/nv04_context.h |    2 ++
- src/gallium/drivers/nv10/nv10_context.h |    2 ++
- src/gallium/drivers/nv20/nv20_context.h |    2 ++
- src/gallium/drivers/nv30/nv30_context.h |    3 +++
- src/gallium/drivers/nv40/nv40_context.h |    3 +++
- src/gallium/drivers/nv50/nv50_context.h |    2 ++
- 6 files changed, 14 insertions(+), 0 deletions(-)
-
+diff --git a/src/gallium/drivers/nouveau/nouveau_screen.c b/src/gallium/drivers/nouveau/nouveau_screen.c
+index 1ad539d..156cb2d 100644
+--- a/src/gallium/drivers/nouveau/nouveau_screen.c
++++ b/src/gallium/drivers/nouveau/nouveau_screen.c
+@@ -3,7 +3,9 @@
+ #include <pipe/p_state.h>
+ 
+ #include <util/u_memory.h>
++#include <util/u_inlines.h>
+ 
++#include <stdio.h>
+ #include <errno.h>
+ 
+ #include "nouveau/nouveau_bo.h"
 diff --git a/src/gallium/drivers/nv04/nv04_context.h b/src/gallium/drivers/nv04/nv04_context.h
-index fe3b527..1810dde 100644
+index fe3b527..83acb59 100644
 --- a/src/gallium/drivers/nv04/nv04_context.h
 +++ b/src/gallium/drivers/nv04/nv04_context.h
 @@ -1,6 +1,8 @@
@@ -28,6 +25,14 @@ index fe3b527..1810dde 100644
  #include "pipe/p_context.h"
  #include "pipe/p_defines.h"
  #include "pipe/p_state.h"
+@@ -8,6 +10,7 @@
+ 
+ #include "util/u_memory.h"
+ #include "util/u_math.h"
++#include "util/u_inlines.h"
+ 
+ #include "draw/draw_vertex.h"
+ 
 diff --git a/src/gallium/drivers/nv10/nv10_context.h b/src/gallium/drivers/nv10/nv10_context.h
 index ab4b825..f0dcbe3 100644
 --- a/src/gallium/drivers/nv10/nv10_context.h
@@ -116,6 +121,79 @@ index bebcd95..44d8f61 100644
  
  #include "draw/draw_vertex.h"
  
--- 
-1.6.5.2
-
+diff --git a/src/gallium/state_trackers/dri/dri_drawable.c b/src/gallium/state_trackers/dri/dri_drawable.c
+index 1f456cb..f7ed660 100644
+--- a/src/gallium/state_trackers/dri/dri_drawable.c
++++ b/src/gallium/state_trackers/dri/dri_drawable.c
+@@ -46,6 +46,7 @@
+ #include "util/u_format.h"
+ #include "util/u_memory.h"
+ #include "util/u_rect.h"
++#include "util/u_inlines.h"
+  
+ static struct pipe_surface *
+ dri_surface_from_handle(struct drm_api *api,
+diff --git a/src/gallium/state_trackers/dri/dri_screen.c b/src/gallium/state_trackers/dri/dri_screen.c
+index 34dbe5b..2052867 100644
+--- a/src/gallium/state_trackers/dri/dri_screen.c
++++ b/src/gallium/state_trackers/dri/dri_screen.c
+@@ -42,6 +42,8 @@
+ #include "state_tracker/drm_api.h"
+ #include "state_tracker/dri1_api.h"
+ 
++#include "util/u_debug.h"
++
+ PUBLIC const char __driConfigOptions[] =
+    DRI_CONF_BEGIN DRI_CONF_SECTION_PERFORMANCE
+    DRI_CONF_FTHROTTLE_MODE(DRI_CONF_FTHROTTLE_IRQS)
+diff --git a/src/gallium/state_trackers/xorg/xorg_tracker.h b/src/gallium/state_trackers/xorg/xorg_tracker.h
+index a88b1d5..58bb60a 100644
+--- a/src/gallium/state_trackers/xorg/xorg_tracker.h
++++ b/src/gallium/state_trackers/xorg/xorg_tracker.h
+@@ -47,6 +47,8 @@
+ #endif
+ 
+ #include "pipe/p_screen.h"
++#include "util/u_inlines.h"
++#include "util/u_debug.h"
+ #include "state_tracker/drm_api.h"
+ 
+ #define DRV_ERROR(msg)	xf86DrvMsg(pScrn->scrnIndex, X_ERROR, msg);
+diff --git a/src/gallium/winsys/drm/vmware/core/vmw_buffer.h b/src/gallium/winsys/drm/vmware/core/vmw_buffer.h
+index 634bdca..41fb447 100644
+--- a/src/gallium/winsys/drm/vmware/core/vmw_buffer.h
++++ b/src/gallium/winsys/drm/vmware/core/vmw_buffer.h
+@@ -27,7 +27,7 @@
+ #ifndef VMW_BUFFER_H_
+ #define VMW_BUFFER_H_
+ 
+-
++#include <assert.h>
+ #include "pipe/p_compiler.h"
+ 
+ struct SVGAGuestPtr;
+diff --git a/src/gallium/winsys/drm/vmware/core/vmw_screen_dri.c b/src/gallium/winsys/drm/vmware/core/vmw_screen_dri.c
+index 454e9a5..2939c10 100644
+--- a/src/gallium/winsys/drm/vmware/core/vmw_screen_dri.c
++++ b/src/gallium/winsys/drm/vmware/core/vmw_screen_dri.c
+@@ -27,6 +27,7 @@
+ #include "pipe/p_compiler.h"
+ #include "util/u_inlines.h"
+ #include "util/u_memory.h"
++#include "util/u_format.h"
+ #include "vmw_screen.h"
+ 
+ #include "trace/tr_drm.h"
+diff --git a/src/gallium/winsys/drm/vmware/core/vmw_surface.h b/src/gallium/winsys/drm/vmware/core/vmw_surface.h
+index b843c4d..3d61595 100644
+--- a/src/gallium/winsys/drm/vmware/core/vmw_surface.h
++++ b/src/gallium/winsys/drm/vmware/core/vmw_surface.h
+@@ -37,7 +37,7 @@
+ 
+ #include "pipe/p_compiler.h"
+ #include "util/u_atomic.h"
+-#include "util/u_atomic.h"
++#include "util/u_inlines.h"
+ 
+ #define VMW_MAX_PRESENTS 3
+ 
