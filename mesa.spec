@@ -37,6 +37,7 @@ Source3: make-git-snapshot.sh
 
 Source5: http://www.x.org/pub/individual/app/%{xdriinfo}.tar.bz2
 
+Patch0: nouveau-build-fix.patch
 Patch1: mesa-7.1-osmesa-version.patch
 Patch2: mesa-7.1-nukeglthread-debug.patch
 Patch3: mesa-no-mach64.patch
@@ -177,6 +178,7 @@ Group: User Interface/X Hardware Support
 %prep
 #setup -q -n mesa-%{version}%{?snapshot} -b0 -b2 -b5
 %setup -q -n mesa-%{gitdate} -b2 -b5
+%patch0 -p1 -b .nouveau-build
 %patch1 -p1 -b .osmesa
 %patch2 -p1 -b .intel-glthread
 %patch3 -p1 -b .no-mach64
