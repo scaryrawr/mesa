@@ -21,7 +21,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.8
-Release: 0.15%{?dist}
+Release: 0.16%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -404,6 +404,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/xorg/modules/drivers/vmwgfx_drv.so
 
 %changelog
+* Mon Feb 08 2010 Ben Skeggs <bskeggs@redhat.com> 7.8-0.16
+- patch mesa to enable legacy nouveau driver build on i386
+
 * Mon Feb 08 2010 Ben Skeggs <bskeggs@redhat.com> 7.8-0.15
 - rebase for legacy nouveau drivers
 
