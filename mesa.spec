@@ -13,7 +13,7 @@
 
 %define manpages gl-manpages-1.0.1
 %define xdriinfo xdriinfo-1.0.3
-%define gitdate 20100204
+%define gitdate 20100208
 #% define snapshot 
 
 %define demodir %{_libdir}/mesa
@@ -21,7 +21,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.8
-Release: 0.14%{?dist}
+Release: 0.15%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -37,10 +37,10 @@ Source3: make-git-snapshot.sh
 
 Source5: http://www.x.org/pub/individual/app/%{xdriinfo}.tar.bz2
 
-Patch0: nouveau-build-fix.patch
 Patch1: mesa-7.1-osmesa-version.patch
 Patch2: mesa-7.1-nukeglthread-debug.patch
 Patch3: mesa-no-mach64.patch
+Patch4: nouveau-legacy-enable.patch
 
 #Patch7: mesa-7.1-link-shared.patch
 
@@ -178,10 +178,10 @@ Group: User Interface/X Hardware Support
 %prep
 #setup -q -n mesa-%{version}%{?snapshot} -b0 -b2 -b5
 %setup -q -n mesa-%{gitdate} -b2 -b5
-%patch0 -p1 -b .nouveau-build
 %patch1 -p1 -b .osmesa
 %patch2 -p1 -b .intel-glthread
 %patch3 -p1 -b .no-mach64
+%patch4 -p1 -b .nouveau-legacy
 #%patch7 -p1 -b .dricore
 %patch30 -p1 -b .vblank-warning
 
@@ -268,7 +268,7 @@ make install DESTDIR=$RPM_BUILD_ROOT DRI_DIRS=
 # just the DRI drivers that are sane
 install -d $RPM_BUILD_ROOT%{_libdir}/dri
 #install -m 0755 -t $RPM_BUILD_ROOT%{_libdir}/dri %{_lib}/libdricore.so >& /dev/null
-for f in i810 i915 i965 mach64 mga r128 r200 r300 r600 radeon savage sis swrast tdfx unichrome gallium/vmwgfx; do
+for f in i810 i915 i965 mach64 mga r128 r200 r300 r600 radeon savage sis swrast tdfx unichrome nouveau_vieux gallium/vmwgfx; do
     so=%{_lib}/${f}_dri.so
     test -e $so && echo $so
 done | xargs install -m 0755 -t $RPM_BUILD_ROOT%{_libdir}/dri >& /dev/null || :
@@ -283,7 +283,7 @@ rm -rf EGL KHR
 popd
 
 pushd $RPM_BUILD_ROOT%{_libdir}
-rm -f libEGL* dri/EGL* egl/egl_glx* xorg/modules/drivers/modesetting_drv.so
+rm -f libEGL* dri/EGL* egl/egl_glx* egl/egl_dri2* xorg/modules/drivers/modesetting_drv.so
 popd
 
 # XXX demos, since they don't install automatically.  should fix that.
@@ -338,11 +338,13 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/dri/*_dri.so
 %exclude %{_libdir}/dri/vmwgfx_dri.so
 %exclude %{_libdir}/dri/nouveau_dri.so
+%exclude %{_libdir}/dri/nouveau_vieux_dri.so
 
 %files dri-drivers-experimental
 %defattr(-,root,root,-)
 %{_libdir}/dri/vmwgfx_dri.so
 %{_libdir}/dri/nouveau_dri.so
+%{_libdir}/dri/nouveau_vieux_dri.so
 
 %files libGL-devel
 %defattr(-,root,root,-)
@@ -402,6 +404,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/xorg/modules/drivers/vmwgfx_drv.so
 
 %changelog
+* Mon Feb 08 2010 Ben Skeggs <bskeggs@redhat.com> 7.8-0.15
+- rebase for legacy nouveau drivers
+
 * Thu Feb 04 2010 Dave Airlie <airlied@redhat.com> 7.8-0.14
 - rebase again to fix r300
 

@@ -1,0 +1,22 @@
+diff --git a/configure.ac b/configure.ac
+index b6c6535..ec44d68 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -723,7 +723,7 @@ if test "$mesa_driver" = dri; then
+             # be used.
+             if test "x$DRI_DIRS" = "xyes"; then
+                 DRI_DIRS="i915 i965 mga r128 r200 r300 r600 radeon \
+-                    savage tdfx unichrome swrast"
++                    savage tdfx unichrome swrast nouveau"
+             fi
+             ;;
+         powerpc*)
+@@ -756,7 +756,7 @@ if test "$mesa_driver" = dri; then
+         # to use the new interface.
+         if test "x$DRI_DIRS" = "xyes"; then
+             DRI_DIRS="i810 i915 i965 mga r128 r200 r300 r600 radeon tdfx \
+-                unichrome savage sis swrast"
++                unichrome savage sis swrast nouveau"
+         fi
+         ;;
+     gnu*)
