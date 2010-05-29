@@ -13,15 +13,16 @@
 
 %define manpages gl-manpages-1.0.1
 %define xdriinfo xdriinfo-1.0.3
-%define gitdate 20100208
+%define gitdate 20100529
 #% define snapshot 
 
+%global demopkg %{name}-demos-%{gitdate}
 %define demodir %{_libdir}/mesa
 
 Summary: Mesa graphics libraries
 Name: mesa
-Version: 7.8
-Release: 0.16%{?dist}
+Version: 7.9
+Release: 0.1%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -31,9 +32,11 @@ BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 #Source0: http://www.mesa3d.org/beta/MesaLib-%{version}%{?snapshot}.tar.bz2
 #Source1: http://www.mesa3d.org/beta/MesaDemos-%{version}%{?snapshot}.tar.bz2
 Source0: %{name}-%{gitdate}.tar.bz2
+Source1: %{name}-demos-%{gitdate}.tar.bz2
 #Source1: http://downloads.sf.net/mesa3d/MesaDemos-%{version}.tar.bz2
 Source2: %{manpages}.tar.bz2
 Source3: make-git-snapshot.sh
+Source4: make-demo-snapshot.sh
 
 Source5: http://www.x.org/pub/individual/app/%{xdriinfo}.tar.bz2
 
@@ -63,6 +66,7 @@ BuildRequires: libXfixes-devel
 BuildRequires: libXdamage-devel
 BuildRequires: libXi-devel
 BuildRequires: libXmu-devel
+BuildRequires: glew-devel
 BuildRequires: elfutils
 BuildRequires: python
 
@@ -164,6 +168,7 @@ The glx-utils package provides the glxinfo and glxgears utilities.
 %package demos
 Summary: Mesa demos
 Group: Development/Libraries
+Requires: glew
 
 %description demos
 This package provides some demo applications for testing Mesa.
@@ -177,19 +182,21 @@ Group: User Interface/X Hardware Support
 
 %prep
 #setup -q -n mesa-%{version}%{?snapshot} -b0 -b2 -b5
-%setup -q -n mesa-%{gitdate} -b2 -b5
+%setup -q -n mesa-%{gitdate} -b1 -b2 -b5
 %patch1 -p1 -b .osmesa
-%patch2 -p1 -b .intel-glthread
+#patch2 -p1 -b .intel-glthread
 %patch3 -p1 -b .no-mach64
-%patch4 -p1 -b .nouveau-legacy
+%patch4 -p1 -b .nouveau
 #%patch7 -p1 -b .dricore
 %patch30 -p1 -b .vblank-warning
 
 # Hack the demos to use installed data files
-sed -i 's,../images,%{_libdir}/mesa,' progs/demos/*.c
-sed -i 's,geartrain.dat,%{_libdir}/mesa/&,' progs/demos/geartrain.c
-sed -i 's,isosurf.dat,%{_libdir}/mesa/&,' progs/demos/isosurf.c
-sed -i 's,terrain.dat,%{_libdir}/mesa/&,' progs/demos/terrain.c
+cd ../%{demopkg}
+sed -i 's,../images,%{_libdir}/mesa,' src/demos/*.c
+sed -i 's,geartrain.dat,%{_libdir}/mesa/&,' src/demos/geartrain.c
+sed -i 's,isosurf.dat,%{_libdir}/mesa/&,' src/demos/isosurf.c
+sed -i 's,terrain.dat,%{_libdir}/mesa/&,' src/demos/terrain.c
+cd -
 
 %build
 
@@ -238,15 +245,21 @@ export CXXFLAGS="$RPM_OPT_FLAGS -Os"
     --disable-gl-osmesa \
     --with-driver=dri \
     --with-dri-driverdir=%{_libdir}/dri \
-    --with-state-trackers=dri,xorg,glx \
-    --enable-gallium-svga \
+    --with-state-trackers=dri,glx \
+    --disable-gallium-intel \
+    --disable-gallium-svga \
+    --enable-gallium-radeon \
     --enable-gallium-nouveau \
+    --disable-egl \
     %{?dri_drivers}
 
-make #{?_smp_mflags}
+make %{?_smp_mflags}
 
-make -C progs/xdemos glxgears glxinfo
-make %{?_smp_mflags} -C progs/demos
+pushd ../%{demopkg}
+autoreconf -v --install
+%configure --bindir=%{demodir}
+make %{?_smp_mflags}
+popd
 
 pushd ../%{xdriinfo}
 %configure
@@ -275,26 +288,24 @@ done | xargs install -m 0755 -t $RPM_BUILD_ROOT%{_libdir}/dri >& /dev/null || :
 
 # strip out undesirable headers
 pushd $RPM_BUILD_ROOT%{_includedir}/GL 
-rm [a-fh-np-wyz]*.h gg*.h glf*.h glew.h glut*.h glxew.h 
-popd
-
-pushd $RPM_BUILD_ROOT%{_includedir}/
-rm -rf EGL KHR
+rm [a-fh-np-wyz]*.h glf*.h glew.h glut*.h glxew.h 
 popd
 
 pushd $RPM_BUILD_ROOT%{_libdir}
-rm -f libEGL* dri/EGL* egl/egl_glx* egl/egl_dri2* xorg/modules/drivers/modesetting_drv.so
+rm -f xorg/modules/drivers/modesetting_drv.so
 popd
 
+pushd ../%{demopkg}
 # XXX demos, since they don't install automatically.  should fix that.
 install -d $RPM_BUILD_ROOT%{_bindir}
-install -m 0755 progs/xdemos/glxgears $RPM_BUILD_ROOT%{_bindir}
-install -m 0755 progs/xdemos/glxinfo $RPM_BUILD_ROOT%{_bindir}
+install -m 0755 src/xdemos/glxgears $RPM_BUILD_ROOT%{_bindir}
+install -m 0755 src/xdemos/glxinfo $RPM_BUILD_ROOT%{_bindir}
 install -d $RPM_BUILD_ROOT%{demodir}
-find progs/demos/ -type f -perm /0111 |
+find src/demos/ -type f -perm /0111 |
     xargs install -m 0755 -t $RPM_BUILD_ROOT/%{demodir}
-install -m 0644 progs/images/*.rgb $RPM_BUILD_ROOT/%{demodir}
-install -m 0644 progs/demos/*.dat $RPM_BUILD_ROOT/%{demodir}
+install -m 0644 src/images/*.rgb $RPM_BUILD_ROOT/%{demodir}
+install -m 0644 src/demos/*.dat $RPM_BUILD_ROOT/%{demodir}
+popd
 
 # and osmesa
 mv osmesa*/libOS* $RPM_BUILD_ROOT%{_libdir}
@@ -336,13 +347,13 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_libdir}/dri
 #%{_libdir}/dri/libdricore.so
 %{_libdir}/dri/*_dri.so
-%exclude %{_libdir}/dri/vmwgfx_dri.so
+#exclude %{_libdir}/dri/vmwgfx_dri.so
 %exclude %{_libdir}/dri/nouveau_dri.so
 %exclude %{_libdir}/dri/nouveau_vieux_dri.so
 
 %files dri-drivers-experimental
 %defattr(-,root,root,-)
-%{_libdir}/dri/vmwgfx_dri.so
+#{_libdir}/dri/vmwgfx_dri.so
 %{_libdir}/dri/nouveau_dri.so
 %{_libdir}/dri/nouveau_vieux_dri.so
 
@@ -399,11 +410,10 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 %{demodir}
 
-%files -n xorg-x11-drv-vmwgfx
-%defattr(-,root,root,-)
-%{_libdir}/xorg/modules/drivers/vmwgfx_drv.so
-
 %changelog
+* Sun May 30 2010 Dave Airlie <airlied@redhat.com> 7.9-0.1
+- rebase to a git snapshot - disable vmwgfx
+
 * Mon Feb 08 2010 Ben Skeggs <bskeggs@redhat.com> 7.8-0.16
 - patch mesa to enable legacy nouveau driver build on i386
 
