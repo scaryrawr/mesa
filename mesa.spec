@@ -69,6 +69,7 @@ BuildRequires: libXmu-devel
 BuildRequires: glew-devel
 BuildRequires: elfutils
 BuildRequires: python
+BuildRequires: libxml2-python
 
 %description
 Mesa
