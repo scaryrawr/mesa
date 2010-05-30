@@ -19,3 +19,18 @@ diff -up mesa-demos-20100529/src/tests/Makefile.am.orig mesa-demos-20100529/src/
  texrect_LDADD = ../util/libutil.la
  
  EXTRA_DIST = \
+diff -up mesa-demos-20100529/src/xdemos/Makefile.am.orig mesa-demos-20100529/src/xdemos/Makefile.am
+--- mesa-demos-20100529/src/xdemos/Makefile.am.orig	2010-05-30 14:41:55.000000000 +1000
++++ mesa-demos-20100529/src/xdemos/Makefile.am	2010-05-30 14:43:43.000000000 +1000
+@@ -77,9 +77,11 @@ xrotfontdemo_SOURCES = \
+ 	xuserotfont.c \
+ 	xuserotfont.h
+ 
++glthreads_LDADD = -lpthread
+ glxgears_fbconfig_LDADD = libpbutil.la
+ pbdemo_LDADD = libpbutil.la
+ pbinfo_LDADD = libpbutil.la
++sharedtex_mt_LDADD = -lpthread
+ 
+ EXTRA_DIST = \
+ 	yuvrect_client.c \
