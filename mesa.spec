@@ -56,7 +56,7 @@ BuildRequires: pkgconfig autoconf automake
 BuildRequires: kernel-headers >= 2.6.27-0.305.rc5.git6
 BuildRequires: xorg-x11-server-devel
 %endif
-BuildRequires: libdrm-devel >= 2.4.17-2
+BuildRequires: libdrm-devel >= 2.4.21-1
 BuildRequires: libXxf86vm-devel
 BuildRequires: expat-devel >= 2.0
 BuildRequires: xorg-x11-proto-devel >= 7.4-35
@@ -83,7 +83,7 @@ Requires(post): /sbin/ldconfig
 Requires(postun): /sbin/ldconfig
 Provides: libGL
 Requires: mesa-dri-drivers%{?_isa} = %{version}-%{release}
-Requires: libdrm >= 2.4.17-0.1
+Requires: libdrm >= 2.4.21-1
 %if %{with_hardware}
 Conflicts: xorg-x11-server-Xorg < 1.4.99.901-14
 %endif
