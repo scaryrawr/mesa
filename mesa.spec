@@ -13,16 +13,17 @@
 
 %define manpages gl-manpages-1.0.1
 %define xdriinfo xdriinfo-1.0.3
-%define gitdate 20100529
+%define gitdate 20100612
+%define demosgitdate 20100529
 #% define snapshot 
 
-%global demopkg %{name}-demos-%{gitdate}
+%global demopkg %{name}-demos-%{demosgitdate}
 %define demodir %{_libdir}/mesa
 
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.9
-Release: 0.1%{?dist}
+Release: 0.2%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -32,7 +33,7 @@ BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 #Source0: http://www.mesa3d.org/beta/MesaLib-%{version}%{?snapshot}.tar.bz2
 #Source1: http://www.mesa3d.org/beta/MesaDemos-%{version}%{?snapshot}.tar.bz2
 Source0: %{name}-%{gitdate}.tar.bz2
-Source1: %{name}-demos-%{gitdate}.tar.bz2
+Source1: %{name}-demos-%{demosgitdate}.tar.bz2
 #Source1: http://downloads.sf.net/mesa3d/MesaDemos-%{version}.tar.bz2
 Source2: %{manpages}.tar.bz2
 Source3: make-git-snapshot.sh
@@ -186,7 +187,7 @@ Group: User Interface/X Hardware Support
 #setup -q -n mesa-%{version}%{?snapshot} -b0 -b2 -b5
 %setup -q -n mesa-%{gitdate} -b1 -b2 -b5
 %patch1 -p1 -b .osmesa
-#patch2 -p1 -b .intel-glthread
+%patch2 -p1 -b .intel-glthread
 %patch3 -p1 -b .no-mach64
 %patch4 -p1 -b .nouveau
 #%patch7 -p1 -b .dricore
@@ -284,6 +285,8 @@ make install DESTDIR=$RPM_BUILD_ROOT DRI_DIRS=
 # just the DRI drivers that are sane
 install -d $RPM_BUILD_ROOT%{_libdir}/dri
 #install -m 0755 -t $RPM_BUILD_ROOT%{_libdir}/dri %{_lib}/libdricore.so >& /dev/null
+# use gallium r300 driver
+cp %{_lib}/gallium/radeong_dri.so %{_lib}/r300_dri.so
 for f in i810 i915 i965 mach64 mga r128 r200 r300 r600 radeon savage sis swrast tdfx unichrome nouveau_vieux gallium/vmwgfx; do
     so=%{_lib}/${f}_dri.so
     test -e $so && echo $so
@@ -414,6 +417,9 @@ rm -rf $RPM_BUILD_ROOT
 %{demodir}
 
 %changelog
+* Sat Jun 12 2010 Dave Airlie <airlied@redhat.com> 7.9-0.2
+- rebase to git snapshot with TFP fixes for r300 + gallium - enable r300g
+
 * Sun May 30 2010 Dave Airlie <airlied@redhat.com> 7.9-0.1
 - rebase to a git snapshot - disable vmwgfx
 
