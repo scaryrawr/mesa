@@ -23,7 +23,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.9
-Release: 0.2%{?dist}
+Release: 0.3%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -51,7 +51,7 @@ Patch5: mesa-demos-fix-add-needed.patch
 
 Patch30: mesa-7.6-hush-vblank-warning.patch
 
-BuildRequires: pkgconfig autoconf automake
+BuildRequires: pkgconfig autoconf automake libtool
 %if %{with_hardware}
 BuildRequires: kernel-headers >= 2.6.27-0.305.rc5.git6
 BuildRequires: xorg-x11-server-devel
@@ -99,11 +99,13 @@ Group: User Interface/X Hardware Support
 Mesa-based DRI drivers.
 
 
+%if %{with_hardware}
 %package dri-drivers-experimental
 Summary: Mesa-based DRI drivers (experimental)
 Group: User Interface/X Hardware Support
 %description dri-drivers-experimental
 Mesa-based DRI drivers (experimental).
+%endif
 
 
 %package libGL-devel
@@ -250,10 +252,12 @@ export CXXFLAGS="$RPM_OPT_FLAGS -Os"
     --with-driver=dri \
     --with-dri-driverdir=%{_libdir}/dri \
     --with-state-trackers=dri,glx \
+%if %{with_hardware}
     --disable-gallium-intel \
     --disable-gallium-svga \
     --enable-gallium-radeon \
     --enable-gallium-nouveau \
+%endif
     --disable-egl \
     %{?dri_drivers}
 
@@ -285,8 +289,8 @@ make install DESTDIR=$RPM_BUILD_ROOT DRI_DIRS=
 # just the DRI drivers that are sane
 install -d $RPM_BUILD_ROOT%{_libdir}/dri
 #install -m 0755 -t $RPM_BUILD_ROOT%{_libdir}/dri %{_lib}/libdricore.so >& /dev/null
-# use gallium r300 driver
-cp %{_lib}/gallium/radeong_dri.so %{_lib}/r300_dri.so
+# use gallium r300 driver iff built
+[ -f %{_lib}/gallium/radeong_dri.so ] && cp %{_lib}/gallium/radeong_dri.so %{_lib}/r300_dri.so
 for f in i810 i915 i965 mach64 mga r128 r200 r300 r600 radeon savage sis swrast tdfx unichrome nouveau_vieux gallium/vmwgfx; do
     so=%{_lib}/${f}_dri.so
     test -e $so && echo $so
@@ -353,15 +357,19 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_libdir}/dri
 #%{_libdir}/dri/libdricore.so
 %{_libdir}/dri/*_dri.so
+%if %{with_hardware}
 #exclude %{_libdir}/dri/vmwgfx_dri.so
 %exclude %{_libdir}/dri/nouveau_dri.so
 %exclude %{_libdir}/dri/nouveau_vieux_dri.so
+%endif
 
+%if %{with_hardware}
 %files dri-drivers-experimental
 %defattr(-,root,root,-)
 #{_libdir}/dri/vmwgfx_dri.so
 %{_libdir}/dri/nouveau_dri.so
 %{_libdir}/dri/nouveau_vieux_dri.so
+%endif
 
 %files libGL-devel
 %defattr(-,root,root,-)
@@ -417,6 +425,13 @@ rm -rf $RPM_BUILD_ROOT
 %{demodir}
 
 %changelog
+* Thu Jun 24 2010 Dan Horák <dan[at]danny.cz> 7.9-0.3
+- add libtool (needed by mesa-demos) to BR: - normally it's brought via
+    xorg-x11-util-macros and xorg-x11-server-devel, but not on platforms
+    without hardware drivers
+- build gallium drivers and the dri-drivers-experimental subpackage only
+    when hardware drivers are requested
+
 * Sat Jun 12 2010 Dave Airlie <airlied@redhat.com> 7.9-0.2
 - rebase to git snapshot with TFP fixes for r300 + gallium - enable r300g
 
