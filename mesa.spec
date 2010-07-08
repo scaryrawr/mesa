@@ -23,7 +23,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.9
-Release: 0.3%{?dist}
+Release: 0.4%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -349,11 +349,13 @@ rm -rf $RPM_BUILD_ROOT
 
 %files libGL
 %defattr(-,root,root,-)
+%doc docs/COPYING
 %{_libdir}/libGL.so.1
 %{_libdir}/libGL.so.1.*
 
 %files dri-drivers
 %defattr(-,root,root,-)
+%doc docs/COPYING
 %dir %{_libdir}/dri
 #%{_libdir}/dri/libdricore.so
 %{_libdir}/dri/*_dri.so
@@ -366,6 +368,7 @@ rm -rf $RPM_BUILD_ROOT
 %if %{with_hardware}
 %files dri-drivers-experimental
 %defattr(-,root,root,-)
+%doc docs/COPYING
 #{_libdir}/dri/vmwgfx_dri.so
 %{_libdir}/dri/nouveau_dri.so
 %{_libdir}/dri/nouveau_vieux_dri.so
@@ -402,6 +405,7 @@ rm -rf $RPM_BUILD_ROOT
 
 %files libOSMesa
 %defattr(-,root,root,-)
+%doc docs/COPYING
 %{_libdir}/libOSMesa.so.6*
 %{_libdir}/libOSMesa16.so.6*
 %{_libdir}/libOSMesa32.so.6*
@@ -425,6 +429,9 @@ rm -rf $RPM_BUILD_ROOT
 %{demodir}
 
 %changelog
+* Thu Jul 08 2010 Adam Jackson <ajax@redhat.com> 7.9-0.4
+- Install COPYING like we ought to.
+
 * Thu Jun 24 2010 Dan Horák <dan[at]danny.cz> 7.9-0.3
 - add libtool (needed by mesa-demos) to BR: - normally it's brought via
     xorg-x11-util-macros and xorg-x11-server-devel, but not on platforms
