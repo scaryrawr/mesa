@@ -13,7 +13,7 @@
 
 %define manpages gl-manpages-1.0.1
 %define xdriinfo xdriinfo-1.0.3
-%define gitdate 20100612
+%define gitdate 20100709
 %define demosgitdate 20100529
 #% define snapshot 
 
@@ -23,7 +23,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.9
-Release: 0.4%{?dist}
+Release: 0.5%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -429,6 +429,9 @@ rm -rf $RPM_BUILD_ROOT
 %{demodir}
 
 %changelog
+* Fri Jul 09 2010 Dave Airlie <airlied@redhat.com> 7.9-0.5
+- resnapshot latest git
+
 * Thu Jul 08 2010 Adam Jackson <ajax@redhat.com> 7.9-0.4
 - Install COPYING like we ought to.
 
