@@ -13,7 +13,7 @@
 
 %define manpages gl-manpages-1.0.1
 %define xdriinfo xdriinfo-1.0.3
-%define gitdate 20100720
+%define gitdate 20100824
 %define demosgitdate 20100529
 #% define snapshot 
 
@@ -23,7 +23,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.9
-Release: 0.6%{?dist}
+Release: 0.7%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -71,7 +71,9 @@ BuildRequires: libXmu-devel
 BuildRequires: glew-devel
 BuildRequires: elfutils
 BuildRequires: python
+BuildRequires: llvm-devel
 BuildRequires: libxml2-python
+BuildRequires: libtalloc-devel
 
 %description
 Mesa
@@ -84,6 +86,7 @@ Requires(postun): /sbin/ldconfig
 Provides: libGL
 Requires: mesa-dri-drivers%{?_isa} = %{version}-%{release}
 Requires: libdrm >= 2.4.21-1
+Requires: libtalloc
 %if %{with_hardware}
 Conflicts: xorg-x11-server-Xorg < 1.4.99.901-14
 %endif
@@ -95,6 +98,7 @@ Mesa libGL runtime library.
 %package dri-drivers
 Summary: Mesa-based DRI drivers
 Group: User Interface/X Hardware Support
+Requires: llvm
 %description dri-drivers
 Mesa-based DRI drivers.
 
@@ -150,6 +154,7 @@ Requires(postun): /sbin/ldconfig
 Provides: libOSMesa
 
 %description libOSMesa
+Requires: libtalloc
 Mesa offscreen rendering libraries
 
 
@@ -252,6 +257,7 @@ export CXXFLAGS="$RPM_OPT_FLAGS -Os"
     --with-driver=dri \
     --with-dri-driverdir=%{_libdir}/dri \
     --with-state-trackers=dri,glx \
+    --enable-gallium-llvm \
 %if %{with_hardware}
     --disable-gallium-intel \
     --disable-gallium-svga \
@@ -429,6 +435,9 @@ rm -rf $RPM_BUILD_ROOT
 %{demodir}
 
 %changelog
+* Tue Aug 24 2010 Dave Airlie <airlied@redhat.com> 7.9-0.7
+- latest git snapshot - enable talloc/llvm links
+
 * Tue Jul 20 2010 Dave Airlie <airlied@redhat.com> 7.9-0.6
 - snapshot latest git
 
