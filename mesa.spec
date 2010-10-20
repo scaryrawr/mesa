@@ -13,7 +13,7 @@
 
 %define manpages gl-manpages-1.0.1
 %define xdriinfo xdriinfo-1.0.3
-%define gitdate 20100824
+%define gitdate 20101020
 %define demosgitdate 20100529
 #% define snapshot 
 
@@ -22,8 +22,8 @@
 
 Summary: Mesa graphics libraries
 Name: mesa
-Version: 7.9
-Release: 0.7%{?dist}
+Version: 7.10
+Release: 0.1%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -41,7 +41,6 @@ Source4: make-demo-snapshot.sh
 
 Source5: http://www.x.org/pub/individual/app/%{xdriinfo}.tar.bz2
 
-Patch1: mesa-7.1-osmesa-version.patch
 Patch2: mesa-7.1-nukeglthread-debug.patch
 Patch3: mesa-no-mach64.patch
 Patch4: nouveau-legacy-enable.patch
@@ -86,7 +85,6 @@ Requires(postun): /sbin/ldconfig
 Provides: libGL
 Requires: mesa-dri-drivers%{?_isa} = %{version}-%{release}
 Requires: libdrm >= 2.4.21-1
-Requires: libtalloc
 %if %{with_hardware}
 Conflicts: xorg-x11-server-Xorg < 1.4.99.901-14
 %endif
@@ -154,7 +152,6 @@ Requires(postun): /sbin/ldconfig
 Provides: libOSMesa
 
 %description libOSMesa
-Requires: libtalloc
 Mesa offscreen rendering libraries
 
 
@@ -193,7 +190,6 @@ Group: User Interface/X Hardware Support
 %prep
 #setup -q -n mesa-%{version}%{?snapshot} -b0 -b2 -b5
 %setup -q -n mesa-%{gitdate} -b1 -b2 -b5
-%patch1 -p1 -b .osmesa
 %patch2 -p1 -b .intel-glthread
 %patch3 -p1 -b .no-mach64
 %patch4 -p1 -b .nouveau
@@ -223,23 +219,11 @@ export CXXFLAGS="$RPM_OPT_FLAGS -fvisibility=hidden -Os"
 %endif
 %define osmesa_flags --with-driver=osmesa %{common_flags} --disable-gallium --with-dri-drivers="" --disable-glu --disable-egl
 
-# first, build the osmesa variants. XXX this is overkill.  osmesa32 is
-# sufficient to render to any of the channel sizes, according to the
-# docs.  should fix this someday.
+# first, build osmesa.
 
 %configure %{osmesa_flags} --with-osmesa-bits=8
 make %{_smp_mflags}
 mv %{_lib} osmesa8
-make clean
-
-%configure %{osmesa_flags} --with-osmesa-bits=16
-make %{_smp_mflags}
-mv %{_lib} osmesa16
-make clean
-
-%configure %{osmesa_flags} --with-osmesa-bits=32
-make %{_smp_mflags}
-mv %{_lib} osmesa32
 make clean
 
 # just to be sure...
@@ -412,16 +396,12 @@ rm -rf $RPM_BUILD_ROOT
 %files libOSMesa
 %defattr(-,root,root,-)
 %doc docs/COPYING
-%{_libdir}/libOSMesa.so.6*
-%{_libdir}/libOSMesa16.so.6*
-%{_libdir}/libOSMesa32.so.6*
+%{_libdir}/libOSMesa.so.7*
 
 %files libOSMesa-devel
 %defattr(-,root,root,-)
 %{_includedir}/GL/osmesa.h
 %{_libdir}/libOSMesa.so
-%{_libdir}/libOSMesa16.so
-%{_libdir}/libOSMesa32.so
 
 %files -n glx-utils
 %defattr(-,root,root,-)
@@ -435,6 +415,10 @@ rm -rf $RPM_BUILD_ROOT
 %{demodir}
 
 %changelog
+* Wed Oct 20 2010 Adam Jackson <ajax@redhat.com> 7.10-0.1
+- git snapshot
+- Drop osmesa16 and osmesa32, nothing's using them
+
 * Tue Aug 24 2010 Dave Airlie <airlied@redhat.com> 7.9-0.7
 - latest git snapshot - enable talloc/llvm links
 
