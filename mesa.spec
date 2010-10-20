@@ -23,7 +23,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.10
-Release: 0.1%{?dist}
+Release: 0.2%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -415,6 +415,9 @@ rm -rf $RPM_BUILD_ROOT
 %{demodir}
 
 %changelog
+* Wed Oct 20 2010 Adam Jackson <ajax@redhat.com> 7.10-0.2
+- git snapshot, fixes osmesa linking issues
+
 * Wed Oct 20 2010 Adam Jackson <ajax@redhat.com> 7.10-0.1
 - git snapshot
 - Drop osmesa16 and osmesa32, nothing's using them
