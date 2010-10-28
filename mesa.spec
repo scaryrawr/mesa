@@ -1,6 +1,3 @@
-
-# When bootstrapping an arch, omit the -demos subpackage.
-
 # S390 doesn't have video cards, but we need swrast for xserver's GLX
 %ifarch s390 s390x
 %define with_hardware 0
@@ -12,39 +9,26 @@
 %define _default_patch_fuzz 2
 
 %define manpages gl-manpages-1.0.1
-%define xdriinfo xdriinfo-1.0.3
 %define gitdate 20101020
-%define demosgitdate 20100529
 #% define snapshot 
-
-%global demopkg %{name}-demos-%{demosgitdate}
-%define demodir %{_libdir}/mesa
 
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.10
-Release: 0.2%{?dist}
+Release: 0.3%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
-BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 #Source0: http://downloads.sf.net/mesa3d/MesaLib-%{version}.tar.bz2
 #Source0: http://www.mesa3d.org/beta/MesaLib-%{version}%{?snapshot}.tar.bz2
-#Source1: http://www.mesa3d.org/beta/MesaDemos-%{version}%{?snapshot}.tar.bz2
 Source0: %{name}-%{gitdate}.tar.bz2
-Source1: %{name}-demos-%{demosgitdate}.tar.bz2
-#Source1: http://downloads.sf.net/mesa3d/MesaDemos-%{version}.tar.bz2
 Source2: %{manpages}.tar.bz2
 Source3: make-git-snapshot.sh
-Source4: make-demo-snapshot.sh
-
-Source5: http://www.x.org/pub/individual/app/%{xdriinfo}.tar.bz2
 
 Patch2: mesa-7.1-nukeglthread-debug.patch
 Patch3: mesa-no-mach64.patch
 Patch4: nouveau-legacy-enable.patch
-Patch5: mesa-demos-fix-add-needed.patch
 
 #Patch7: mesa-7.1-link-shared.patch
 
@@ -62,12 +46,10 @@ BuildRequires: xorg-x11-proto-devel >= 7.4-35
 BuildRequires: makedepend
 BuildRequires: libselinux-devel
 BuildRequires: libXext-devel
-BuildRequires: freeglut-devel
 BuildRequires: libXfixes-devel
 BuildRequires: libXdamage-devel
 BuildRequires: libXi-devel
 BuildRequires: libXmu-devel
-BuildRequires: glew-devel
 BuildRequires: elfutils
 BuildRequires: python
 BuildRequires: llvm-devel
@@ -164,22 +146,6 @@ Requires: mesa-libOSMesa = %{version}-%{release}
 Mesa offscreen rendering development package
 
 
-%package -n glx-utils
-Summary: GLX utilities
-Group: Development/Libraries
-
-%description -n glx-utils
-The glx-utils package provides the glxinfo and glxgears utilities.
-
-
-%package demos
-Summary: Mesa demos
-Group: Development/Libraries
-Requires: glew
-
-%description demos
-This package provides some demo applications for testing Mesa.
-
 %package -n xorg-x11-drv-vmwgfx
 Summary: VMware GFX DDX driver
 Group: User Interface/X Hardware Support
@@ -188,22 +154,13 @@ Group: User Interface/X Hardware Support
 2D driver for VMware SVGA vGPU
 
 %prep
-#setup -q -n mesa-%{version}%{?snapshot} -b0 -b2 -b5
-%setup -q -n mesa-%{gitdate} -b1 -b2 -b5
+#setup -q -n mesa-%{version}%{?snapshot} -b0 -b2
+%setup -q -n mesa-%{gitdate} -b2
 %patch2 -p1 -b .intel-glthread
 %patch3 -p1 -b .no-mach64
 %patch4 -p1 -b .nouveau
 #%patch7 -p1 -b .dricore
 %patch30 -p1 -b .vblank-warning
-
-# Hack the demos to use installed data files
-cd ../%{demopkg}
-%patch5 -p1 -b .add
-sed -i 's,../images,%{_libdir}/mesa,' src/demos/*.c
-sed -i 's,geartrain.dat,%{_libdir}/mesa/&,' src/demos/geartrain.c
-sed -i 's,isosurf.dat,%{_libdir}/mesa/&,' src/demos/isosurf.c
-sed -i 's,terrain.dat,%{_libdir}/mesa/&,' src/demos/terrain.c
-cd -
 
 %build
 
@@ -253,17 +210,6 @@ export CXXFLAGS="$RPM_OPT_FLAGS -Os"
 
 make %{?_smp_mflags}
 
-pushd ../%{demopkg}
-autoreconf -v --install
-%configure --bindir=%{demodir}
-make %{?_smp_mflags}
-popd
-
-pushd ../%{xdriinfo}
-%configure
-make %{?_smp_mflags}
-popd
-
 pushd ../%{manpages}
 autoreconf -v --install
 %configure
@@ -295,24 +241,8 @@ pushd $RPM_BUILD_ROOT%{_libdir}
 rm -f xorg/modules/drivers/modesetting_drv.so
 popd
 
-pushd ../%{demopkg}
-# XXX demos, since they don't install automatically.  should fix that.
-install -d $RPM_BUILD_ROOT%{_bindir}
-install -m 0755 src/xdemos/glxgears $RPM_BUILD_ROOT%{_bindir}
-install -m 0755 src/xdemos/glxinfo $RPM_BUILD_ROOT%{_bindir}
-install -d $RPM_BUILD_ROOT%{demodir}
-find src/demos/ -type f -perm /0111 |
-    xargs install -m 0755 -t $RPM_BUILD_ROOT/%{demodir}
-install -m 0644 src/images/*.rgb $RPM_BUILD_ROOT/%{demodir}
-install -m 0644 src/demos/*.dat $RPM_BUILD_ROOT/%{demodir}
-popd
-
 # and osmesa
 mv osmesa*/libOS* $RPM_BUILD_ROOT%{_libdir}
-
-pushd ../%{xdriinfo}
-make %{?_smp_mflags} install DESTDIR=$RPM_BUILD_ROOT
-popd
 
 # man pages
 pushd ../%{manpages}
@@ -403,18 +333,11 @@ rm -rf $RPM_BUILD_ROOT
 %{_includedir}/GL/osmesa.h
 %{_libdir}/libOSMesa.so
 
-%files -n glx-utils
-%defattr(-,root,root,-)
-%{_bindir}/glxgears
-%{_bindir}/glxinfo
-%{_bindir}/xdriinfo
-%{_datadir}/man/man1/xdriinfo.1*
-
-%files demos
-%defattr(-,root,root,-)
-%{demodir}
-
 %changelog
+* Thu Oct 28 2010 Adam Jackson <ajax@redhat.com> 7.10-0.3
+- Drop demos and glx-utils subpackages, they have their own source package
+  now. (#605719)
+
 * Wed Oct 20 2010 Adam Jackson <ajax@redhat.com> 7.10-0.2
 - git snapshot, fixes osmesa linking issues
 
