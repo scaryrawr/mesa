@@ -15,7 +15,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.10
-Release: 0.3%{?dist}
+Release: 0.4%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -78,7 +78,6 @@ Mesa libGL runtime library.
 %package dri-drivers
 Summary: Mesa-based DRI drivers
 Group: User Interface/X Hardware Support
-Requires: llvm
 %description dri-drivers
 Mesa-based DRI drivers.
 
@@ -87,6 +86,7 @@ Mesa-based DRI drivers.
 %package dri-drivers-experimental
 Summary: Mesa-based DRI drivers (experimental)
 Group: User Interface/X Hardware Support
+Requires: mesa-dri-drivers = %{version}-%{release}
 %description dri-drivers-experimental
 Mesa-based DRI drivers (experimental).
 %endif
@@ -334,6 +334,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libOSMesa.so
 
 %changelog
+* Thu Oct 28 2010 Adam Jackson <ajax@redhat.com> 7.10-0.4
+- -dri-drivers-experimental Requires dri-drivers (#556789)
+
 * Thu Oct 28 2010 Adam Jackson <ajax@redhat.com> 7.10-0.3
 - Drop demos and glx-utils subpackages, they have their own source package
   now. (#605719)
