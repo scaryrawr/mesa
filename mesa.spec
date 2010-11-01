@@ -15,7 +15,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.10
-Release: 0.4%{?dist}
+Release: 0.5%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -52,7 +52,7 @@ BuildRequires: libXi-devel
 BuildRequires: libXmu-devel
 BuildRequires: elfutils
 BuildRequires: python
-BuildRequires: llvm-devel
+BuildRequires: llvm-static
 BuildRequires: libxml2-python
 BuildRequires: libtalloc-devel
 
@@ -334,6 +334,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libOSMesa.so
 
 %changelog
+* Mon Nov 01 2010 Adam Jackson <ajax@redhat.com> 7.10-0.5
+- BR: llvm-static not llvm-devel (#627965)
+
 * Thu Oct 28 2010 Adam Jackson <ajax@redhat.com> 7.10-0.4
 - -dri-drivers-experimental Requires dri-drivers (#556789)
 
