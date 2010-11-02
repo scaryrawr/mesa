@@ -15,7 +15,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.10
-Release: 0.5%{?dist}
+Release: 0.6%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -82,14 +82,12 @@ Group: User Interface/X Hardware Support
 Mesa-based DRI drivers.
 
 
-%if %{with_hardware}
 %package dri-drivers-experimental
 Summary: Mesa-based DRI drivers (experimental)
 Group: User Interface/X Hardware Support
 Requires: mesa-dri-drivers = %{version}-%{release}
 %description dri-drivers-experimental
 Mesa-based DRI drivers (experimental).
-%endif
 
 
 %package libGL-devel
@@ -166,8 +164,8 @@ Group: User Interface/X Hardware Support
 
 autoreconf --install  
 
-export CFLAGS="$RPM_OPT_FLAGS -fvisibility=hidden -Os"
-export CXXFLAGS="$RPM_OPT_FLAGS -fvisibility=hidden -Os"
+export CFLAGS="$RPM_OPT_FLAGS"
+export CXXFLAGS="$RPM_OPT_FLAGS"
 %ifarch %{ix86}
 # i do not have words for how much the assembly dispatch code infuriates me
 %define common_flags --enable-selinux --enable-pic --disable-asm
@@ -185,10 +183,6 @@ make clean
 
 # just to be sure...
 [ `find . -name \*.o | wc -l` -eq 0 ] || exit 1
-
-# XXX should get visibility working again post-dricore.
-export CFLAGS="$RPM_OPT_FLAGS -Os"
-export CXXFLAGS="$RPM_OPT_FLAGS -Os"
 
 # now build the rest of mesa
 %configure %{common_flags} \
@@ -279,16 +273,18 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_libdir}/dri
 #%{_libdir}/dri/libdricore.so
 %{_libdir}/dri/*_dri.so
+%exclude %{_libdir}/dri/swrastg_dri.so
 %if %{with_hardware}
 #exclude %{_libdir}/dri/vmwgfx_dri.so
 %exclude %{_libdir}/dri/nouveau_dri.so
 %exclude %{_libdir}/dri/nouveau_vieux_dri.so
 %endif
 
-%if %{with_hardware}
 %files dri-drivers-experimental
 %defattr(-,root,root,-)
 %doc docs/COPYING
+%{_libdir}/dri/swrastg_dri.so
+%if %{with_hardware}
 #{_libdir}/dri/vmwgfx_dri.so
 %{_libdir}/dri/nouveau_dri.so
 %{_libdir}/dri/nouveau_vieux_dri.so
@@ -334,6 +330,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libOSMesa.so
 
 %changelog
+* Tue Nov 02 2010 Adam Jackson <ajax@redhat.com> 7.10-0.6
+- Use standard CFLAGS
+- Move swrastg_dri to -experimental
+
 * Mon Nov 01 2010 Adam Jackson <ajax@redhat.com> 7.10-0.5
 - BR: llvm-static not llvm-devel (#627965)
 
