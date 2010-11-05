@@ -354,7 +354,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_includedir}/EGL/eglplatform.h
 %{_includedir}/KHR/khrplatform.h
 %{_libdir}/pkgconfig/egl.pc
-%{_libdir}/pkgconfig/glesv1_cmn.pc
+%{_libdir}/pkgconfig/glesv1_cm.pc
 %{_libdir}/pkgconfig/glesv2.pc
 
 %files libGLU
