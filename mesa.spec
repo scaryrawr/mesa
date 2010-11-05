@@ -74,6 +74,16 @@ Conflicts: xorg-x11-server-Xorg < 1.4.99.901-14
 %description libGL
 Mesa libGL runtime library.
 
+%package libEGL
+Summary: Mesa libEGL runtime libraries
+Group: System Environment/Libraries
+Requires(post): /sbin/ldconfig
+Requires(postun): /sbin/ldconfig
+Requires: mesa-dri-drivers%{?_isa} = %{version}-%{release}
+Requires: libdrm >= 2.4.21-1
+
+%description libEGL
+Mesa libEGL + GLES runtime libraries
 
 %package dri-drivers
 Summary: Mesa-based DRI drivers
@@ -101,6 +111,13 @@ Conflicts: xorg-x11-proto-devel <= 7.2-12
 %description libGL-devel
 Mesa libGL development package
 
+%package libEGL-devel
+Summary: Mesa libEGL development package
+Group: Development/Libraries
+Requires: mesa-libEGL = %{version}-%{release}
+
+%description libEGL-devel
+Mesa libEGL development package
 
 %package libGLU
 Summary: Mesa libGLU runtime library
@@ -192,6 +209,9 @@ make clean
     --with-driver=dri \
     --with-dri-driverdir=%{_libdir}/dri \
     --with-state-trackers=dri,glx \
+    --enable-egl \
+    --enable-gles1 \
+    --enable-gles2 \
     --enable-gallium-llvm \
 %if %{with_hardware}
     --disable-gallium-intel \
@@ -199,7 +219,6 @@ make clean
     --enable-gallium-radeon \
     --enable-gallium-nouveau \
 %endif
-    --disable-egl \
     %{?dri_drivers}
 
 make %{?_smp_mflags}
@@ -260,12 +279,27 @@ rm -rf $RPM_BUILD_ROOT
 %postun libGLU -p /sbin/ldconfig
 %post libOSMesa -p /sbin/ldconfig
 %postun libOSMesa -p /sbin/ldconfig
+%post libEGL -p /sbin/ldconfig
+%postun libEGL -p /sbin/ldconfig
 
 %files libGL
 %defattr(-,root,root,-)
 %doc docs/COPYING
 %{_libdir}/libGL.so.1
 %{_libdir}/libGL.so.1.*
+
+%files libEGL
+%defattr(-,root,root,-)
+%doc docs/COPYING
+%{_libdir}/libEGL.so.1
+%{_libdir}/libEGL.so.1.*
+%{_libdir}/libGLESv1_CM.so.1
+%{_libdir}/libGLESv1_CM.so.1.*
+%{_libdir}/libGLESv2.so.2
+%{_libdir}/libGLESv2.so.2.*
+%{_libdir}/egl/egl_glx.so
+%{_libdir}/egl/egl_dri2.so
+%{_libdir}/egl/egl_gallium.so
 
 %files dri-drivers
 %defattr(-,root,root,-)
@@ -305,6 +339,23 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/gl.pc
 %{_datadir}/man/man3/gl[^uX]*.3gl*
 %{_datadir}/man/man3/glX*.3gl*
+
+%files libEGL-devel
+%defattr(-,root,root,-)
+%{_includedir}/GLES/egl.h
+%{_includedir}/GLES/gl.h
+%{_includedir}/GLES/glext.h
+%{_includedir}/GLES/glplatform.h
+%{_includedir}/GLES2/gl2platform.h
+%{_includedir}/GLES2/gl2.h
+%{_includedir}/GLES2/gl2ext.h
+%{_includedir}/EGL/eglext.h
+%{_includedir}/EGL/egl.h
+%{_includedir}/EGL/eglplatform.h
+%{_includedir}/KHR/khrplatform.h
+%{_libdir}/pkgconfig/egl.pc
+%{_libdir}/pkgconfig/glesv1_cmn.pc
+%{_libdir}/pkgconfig/glesv2.pc
 
 %files libGLU
 %defattr(-,root,root,-)
