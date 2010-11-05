@@ -15,7 +15,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.10
-Release: 0.7%{?dist}
+Release: 0.8%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -416,6 +416,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libOSMesa.so
 
 %changelog
+* Sat Nov 06 2010 Dave Airlie <airlied@redhat.com> 7.10-0.8
+- enable EGL/GLES
+
 * Wed Nov 03 2010 Dave Airlie <airlied@redhat.com> 7.10-0.7
 - fix r300g selection
 
