@@ -208,7 +208,7 @@ make clean
     --disable-gl-osmesa \
     --with-driver=dri \
     --with-dri-driverdir=%{_libdir}/dri \
-    --with-state-trackers=dri,glx \
+    --with-state-trackers=dri,glx,egl \
     --enable-egl \
     --enable-gles1 \
     --enable-gles2 \
