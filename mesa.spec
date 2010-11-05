@@ -83,7 +83,18 @@ Requires: mesa-dri-drivers%{?_isa} = %{version}-%{release}
 Requires: libdrm >= 2.4.21-1
 
 %description libEGL
-Mesa libEGL + GLES runtime libraries
+Mesa libEGL runtime libraries
+
+%package libGLES
+Summary: Mesa libGLES runtime libraries
+Group: System Environment/Libraries
+Requires(post): /sbin/ldconfig
+Requires(postun): /sbin/ldconfig
+Requires: mesa-dri-drivers%{?_isa} = %{version}-%{release}
+Requires: libdrm >= 2.4.21-1
+
+%description libGLES
+Mesa GLES runtime libraries
 
 %package dri-drivers
 Summary: Mesa-based DRI drivers
@@ -118,6 +129,14 @@ Requires: mesa-libEGL = %{version}-%{release}
 
 %description libEGL-devel
 Mesa libEGL development package
+
+%package libGLES-devel
+Summary: Mesa libGLES development package
+Group: Development/Libraries
+Requires: mesa-libGLES = %{version}-%{release}
+
+%description libGLES-devel
+Mesa libGLES development package
 
 %package libGLU
 Summary: Mesa libGLU runtime library
@@ -281,6 +300,8 @@ rm -rf $RPM_BUILD_ROOT
 %postun libOSMesa -p /sbin/ldconfig
 %post libEGL -p /sbin/ldconfig
 %postun libEGL -p /sbin/ldconfig
+%post libGLES -p /sbin/ldconfig
+%postun libGLES -p /sbin/ldconfig
 
 %files libGL
 %defattr(-,root,root,-)
@@ -293,13 +314,21 @@ rm -rf $RPM_BUILD_ROOT
 %doc docs/COPYING
 %{_libdir}/libEGL.so.1
 %{_libdir}/libEGL.so.1.*
+%{_libdir}/egl/egl_glx.so
+%{_libdir}/egl/egl_dri2.so
+%{_libdir}/egl/egl_gallium.so
+%{_libdir}/egl/pipe_nouveau.so
+%{_libdir}/egl/pipe_r300.so
+%{_libdir}/egl/pipe_swrast.so
+%{_libdir}/egl/st_GL.so
+
+%files libGLES
+%defattr(-,root,root,-)
+%doc docs/COPYING
 %{_libdir}/libGLESv1_CM.so.1
 %{_libdir}/libGLESv1_CM.so.1.*
 %{_libdir}/libGLESv2.so.2
 %{_libdir}/libGLESv2.so.2.*
-%{_libdir}/egl/egl_glx.so
-%{_libdir}/egl/egl_dri2.so
-%{_libdir}/egl/egl_gallium.so
 
 %files dri-drivers
 %defattr(-,root,root,-)
@@ -342,6 +371,15 @@ rm -rf $RPM_BUILD_ROOT
 
 %files libEGL-devel
 %defattr(-,root,root,-)
+%{_includedir}/EGL/eglext.h
+%{_includedir}/EGL/egl.h
+%{_includedir}/EGL/eglplatform.h
+%{_includedir}/KHR/khrplatform.h
+%{_libdir}/pkgconfig/egl.pc
+%{_libdir}/libEGL.so
+
+%files libGLES-devel
+%defattr(-,root,root,-)
 %{_includedir}/GLES/egl.h
 %{_includedir}/GLES/gl.h
 %{_includedir}/GLES/glext.h
@@ -349,13 +387,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_includedir}/GLES2/gl2platform.h
 %{_includedir}/GLES2/gl2.h
 %{_includedir}/GLES2/gl2ext.h
-%{_includedir}/EGL/eglext.h
-%{_includedir}/EGL/egl.h
-%{_includedir}/EGL/eglplatform.h
-%{_includedir}/KHR/khrplatform.h
-%{_libdir}/pkgconfig/egl.pc
 %{_libdir}/pkgconfig/glesv1_cm.pc
 %{_libdir}/pkgconfig/glesv2.pc
+%{_libdir}/libGLESv1_CM.so
+%{_libdir}/libGLESv2.so
 
 %files libGLU
 %defattr(-,root,root,-)
