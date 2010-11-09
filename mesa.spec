@@ -9,13 +9,13 @@
 %define _default_patch_fuzz 2
 
 %define manpages gl-manpages-1.0.1
-%define gitdate 20101020
+%define gitdate 20101108
 #% define snapshot 
 
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.10
-Release: 0.8%{?dist}
+Release: 0.9%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -236,6 +236,7 @@ make clean
     --disable-gallium-intel \
     --disable-gallium-svga \
     --enable-gallium-radeon \
+    --enable-gallium-r600 \
     --enable-gallium-nouveau \
 %endif
     %{?dri_drivers}
@@ -259,6 +260,7 @@ install -d $RPM_BUILD_ROOT%{_libdir}/dri
 #install -m 0755 -t $RPM_BUILD_ROOT%{_libdir}/dri %{_lib}/libdricore.so >& /dev/null
 # use gallium r300 driver iff built
 [ -f %{_lib}/gallium/r300_dri.so ] && cp %{_lib}/gallium/r300_dri.so %{_lib}/r300_dri.so
+[ -f %{_lib}/gallium/r600_dri.so ] && cp %{_lib}/gallium/r600_dri.so %{_lib}/r600_dri.so
 for f in i810 i915 i965 mach64 mga r128 r200 r300 r600 radeon savage sis swrast tdfx unichrome nouveau_vieux gallium/vmwgfx; do
     so=%{_lib}/${f}_dri.so
     test -e $so && echo $so
@@ -319,6 +321,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/egl/egl_gallium.so
 %{_libdir}/egl/pipe_nouveau.so
 %{_libdir}/egl/pipe_r300.so
+%{_libdir}/egl/pipe_r600.so
 %{_libdir}/egl/pipe_swrast.so
 %{_libdir}/egl/st_GL.so
 
@@ -416,6 +419,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libOSMesa.so
 
 %changelog
+* Mon Nov 08 2010 Dave Airlie <airlied@redhat.com> 7.10-0.9
+- update to latest git snap + enable r600g by default
+
 * Sat Nov 06 2010 Dave Airlie <airlied@redhat.com> 7.10-0.8
 - enable EGL/GLES
 
