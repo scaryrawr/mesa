@@ -15,7 +15,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.10
-Release: 0.9%{?dist}
+Release: 0.10%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -33,6 +33,7 @@ Patch4: nouveau-legacy-enable.patch
 #Patch7: mesa-7.1-link-shared.patch
 
 Patch30: mesa-7.6-hush-vblank-warning.patch
+Patch31: mesa-7.10-swrastg.patch
 
 BuildRequires: pkgconfig autoconf automake libtool
 %if %{with_hardware}
@@ -183,9 +184,30 @@ Mesa offscreen rendering development package
 %package -n xorg-x11-drv-vmwgfx
 Summary: VMware GFX DDX driver
 Group: User Interface/X Hardware Support
+Requires: Xorg %(xserver-sdk-abi-requires ansic) %(xserver-sdk-abi-requires videodrv)
 
 %description -n xorg-x11-drv-vmwgfx
 2D driver for VMware SVGA vGPU
+
+%package libOpenVG
+Summary: Mesa libOpenVG runtime library
+Group: System Environment/Libraries
+Requires(post): /sbin/ldconfig
+Requires(postun): /sbin/ldconfig
+Requires: mesa-dri-drivers = %{version}-%{release}
+
+%description libOpenVG
+Mesa libOpenVG runtime library
+
+
+%package libOpenVG-devel
+Summary: Mesa libOpenVG development package
+Group: Development/Libraries
+Requires: mesa-libOpenVG = %{version}-%{release}
+
+%description libOpenVG-devel
+Mesa libOpenVG development package
+
 
 %prep
 #setup -q -n mesa-%{version}%{?snapshot} -b0 -b2
@@ -195,6 +217,7 @@ Group: User Interface/X Hardware Support
 %patch4 -p1 -b .nouveau
 #%patch7 -p1 -b .dricore
 %patch30 -p1 -b .vblank-warning
+%patch31 -p1 -b .jx 
 
 %build
 
@@ -227,7 +250,7 @@ make clean
     --disable-gl-osmesa \
     --with-driver=dri \
     --with-dri-driverdir=%{_libdir}/dri \
-    --with-state-trackers=dri,glx,egl \
+    --with-state-trackers=dri,glx,egl,vega \
     --enable-egl \
     --enable-gles1 \
     --enable-gles2 \
@@ -333,6 +356,13 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libGLESv2.so.2
 %{_libdir}/libGLESv2.so.2.*
 
+%files libOpenVG
+%defattr(-,root,root,-)
+%doc docs/COPYING
+%{_libdir}/egl/st_OpenVG.so
+%{_libdir}/libOpenVG.so.1
+%{_libdir}/libOpenVG.so.1.0.0
+
 %files dri-drivers
 %defattr(-,root,root,-)
 %doc docs/COPYING
@@ -395,6 +425,15 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libGLESv1_CM.so
 %{_libdir}/libGLESv2.so
 
+%files libOpenVG-devel
+%defattr(-,root,root,-)
+%{_includedir}/VG/openvg.h
+%{_includedir}/VG/vgext.h
+%{_includedir}/VG/vgplatform.h
+%{_includedir}/VG/vgu.h
+%{_libdir}/libOpenVG.so
+%{_libdir}/pkgconfig/vg.pc
+
 %files libGLU
 %defattr(-,root,root,-)
 %{_libdir}/libGLU.so.1
@@ -419,6 +458,11 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libOSMesa.so
 
 %changelog
+* Thu Nov 11 2010 Adam Jackson <ajax@redhat.com> 7.10-0.10
+- Build libOpenVG too
+- Add X driver ABI magic for vmwgfx
+- Linker script hack for swrastg to make it slightly less offensively huge
+
 * Mon Nov 08 2010 Dave Airlie <airlied@redhat.com> 7.10-0.9
 - update to latest git snap + enable r600g by default
 
