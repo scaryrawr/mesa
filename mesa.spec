@@ -66,7 +66,6 @@ Group: System Environment/Libraries
 Requires(post): /sbin/ldconfig
 Requires(postun): /sbin/ldconfig
 Provides: libGL
-Requires: mesa-dri-drivers%{?_isa} = %{version}-%{release}
 Requires: libdrm >= 2.4.21-1
 %if %{with_hardware}
 Conflicts: xorg-x11-server-Xorg < 1.4.99.901-14
@@ -107,7 +106,6 @@ Mesa-based DRI drivers.
 %package dri-drivers-experimental
 Summary: Mesa-based DRI drivers (experimental)
 Group: User Interface/X Hardware Support
-Requires: mesa-dri-drivers = %{version}-%{release}
 %description dri-drivers-experimental
 Mesa-based DRI drivers (experimental).
 
@@ -458,6 +456,11 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libOSMesa.so
 
 %changelog
+* Mon Nov 15 2010 Adam Jackson <ajax@redhat.com>
+- Drop Requires: mesa-dri-drivers from -experimental, not needed in a non-
+  dricore build.
+- Drop Requires: mesa-dri-drivers from -libGL, let comps do that.
+
 * Thu Nov 11 2010 Adam Jackson <ajax@redhat.com> 7.10-0.10
 - Build libOpenVG too
 - Add X driver ABI magic for vmwgfx
