@@ -9,13 +9,13 @@
 %define _default_patch_fuzz 2
 
 %define manpages gl-manpages-1.0.1
-%define gitdate 20101108
+%define gitdate 20101118
 #% define snapshot 
 
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.10
-Release: 0.10%{?dist}
+Release: 0.11%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -28,7 +28,7 @@ Source3: make-git-snapshot.sh
 
 Patch2: mesa-7.1-nukeglthread-debug.patch
 Patch3: mesa-no-mach64.patch
-Patch4: nouveau-legacy-enable.patch
+Patch4: legacy-drivers.patch
 
 #Patch7: mesa-7.1-link-shared.patch
 
@@ -212,17 +212,17 @@ Mesa libOpenVG development package
 %setup -q -n mesa-%{gitdate} -b2
 %patch2 -p1 -b .intel-glthread
 %patch3 -p1 -b .no-mach64
-%patch4 -p1 -b .nouveau
-#%patch7 -p1 -b .dricore
+%patch4 -p1 -b .classic
+#patch7 -p1 -b .dricore
 %patch30 -p1 -b .vblank-warning
-%patch31 -p1 -b .jx 
+#patch31 -p1 -b .swrastg
 
 %build
 
 autoreconf --install  
 
-export CFLAGS="$RPM_OPT_FLAGS"
-export CXXFLAGS="$RPM_OPT_FLAGS"
+export CFLAGS="$RPM_OPT_FLAGS -fno-omit-frame-pointer"
+export CXXFLAGS="$RPM_OPT_FLAGS -fno-omit-frame-pointer"
 %ifarch %{ix86}
 # i do not have words for how much the assembly dispatch code infuriates me
 %define common_flags --enable-selinux --enable-pic --disable-asm
@@ -279,9 +279,10 @@ make install DESTDIR=$RPM_BUILD_ROOT DRI_DIRS=
 # just the DRI drivers that are sane
 install -d $RPM_BUILD_ROOT%{_libdir}/dri
 #install -m 0755 -t $RPM_BUILD_ROOT%{_libdir}/dri %{_lib}/libdricore.so >& /dev/null
-# use gallium r300 driver iff built
+# use gallium driver iff built
 [ -f %{_lib}/gallium/r300_dri.so ] && cp %{_lib}/gallium/r300_dri.so %{_lib}/r300_dri.so
 [ -f %{_lib}/gallium/r600_dri.so ] && cp %{_lib}/gallium/r600_dri.so %{_lib}/r600_dri.so
+[ -f %{_lib}/gallium/swrastg_dri.so ] && mv %{_lib}/gallium/swrastg_dri.so %{_lib}/swrast_dri.so
 for f in i810 i915 i965 mach64 mga r128 r200 r300 r600 radeon savage sis swrast tdfx unichrome nouveau_vieux gallium/vmwgfx; do
     so=%{_lib}/${f}_dri.so
     test -e $so && echo $so
@@ -309,6 +310,7 @@ pushd $RPM_BUILD_ROOT%{_libdir}
 for i in libOSMesa*.so libGL.so ; do
     eu-findtextrel $i && exit 1
 done
+popd
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -377,7 +379,6 @@ rm -rf $RPM_BUILD_ROOT
 %files dri-drivers-experimental
 %defattr(-,root,root,-)
 %doc docs/COPYING
-%{_libdir}/dri/swrastg_dri.so
 %if %{with_hardware}
 #{_libdir}/dri/vmwgfx_dri.so
 %{_libdir}/dri/nouveau_dri.so
@@ -456,6 +457,12 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libOSMesa.so
 
 %changelog
+* Thu Nov 18 2010 Adam Jackson <ajax@redhat.com> 7.10-0.11
+- Today's git snap.
+- Build with -fno-omit-frame-pointer for profiling.
+- Install swrastg as the swrast driver.
+- legacy-drivers.patch: Disable swrast classic.
+
 * Mon Nov 15 2010 Adam Jackson <ajax@redhat.com>
 - Drop Requires: mesa-dri-drivers from -experimental, not needed in a non-
   dricore build.
