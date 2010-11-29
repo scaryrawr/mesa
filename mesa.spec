@@ -9,13 +9,13 @@
 %define _default_patch_fuzz 2
 
 %define manpages gl-manpages-1.0.1
-%define gitdate 20101118
+%define gitdate 20101129
 #% define snapshot 
 
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.10
-Release: 0.11%{?dist}
+Release: 0.12%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -457,6 +457,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libOSMesa.so
 
 %changelog
+* Mon Nov 29 2010 Adam Jackson <ajax@redhat.com> 7.10-0.12
+- Today's git snap.
+
 * Thu Nov 18 2010 Adam Jackson <ajax@redhat.com> 7.10-0.11
 - Today's git snap.
 - Build with -fno-omit-frame-pointer for profiling.
