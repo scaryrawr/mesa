@@ -15,7 +15,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.10
-Release: 0.12%{?dist}
+Release: 0.13%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -342,9 +342,11 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/egl/egl_glx.so
 %{_libdir}/egl/egl_dri2.so
 %{_libdir}/egl/egl_gallium.so
-%{_libdir}/egl/pipe_nouveau.so
 %{_libdir}/egl/pipe_r300.so
+%if %{with_hardware}
+%{_libdir}/egl/pipe_nouveau.so
 %{_libdir}/egl/pipe_r600.so
+%endif
 %{_libdir}/egl/pipe_swrast.so
 %{_libdir}/egl/st_GL.so
 
@@ -457,6 +459,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libOSMesa.so
 
 %changelog
+* Wed Dec 01 2010 Dan Horák <dan[at]danny.cz> 7.10-0.13
+- workaround failing build on s390(x)
+
 * Mon Nov 29 2010 Adam Jackson <ajax@redhat.com> 7.10-0.12
 - Today's git snap.
 
