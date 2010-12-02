@@ -15,7 +15,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.10
-Release: 0.13%{?dist}
+Release: 0.14%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -256,6 +256,7 @@ make clean
 %if %{with_hardware}
     --disable-gallium-intel \
     --disable-gallium-svga \
+    --disable-gallium-egl \
     --enable-gallium-radeon \
     --enable-gallium-r600 \
     --enable-gallium-nouveau \
@@ -459,6 +460,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libOSMesa.so
 
 %changelog
+* Thu Dec 02 2010 Adam Jackson <ajax@redhat.com> 7.10-0.14
+- --disable-gallium-egl
+
 * Wed Dec 01 2010 Dan Horák <dan[at]danny.cz> 7.10-0.13
 - workaround failing build on s390(x)
 
