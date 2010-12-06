@@ -15,7 +15,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.10
-Release: 0.14%{?dist}
+Release: 0.15%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -187,26 +187,6 @@ Requires: Xorg %(xserver-sdk-abi-requires ansic) %(xserver-sdk-abi-requires vide
 %description -n xorg-x11-drv-vmwgfx
 2D driver for VMware SVGA vGPU
 
-%package libOpenVG
-Summary: Mesa libOpenVG runtime library
-Group: System Environment/Libraries
-Requires(post): /sbin/ldconfig
-Requires(postun): /sbin/ldconfig
-Requires: mesa-dri-drivers = %{version}-%{release}
-
-%description libOpenVG
-Mesa libOpenVG runtime library
-
-
-%package libOpenVG-devel
-Summary: Mesa libOpenVG development package
-Group: Development/Libraries
-Requires: mesa-libOpenVG = %{version}-%{release}
-
-%description libOpenVG-devel
-Mesa libOpenVG development package
-
-
 %prep
 #setup -q -n mesa-%{version}%{?snapshot} -b0 -b2
 %setup -q -n mesa-%{gitdate} -b2
@@ -248,7 +228,7 @@ make clean
     --disable-gl-osmesa \
     --with-driver=dri \
     --with-dri-driverdir=%{_libdir}/dri \
-    --with-state-trackers=dri,glx,egl,vega \
+    --with-state-trackers=dri,glx \
     --enable-egl \
     --enable-gles1 \
     --enable-gles2 \
@@ -342,14 +322,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libEGL.so.1.*
 %{_libdir}/egl/egl_glx.so
 %{_libdir}/egl/egl_dri2.so
-%{_libdir}/egl/egl_gallium.so
-%{_libdir}/egl/pipe_r300.so
-%if %{with_hardware}
-%{_libdir}/egl/pipe_nouveau.so
-%{_libdir}/egl/pipe_r600.so
-%endif
-%{_libdir}/egl/pipe_swrast.so
-%{_libdir}/egl/st_GL.so
 
 %files libGLES
 %defattr(-,root,root,-)
@@ -358,13 +330,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libGLESv1_CM.so.1.*
 %{_libdir}/libGLESv2.so.2
 %{_libdir}/libGLESv2.so.2.*
-
-%files libOpenVG
-%defattr(-,root,root,-)
-%doc docs/COPYING
-%{_libdir}/egl/st_OpenVG.so
-%{_libdir}/libOpenVG.so.1
-%{_libdir}/libOpenVG.so.1.0.0
 
 %files dri-drivers
 %defattr(-,root,root,-)
@@ -427,15 +392,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libGLESv1_CM.so
 %{_libdir}/libGLESv2.so
 
-%files libOpenVG-devel
-%defattr(-,root,root,-)
-%{_includedir}/VG/openvg.h
-%{_includedir}/VG/vgext.h
-%{_includedir}/VG/vgplatform.h
-%{_includedir}/VG/vgu.h
-%{_libdir}/libOpenVG.so
-%{_libdir}/pkgconfig/vg.pc
-
 %files libGLU
 %defattr(-,root,root,-)
 %{_libdir}/libGLU.so.1
@@ -460,6 +416,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libOSMesa.so
 
 %changelog
+* Mon Dec 06 2010 Adam Jackson <ajax@redhat.com> 7.10-0.15
+- Really disable gallium EGL.  Requires disabling OpenVG due to buildsystem
+  nonsense.  Someone fix that someday. (Patch from krh)
+
 * Thu Dec 02 2010 Adam Jackson <ajax@redhat.com> 7.10-0.14
 - --disable-gallium-egl
 
