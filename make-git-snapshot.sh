@@ -17,6 +17,6 @@ git clone ${REF:+--reference $REF} \
 	git://git.freedesktop.org/git/mesa/mesa $DIRNAME
 
 GIT_DIR=$DIRNAME/.git git archive --format=tar --prefix=$DIRNAME/ ${1:-HEAD} \
-	| bzip2 > $DIRNAME.tar.bz2
+	| xz > $DIRNAME.tar.xz
 
 # rm -rf $DIRNAME

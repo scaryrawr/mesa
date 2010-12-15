@@ -9,20 +9,20 @@
 %define _default_patch_fuzz 2
 
 %define manpages gl-manpages-1.0.1
-%define gitdate 20101129
+%define gitdate 20101214
 #% define snapshot 
 
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.10
-Release: 0.15%{?dist}
+Release: 0.16%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
 
 #Source0: http://downloads.sf.net/mesa3d/MesaLib-%{version}.tar.bz2
 #Source0: http://www.mesa3d.org/beta/MesaLib-%{version}%{?snapshot}.tar.bz2
-Source0: %{name}-%{gitdate}.tar.bz2
+Source0: %{name}-%{gitdate}.tar.xz
 Source2: %{manpages}.tar.bz2
 Source3: make-git-snapshot.sh
 
@@ -416,6 +416,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libOSMesa.so
 
 %changelog
+* Wed Dec 15 2010 Adam Jackson <ajax@redhat.com> 7.10-0.16
+- Today's (yesterday's) git snap.
+- Switch the sourceball to xz.
+
 * Mon Dec 06 2010 Adam Jackson <ajax@redhat.com> 7.10-0.15
 - Really disable gallium EGL.  Requires disabling OpenVG due to buildsystem
   nonsense.  Someone fix that someday. (Patch from krh)
