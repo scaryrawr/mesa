@@ -9,13 +9,13 @@
 %define _default_patch_fuzz 2
 
 %define manpages gl-manpages-1.0.1
-%define gitdate 20101216
+%define gitdate 20110107
 #% define snapshot 
 
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.10
-Release: 0.17%{?dist}
+Release: 0.18%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -416,6 +416,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libOSMesa.so
 
 %changelog
+* Fri Jan 07 2011 Dave Airlie <airlied@redhat.com> 7.10-0.18
+- new snapshot from 7.10 branch (include Radeon HD6xxx support)
+
 * Thu Dec 16 2010 Dave Airlie <airlied@redhat.com> 7.10-0.17
 - new snapshot from 7.10 branch
 
