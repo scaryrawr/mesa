@@ -32,6 +32,8 @@ Patch4: legacy-drivers.patch
 
 #Patch7: mesa-7.1-link-shared.patch
 
+Patch10: mesa-nouveau-libdrm-2_4_24.patch
+
 Patch30: mesa-7.6-hush-vblank-warning.patch
 Patch31: mesa-7.10-swrastg.patch
 
@@ -194,6 +196,7 @@ Requires: Xorg %(xserver-sdk-abi-requires ansic) %(xserver-sdk-abi-requires vide
 %patch3 -p1 -b .no-mach64
 %patch4 -p1 -b .classic
 #patch7 -p1 -b .dricore
+%patch10 -p1 -b .nv-libdrm
 %patch30 -p1 -b .vblank-warning
 #patch31 -p1 -b .swrastg
 
