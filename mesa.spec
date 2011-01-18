@@ -15,7 +15,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.10
-Release: 0.22%{?dist}
+Release: 0.23%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -34,10 +34,17 @@ Patch4: legacy-drivers.patch
 #Patch7: mesa-7.1-link-shared.patch
 Patch8: mesa-7.10-llvmcore.patch
 
-Patch10: mesa-nouveau-libdrm-2_4_24.patch
-
 Patch30: mesa-7.6-hush-vblank-warning.patch
 Patch31: mesa-7.10-swrastg.patch
+
+# nouveau patches
+#
+# update nouveau gallium drivers to git as of 20110117, nvc0 support
+Patch50: mesa-7.10-nouveau-updates.patch
+# revert various bits to be compatible with 7.10
+Patch51: mesa-7.10-nouveau-revert.patch
+# fixup classic drivers to new libdrm api
+Patch52: mesa-7.10-nouveau-classic-libdrm.patch
 
 BuildRequires: pkgconfig autoconf automake libtool
 %if %{with_hardware}
@@ -221,9 +228,11 @@ Requires: Xorg %(xserver-sdk-abi-requires ansic) %(xserver-sdk-abi-requires vide
 %patch4 -p1 -b .classic
 #patch7 -p1 -b .dricore
 %patch8 -p1 -b .llvmcore
-%patch10 -p1 -b .nv-libdrm
 %patch30 -p1 -b .vblank-warning
 #patch31 -p1 -b .swrastg
+%patch50 -p1 -b .nv-update
+%patch51 -p1 -b .nv-revert
+%patch52 -p1 -b .nv-libdrm
 
 %build
 
@@ -477,6 +486,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libOSMesa.so
 
 %changelog
+* Thu Jan 20 2011 Ben Skeggs <bskeggs@redhat.com> 7.10-0.23
+- nouveau: nvc0 (fermi) backport + nv10/nv20 gnome-shell fixes
+
 * Tue Jan 18 2011 Adam Jackson <ajax@redhat.com> 7.10-0.22
 - Add -dri-filesystem common subpackage for directory and COPYING
 - Add -dri-llvmcore subpackage and buildsystem hack
