@@ -15,7 +15,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.10
-Release: 0.19%{?dist}
+Release: 0.20%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -346,17 +346,18 @@ rm -rf $RPM_BUILD_ROOT
 %if %{with_hardware}
 %{_libdir}/dri/radeon_dri.so
 %{_libdir}/dri/r200_dri.so
-%{_libdir}/dri/r300_dri.so
 %{_libdir}/dri/r600_dri.so
 %{_libdir}/dri/i915_dri.so
 %{_libdir}/dri/i965_dri.so
 %endif
+%{_libdir}/dri/r300_dri.so
 %{_libdir}/dri/swrast_dri.so
 %exclude %{_libdir}/dri/swrastg_dri.so
 
 %files dri-drivers-dri1
 %defattr(-,root,root,-)
 %doc docs/COPYING
+%if %{with_hardware}
 %ifarch i686
 %{_libdir}/dri/i810_dri.so
 %{_libdir}/dri/sis_dri.so
@@ -366,6 +367,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/dri/savage_dri.so
 %{_libdir}/dri/tdfx_dri.so
 %{_libdir}/dri/unichrome_dri.so
+%endif
 
 %files dri-drivers-experimental
 %defattr(-,root,root,-)
@@ -439,6 +441,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libOSMesa.so
 
 %changelog
+* Tue Jan 18 2011 Dan Horák <dan[at]danny.cz> 7.10-0.20
+- updated for s390(x), r300 is really built even when with_hardware == 0
+
 * Tue Jan 18 2011 Dave Airlie <airlied@redhat.com> 7.10-0.19
 - split out DRI1 drivers to reduce package size.
 
