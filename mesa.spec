@@ -15,7 +15,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.10
-Release: 0.18%{?dist}
+Release: 0.19%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -104,6 +104,11 @@ Group: User Interface/X Hardware Support
 %description dri-drivers
 Mesa-based DRI drivers.
 
+%package dri-drivers-dri1
+Summary: Mesa-based DRI1 drivers
+Group: User Interface/X Hardware Support
+%description dri-drivers-dri1
+Mesa-based DRI1 drivers.
 
 %package dri-drivers-experimental
 Summary: Mesa-based DRI drivers (experimental)
@@ -338,14 +343,29 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 %doc docs/COPYING
 %dir %{_libdir}/dri
-#%{_libdir}/dri/libdricore.so
-%{_libdir}/dri/*_dri.so
-%exclude %{_libdir}/dri/swrastg_dri.so
 %if %{with_hardware}
-#exclude %{_libdir}/dri/vmwgfx_dri.so
-%exclude %{_libdir}/dri/nouveau_dri.so
-%exclude %{_libdir}/dri/nouveau_vieux_dri.so
+%{_libdir}/dri/radeon_dri.so
+%{_libdir}/dri/r200_dri.so
+%{_libdir}/dri/r300_dri.so
+%{_libdir}/dri/r600_dri.so
+%{_libdir}/dri/i915_dri.so
+%{_libdir}/dri/i965_dri.so
 %endif
+%{_libdir}/dri/swrast_dri.so
+%exclude %{_libdir}/dri/swrastg_dri.so
+
+%files dri-drivers-dri1
+%defattr(-,root,root,-)
+%doc docs/COPYING
+%ifarch i686
+%{_libdir}/dri/i810_dri.so
+%{_libdir}/dri/sis_dri.so
+%endif
+%{_libdir}/dri/mga_dri.so
+%{_libdir}/dri/r128_dri.so
+%{_libdir}/dri/savage_dri.so
+%{_libdir}/dri/tdfx_dri.so
+%{_libdir}/dri/unichrome_dri.so
 
 %files dri-drivers-experimental
 %defattr(-,root,root,-)
@@ -419,6 +439,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libOSMesa.so
 
 %changelog
+* Tue Jan 18 2011 Dave Airlie <airlied@redhat.com> 7.10-0.19
+- split out DRI1 drivers to reduce package size.
+
 * Fri Jan 07 2011 Dave Airlie <airlied@redhat.com> 7.10-0.18
 - new snapshot from 7.10 branch (include Radeon HD6xxx support)
 
