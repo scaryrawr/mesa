@@ -15,7 +15,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.10
-Release: 0.20%{?dist}
+Release: 0.21%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -57,6 +57,7 @@ BuildRequires: elfutils
 BuildRequires: python
 BuildRequires: llvm-static
 BuildRequires: libxml2-python
+BuildRequires: libudev-devel
 BuildRequires: libtalloc-devel
 
 %description
@@ -213,9 +214,9 @@ export CFLAGS="$RPM_OPT_FLAGS -fno-omit-frame-pointer"
 export CXXFLAGS="$RPM_OPT_FLAGS -fno-omit-frame-pointer"
 %ifarch %{ix86}
 # i do not have words for how much the assembly dispatch code infuriates me
-%define common_flags --enable-selinux --enable-pic --disable-asm
+%define common_flags --enable-selinux --enable-pic --enable-udev --disable-asm
 %else
-%define common_flags --enable-selinux --enable-pic
+%define common_flags --enable-selinux --enable-pic --enable-udev
 %endif
 %define osmesa_flags --with-driver=osmesa %{common_flags} --disable-gallium --with-dri-drivers="" --disable-glu --disable-egl
 
@@ -241,13 +242,17 @@ make clean
     --enable-gles1 \
     --enable-gles2 \
     --enable-gallium-llvm \
-%if %{with_hardware}
     --disable-gallium-intel \
     --disable-gallium-svga \
     --disable-gallium-egl \
+%if %{with_hardware}
     --enable-gallium-radeon \
     --enable-gallium-r600 \
     --enable-gallium-nouveau \
+%else
+    --disable-gallium-radeon \
+    --disable-gallium-r600 \
+    --disable-gallium-nouveau \
 %endif
     %{?dri_drivers}
 
@@ -273,12 +278,7 @@ install -d $RPM_BUILD_ROOT%{_libdir}/dri
 [ -f %{_lib}/gallium/r600_dri.so ] && cp %{_lib}/gallium/r600_dri.so %{_lib}/r600_dri.so
 [ -f %{_lib}/gallium/swrastg_dri.so ] && mv %{_lib}/gallium/swrastg_dri.so %{_lib}/swrast_dri.so
 
-%if %{with_hardware}
-DRIVERS="i810 i915 i965 mach64 mga r128 r200 r300 r600 radeon savage sis swrast tdfx unichrome nouveau_vieux gallium/vmwgfx"
-%else
-DRIVERS=swrast
-%endif
-for f in $DRIVERS ; do
+for f in i810 i915 i965 mach64 mga r128 r200 r300 r600 radeon savage sis swrast tdfx unichrome nouveau_vieux gallium/vmwgfx ; do
     so=%{_lib}/${f}_dri.so
     test -e $so && echo $so
 done | xargs install -m 0755 -t $RPM_BUILD_ROOT%{_libdir}/dri >& /dev/null || :
@@ -364,7 +364,7 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 %doc docs/COPYING
 %if %{with_hardware}
-%ifarch i686
+%ifarch %{ix86}
 %{_libdir}/dri/i810_dri.so
 %{_libdir}/dri/sis_dri.so
 %endif
@@ -447,9 +447,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libOSMesa.so
 
 %changelog
-* Tue Jan 18 2011 Adam Jackson <ajax@redhat.com>
-- That's nice, but you can't possibly attach an r300 to an s390.  Install only
-  swrast when !with_hardware.
+* Tue Jan 18 2011 Adam Jackson <ajax@redhat.com> 7.10-0.21
+- Fix the s390 case a different way
+- s/i686/%%{ix86}
+- Add libudev support for wayland (Casey Dahlin)
 
 * Tue Jan 18 2011 Dan Horák <dan[at]danny.cz> 7.10-0.20
 - updated for s390(x), r300 is really built even when with_hardware == 0
