@@ -272,7 +272,13 @@ install -d $RPM_BUILD_ROOT%{_libdir}/dri
 [ -f %{_lib}/gallium/r300_dri.so ] && cp %{_lib}/gallium/r300_dri.so %{_lib}/r300_dri.so
 [ -f %{_lib}/gallium/r600_dri.so ] && cp %{_lib}/gallium/r600_dri.so %{_lib}/r600_dri.so
 [ -f %{_lib}/gallium/swrastg_dri.so ] && mv %{_lib}/gallium/swrastg_dri.so %{_lib}/swrast_dri.so
-for f in i810 i915 i965 mach64 mga r128 r200 r300 r600 radeon savage sis swrast tdfx unichrome nouveau_vieux gallium/vmwgfx; do
+
+%if %{with_hardware}
+DRIVERS="i810 i915 i965 mach64 mga r128 r200 r300 r600 radeon savage sis swrast tdfx unichrome nouveau_vieux gallium/vmwgfx"
+%else
+DRIVERS=swrast
+%endif
+for f in $DRIVERS ; do
     so=%{_lib}/${f}_dri.so
     test -e $so && echo $so
 done | xargs install -m 0755 -t $RPM_BUILD_ROOT%{_libdir}/dri >& /dev/null || :
@@ -346,11 +352,11 @@ rm -rf $RPM_BUILD_ROOT
 %if %{with_hardware}
 %{_libdir}/dri/radeon_dri.so
 %{_libdir}/dri/r200_dri.so
+%{_libdir}/dri/r300_dri.so
 %{_libdir}/dri/r600_dri.so
 %{_libdir}/dri/i915_dri.so
 %{_libdir}/dri/i965_dri.so
 %endif
-%{_libdir}/dri/r300_dri.so
 %{_libdir}/dri/swrast_dri.so
 %exclude %{_libdir}/dri/swrastg_dri.so
 
@@ -441,6 +447,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libOSMesa.so
 
 %changelog
+* Tue Jan 18 2011 Adam Jackson <ajax@redhat.com>
+- That's nice, but you can't possibly attach an r300 to an s390.  Install only
+  swrast when !with_hardware.
+
 * Tue Jan 18 2011 Dan Horák <dan[at]danny.cz> 7.10-0.20
 - updated for s390(x), r300 is really built even when with_hardware == 0
 
