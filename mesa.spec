@@ -15,7 +15,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.10
-Release: 0.21%{?dist}
+Release: 0.22%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -25,12 +25,14 @@ URL: http://www.mesa3d.org
 Source0: %{name}-%{gitdate}.tar.xz
 Source2: %{manpages}.tar.bz2
 Source3: make-git-snapshot.sh
+Source4: llvmcore.mk
 
 Patch2: mesa-7.1-nukeglthread-debug.patch
 Patch3: mesa-no-mach64.patch
 Patch4: legacy-drivers.patch
 
 #Patch7: mesa-7.1-link-shared.patch
+Patch8: mesa-7.10-llvmcore.patch
 
 Patch10: mesa-nouveau-libdrm-2_4_24.patch
 
@@ -69,7 +71,7 @@ Group: System Environment/Libraries
 Requires(post): /sbin/ldconfig
 Requires(postun): /sbin/ldconfig
 Provides: libGL
-Requires: libdrm >= 2.4.21-1
+Requires: libdrm >= 2.4.23-1
 %if %{with_hardware}
 Conflicts: xorg-x11-server-Xorg < 1.4.99.901-14
 %endif
@@ -83,7 +85,7 @@ Group: System Environment/Libraries
 Requires(post): /sbin/ldconfig
 Requires(postun): /sbin/ldconfig
 Requires: mesa-dri-drivers%{?_isa} = %{version}-%{release}
-Requires: libdrm >= 2.4.21-1
+Requires: libdrm >= 2.4.23-1
 
 %description libEGL
 Mesa libEGL runtime libraries
@@ -94,26 +96,44 @@ Group: System Environment/Libraries
 Requires(post): /sbin/ldconfig
 Requires(postun): /sbin/ldconfig
 Requires: mesa-dri-drivers%{?_isa} = %{version}-%{release}
-Requires: libdrm >= 2.4.21-1
+Requires: libdrm >= 2.4.23-1
 
 %description libGLES
 Mesa GLES runtime libraries
 
+%package dri-filesystem
+Summary: Mesa DRI driver filesystem
+Group: User Interface/X Hardware Support
+%description dri-filesystem
+Mesa DRI driver filesystem
+
+%package dri-llvmcore
+Summary: Mesa common LLVM support
+Group: User Interface/X Hardware Support
+Requires: mesa-dri-filesystem%{?_isa}
+%description dri-llvmcore
+Common DSO for LLVM support for gallium-based DRI drivers.  This package
+exists solely as a disk space hack for Mesa.  Do not link against this
+library if you are not Mesa.  You have been warned.
+
 %package dri-drivers
 Summary: Mesa-based DRI drivers
 Group: User Interface/X Hardware Support
+Requires: mesa-dri-filesystem%{?_isa}
 %description dri-drivers
 Mesa-based DRI drivers.
 
 %package dri-drivers-dri1
 Summary: Mesa-based DRI1 drivers
 Group: User Interface/X Hardware Support
+Requires: mesa-dri-filesystem%{?isa}
 %description dri-drivers-dri1
 Mesa-based DRI1 drivers.
 
 %package dri-drivers-experimental
 Summary: Mesa-based DRI drivers (experimental)
 Group: User Interface/X Hardware Support
+Requires: mesa-dri-filesystem%{?_isa}
 %description dri-drivers-experimental
 Mesa-based DRI drivers (experimental).
 
@@ -122,7 +142,6 @@ Mesa-based DRI drivers (experimental).
 Summary: Mesa libGL development package
 Group: Development/Libraries
 Requires: mesa-libGL = %{version}-%{release}
-Requires: libX11-devel
 Provides: libGL-devel
 Conflicts: xorg-x11-proto-devel <= 7.2-12
 
@@ -160,7 +179,6 @@ Mesa libGLU runtime library
 Summary: Mesa libGLU development package
 Group: Development/Libraries
 Requires: mesa-libGLU = %{version}-%{release}
-Requires: libGL-devel
 Provides: libGLU-devel
 
 %description libGLU-devel
@@ -202,6 +220,7 @@ Requires: Xorg %(xserver-sdk-abi-requires ansic) %(xserver-sdk-abi-requires vide
 %patch3 -p1 -b .no-mach64
 %patch4 -p1 -b .classic
 #patch7 -p1 -b .dricore
+%patch8 -p1 -b .llvmcore
 %patch10 -p1 -b .nv-libdrm
 %patch30 -p1 -b .vblank-warning
 #patch31 -p1 -b .swrastg
@@ -229,6 +248,11 @@ make clean
 
 # just to be sure...
 [ `find . -name \*.o | wc -l` -eq 0 ] || exit 1
+
+# build llvmcore
+TOP=`pwd` make -f %{SOURCE4} llvmcore
+mkdir -p %{_lib}
+mv libllvmcore*.so %{_lib}
 
 # now build the rest of mesa
 %configure %{common_flags} \
@@ -272,7 +296,7 @@ make install DESTDIR=$RPM_BUILD_ROOT DRI_DIRS=
 
 # just the DRI drivers that are sane
 install -d $RPM_BUILD_ROOT%{_libdir}/dri
-#install -m 0755 -t $RPM_BUILD_ROOT%{_libdir}/dri %{_lib}/libdricore.so >& /dev/null
+install -m 0755 -t $RPM_BUILD_ROOT%{_libdir}/dri %{_lib}/libllvmcore-2.8.so >& /dev/null
 # use gallium driver iff built
 [ -f %{_lib}/gallium/r300_dri.so ] && cp %{_lib}/gallium/r300_dri.so %{_lib}/r300_dri.so
 [ -f %{_lib}/gallium/r600_dri.so ] && cp %{_lib}/gallium/r600_dri.so %{_lib}/r600_dri.so
@@ -345,10 +369,17 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libGLESv2.so.2
 %{_libdir}/libGLESv2.so.2.*
 
-%files dri-drivers
+%files dri-filesystem
 %defattr(-,root,root,-)
 %doc docs/COPYING
 %dir %{_libdir}/dri
+
+%files dri-llvmcore
+%defattr(-,root,root,-)
+%{_libdir}/dri/libllvmcore-2.8.so
+
+%files dri-drivers
+%defattr(-,root,root,-)
 %if %{with_hardware}
 %{_libdir}/dri/radeon_dri.so
 %{_libdir}/dri/r200_dri.so
@@ -377,7 +408,6 @@ rm -rf $RPM_BUILD_ROOT
 
 %files dri-drivers-experimental
 %defattr(-,root,root,-)
-%doc docs/COPYING
 %if %{with_hardware}
 #{_libdir}/dri/vmwgfx_dri.so
 %{_libdir}/dri/nouveau_dri.so
@@ -447,6 +477,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libOSMesa.so
 
 %changelog
+* Tue Jan 18 2011 Adam Jackson <ajax@redhat.com> 7.10-0.22
+- Add -dri-filesystem common subpackage for directory and COPYING
+- Add -dri-llvmcore subpackage and buildsystem hack
+
 * Tue Jan 18 2011 Adam Jackson <ajax@redhat.com> 7.10-0.21
 - Fix the s390 case a different way
 - s/i686/%%{ix86}

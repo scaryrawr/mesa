@@ -1,0 +1,48 @@
+diff -up mesa-20110107/configs/autoconf.in.llvmcore mesa-20110107/configs/autoconf.in
+--- mesa-20110107/configs/autoconf.in.llvmcore	2011-01-06 19:51:14.000000000 -0500
++++ mesa-20110107/configs/autoconf.in	2011-01-18 19:34:49.000000000 -0500
+@@ -29,8 +29,8 @@ INTEL_CFLAGS = @INTEL_CFLAGS@
+ X11_LIBS = @X11_LIBS@
+ X11_CFLAGS = @X11_CFLAGS@
+ LLVM_CFLAGS = @LLVM_CFLAGS@
+-LLVM_LDFLAGS = @LLVM_LDFLAGS@
+-LLVM_LIBS = @LLVM_LIBS@
++LLVM_LDFLAGS = -L$(TOP)/$(LIB_DIR) -Wl,-R$(DRI_DRIVER_INSTALL_DIR) -lllvmcore-$(shell llvm-config --version)
++LLVM_LIBS = -lllvmcore-$(shell llvm-config --version)
+ GLW_CFLAGS = @GLW_CFLAGS@
+ GLUT_CFLAGS = @GLUT_CFLAGS@
+ 
+diff -up mesa-20110107/configs/linux-llvm.llvmcore mesa-20110107/configs/linux-llvm
+--- mesa-20110107/configs/linux-llvm.llvmcore	2011-01-06 19:51:14.000000000 -0500
++++ mesa-20110107/configs/linux-llvm	2011-01-18 19:19:14.000000000 -0500
+@@ -32,8 +32,8 @@ endif
+ ifeq ($(MESA_LLVM),1)
+   LLVM_CFLAGS=`llvm-config --cppflags`
+   LLVM_CXXFLAGS=`llvm-config --cxxflags backend bitreader engine ipo interpreter instrumentation` -Wno-long-long
+-  LLVM_LDFLAGS = $(shell llvm-config --ldflags backend bitreader engine ipo interpreter instrumentation)
+-  LLVM_LIBS = $(shell llvm-config --libs backend bitwriter bitreader engine ipo interpreter instrumentation)
++  LLVM_LDFLAGS = -L$(TOP)/$(LIB_DIR) -Wl,-R$(DRI_DRIVER_INSTALL_DIR) -lllvmcore-$(shell llvm-config --version)
++  LLVM_LIBS = -lllvmcore-$(shell llvm-config --version)
+   MKLIB_OPTIONS=-cplusplus
+ else
+   LLVM_CFLAGS=
+diff -up mesa-20110107/configure.ac.llvmcore mesa-20110107/configure.ac
+--- mesa-20110107/configure.ac.llvmcore	2011-01-18 19:19:14.000000000 -0500
++++ mesa-20110107/configure.ac	2011-01-18 20:40:01.000000000 -0500
+@@ -1333,8 +1333,6 @@ if test "x$enable_gallium" = xyes; then
+ fi
+ 
+ AC_SUBST([LLVM_CFLAGS])
+-AC_SUBST([LLVM_LIBS])
+-AC_SUBST([LLVM_LDFLAGS])
+ AC_SUBST([LLVM_VERSION])
+ 
+ dnl
+@@ -1555,7 +1553,6 @@ if test "x$enable_gallium_llvm" = xyes; 
+     if test "x$LLVM_CONFIG" != xno; then
+ 	LLVM_VERSION=`$LLVM_CONFIG --version`
+ 	LLVM_CFLAGS=`$LLVM_CONFIG --cppflags`
+-	LLVM_LIBS="`$LLVM_CONFIG --libs jit interpreter nativecodegen bitwriter` -lstdc++"
+ 
+ 	if test "x$HAS_UDIS86" != xno; then
+ 	    LLVM_LIBS="$LLVM_LIBS -ludis86"
