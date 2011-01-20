@@ -15,7 +15,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.10
-Release: 0.23%{?dist}
+Release: 0.24%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -127,6 +127,7 @@ library if you are not Mesa.  You have been warned.
 Summary: Mesa-based DRI drivers
 Group: User Interface/X Hardware Support
 Requires: mesa-dri-filesystem%{?_isa}
+Obsoletes: mesa-dri-drivers-experimental < 0:7.10-0.24
 %description dri-drivers
 Mesa-based DRI drivers.
 
@@ -136,14 +137,6 @@ Group: User Interface/X Hardware Support
 Requires: mesa-dri-filesystem%{?isa}
 %description dri-drivers-dri1
 Mesa-based DRI1 drivers.
-
-%package dri-drivers-experimental
-Summary: Mesa-based DRI drivers (experimental)
-Group: User Interface/X Hardware Support
-Requires: mesa-dri-filesystem%{?_isa}
-%description dri-drivers-experimental
-Mesa-based DRI drivers (experimental).
-
 
 %package libGL-devel
 Summary: Mesa libGL development package
@@ -396,6 +389,8 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/dri/r600_dri.so
 %{_libdir}/dri/i915_dri.so
 %{_libdir}/dri/i965_dri.so
+%{_libdir}/dri/nouveau_dri.so
+%{_libdir}/dri/nouveau_vieux_dri.so
 %endif
 %{_libdir}/dri/swrast_dri.so
 %exclude %{_libdir}/dri/swrastg_dri.so
@@ -413,14 +408,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/dri/savage_dri.so
 %{_libdir}/dri/tdfx_dri.so
 %{_libdir}/dri/unichrome_dri.so
-%endif
-
-%files dri-drivers-experimental
-%defattr(-,root,root,-)
-%if %{with_hardware}
-#{_libdir}/dri/vmwgfx_dri.so
-%{_libdir}/dri/nouveau_dri.so
-%{_libdir}/dri/nouveau_vieux_dri.so
 %endif
 
 %files libGL-devel
@@ -486,6 +473,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libOSMesa.so
 
 %changelog
+* Thu Jan 20 2011 Ben Skeggs <bskeggs@redhat.com> 7.10-0.24
+- nouveau: move out of -experimental
+
 * Thu Jan 20 2011 Ben Skeggs <bskeggs@redhat.com> 7.10-0.23
 - nouveau: nvc0 (fermi) backport + nv10/nv20 gnome-shell fixes
 
