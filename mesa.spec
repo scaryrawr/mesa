@@ -15,7 +15,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.10
-Release: 0.25%{?dist}
+Release: 0.26%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -51,7 +51,7 @@ BuildRequires: pkgconfig autoconf automake libtool
 BuildRequires: kernel-headers >= 2.6.27-0.305.rc5.git6
 BuildRequires: xorg-x11-server-devel
 %endif
-BuildRequires: libdrm-devel >= 2.4.21-1
+BuildRequires: libdrm-devel >= 2.4.24-0
 BuildRequires: libXxf86vm-devel
 BuildRequires: expat-devel >= 2.0
 BuildRequires: xorg-x11-proto-devel >= 7.4-35
@@ -473,6 +473,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libOSMesa.so
 
 %changelog
+* Wed Feb 09 2011 Adam Jackson <ajax@redhat.com> 7.10-0.26
+- BuildRequires: libdrm >= 2.4.24-0 (#668363)
+
 * Tue Feb 08 2011 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 7.10-0.25
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_15_Mass_Rebuild
 
