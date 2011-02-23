@@ -15,7 +15,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.10
-Release: 0.26%{?dist}
+Release: 0.27%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -231,8 +231,8 @@ Requires: Xorg %(xserver-sdk-abi-requires ansic) %(xserver-sdk-abi-requires vide
 
 autoreconf --install  
 
-export CFLAGS="$RPM_OPT_FLAGS -fno-omit-frame-pointer"
-export CXXFLAGS="$RPM_OPT_FLAGS -fno-omit-frame-pointer"
+export CFLAGS="$RPM_OPT_FLAGS"
+export CXXFLAGS="$RPM_OPT_FLAGS"
 %ifarch %{ix86}
 # i do not have words for how much the assembly dispatch code infuriates me
 %define common_flags --enable-selinux --enable-pic --enable-udev --disable-asm
@@ -473,6 +473,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libOSMesa.so
 
 %changelog
+* Wed Feb 23 2011 Jerome Glisse <jglisse@redhat.com> 7.10-0.27
+- Build without -fno-omit-frame-pointer as gcc 4.6.0 seems to lead to
+  bogus code with that option (#679924)
+
 * Wed Feb 09 2011 Adam Jackson <ajax@redhat.com> 7.10-0.26
 - BuildRequires: libdrm >= 2.4.24-0 (#668363)
 
