@@ -15,7 +15,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.10
-Release: 0.27%{?dist}
+Release: 0.28%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -267,15 +267,16 @@ mv libllvmcore*.so %{_lib}
     --enable-egl \
     --enable-gles1 \
     --enable-gles2 \
-    --enable-gallium-llvm \
     --disable-gallium-intel \
     --disable-gallium-svga \
     --disable-gallium-egl \
 %if %{with_hardware}
+    --enable-gallium-llvm \
     --enable-gallium-radeon \
     --enable-gallium-r600 \
     --enable-gallium-nouveau \
 %else
+    --disable-gallium-llvm \
     --disable-gallium-radeon \
     --disable-gallium-r600 \
     --disable-gallium-nouveau \
@@ -473,6 +474,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libOSMesa.so
 
 %changelog
+* Fri Mar 04 2011 Dan Horák <dan[at]danny.cz> 7.10-0.28
+- enable gallium-llvm only when with_hardware is set (workarounds linking
+  failure on s390(x))
+
 * Wed Feb 23 2011 Jerome Glisse <jglisse@redhat.com> 7.10-0.27
 - Build without -fno-omit-frame-pointer as gcc 4.6.0 seems to lead to
   bogus code with that option (#679924)
