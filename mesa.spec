@@ -15,7 +15,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.10
-Release: 0.28%{?dist}
+Release: 0.29%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -474,6 +474,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libOSMesa.so
 
 %changelog
+* Mon Mar 14 2011 Dave Airlie <airlied@redhat.com> 7.10-0.29
+- use g++ to link llvmcore.so so it gets libstdc++ (#674079)
+
 * Fri Mar 04 2011 Dan Horák <dan[at]danny.cz> 7.10-0.28
 - enable gallium-llvm only when with_hardware is set (workarounds linking
   failure on s390(x))
