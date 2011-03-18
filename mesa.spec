@@ -15,7 +15,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.10
-Release: 0.29%{?dist}
+Release: 0.30%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -252,6 +252,24 @@ make clean
 [ `find . -name \*.o | wc -l` -eq 0 ] || exit 1
 
 # build llvmcore
+
+%ifarch %{sparc}
+# llvm does not have a native/optimized version of JIT for Sparc
+# but we can still use the interpreted version. Slower, but we don't care.
+#
+# This sed forcefully readd jit to llvm-cofing call that is removed by
+# mesa-7.10-llvmcore.patch.
+#
+# linux-llvm.llvmcore is the result of patch -b mesa-7.10-llvmcore.patch
+# changing defaults to accomodate the build and it is used by
+# SOURCE4 directly.
+#
+# Any change to the patch or to SOURCE4 might require a change here.
+#
+# Ideally llvm should grow native JIT support for Sparc....
+sed -i -e 's#engine#& jit#g' configs/linux-llvm.llvmcore
+%endif
+
 TOP=`pwd` make -f %{SOURCE4} llvmcore
 mkdir -p %{_lib}
 mv libllvmcore*.so %{_lib}
@@ -388,8 +406,11 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/dri/r200_dri.so
 %{_libdir}/dri/r300_dri.so
 %{_libdir}/dri/r600_dri.so
+%ifnarch %{sparc}
+# we no intel chipsets on sparc. Please move on...
 %{_libdir}/dri/i915_dri.so
 %{_libdir}/dri/i965_dri.so
+%endif
 %{_libdir}/dri/nouveau_dri.so
 %{_libdir}/dri/nouveau_vieux_dri.so
 %endif
@@ -404,11 +425,14 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/dri/i810_dri.so
 %{_libdir}/dri/sis_dri.so
 %endif
-%{_libdir}/dri/mga_dri.so
 %{_libdir}/dri/r128_dri.so
+%ifnarch %{sparc}
+# we no much hardware....
+%{_libdir}/dri/mga_dri.so
 %{_libdir}/dri/savage_dri.so
 %{_libdir}/dri/tdfx_dri.so
 %{_libdir}/dri/unichrome_dri.so
+%endif
 %endif
 
 %files libGL-devel
@@ -474,6 +498,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libOSMesa.so
 
 %changelog
+* Fri Mar 18 2011 Dennis Gilmore <dennis@ausil.us> 7.10-0.30
+- fall back to non native jit on sparc.
+
 * Mon Mar 14 2011 Dave Airlie <airlied@redhat.com> 7.10-0.29
 - use g++ to link llvmcore.so so it gets libstdc++ (#674079)
 
