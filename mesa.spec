@@ -14,15 +14,16 @@
 
 Summary: Mesa graphics libraries
 Name: mesa
-Version: 7.10
-Release: 0.30%{?dist}
+Version: 7.10.1
+Release: 1%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
 
 #Source0: http://downloads.sf.net/mesa3d/MesaLib-%{version}.tar.bz2
 #Source0: http://www.mesa3d.org/beta/MesaLib-%{version}%{?snapshot}.tar.bz2
-Source0: %{name}-%{gitdate}.tar.xz
+Source0: ftp://ftp.freedesktop.org/pub/%{name}/%{version}/MesaLib-%{version}.tar.bz2
+#Source0: %{name}-%{gitdate}.tar.xz
 Source2: %{manpages}.tar.bz2
 Source3: make-git-snapshot.sh
 Source4: llvmcore.mk
@@ -214,8 +215,8 @@ Requires: Xorg %(xserver-sdk-abi-requires ansic) %(xserver-sdk-abi-requires vide
 2D driver for VMware SVGA vGPU
 
 %prep
-#setup -q -n mesa-%{version}%{?snapshot} -b0 -b2
-%setup -q -n mesa-%{gitdate} -b2
+%setup -q -n Mesa-%{version}%{?snapshot} -b0 -b2
+#setup -q -n mesa-%{gitdate} -b2
 %patch2 -p1 -b .intel-glthread
 %patch3 -p1 -b .no-mach64
 %patch4 -p1 -b .classic
@@ -330,7 +331,7 @@ done | xargs install -m 0755 -t $RPM_BUILD_ROOT%{_libdir}/dri >& /dev/null || :
 
 # strip out undesirable headers
 pushd $RPM_BUILD_ROOT%{_includedir}/GL 
-rm [a-fh-np-wyz]*.h glf*.h glut*.h
+rm -f [a-fh-np-wyz]*.h glf*.h glut*.h
 popd
 
 pushd $RPM_BUILD_ROOT%{_libdir}
@@ -498,6 +499,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libOSMesa.so
 
 %changelog
+* Wed Mar 23 2011 Adam Jackson <ajax@redhat.com> 7.10.1-1
+- mesa 7.10.1
+
 * Fri Mar 18 2011 Dennis Gilmore <dennis@ausil.us> 7.10-0.30
 - fall back to non native jit on sparc.
 
