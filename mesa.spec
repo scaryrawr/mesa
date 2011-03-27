@@ -18,7 +18,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.11
-Release: 0.1.%{gitdate}.0%{?dist}
+Release: 0.2.%{gitdate}.0%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -477,6 +477,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libOSMesa.so
 
 %changelog
+* Sun Mar 27 2011 Dave Airlie <airlied@redhat.com> 7.11-0.2.20110327.0
+- llvmcore fix build using g++ instead of gcc
+
 * Sun Mar 27 2011 Dave Airlie <airlied@redhat.com> 7.11-0.1.20110327.0
 - latest git snapshot, seems quiet + re-enable llvmcore
 
