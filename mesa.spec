@@ -7,18 +7,18 @@
 %endif
 
 # broken atm, sorry.  fix before any f15 merge.
-%define with_llvmcore 0
+%define with_llvmcore 1
 
 %define _default_patch_fuzz 2
 
 %define manpages gl-manpages-1.0.1
-%define gitdate 20110315
+%define gitdate 20110327
 #% define snapshot 
 
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.11
-Release: 0.%{gitdate}.0%{?dist}
+Release: 0.1.%{gitdate}.0%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -298,7 +298,7 @@ make install DESTDIR=$RPM_BUILD_ROOT DRI_DIRS=
 # just the DRI drivers that are sane
 install -d $RPM_BUILD_ROOT%{_libdir}/dri
 %if %{with_llvmcore}
-install -m 0755 -t $RPM_BUILD_ROOT%{_libdir}/dri %{_lib}/libllvmcore-2.8.so >& /dev/null
+install -m 0755 -t $RPM_BUILD_ROOT%{_libdir}/dri %{_lib}/libllvmcore-2*.so >& /dev/null
 %endif
 # use gallium driver iff built
 [ -f %{_lib}/gallium/r300_dri.so ] && cp %{_lib}/gallium/r300_dri.so %{_lib}/r300_dri.so
@@ -380,7 +380,7 @@ rm -rf $RPM_BUILD_ROOT
 %if %{with_llvmcore}
 %files dri-llvmcore
 %defattr(-,root,root,-)
-%{_libdir}/dri/libllvmcore-2.8.so
+%{_libdir}/dri/libllvmcore-2.*.so
 %endif
 
 %files dri-drivers
@@ -477,6 +477,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libOSMesa.so
 
 %changelog
+* Sun Mar 27 2011 Dave Airlie <airlied@redhat.com> 7.11-0.1.20110327.0
+- latest git snapshot, seems quiet + re-enable llvmcore
+
 * Tue Mar 15 2011 Adam Jackson <ajax@redhat.com> 7.11-0.20110315.0
 - Today's git snap
 - Add with_llvmcore macro, and turn it off momentarily
