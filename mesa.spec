@@ -6,28 +6,32 @@
 %define with_hardware 1
 %endif
 
+# broken atm, sorry.  fix before any f15 merge.
+%define with_llvmcore 1
+
 %define _default_patch_fuzz 2
 
 %define manpages gl-manpages-1.0.1
-%define gitdate 20110107
+%define gitdate 20110327
 #% define snapshot 
 
 Summary: Mesa graphics libraries
 Name: mesa
-Version: 7.10.1
-Release: 1%{?dist}
+Version: 7.11
+Release: 0.1.%{gitdate}.0%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
 
 #Source0: http://downloads.sf.net/mesa3d/MesaLib-%{version}.tar.bz2
 #Source0: http://www.mesa3d.org/beta/MesaLib-%{version}%{?snapshot}.tar.bz2
-Source0: ftp://ftp.freedesktop.org/pub/%{name}/%{version}/MesaLib-%{version}.tar.bz2
-#Source0: %{name}-%{gitdate}.tar.xz
+#Source0: ftp://ftp.freedesktop.org/pub/%{name}/%{version}/MesaLib-%{version}.tar.bz2
+Source0: %{name}-%{gitdate}.tar.xz
 Source2: %{manpages}.tar.bz2
 Source3: make-git-snapshot.sh
 Source4: llvmcore.mk
 
+Patch1: mesa-7.11-fixes.patch
 Patch2: mesa-7.1-nukeglthread-debug.patch
 Patch3: mesa-no-mach64.patch
 Patch4: legacy-drivers.patch
@@ -38,21 +42,12 @@ Patch8: mesa-7.10-llvmcore.patch
 Patch30: mesa-7.6-hush-vblank-warning.patch
 Patch31: mesa-7.10-swrastg.patch
 
-# nouveau patches
-#
-# update nouveau gallium drivers to git as of 20110117, nvc0 support
-Patch50: mesa-7.10-nouveau-updates.patch
-# revert various bits to be compatible with 7.10
-Patch51: mesa-7.10-nouveau-revert.patch
-# fixup classic drivers to new libdrm api
-Patch52: mesa-7.10-nouveau-classic-libdrm.patch
-
 BuildRequires: pkgconfig autoconf automake libtool
 %if %{with_hardware}
 BuildRequires: kernel-headers >= 2.6.27-0.305.rc5.git6
 BuildRequires: xorg-x11-server-devel
 %endif
-BuildRequires: libdrm-devel >= 2.4.24-0
+BuildRequires: libdrm-devel >= 2.4.24-1
 BuildRequires: libXxf86vm-devel
 BuildRequires: expat-devel >= 2.0
 BuildRequires: xorg-x11-proto-devel >= 7.4-35
@@ -69,6 +64,7 @@ BuildRequires: llvm-static
 BuildRequires: libxml2-python
 BuildRequires: libudev-devel
 BuildRequires: libtalloc-devel
+BuildRequires: bison flex
 
 %description
 Mesa
@@ -115,6 +111,7 @@ Group: User Interface/X Hardware Support
 %description dri-filesystem
 Mesa DRI driver filesystem
 
+%if %{with_llvmcore}
 %package dri-llvmcore
 Summary: Mesa common LLVM support
 Group: User Interface/X Hardware Support
@@ -123,6 +120,7 @@ Requires: mesa-dri-filesystem%{?_isa}
 Common DSO for LLVM support for gallium-based DRI drivers.  This package
 exists solely as a disk space hack for Mesa.  Do not link against this
 library if you are not Mesa.  You have been warned.
+%endif
 
 %package dri-drivers
 Summary: Mesa-based DRI drivers
@@ -215,18 +213,19 @@ Requires: Xorg %(xserver-sdk-abi-requires ansic) %(xserver-sdk-abi-requires vide
 2D driver for VMware SVGA vGPU
 
 %prep
-%setup -q -n Mesa-%{version}%{?snapshot} -b0 -b2
-#setup -q -n mesa-%{gitdate} -b2
+#setup -q -n Mesa-%{version}%{?snapshot} -b0 -b2
+%setup -q -n mesa-%{gitdate} -b2
+%patch1 -p1 -b .upstream
 %patch2 -p1 -b .intel-glthread
 %patch3 -p1 -b .no-mach64
 %patch4 -p1 -b .classic
 #patch7 -p1 -b .dricore
-%patch8 -p1 -b .llvmcore
 %patch30 -p1 -b .vblank-warning
 #patch31 -p1 -b .swrastg
-%patch50 -p1 -b .nv-update
-%patch51 -p1 -b .nv-revert
-%patch52 -p1 -b .nv-libdrm
+
+%if %{with_llvmcore}
+%patch8 -p1 -b .llvmcore
+%endif
 
 %build
 
@@ -253,27 +252,11 @@ make clean
 [ `find . -name \*.o | wc -l` -eq 0 ] || exit 1
 
 # build llvmcore
-
-%ifarch %{sparc}
-# llvm does not have a native/optimized version of JIT for Sparc
-# but we can still use the interpreted version. Slower, but we don't care.
-#
-# This sed forcefully readd jit to llvm-cofing call that is removed by
-# mesa-7.10-llvmcore.patch.
-#
-# linux-llvm.llvmcore is the result of patch -b mesa-7.10-llvmcore.patch
-# changing defaults to accomodate the build and it is used by
-# SOURCE4 directly.
-#
-# Any change to the patch or to SOURCE4 might require a change here.
-#
-# Ideally llvm should grow native JIT support for Sparc....
-sed -i -e 's#engine#& jit#g' configs/linux-llvm.llvmcore
-%endif
-
+%if %{with_llvmcore}
 TOP=`pwd` make -f %{SOURCE4} llvmcore
 mkdir -p %{_lib}
 mv libllvmcore*.so %{_lib}
+%endif
 
 # now build the rest of mesa
 %configure %{common_flags} \
@@ -318,7 +301,9 @@ make install DESTDIR=$RPM_BUILD_ROOT DRI_DIRS=
 
 # just the DRI drivers that are sane
 install -d $RPM_BUILD_ROOT%{_libdir}/dri
-install -m 0755 -t $RPM_BUILD_ROOT%{_libdir}/dri %{_lib}/libllvmcore-2.8.so >& /dev/null
+%if %{with_llvmcore}
+install -m 0755 -t $RPM_BUILD_ROOT%{_libdir}/dri %{_lib}/libllvmcore-2*.so >& /dev/null
+%endif
 # use gallium driver iff built
 [ -f %{_lib}/gallium/r300_dri.so ] && cp %{_lib}/gallium/r300_dri.so %{_lib}/r300_dri.so
 [ -f %{_lib}/gallium/r600_dri.so ] && cp %{_lib}/gallium/r600_dri.so %{_lib}/r600_dri.so
@@ -380,8 +365,6 @@ rm -rf $RPM_BUILD_ROOT
 %doc docs/COPYING
 %{_libdir}/libEGL.so.1
 %{_libdir}/libEGL.so.1.*
-%{_libdir}/egl/egl_glx.so
-%{_libdir}/egl/egl_dri2.so
 
 %files libGLES
 %defattr(-,root,root,-)
@@ -390,15 +373,19 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libGLESv1_CM.so.1.*
 %{_libdir}/libGLESv2.so.2
 %{_libdir}/libGLESv2.so.2.*
+%{_libdir}/libglapi.so.0
+%{_libdir}/libglapi.so.0.*
 
 %files dri-filesystem
 %defattr(-,root,root,-)
 %doc docs/COPYING
 %dir %{_libdir}/dri
 
+%if %{with_llvmcore}
 %files dri-llvmcore
 %defattr(-,root,root,-)
-%{_libdir}/dri/libllvmcore-2.8.so
+%{_libdir}/dri/libllvmcore-2.*.so
+%endif
 
 %files dri-drivers
 %defattr(-,root,root,-)
@@ -474,6 +461,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/glesv2.pc
 %{_libdir}/libGLESv1_CM.so
 %{_libdir}/libGLESv2.so
+%{_libdir}/libglapi.so
 
 %files libGLU
 %defattr(-,root,root,-)
@@ -499,6 +487,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libOSMesa.so
 
 %changelog
+* Sun Mar 27 2011 Dave Airlie <airlied@redhat.com> 7.11-0.1.20110327.0
+- pull latest snapshot + 3 post snapshot fixes
+
 * Wed Mar 23 2011 Adam Jackson <ajax@redhat.com> 7.10.1-1
 - mesa 7.10.1
 

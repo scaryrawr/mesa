@@ -1,7 +1,8 @@
-diff -up mesa-20110107/configs/autoconf.in.llvmcore mesa-20110107/configs/autoconf.in
---- mesa-20110107/configs/autoconf.in.llvmcore	2011-01-06 19:51:14.000000000 -0500
-+++ mesa-20110107/configs/autoconf.in	2011-01-18 19:34:49.000000000 -0500
-@@ -29,8 +29,8 @@ INTEL_CFLAGS = @INTEL_CFLAGS@
+diff --git a/configs/autoconf.in b/configs/autoconf.in
+index 4e931a3..fec8e42 100644
+--- a/configs/autoconf.in
++++ b/configs/autoconf.in
+@@ -31,8 +31,8 @@ INTEL_CFLAGS = @INTEL_CFLAGS@
  X11_LIBS = @X11_LIBS@
  X11_CFLAGS = @X11_CFLAGS@
  LLVM_CFLAGS = @LLVM_CFLAGS@
@@ -11,25 +12,27 @@ diff -up mesa-20110107/configs/autoconf.in.llvmcore mesa-20110107/configs/autoco
 +LLVM_LIBS = -lllvmcore-$(shell llvm-config --version)
  GLW_CFLAGS = @GLW_CFLAGS@
  GLUT_CFLAGS = @GLUT_CFLAGS@
- 
-diff -up mesa-20110107/configs/linux-llvm.llvmcore mesa-20110107/configs/linux-llvm
---- mesa-20110107/configs/linux-llvm.llvmcore	2011-01-06 19:51:14.000000000 -0500
-+++ mesa-20110107/configs/linux-llvm	2011-01-18 19:19:14.000000000 -0500
+ GLX_TLS = @GLX_TLS@
+diff --git a/configs/linux-llvm b/configs/linux-llvm
+index 359bee2..0de094d 100644
+--- a/configs/linux-llvm
++++ b/configs/linux-llvm
 @@ -32,8 +32,8 @@ endif
  ifeq ($(MESA_LLVM),1)
    LLVM_CFLAGS=`llvm-config --cppflags`
-   LLVM_CXXFLAGS=`llvm-config --cxxflags backend bitreader engine ipo interpreter instrumentation` -Wno-long-long
--  LLVM_LDFLAGS = $(shell llvm-config --ldflags backend bitreader engine ipo interpreter instrumentation)
--  LLVM_LIBS = $(shell llvm-config --libs backend bitwriter bitreader engine ipo interpreter instrumentation)
+   LLVM_CXXFLAGS=`llvm-config --cxxflags` -Wno-long-long
+-  LLVM_LDFLAGS = $(shell llvm-config --ldflags)
+-  LLVM_LIBS = $(shell llvm-config --libs)
 +  LLVM_LDFLAGS = -L$(TOP)/$(LIB_DIR) -Wl,-R$(DRI_DRIVER_INSTALL_DIR) -lllvmcore-$(shell llvm-config --version)
 +  LLVM_LIBS = -lllvmcore-$(shell llvm-config --version)
    MKLIB_OPTIONS=-cplusplus
  else
    LLVM_CFLAGS=
-diff -up mesa-20110107/configure.ac.llvmcore mesa-20110107/configure.ac
---- mesa-20110107/configure.ac.llvmcore	2011-01-18 19:19:14.000000000 -0500
-+++ mesa-20110107/configure.ac	2011-01-18 20:40:01.000000000 -0500
-@@ -1333,8 +1333,6 @@ if test "x$enable_gallium" = xyes; then
+diff --git a/configure.ac b/configure.ac
+index b510151..e872f2e 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -1404,8 +1404,6 @@ if test "x$enable_gallium" = xyes; then
  fi
  
  AC_SUBST([LLVM_CFLAGS])
@@ -38,11 +41,11 @@ diff -up mesa-20110107/configure.ac.llvmcore mesa-20110107/configure.ac
  AC_SUBST([LLVM_VERSION])
  
  dnl
-@@ -1555,7 +1553,6 @@ if test "x$enable_gallium_llvm" = xyes; 
+@@ -1649,7 +1647,6 @@ if test "x$enable_gallium_llvm" = xyes; then
      if test "x$LLVM_CONFIG" != xno; then
  	LLVM_VERSION=`$LLVM_CONFIG --version`
  	LLVM_CFLAGS=`$LLVM_CONFIG --cppflags`
--	LLVM_LIBS="`$LLVM_CONFIG --libs jit interpreter nativecodegen bitwriter` -lstdc++"
+-	LLVM_LIBS="`$LLVM_CONFIG --libs` -lstdc++"
  
- 	if test "x$HAS_UDIS86" != xno; then
- 	    LLVM_LIBS="$LLVM_LIBS -ludis86"
+ 	LLVM_LDFLAGS=`$LLVM_CONFIG --ldflags`
+ 	GALLIUM_DRIVERS_DIRS="$GALLIUM_DRIVERS_DIRS llvmpipe"
