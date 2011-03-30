@@ -18,7 +18,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.11
-Release: 0.2.%{gitdate}.0%{?dist}
+Release: 0.3.%{gitdate}.0%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -31,6 +31,7 @@ Source2: %{manpages}.tar.bz2
 Source3: make-git-snapshot.sh
 Source4: llvmcore.mk
 
+Patch1: mesa-intel-fix-gs-rendering-regression.patch
 Patch2: mesa-7.1-nukeglthread-debug.patch
 Patch3: mesa-no-mach64.patch
 Patch4: legacy-drivers.patch
@@ -214,6 +215,7 @@ Requires: Xorg %(xserver-sdk-abi-requires ansic) %(xserver-sdk-abi-requires vide
 %prep
 #setup -q -n Mesa-%{version}%{?snapshot} -b0 -b2
 %setup -q -n mesa-%{gitdate} -b2
+%patch1 -p1 -b .upstreamrevert
 %patch2 -p1 -b .intel-glthread
 %patch3 -p1 -b .no-mach64
 %patch4 -p1 -b .classic
@@ -485,6 +487,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libOSMesa.so
 
 %changelog
+* Wed Mar 30 2011 Dave Airlie <airlied@redhat.com> 7.11-0.3.20110330.0
+- mesa-intel-fix-gs-rendering-regression.patch, attempt to fix gnome shell
+  rendering.
+
 * Wed Mar 30 2011 Dave Airlie <airlied@redhat.com> 7.11-0.2.20110330.0
 - snapshot upstream again to hopefully fix ILK bug
 

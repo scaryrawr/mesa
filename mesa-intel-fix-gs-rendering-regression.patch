@@ -1,0 +1,99 @@
+
+This reverts upstream
+	f627d429bda8196fd20f2023374ad6d34e4becb6, 
+        de7678ef521f4fb34459e407a66ab8bf8be733e1, 
+        6547253bd138db815173c00ca2dc220e8ad20ab1
+
+
+diff --git a/src/mesa/drivers/dri/intel/intel_regions.c b/src/mesa/drivers/dri/intel/intel_regions.c
+index a4da1ce..0857fa8 100644
+--- a/src/mesa/drivers/dri/intel/intel_regions.c
++++ b/src/mesa/drivers/dri/intel/intel_regions.c
+@@ -149,6 +149,11 @@ intel_region_alloc_internal(struct intel_screen *screen,
+ {
+    struct intel_region *region;
+ 
++   if (buffer == NULL) {
++      _DBG("%s <-- NULL\n", __FUNCTION__);
++      return NULL;
++   }
++
+    region = calloc(sizeof(*region), 1);
+    if (region == NULL)
+       return region;
+@@ -175,7 +180,6 @@ intel_region_alloc(struct intel_screen *screen,
+    drm_intel_bo *buffer;
+    unsigned long flags = 0;
+    unsigned long aligned_pitch;
+-   struct intel_region *region;
+ 
+    if (expect_accelerated_upload)
+       flags |= BO_ALLOC_FOR_RENDER;
+@@ -183,17 +187,9 @@ intel_region_alloc(struct intel_screen *screen,
+    buffer = drm_intel_bo_alloc_tiled(screen->bufmgr, "region",
+ 				     width, height, cpp,
+ 				     &tiling, &aligned_pitch, flags);
+-   if (buffer == NULL)
+-      return NULL;
+ 
+-   region = intel_region_alloc_internal(screen, cpp, width, height,
+-                                        aligned_pitch / cpp, tiling, buffer);
+-   if (region == NULL) {
+-      drm_intel_bo_unreference(buffer);
+-      return NULL;
+-   }
+-
+-   return region;
++   return intel_region_alloc_internal(screen, cpp, width, height,
++				      aligned_pitch / cpp, tiling, buffer);
+ }
+ 
+ GLboolean
+diff --git a/src/mesa/drivers/dri/intel/intel_tex_subimage.c b/src/mesa/drivers/dri/intel/intel_tex_subimage.c
+index d0f8294..6b7f13f 100644
+--- a/src/mesa/drivers/dri/intel/intel_tex_subimage.c
++++ b/src/mesa/drivers/dri/intel/intel_tex_subimage.c
+@@ -90,19 +90,19 @@ intelTexSubimage(struct gl_context * ctx,
+ 	  intel->gen < 6 && target == GL_TEXTURE_2D &&
+ 	  drm_intel_bo_busy(dst_bo))
+       {
+-	 dstRowStride = width * intelImage->mt->cpp;
+-         temp_bo = drm_intel_bo_alloc(intel->bufmgr, "subimage blit bo",
+-                                      dstRowStride * height, 0);
+-         if (!temp_bo)
+-            return;
+-
+-	 if (drm_intel_gem_bo_map_gtt(temp_bo)) {
+-            drm_intel_bo_unreference(temp_bo);
+-            return;
+-         }
+-
++	 unsigned long pitch;
++	 uint32_t tiling_mode = I915_TILING_NONE;
++	 temp_bo = drm_intel_bo_alloc_tiled(intel->bufmgr,
++					    "subimage blit bo",
++					    width, height,
++					    intelImage->mt->cpp,
++					    &tiling_mode,
++					    &pitch,
++					    0);
++	 drm_intel_gem_bo_map_gtt(temp_bo);
+ 	 texImage->Data = temp_bo->virtual;
+ 	 texImage->ImageOffsets[0] = 0;
++	 dstRowStride = pitch;
+ 
+ 	 intel_miptree_get_image_offset(intelImage->mt, level,
+ 					intelImage->face, 0,
+diff --git a/src/mesa/drivers/dri/intel/intel_tex_validate.c b/src/mesa/drivers/dri/intel/intel_tex_validate.c
+index a11b07e..8537e7f 100644
+--- a/src/mesa/drivers/dri/intel/intel_tex_validate.c
++++ b/src/mesa/drivers/dri/intel/intel_tex_validate.c
+@@ -140,8 +140,6 @@ intel_finalize_mipmap_tree(struct intel_context *intel, GLuint unit)
+                                           cpp,
+                                           comp_byte,
+ 					  GL_TRUE);
+-      if (!intelObj->mt)
+-         return GL_FALSE;
+    }
+ 
+    /* Pull in any images not in the object's tree:
