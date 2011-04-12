@@ -31,6 +31,7 @@ Source2: %{manpages}.tar.bz2
 Source3: make-git-snapshot.sh
 Source4: llvmcore.mk
 
+Patch1: mesa-nouveau-fix-build.patch
 Patch2: mesa-7.1-nukeglthread-debug.patch
 Patch3: mesa-no-mach64.patch
 Patch4: legacy-drivers.patch
@@ -214,6 +215,7 @@ Requires: Xorg %(xserver-sdk-abi-requires ansic) %(xserver-sdk-abi-requires vide
 %prep
 #setup -q -n Mesa-%{version}%{?snapshot} -b0 -b2
 %setup -q -n mesa-%{gitdate} -b2
+%patch1 -p1 -b .nv-fix
 %patch2 -p1 -b .intel-glthread
 %patch3 -p1 -b .no-mach64
 %patch4 -p1 -b .classic
