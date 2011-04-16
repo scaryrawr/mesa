@@ -12,24 +12,26 @@
 %define _default_patch_fuzz 2
 
 %define manpages gl-manpages-1.0.1
-%define gitdate 20110327
+%define gitdate 20110412
 #% define snapshot 
 
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.11
-Release: 0.2.%{gitdate}.0%{?dist}
+Release: 0.6.%{gitdate}.0%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
 
 #Source0: http://downloads.sf.net/mesa3d/MesaLib-%{version}.tar.bz2
 #Source0: http://www.mesa3d.org/beta/MesaLib-%{version}%{?snapshot}.tar.bz2
+#Source0: ftp://ftp.freedesktop.org/pub/%{name}/%{version}/MesaLib-%{version}.tar.bz2
 Source0: %{name}-%{gitdate}.tar.xz
 Source2: %{manpages}.tar.bz2
 Source3: make-git-snapshot.sh
 Source4: llvmcore.mk
 
+Patch1: mesa-nouveau-fix-build.patch
 Patch2: mesa-7.1-nukeglthread-debug.patch
 Patch3: mesa-no-mach64.patch
 Patch4: legacy-drivers.patch
@@ -211,8 +213,9 @@ Requires: Xorg %(xserver-sdk-abi-requires ansic) %(xserver-sdk-abi-requires vide
 2D driver for VMware SVGA vGPU
 
 %prep
-#setup -q -n mesa-%{version}%{?snapshot} -b0 -b2
+#setup -q -n Mesa-%{version}%{?snapshot} -b0 -b2
 %setup -q -n mesa-%{gitdate} -b2
+%patch1 -p1 -b .nv-fix
 %patch2 -p1 -b .intel-glthread
 %patch3 -p1 -b .no-mach64
 %patch4 -p1 -b .classic
@@ -228,8 +231,8 @@ Requires: Xorg %(xserver-sdk-abi-requires ansic) %(xserver-sdk-abi-requires vide
 
 autoreconf --install  
 
-export CFLAGS="$RPM_OPT_FLAGS -fno-omit-frame-pointer"
-export CXXFLAGS="$RPM_OPT_FLAGS -fno-omit-frame-pointer"
+export CFLAGS="$RPM_OPT_FLAGS"
+export CXXFLAGS="$RPM_OPT_FLAGS"
 %ifarch %{ix86}
 # i do not have words for how much the assembly dispatch code infuriates me
 %define common_flags --enable-selinux --enable-pic --enable-udev --disable-asm
@@ -266,15 +269,16 @@ mv libllvmcore*.so %{_lib}
     --enable-egl \
     --enable-gles1 \
     --enable-gles2 \
-    --enable-gallium-llvm \
     --disable-gallium-intel \
     --disable-gallium-svga \
     --disable-gallium-egl \
 %if %{with_hardware}
+    --enable-gallium-llvm \
     --enable-gallium-radeon \
     --enable-gallium-r600 \
     --enable-gallium-nouveau \
 %else
+    --disable-gallium-llvm \
     --disable-gallium-radeon \
     --disable-gallium-r600 \
     --disable-gallium-nouveau \
@@ -312,7 +316,7 @@ done | xargs install -m 0755 -t $RPM_BUILD_ROOT%{_libdir}/dri >& /dev/null || :
 
 # strip out undesirable headers
 pushd $RPM_BUILD_ROOT%{_includedir}/GL 
-rm [a-fh-np-wyz]*.h glf*.h glut*.h
+rm -f [a-fh-np-wyz]*.h glf*.h glut*.h
 popd
 
 pushd $RPM_BUILD_ROOT%{_libdir}
@@ -390,8 +394,11 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/dri/r200_dri.so
 %{_libdir}/dri/r300_dri.so
 %{_libdir}/dri/r600_dri.so
+%ifnarch %{sparc}
+# we no intel chipsets on sparc. Please move on...
 %{_libdir}/dri/i915_dri.so
 %{_libdir}/dri/i965_dri.so
+%endif
 %{_libdir}/dri/nouveau_dri.so
 %{_libdir}/dri/nouveau_vieux_dri.so
 %endif
@@ -406,11 +413,14 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/dri/i810_dri.so
 %{_libdir}/dri/sis_dri.so
 %endif
-%{_libdir}/dri/mga_dri.so
 %{_libdir}/dri/r128_dri.so
+%ifnarch %{sparc}
+# we no much hardware....
+%{_libdir}/dri/mga_dri.so
 %{_libdir}/dri/savage_dri.so
 %{_libdir}/dri/tdfx_dri.so
 %{_libdir}/dri/unichrome_dri.so
+%endif
 %endif
 
 %files libGL-devel
@@ -477,15 +487,41 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libOSMesa.so
 
 %changelog
-* Sun Mar 27 2011 Dave Airlie <airlied@redhat.com> 7.11-0.2.20110327.0
-- llvmcore fix build using g++ instead of gcc
+* Tue Apr 12 2011 Dave Airlie <airlied@redhat.com> 7.11-0.6.20110412.0
+- latest upstream snapshot to fix r200 regression.
+
+* Fri Apr 01 2011 Dave Airlie <airlied@redhat.com> 7.11-0.5.20110401.0
+- Revert upstream patches causing SNB regression.
+
+* Fri Apr 01 2011 Dave Airlie <airlied@redhat.com> 7.11-0.4.20110401.0
+- upstream snapshot again - proper fix for ILK + nv50 gnome-shell issue
+
+* Wed Mar 30 2011 Dave Airlie <airlied@redhat.com> 7.11-0.3.20110330.0
+- mesa-intel-fix-gs-rendering-regression.patch, attempt to fix gnome shell
+  rendering.
+
+* Wed Mar 30 2011 Dave Airlie <airlied@redhat.com> 7.11-0.2.20110330.0
+- snapshot upstream again to hopefully fix ILK bug
 
 * Sun Mar 27 2011 Dave Airlie <airlied@redhat.com> 7.11-0.1.20110327.0
-- latest git snapshot, seems quiet + re-enable llvmcore
+- pull latest snapshot + 3 post snapshot fixes
 
-* Tue Mar 15 2011 Adam Jackson <ajax@redhat.com> 7.11-0.20110315.0
-- Today's git snap
-- Add with_llvmcore macro, and turn it off momentarily
+* Wed Mar 23 2011 Adam Jackson <ajax@redhat.com> 7.10.1-1
+- mesa 7.10.1
+
+* Fri Mar 18 2011 Dennis Gilmore <dennis@ausil.us> 7.10-0.30
+- fall back to non native jit on sparc.
+
+* Mon Mar 14 2011 Dave Airlie <airlied@redhat.com> 7.10-0.29
+- use g++ to link llvmcore.so so it gets libstdc++ (#674079)
+
+* Fri Mar 04 2011 Dan Horák <dan[at]danny.cz> 7.10-0.28
+- enable gallium-llvm only when with_hardware is set (workarounds linking
+  failure on s390(x))
+
+* Wed Feb 23 2011 Jerome Glisse <jglisse@redhat.com> 7.10-0.27
+- Build without -fno-omit-frame-pointer as gcc 4.6.0 seems to lead to
+  bogus code with that option (#679924)
 
 * Wed Feb 09 2011 Adam Jackson <ajax@redhat.com> 7.10-0.26
 - BuildRequires: libdrm >= 2.4.24-0 (#668363)
