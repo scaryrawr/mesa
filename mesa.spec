@@ -18,7 +18,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.11
-Release: 0.6.%{gitdate}.0%{?dist}
+Release: 0.7.%{gitdate}.0%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -394,10 +394,11 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/dri/r200_dri.so
 %{_libdir}/dri/r300_dri.so
 %{_libdir}/dri/r600_dri.so
-%ifnarch %{sparc}
-# we no intel chipsets on sparc. Please move on...
+%ifarch %{ix86} x86_64 ia64
 %{_libdir}/dri/i915_dri.so
+%ifnarch ia64
 %{_libdir}/dri/i965_dri.so
+%endif
 %endif
 %{_libdir}/dri/nouveau_dri.so
 %{_libdir}/dri/nouveau_vieux_dri.so
@@ -487,6 +488,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libOSMesa.so
 
 %changelog
+* Mon Apr 18 2011 Adam Jackson <ajax@redhat.com> 7.11-0.7.20110412.0
+- Fix intel driver exclusion to be better arched (#697555)
+
 * Tue Apr 12 2011 Dave Airlie <airlied@redhat.com> 7.11-0.6.20110412.0
 - latest upstream snapshot to fix r200 regression.
 
