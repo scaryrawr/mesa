@@ -15,7 +15,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.11
-Release: 0.8.%{gitdate}.0%{?dist}
+Release: 0.9.%{gitdate}.0%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -112,16 +112,10 @@ Summary: Mesa-based DRI drivers
 Group: User Interface/X Hardware Support
 Requires: mesa-dri-filesystem%{?_isa}
 Obsoletes: mesa-dri-drivers-experimental < 0:7.10-0.24
-Obsoletes: mesa-dri-llvmcore <= 7.11-0.8
+Obsoletes: mesa-dri-llvmcore <= %{version}-%{release}
+Obsoletes: mesa-dri-drivers-dri1 <= %{version}-%{release}
 %description dri-drivers
 Mesa-based DRI drivers.
-
-%package dri-drivers-dri1
-Summary: Mesa-based DRI1 drivers
-Group: User Interface/X Hardware Support
-Requires: mesa-dri-filesystem%{?isa}
-%description dri-drivers-dri1
-Mesa-based DRI1 drivers.
 
 %package libGL-devel
 Summary: Mesa libGL development package
@@ -241,6 +235,7 @@ make clean
     --disable-gl-osmesa \
     --with-driver=dri \
     --with-dri-driverdir=%{_libdir}/dri \
+    --with-dri-drivers=i915,i965 \
     --with-state-trackers=dri,glx \
     --enable-egl \
     --enable-gles1 \
@@ -280,9 +275,9 @@ install -d $RPM_BUILD_ROOT%{_libdir}/dri
 # use gallium driver iff built
 [ -f %{_lib}/gallium/r300_dri.so ] && cp %{_lib}/gallium/r300_dri.so %{_lib}/r300_dri.so
 [ -f %{_lib}/gallium/r600_dri.so ] && cp %{_lib}/gallium/r600_dri.so %{_lib}/r600_dri.so
-[ -f %{_lib}/gallium/swrastg_dri.so ] && mv %{_lib}/gallium/swrastg_dri.so %{_lib}/swrast_dri.so
+[ -f %{_lib}/gallium/swrastg_dri.so ] && cp %{_lib}/gallium/swrastg_dri.so %{_lib}/swrastg_dri.so
 
-for f in i810 i915 i965 mach64 mga r128 r200 r300 r600 radeon savage sis swrast tdfx unichrome nouveau_vieux gallium/vmwgfx ; do
+for f in i915 i965 gallium/vmwgfx ; do
     so=%{_lib}/${f}_dri.so
     test -e $so && echo $so
 done | xargs install -m 0755 -t $RPM_BUILD_ROOT%{_libdir}/dri >& /dev/null || :
@@ -357,8 +352,6 @@ rm -rf $RPM_BUILD_ROOT
 %files dri-drivers
 %defattr(-,root,root,-)
 %if %{with_hardware}
-%{_libdir}/dri/radeon_dri.so
-%{_libdir}/dri/r200_dri.so
 %{_libdir}/dri/r300_dri.so
 %{_libdir}/dri/r600_dri.so
 %ifarch %{ix86} x86_64 ia64
@@ -368,28 +361,8 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 %endif
 %{_libdir}/dri/nouveau_dri.so
-%{_libdir}/dri/nouveau_vieux_dri.so
 %endif
-%{_libdir}/dri/swrast_dri.so
-%exclude %{_libdir}/dri/swrastg_dri.so
-
-%files dri-drivers-dri1
-%defattr(-,root,root,-)
-%doc docs/COPYING
-%if %{with_hardware}
-%ifarch %{ix86}
-%{_libdir}/dri/i810_dri.so
-%{_libdir}/dri/sis_dri.so
-%endif
-%{_libdir}/dri/r128_dri.so
-%ifnarch %{sparc}
-# we no much hardware....
-%{_libdir}/dri/mga_dri.so
-%{_libdir}/dri/savage_dri.so
-%{_libdir}/dri/tdfx_dri.so
-%{_libdir}/dri/unichrome_dri.so
-%endif
-%endif
+%{_libdir}/dri/swrastg_dri.so
 
 %files libGL-devel
 %defattr(-,root,root,-)
@@ -455,6 +428,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libOSMesa.so
 
 %changelog
+* Mon May 09 2011 Adam Jackson <ajax@redhat.com> 7.11-0.9.20110412.0
+- Drop dri1 subpackage (and its drivers), use "swrastg" consistently.
+
 * Mon May 09 2011 Adam Jackson <ajax@redhat.com> 7.11-0.8.20110412.0
 - Use llvm-libs' shared lib instead of rolling our own.
 
