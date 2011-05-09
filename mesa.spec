@@ -6,9 +6,6 @@
 %define with_hardware 1
 %endif
 
-# broken atm, sorry.  fix before any f15 merge.
-%define with_llvmcore 1
-
 %define _default_patch_fuzz 2
 
 %define manpages gl-manpages-1.0.1
@@ -18,7 +15,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.11
-Release: 0.7.%{gitdate}.0%{?dist}
+Release: 0.8.%{gitdate}.0%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -29,7 +26,6 @@ URL: http://www.mesa3d.org
 Source0: %{name}-%{gitdate}.tar.xz
 Source2: %{manpages}.tar.bz2
 Source3: make-git-snapshot.sh
-Source4: llvmcore.mk
 
 Patch1: mesa-nouveau-fix-build.patch
 Patch2: mesa-7.1-nukeglthread-debug.patch
@@ -111,22 +107,12 @@ Group: User Interface/X Hardware Support
 %description dri-filesystem
 Mesa DRI driver filesystem
 
-%if %{with_llvmcore}
-%package dri-llvmcore
-Summary: Mesa common LLVM support
-Group: User Interface/X Hardware Support
-Requires: mesa-dri-filesystem%{?_isa}
-%description dri-llvmcore
-Common DSO for LLVM support for gallium-based DRI drivers.  This package
-exists solely as a disk space hack for Mesa.  Do not link against this
-library if you are not Mesa.  You have been warned.
-%endif
-
 %package dri-drivers
 Summary: Mesa-based DRI drivers
 Group: User Interface/X Hardware Support
 Requires: mesa-dri-filesystem%{?_isa}
 Obsoletes: mesa-dri-drivers-experimental < 0:7.10-0.24
+Obsoletes: mesa-dri-llvmcore <= 7.11-0.8
 %description dri-drivers
 Mesa-based DRI drivers.
 
@@ -220,12 +206,9 @@ Requires: Xorg %(xserver-sdk-abi-requires ansic) %(xserver-sdk-abi-requires vide
 %patch3 -p1 -b .no-mach64
 %patch4 -p1 -b .classic
 #patch7 -p1 -b .dricore
+%patch8 -p1 -b .llvmcore
 %patch30 -p1 -b .vblank-warning
 #patch31 -p1 -b .swrastg
-
-%if %{with_llvmcore}
-%patch8 -p1 -b .llvmcore
-%endif
 
 %build
 
@@ -250,13 +233,6 @@ make clean
 
 # just to be sure...
 [ `find . -name \*.o | wc -l` -eq 0 ] || exit 1
-
-# build llvmcore
-%if %{with_llvmcore}
-TOP=`pwd` make -f %{SOURCE4} llvmcore
-mkdir -p %{_lib}
-mv libllvmcore*.so %{_lib}
-%endif
 
 # now build the rest of mesa
 %configure %{common_flags} \
@@ -301,9 +277,6 @@ make install DESTDIR=$RPM_BUILD_ROOT DRI_DIRS=
 
 # just the DRI drivers that are sane
 install -d $RPM_BUILD_ROOT%{_libdir}/dri
-%if %{with_llvmcore}
-install -m 0755 -t $RPM_BUILD_ROOT%{_libdir}/dri %{_lib}/libllvmcore-2*.so >& /dev/null
-%endif
 # use gallium driver iff built
 [ -f %{_lib}/gallium/r300_dri.so ] && cp %{_lib}/gallium/r300_dri.so %{_lib}/r300_dri.so
 [ -f %{_lib}/gallium/r600_dri.so ] && cp %{_lib}/gallium/r600_dri.so %{_lib}/r600_dri.so
@@ -380,12 +353,6 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 %doc docs/COPYING
 %dir %{_libdir}/dri
-
-%if %{with_llvmcore}
-%files dri-llvmcore
-%defattr(-,root,root,-)
-%{_libdir}/dri/libllvmcore-2.*.so
-%endif
 
 %files dri-drivers
 %defattr(-,root,root,-)
@@ -488,6 +455,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libOSMesa.so
 
 %changelog
+* Mon May 09 2011 Adam Jackson <ajax@redhat.com> 7.11-0.8.20110412.0
+- Use llvm-libs' shared lib instead of rolling our own.
+
 * Mon Apr 18 2011 Adam Jackson <ajax@redhat.com> 7.11-0.7.20110412.0
 - Fix intel driver exclusion to be better arched (#697555)
 

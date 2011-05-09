@@ -1,51 +1,12 @@
-diff --git a/configs/autoconf.in b/configs/autoconf.in
-index 4e931a3..fec8e42 100644
---- a/configs/autoconf.in
-+++ b/configs/autoconf.in
-@@ -31,8 +31,8 @@ INTEL_CFLAGS = @INTEL_CFLAGS@
- X11_LIBS = @X11_LIBS@
- X11_CFLAGS = @X11_CFLAGS@
- LLVM_CFLAGS = @LLVM_CFLAGS@
--LLVM_LDFLAGS = @LLVM_LDFLAGS@
--LLVM_LIBS = @LLVM_LIBS@
-+LLVM_LDFLAGS = -L$(TOP)/$(LIB_DIR) -Wl,-R$(DRI_DRIVER_INSTALL_DIR) -lllvmcore-$(shell llvm-config --version)
-+LLVM_LIBS = -lllvmcore-$(shell llvm-config --version)
- GLW_CFLAGS = @GLW_CFLAGS@
- GLUT_CFLAGS = @GLUT_CFLAGS@
- GLX_TLS = @GLX_TLS@
-diff --git a/configs/linux-llvm b/configs/linux-llvm
-index 359bee2..0de094d 100644
---- a/configs/linux-llvm
-+++ b/configs/linux-llvm
-@@ -32,8 +32,8 @@ endif
- ifeq ($(MESA_LLVM),1)
-   LLVM_CFLAGS=`llvm-config --cppflags`
-   LLVM_CXXFLAGS=`llvm-config --cxxflags` -Wno-long-long
--  LLVM_LDFLAGS = $(shell llvm-config --ldflags)
--  LLVM_LIBS = $(shell llvm-config --libs)
-+  LLVM_LDFLAGS = -L$(TOP)/$(LIB_DIR) -Wl,-R$(DRI_DRIVER_INSTALL_DIR) -lllvmcore-$(shell llvm-config --version)
-+  LLVM_LIBS = -lllvmcore-$(shell llvm-config --version)
-   MKLIB_OPTIONS=-cplusplus
- else
-   LLVM_CFLAGS=
-diff --git a/configure.ac b/configure.ac
-index b510151..e872f2e 100644
---- a/configure.ac
-+++ b/configure.ac
-@@ -1404,8 +1404,6 @@ if test "x$enable_gallium" = xyes; then
- fi
- 
- AC_SUBST([LLVM_CFLAGS])
--AC_SUBST([LLVM_LIBS])
--AC_SUBST([LLVM_LDFLAGS])
- AC_SUBST([LLVM_VERSION])
- 
- dnl
-@@ -1649,7 +1647,6 @@ if test "x$enable_gallium_llvm" = xyes; then
+diff -up mesa-20110412/configure.ac.jx mesa-20110412/configure.ac
+--- mesa-20110412/configure.ac.jx	2011-05-09 15:04:19.000000000 -0400
++++ mesa-20110412/configure.ac	2011-05-09 15:05:11.000000000 -0400
+@@ -1679,7 +1679,7 @@ if test "x$enable_gallium_llvm" = xyes; 
      if test "x$LLVM_CONFIG" != xno; then
  	LLVM_VERSION=`$LLVM_CONFIG --version`
  	LLVM_CFLAGS=`$LLVM_CONFIG --cppflags`
 -	LLVM_LIBS="`$LLVM_CONFIG --libs` -lstdc++"
++	LLVM_LIBS="-lLLVM-`llvm-config --version` -lstdc++"
  
  	LLVM_LDFLAGS=`$LLVM_CONFIG --ldflags`
  	GALLIUM_DRIVERS_DIRS="$GALLIUM_DRIVERS_DIRS llvmpipe"
