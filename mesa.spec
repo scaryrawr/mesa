@@ -15,7 +15,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.11
-Release: 0.10.%{gitdate}.0%{?dist}
+Release: 0.11.%{gitdate}.0%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -235,11 +235,13 @@ export CXXFLAGS="$RPM_OPT_FLAGS"
 %if %{with_hardware}
     --enable-gallium-llvm \
     --enable-gallium-radeon \
+    --enable-gallium-r300 \
     --enable-gallium-r600 \
     --enable-gallium-nouveau \
 %else
     --disable-gallium-llvm \
     --disable-gallium-radeon \
+    --disable-gallium-r300 \
     --disable-gallium-r600 \
     --disable-gallium-nouveau \
 %endif
@@ -415,6 +417,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/osmesa.pc
 
 %changelog
+* Tue May 10 2011 Dan Horák <dan[at]danny.cz> 7.11-0.11.20110412.0
+- r300 needs to be explicitely disabled when with_hardware == 0
+
 * Mon May 09 2011 Adam Jackson <ajax@redhat.com> 7.11-0.10.20110412.0
 - Drop the separate build pass for osmesa, no longer needed.
 
