@@ -15,7 +15,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.11
-Release: 0.9.%{gitdate}.0%{?dist}
+Release: 0.10.%{gitdate}.0%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -216,24 +216,13 @@ export CXXFLAGS="$RPM_OPT_FLAGS"
 %else
 %define common_flags --enable-selinux --enable-pic --enable-udev
 %endif
-%define osmesa_flags --with-driver=osmesa %{common_flags} --disable-gallium --with-dri-drivers="" --disable-glu --disable-egl
 
-# first, build osmesa.
-
-%configure %{osmesa_flags} --with-osmesa-bits=8
-make %{_smp_mflags}
-mv %{_lib} osmesa8
-make clean
-
-# just to be sure...
-[ `find . -name \*.o | wc -l` -eq 0 ] || exit 1
-
-# now build the rest of mesa
 %configure %{common_flags} \
     --disable-glw \
     --disable-glut \
-    --disable-gl-osmesa \
+    --enable-gl-osmesa \
     --with-driver=dri \
+    --with-osmesa-bits=8 \
     --with-dri-driverdir=%{_libdir}/dri \
     --with-dri-drivers=i915,i965 \
     --with-state-trackers=dri,glx \
@@ -290,9 +279,6 @@ popd
 pushd $RPM_BUILD_ROOT%{_libdir}
 rm -f xorg/modules/drivers/modesetting_drv.so
 popd
-
-# and osmesa
-mv osmesa*/libOS* $RPM_BUILD_ROOT%{_libdir}
 
 # man pages
 pushd ../%{manpages}
@@ -426,8 +412,12 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 %{_includedir}/GL/osmesa.h
 %{_libdir}/libOSMesa.so
+%{_libdir}/pkgconfig/osmesa.pc
 
 %changelog
+* Mon May 09 2011 Adam Jackson <ajax@redhat.com> 7.11-0.10.20110412.0
+- Drop the separate build pass for osmesa, no longer needed.
+
 * Mon May 09 2011 Adam Jackson <ajax@redhat.com> 7.11-0.9.20110412.0
 - Drop dri1 subpackage (and its drivers), use "swrastg" consistently.
 
