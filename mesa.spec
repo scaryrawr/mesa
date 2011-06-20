@@ -9,13 +9,13 @@
 %define _default_patch_fuzz 2
 
 %define manpages gl-manpages-1.0.1
-%define gitdate 20110412
+%define gitdate 20110620
 #% define snapshot 
 
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.11
-Release: 0.12.%{gitdate}.0%{?dist}
+Release: 0.13.%{gitdate}.0%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -27,7 +27,6 @@ Source0: %{name}-%{gitdate}.tar.xz
 Source2: %{manpages}.tar.bz2
 Source3: make-git-snapshot.sh
 
-Patch1: mesa-nouveau-fix-build.patch
 Patch2: mesa-7.1-nukeglthread-debug.patch
 Patch3: mesa-no-mach64.patch
 Patch4: legacy-drivers.patch
@@ -201,7 +200,6 @@ Requires: Xorg %(xserver-sdk-abi-requires ansic) %(xserver-sdk-abi-requires vide
 %prep
 #setup -q -n Mesa-%{version}%{?snapshot} -b0 -b2
 %setup -q -n mesa-%{gitdate} -b2
-%patch1 -p1 -b .nv-fix
 %patch2 -p1 -b .intel-glthread
 %patch3 -p1 -b .no-mach64
 %patch4 -p1 -b .classic
@@ -218,9 +216,9 @@ export CFLAGS="$RPM_OPT_FLAGS"
 export CXXFLAGS="$RPM_OPT_FLAGS"
 %ifarch %{ix86}
 # i do not have words for how much the assembly dispatch code infuriates me
-%define common_flags --enable-selinux --enable-pic --enable-udev --disable-asm
+%define common_flags --enable-selinux --enable-pic --disable-asm
 %else
-%define common_flags --enable-selinux --enable-pic --enable-udev
+%define common_flags --enable-selinux --enable-pic
 %endif
 
 %configure %{common_flags} \
@@ -230,25 +228,16 @@ export CXXFLAGS="$RPM_OPT_FLAGS"
     --with-driver=dri \
     --with-osmesa-bits=8 \
     --with-dri-driverdir=%{_libdir}/dri \
-    --with-state-trackers=dri,glx \
     --enable-egl \
     --enable-gles1 \
     --enable-gles2 \
-    --disable-gallium-intel \
-    --disable-gallium-svga \
     --disable-gallium-egl \
 %if %{with_hardware}
+    --with-gallium-drivers=r300,r600,nouveau,swrast \
     --enable-gallium-llvm \
-    --enable-gallium-radeon \
-    --enable-gallium-r300 \
-    --enable-gallium-r600 \
-    --enable-gallium-nouveau \
 %else
     --disable-gallium-llvm \
-    --disable-gallium-radeon \
-    --disable-gallium-r300 \
-    --disable-gallium-r600 \
-    --disable-gallium-nouveau \
+    --with-gallium-drivers=swrast \
 %endif
     %{?dri_drivers}
 
@@ -444,6 +433,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/osmesa.pc
 
 %changelog
+* Mon Jun 20 2011 Dave Airlie <airlied@redhat.com> 7.11-0.13.20110620.0
+- rebase to 20 June snapshot from upstream - new gallium config options
+
 * Mon Jun 20 2011 Dave Airlie <airlied@redhat.com> 7.11-0.12.20110412.0
 - dropping DRI1 is premature, fix swrastg upstream first.
 

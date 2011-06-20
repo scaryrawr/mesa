@@ -1,15 +1,15 @@
-diff -up mesa-20100529/src/mesa/drivers/dri/intel/intel_fbo.c.dave mesa-20100529/src/mesa/drivers/dri/intel/intel_fbo.c
---- mesa-20100529/src/mesa/drivers/dri/intel/intel_fbo.c.dave	2010-05-30 18:24:35.000000000 +1000
-+++ mesa-20100529/src/mesa/drivers/dri/intel/intel_fbo.c	2010-05-30 18:24:42.000000000 +1000
-@@ -558,11 +558,6 @@ intel_render_texture(GLcontext * ctx,
+diff -up mesa-20110620/src/mesa/drivers/dri/intel/intel_fbo.c.da mesa-20110620/src/mesa/drivers/dri/intel/intel_fbo.c
+--- mesa-20110620/src/mesa/drivers/dri/intel/intel_fbo.c.da	2011-06-20 13:51:25.000000000 +1000
++++ mesa-20110620/src/mesa/drivers/dri/intel/intel_fbo.c	2011-06-20 13:51:32.000000000 +1000
+@@ -612,11 +612,6 @@ intel_render_texture(struct gl_context *
         return;
     }
  
 -   DBG("Begin render texture tid %lx tex=%u w=%d h=%d refcount=%d\n",
 -       _glthread_GetID(),
--       att->Texture->Name, newImage->Width, newImage->Height,
+-       att->Texture->Name, image->Width, image->Height,
 -       irb->Base.RefCount);
 -
-    /* point the renderbufer's region to the texture image region */
-    if (irb->region != intel_image->mt->region) {
-       if (irb->region)
+    intel_renderbuffer_set_draw_offset(irb, intel_image, att->Zoffset);
+    intel_image->used_as_render_target = GL_TRUE;
+ 
