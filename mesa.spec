@@ -15,7 +15,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.11
-Release: 0.13.%{gitdate}.0%{?dist}
+Release: 0.14.%{gitdate}.0%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -70,7 +70,7 @@ Group: System Environment/Libraries
 Requires(post): /sbin/ldconfig
 Requires(postun): /sbin/ldconfig
 Provides: libGL
-Requires: libdrm >= 2.4.23-1
+Requires: libdrm%{?isa} >= 2.4.23-1
 %if %{with_hardware}
 Conflicts: xorg-x11-server-Xorg < 1.4.99.901-14
 %endif
@@ -84,7 +84,7 @@ Group: System Environment/Libraries
 Requires(post): /sbin/ldconfig
 Requires(postun): /sbin/ldconfig
 Requires: mesa-dri-drivers%{?_isa} = %{version}-%{release}
-Requires: libdrm >= 2.4.23-1
+Requires: libdrm%{?isa} >= 2.4.23-1
 
 %description libEGL
 Mesa libEGL runtime libraries
@@ -95,7 +95,7 @@ Group: System Environment/Libraries
 Requires(post): /sbin/ldconfig
 Requires(postun): /sbin/ldconfig
 Requires: mesa-dri-drivers%{?_isa} = %{version}-%{release}
-Requires: libdrm >= 2.4.23-1
+Requires: libdrm%{?isa} >= 2.4.23-1
 
 %description libGLES
 Mesa GLES runtime libraries
@@ -386,6 +386,7 @@ rm -rf $RPM_BUILD_ROOT
 
 %files libEGL-devel
 %defattr(-,root,root,-)
+%dir %{_includedir}/EGL
 %{_includedir}/EGL/eglext.h
 %{_includedir}/EGL/egl.h
 %{_includedir}/EGL/eglplatform.h
@@ -395,10 +396,12 @@ rm -rf $RPM_BUILD_ROOT
 
 %files libGLES-devel
 %defattr(-,root,root,-)
+%dir %{_includedir}/GLES
 %{_includedir}/GLES/egl.h
 %{_includedir}/GLES/gl.h
 %{_includedir}/GLES/glext.h
 %{_includedir}/GLES/glplatform.h
+%dir %{_includedir}/GLES2
 %{_includedir}/GLES2/gl2platform.h
 %{_includedir}/GLES2/gl2.h
 %{_includedir}/GLES2/gl2ext.h
@@ -433,6 +436,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/osmesa.pc
 
 %changelog
+* Tue Jul 05 2011 Adam Jackson <ajax@redhat.com> 7.11-0.14.20110620.0
+- Arch-dep and file ownership fixes (#682357)
+
 * Mon Jun 20 2011 Dave Airlie <airlied@redhat.com> 7.11-0.13.20110620.0
 - rebase to 20 June snapshot from upstream - new gallium config options
 
