@@ -15,7 +15,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.11
-Release: 0.14.%{gitdate}.0%{?dist}
+Release: 0.15.%{gitdate}.0%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -390,6 +390,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_includedir}/EGL/eglext.h
 %{_includedir}/EGL/egl.h
 %{_includedir}/EGL/eglplatform.h
+%dir %{_includedir}/KHR
 %{_includedir}/KHR/khrplatform.h
 %{_libdir}/pkgconfig/egl.pc
 %{_libdir}/libEGL.so
@@ -431,11 +432,15 @@ rm -rf $RPM_BUILD_ROOT
 
 %files libOSMesa-devel
 %defattr(-,root,root,-)
+%dir %{_includedir}/GL
 %{_includedir}/GL/osmesa.h
 %{_libdir}/libOSMesa.so
 %{_libdir}/pkgconfig/osmesa.pc
 
 %changelog
+* Wed Jul  6 2011 Ville Skyttä <ville.skytta@iki.fi> - 7.11-0.15.20110620.0
+- More include dir ownership fixes (#682357).
+
 * Tue Jul 05 2011 Adam Jackson <ajax@redhat.com> 7.11-0.14.20110620.0
 - Arch-dep and file ownership fixes (#682357)
 
