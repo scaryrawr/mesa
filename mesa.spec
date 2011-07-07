@@ -15,7 +15,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.11
-Release: 0.15.%{gitdate}.0%{?dist}
+Release: 0.16.%{gitdate}.0%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -360,11 +360,13 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 %{_libdir}/dri/r128_dri.so
 %ifnarch %{sparc}
+%ifnarch ppc ppc64
 # we no much hardware....
 %{_libdir}/dri/mga_dri.so
 %{_libdir}/dri/savage_dri.so
-%{_libdir}/dri/tdfx_dri.so
 %{_libdir}/dri/unichrome_dri.so
+%endif
+%{_libdir}/dri/tdfx_dri.so
 %endif
 %endif
 
@@ -438,6 +440,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/osmesa.pc
 
 %changelog
+* Thu Jul 07 2011 Peter Lemenkov <lemenkov@gmail.com> - 7.11-0.16.20110620.0
+- Fix building on ppc (some dri1 drivers are missing)
+
 * Wed Jul  6 2011 Ville Skyttä <ville.skytta@iki.fi> - 7.11-0.15.20110620.0
 - More include dir ownership fixes (#682357).
 
