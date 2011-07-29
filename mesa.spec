@@ -9,13 +9,13 @@
 %define _default_patch_fuzz 2
 
 %define manpages gl-manpages-1.0.1
-%define gitdate 20110620
+%define gitdate 20110730
 #% define snapshot 
 
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.11
-Release: 0.16.%{gitdate}.0%{?dist}
+Release: 0.18.%{gitdate}.0%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -440,6 +440,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/osmesa.pc
 
 %changelog
+* Sat Jul 30 2011 Dave Airlie <airlied@redhat.com> 7.11-0.18.20110730.0
+- rebase to latest upstream snapshot (same as F15)
+
 * Thu Jul 07 2011 Peter Lemenkov <lemenkov@gmail.com> - 7.11-0.16.20110620.0
 - Fix building on ppc (some dri1 drivers are missing)
 
