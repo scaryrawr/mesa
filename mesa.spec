@@ -4,26 +4,37 @@
 %define dri_drivers --with-dri-drivers=swrast
 %else
 %define with_hardware 1
+%define base_drivers mga,nouveau,r128,radeon,r200,savage,tdfx
+%ifarch %{ix86}
+%define ix86_drivers ,i810,i915,i965,sis,unichrome
+%endif
+%ifarch x86_64
+%define amd64_drivers ,i915,i965,unichrome
+%endif
+%ifarch ia64
+%define ia64_drivers ,i915
+%endif
+%define dri_drivers --with-dri-drivers=%{base_drivers}%{?ix86_drivers}%{?amd64_drivers}%{?ia64_drivers}
 %endif
 
 %define _default_patch_fuzz 2
 
 %define manpages gl-manpages-1.0.1
-%define gitdate 20110730
+#define gitdate 20110730
 #% define snapshot 
 
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.11
-Release: 0.18.%{gitdate}.0%{?dist}
+Release: 1%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
 
 #Source0: http://downloads.sf.net/mesa3d/MesaLib-%{version}.tar.bz2
 #Source0: http://www.mesa3d.org/beta/MesaLib-%{version}%{?snapshot}.tar.bz2
-#Source0: ftp://ftp.freedesktop.org/pub/%{name}/%{version}/MesaLib-%{version}.tar.bz2
-Source0: %{name}-%{gitdate}.tar.xz
+Source0: ftp://ftp.freedesktop.org/pub/%{name}/%{version}/MesaLib-%{version}.tar.bz2
+#Source0: %{name}-%{gitdate}.tar.xz
 Source2: %{manpages}.tar.bz2
 Source3: make-git-snapshot.sh
 
@@ -189,17 +200,9 @@ Requires: mesa-libOSMesa = %{version}-%{release}
 Mesa offscreen rendering development package
 
 
-%package -n xorg-x11-drv-vmwgfx
-Summary: VMware GFX DDX driver
-Group: User Interface/X Hardware Support
-Requires: Xorg %(xserver-sdk-abi-requires ansic) %(xserver-sdk-abi-requires videodrv)
-
-%description -n xorg-x11-drv-vmwgfx
-2D driver for VMware SVGA vGPU
-
 %prep
-#setup -q -n Mesa-%{version}%{?snapshot} -b0 -b2
-%setup -q -n mesa-%{gitdate} -b2
+%setup -q -n Mesa-%{version}%{?snapshot} -b0 -b2
+#setup -q -n mesa-%{gitdate} -b2
 %patch2 -p1 -b .intel-glthread
 %patch3 -p1 -b .no-mach64
 %patch4 -p1 -b .classic
@@ -354,20 +357,17 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 %doc docs/COPYING
 %if %{with_hardware}
+%ifarch %{ix86} x86_64
+%{_libdir}/dri/unichrome_dri.so
 %ifarch %{ix86}
 %{_libdir}/dri/i810_dri.so
 %{_libdir}/dri/sis_dri.so
 %endif
+%endif
 %{_libdir}/dri/r128_dri.so
-%ifnarch %{sparc}
-%ifnarch ppc ppc64
-# we no much hardware....
 %{_libdir}/dri/mga_dri.so
 %{_libdir}/dri/savage_dri.so
-%{_libdir}/dri/unichrome_dri.so
-%endif
 %{_libdir}/dri/tdfx_dri.so
-%endif
 %endif
 
 %files libGL-devel
@@ -440,6 +440,12 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/osmesa.pc
 
 %changelog
+* Tue Aug 02 2011 Adam Jackson <ajax@redhat.com> 7.11-1
+- Mesa 7.11
+- Redo the driver arch exclusion, yet again.  Dear secondary arches: unless
+  it's an on-motherboard driver like i915, all PCI drivers are to be built
+  for all PCI arches.
+
 * Sat Jul 30 2011 Dave Airlie <airlied@redhat.com> 7.11-0.18.20110730.0
 - rebase to latest upstream snapshot (same as F15)
 
