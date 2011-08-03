@@ -26,7 +26,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.11
-Release: 1%{?dist}
+Release: 2%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -440,6 +440,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/osmesa.pc
 
 %changelog
+* Wed Aug  3 2011 Michel Salim <salimma@fedoraproject.org> - 7.11-2
+- Rebuild against final LLVM 2.9 release
+
 * Tue Aug 02 2011 Adam Jackson <ajax@redhat.com> 7.11-1
 - Mesa 7.11
 - Redo the driver arch exclusion, yet again.  Dear secondary arches: unless
