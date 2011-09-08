@@ -26,7 +26,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.11
-Release: 2%{?dist}
+Release: 3%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -133,6 +133,14 @@ Requires: mesa-dri-filesystem%{?isa}
 %description dri-drivers-dri1
 Mesa-based DRI1 drivers.
 
+%package -n khrplatform-devel
+Summary: Khronos platform development package
+Group: Development/Libraries
+BuildArch: noarch
+
+%description -n khrplatform-devel
+Khronos platform development package
+
 %package libGL-devel
 Summary: Mesa libGL development package
 Group: Development/Libraries
@@ -147,6 +155,7 @@ Mesa libGL development package
 Summary: Mesa libEGL development package
 Group: Development/Libraries
 Requires: mesa-libEGL = %{version}-%{release}
+Requires: khrplatform-devel >= %{version}-%{release}
 
 %description libEGL-devel
 Mesa libEGL development package
@@ -155,6 +164,7 @@ Mesa libEGL development package
 Summary: Mesa libGLES development package
 Group: Development/Libraries
 Requires: mesa-libGLES = %{version}-%{release}
+Requires: khrplatform-devel >= %{version}-%{release}
 
 %description libGLES-devel
 Mesa libGLES development package
@@ -257,6 +267,10 @@ rm -rf $RPM_BUILD_ROOT
 
 # core libs and headers, but not drivers.
 make install DESTDIR=$RPM_BUILD_ROOT DRI_DIRS=
+
+# not installed by make install, grr
+mkdir -p $RPM_BUILD_ROOT%{_includedir}/KHR
+install -m 0644 include/KHR/*.h $RPM_BUILD_ROOT%{_includedir}/KHR
 
 # just the DRI drivers that are sane
 install -d $RPM_BUILD_ROOT%{_libdir}/dri
@@ -370,6 +384,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/dri/tdfx_dri.so
 %endif
 
+%files -n khrplatform-devel
+%defattr(-,root,root,-)
+%{_includedir}/KHR
+
 %files libGL-devel
 %defattr(-,root,root,-)
 %{_includedir}/GL/gl.h
@@ -440,6 +458,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/osmesa.pc
 
 %changelog
+* Thu Sep 08 2011 Adam Jackson <ajax@redhat.com> 7.11-3
+- Add khrplatform-devel subpackage so {EGL,GLES}-devel are usable
+
 * Wed Aug  3 2011 Michel Salim <salimma@fedoraproject.org> - 7.11-2
 - Rebuild against final LLVM 2.9 release
 
