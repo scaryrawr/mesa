@@ -26,7 +26,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.11
-Release: 3%{?dist}
+Release: 4%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -47,6 +47,7 @@ Patch8: mesa-7.10-llvmcore.patch
 
 Patch30: mesa-7.6-hush-vblank-warning.patch
 Patch31: mesa-7.10-swrastg.patch
+Patch32: mesa-7.11-generic-wmb.patch
 
 BuildRequires: pkgconfig autoconf automake libtool
 %if %{with_hardware}
@@ -220,6 +221,7 @@ Mesa offscreen rendering development package
 %patch8 -p1 -b .llvmcore
 %patch30 -p1 -b .vblank-warning
 #patch31 -p1 -b .swrastg
+%patch32 -p1 -b .wmb
 
 %build
 
@@ -458,6 +460,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/osmesa.pc
 
 %changelog
+* Fri Sep 09 2011 Adam Jackson <ajax@redhat.com> 7.11-4
+- mesa-7.11-generic-wmb.patch: Add generic write memory barrier macro for
+  non-PC arches.
+
 * Thu Sep 08 2011 Adam Jackson <ajax@redhat.com> 7.11-3
 - Add khrplatform-devel subpackage so {EGL,GLES}-devel are usable
 
