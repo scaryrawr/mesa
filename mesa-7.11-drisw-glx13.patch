@@ -1,0 +1,29 @@
+From b2fbf8225bfed2d6f5339ba0a97ddbc5e6cc491a Mon Sep 17 00:00:00 2001
+From: Adam Jackson <ajax@redhat.com>
+Date: Thu, 28 Apr 2011 08:54:45 -0400
+Subject: [PATCH] drisw: Remove cargo culting that breaks GLX 1.3 ctors
+
+Signed-off-by: Adam Jackson <ajax@redhat.com>
+(cherry picked from commit d44f821213d7ed67fed18d6ea6c34b61a665c89e)
+---
+ src/glx/drisw_glx.c |    4 ----
+ 1 files changed, 0 insertions(+), 4 deletions(-)
+
+diff --git a/src/glx/drisw_glx.c b/src/glx/drisw_glx.c
+index a57b327..30fe053 100644
+--- a/src/glx/drisw_glx.c
++++ b/src/glx/drisw_glx.c
+@@ -369,10 +369,6 @@ driswCreateDrawable(struct glx_screen *base, XID xDrawable,
+ 
+    const __DRIswrastExtension *swrast = psc->swrast;
+ 
+-   /* Old dri can't handle GLX 1.3+ drawable constructors. */
+-   if (xDrawable != drawable)
+-      return NULL;
+-
+    pdp = Xmalloc(sizeof(*pdp));
+    if (!pdp)
+       return NULL;
+-- 
+1.7.6.4
+
