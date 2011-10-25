@@ -26,7 +26,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.11
-Release: 5%{?dist}
+Release: 6%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -49,6 +49,7 @@ Patch30: mesa-7.6-hush-vblank-warning.patch
 Patch31: mesa-7.10-swrastg.patch
 Patch32: mesa-7.11-generic-wmb.patch
 Patch33: mesa-7.11-drisw-glx13.patch
+Patch34: 0001-nv50-fix-max-texture-levels.patch
 
 BuildRequires: pkgconfig autoconf automake libtool
 %if %{with_hardware}
@@ -224,6 +225,7 @@ Mesa offscreen rendering development package
 #patch31 -p1 -b .swrastg
 %patch32 -p1 -b .wmb
 %patch33 -p1 -b .glx13
+%patch34 -p1 -b .nv50-texlevel
 
 %build
 
@@ -462,6 +464,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/osmesa.pc
 
 %changelog
+* Mon Oct 24 2011 Adam Jackson <ajax@redhat.com> 7.11-6
+- 0001-nv50-fix-max-texture-levels.patch: Fix maximum texture size on
+  nouveau (and thus, gnome-shell init on wide display setups) (#748540)
+
 * Mon Oct 24 2011 Adam Jackson <ajax@redhat.com> 7.11-5
 - mesa-7.11-drisw-glx13.patch: Fix GLX 1.3 ctors with swrast (#747276)
 
