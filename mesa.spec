@@ -26,7 +26,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.11
-Release: 6%{?dist}
+Release: 7%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -464,6 +464,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/osmesa.pc
 
 %changelog
+* Thu Oct 27 2011 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 7.11-6
+- Rebuilt for glibc bug#747377
+
 * Mon Oct 24 2011 Adam Jackson <ajax@redhat.com> 7.11-6
 - 0001-nv50-fix-max-texture-levels.patch: Fix maximum texture size on
   nouveau (and thus, gnome-shell init on wide display setups) (#748540)
