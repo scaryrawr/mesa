@@ -50,6 +50,7 @@ Patch31: mesa-7.10-swrastg.patch
 Patch32: mesa-7.11-generic-wmb.patch
 Patch33: mesa-7.11-drisw-glx13.patch
 Patch34: 0001-nv50-fix-max-texture-levels.patch
+Patch35: mesa-7.11-intel-swap-event.patch
 
 BuildRequires: pkgconfig autoconf automake libtool
 %if %{with_hardware}
@@ -226,6 +227,7 @@ Mesa offscreen rendering development package
 %patch32 -p1 -b .wmb
 %patch33 -p1 -b .glx13
 %patch34 -p1 -b .nv50-texlevel
+%patch35 -p1 -b .ise
 
 %build
 
@@ -464,8 +466,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/osmesa.pc
 
 %changelog
-* Thu Oct 27 2011 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 7.11-6
-- Rebuilt for glibc bug#747377
+* Fri Oct 28 2011 Adam Jackson <ajax@redhat.com> 7.11-7
+- mesa-7.11-intel-swap-event.patch: Disable GLX_INTEL_swap_event by default;
+  DRI2 enables it explicitly, but swrast doesn't and oughtn't. (#748747)
 
 * Mon Oct 24 2011 Adam Jackson <ajax@redhat.com> 7.11-6
 - 0001-nv50-fix-max-texture-levels.patch: Fix maximum texture size on
