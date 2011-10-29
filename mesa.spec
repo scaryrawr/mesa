@@ -26,7 +26,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.11
-Release: 7%{?dist}
+Release: 8%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -466,7 +466,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/osmesa.pc
 
 %changelog
-* Fri Oct 28 2011 Adam Jackson <ajax@redhat.com> 7.11-7
+* Fri Oct 28 2011 Adam Jackson <ajax@redhat.com> 7.11-8
 - mesa-7.11-intel-swap-event.patch: Disable GLX_INTEL_swap_event by default;
   DRI2 enables it explicitly, but swrast doesn't and oughtn't. (#748747)
 
