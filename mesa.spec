@@ -26,7 +26,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.11
-Release: 8%{?dist}
+Release: 9%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -51,6 +51,7 @@ Patch32: mesa-7.11-generic-wmb.patch
 Patch33: mesa-7.11-drisw-glx13.patch
 Patch34: 0001-nv50-fix-max-texture-levels.patch
 Patch35: mesa-7.11-intel-swap-event.patch
+Patch36: mesa-7.11-fix-sw-24bpp.patch
 
 BuildRequires: pkgconfig autoconf automake libtool
 %if %{with_hardware}
@@ -228,6 +229,7 @@ Mesa offscreen rendering development package
 %patch33 -p1 -b .glx13
 %patch34 -p1 -b .nv50-texlevel
 %patch35 -p1 -b .ise
+%patch36 -p1 -b .sw24
 
 %build
 
@@ -466,6 +468,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/osmesa.pc
 
 %changelog
+* Thu Nov 03 2011 Adam Jackson <ajax@redhat.com> 7.11-9
+- mesa-7.11-fix-sw-24bpp.patch: Fix software rendering in 24bpp.
+
 * Fri Oct 28 2011 Adam Jackson <ajax@redhat.com> 7.11-8
 - mesa-7.11-intel-swap-event.patch: Disable GLX_INTEL_swap_event by default;
   DRI2 enables it explicitly, but swrast doesn't and oughtn't. (#748747)
