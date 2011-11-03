@@ -20,21 +20,21 @@
 %define _default_patch_fuzz 2
 
 %define manpages gl-manpages-1.0.1
-#define gitdate 20110730
+%define gitdate 20111103
 #% define snapshot 
 
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.11
-Release: 9%{?dist}
+Release: 10%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
 
 #Source0: http://downloads.sf.net/mesa3d/MesaLib-%{version}.tar.bz2
 #Source0: http://www.mesa3d.org/beta/MesaLib-%{version}%{?snapshot}.tar.bz2
-Source0: ftp://ftp.freedesktop.org/pub/%{name}/%{version}/MesaLib-%{version}.tar.bz2
-#Source0: %{name}-%{gitdate}.tar.xz
+#Source0: ftp://ftp.freedesktop.org/pub/%{name}/%{version}/MesaLib-%{version}.tar.bz2
+Source0: %{name}-%{gitdate}.tar.xz
 Source2: %{manpages}.tar.bz2
 Source3: make-git-snapshot.sh
 
@@ -48,10 +48,7 @@ Patch8: mesa-7.10-llvmcore.patch
 Patch30: mesa-7.6-hush-vblank-warning.patch
 Patch31: mesa-7.10-swrastg.patch
 Patch32: mesa-7.11-generic-wmb.patch
-Patch33: mesa-7.11-drisw-glx13.patch
 Patch34: 0001-nv50-fix-max-texture-levels.patch
-Patch35: mesa-7.11-intel-swap-event.patch
-Patch36: mesa-7.11-fix-sw-24bpp.patch
 
 BuildRequires: pkgconfig autoconf automake libtool
 %if %{with_hardware}
@@ -216,8 +213,8 @@ Mesa offscreen rendering development package
 
 
 %prep
-%setup -q -n Mesa-%{version}%{?snapshot} -b0 -b2
-#setup -q -n mesa-%{gitdate} -b2
+#%setup -q -n Mesa-%{version}%{?snapshot} -b0 -b2
+%setup -q -n mesa-%{gitdate} -b2
 %patch2 -p1 -b .intel-glthread
 %patch3 -p1 -b .no-mach64
 %patch4 -p1 -b .classic
@@ -226,10 +223,7 @@ Mesa offscreen rendering development package
 %patch30 -p1 -b .vblank-warning
 #patch31 -p1 -b .swrastg
 %patch32 -p1 -b .wmb
-%patch33 -p1 -b .glx13
 %patch34 -p1 -b .nv50-texlevel
-%patch35 -p1 -b .ise
-%patch36 -p1 -b .sw24
 
 %build
 
@@ -468,6 +462,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/osmesa.pc
 
 %changelog
+* Thu Nov 03 2011 Dave Airlie <airlied@redhat.com> 7.11-10
+- snapshot latest mesa 7.11 stable branch (what will be 7.11.1)
+
 * Thu Nov 03 2011 Adam Jackson <ajax@redhat.com> 7.11-9
 - mesa-7.11-fix-sw-24bpp.patch: Fix software rendering in 24bpp.
 
