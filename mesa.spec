@@ -26,7 +26,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.11
-Release: 10%{?dist}
+Release: 11%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -124,7 +124,7 @@ Summary: Mesa-based DRI drivers
 Group: User Interface/X Hardware Support
 Requires: mesa-dri-filesystem%{?_isa}
 Obsoletes: mesa-dri-drivers-experimental < 0:7.10-0.24
-Obsoletes: mesa-dri-llvmcore <= 7.11-0.8
+Obsoletes: mesa-dri-llvmcore <= 7.12
 %description dri-drivers
 Mesa-based DRI drivers.
 
@@ -462,6 +462,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/osmesa.pc
 
 %changelog
+* Wed Nov 09 2011 Adam Jackson <ajax@redhat.com> 7.11-11
+- Obsolete more -llvmcore (#752152)
+
 * Thu Nov 03 2011 Dave Airlie <airlied@redhat.com> 7.11-10
 - snapshot latest mesa 7.11 stable branch (what will be 7.11.1)
 
