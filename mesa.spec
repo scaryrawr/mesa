@@ -4,12 +4,12 @@
 %define dri_drivers --with-dri-drivers=swrast
 %else
 %define with_hardware 1
-%define base_drivers mga,nouveau,r128,radeon,r200,savage,tdfx
+%define base_drivers nouveau,radeon,r200
 %ifarch %{ix86}
-%define ix86_drivers ,i810,i915,i965,sis,unichrome
+%define ix86_drivers ,i915,i965
 %endif
 %ifarch x86_64
-%define amd64_drivers ,i915,i965,unichrome
+%define amd64_drivers ,i915,i965
 %endif
 %ifarch ia64
 %define ia64_drivers ,i915
@@ -20,13 +20,13 @@
 %define _default_patch_fuzz 2
 
 %define manpages gl-manpages-1.0.1
-%define gitdate 20111103
+%define gitdate 20111114
 #% define snapshot 
 
 Summary: Mesa graphics libraries
 Name: mesa
-Version: 7.11
-Release: 12%{?dist}
+Version: 7.12
+Release: 0.1%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -39,16 +39,9 @@ Source2: %{manpages}.tar.bz2
 Source3: make-git-snapshot.sh
 
 Patch2: mesa-7.1-nukeglthread-debug.patch
-Patch3: mesa-no-mach64.patch
-Patch4: legacy-drivers.patch
 
 #Patch7: mesa-7.1-link-shared.patch
 Patch8: mesa-7.10-llvmcore.patch
-
-Patch30: mesa-7.6-hush-vblank-warning.patch
-Patch31: mesa-7.10-swrastg.patch
-Patch32: mesa-7.11-generic-wmb.patch
-Patch34: 0001-nv50-fix-max-texture-levels.patch
 
 BuildRequires: pkgconfig autoconf automake libtool
 %if %{with_hardware}
@@ -216,14 +209,8 @@ Mesa offscreen rendering development package
 #%setup -q -n Mesa-%{version}%{?snapshot} -b0 -b2
 %setup -q -n mesa-%{gitdate} -b2
 %patch2 -p1 -b .intel-glthread
-%patch3 -p1 -b .no-mach64
-%patch4 -p1 -b .classic
 #patch7 -p1 -b .dricore
 %patch8 -p1 -b .llvmcore
-%patch30 -p1 -b .vblank-warning
-#patch31 -p1 -b .swrastg
-%patch32 -p1 -b .wmb
-%patch34 -p1 -b .nv50-texlevel
 
 %build
 
@@ -239,11 +226,7 @@ export CXXFLAGS="$RPM_OPT_FLAGS"
 %endif
 
 %configure %{common_flags} \
-    --disable-glw \
-    --disable-glut \
-    --enable-gl-osmesa \
-    --with-driver=dri \
-    --with-osmesa-bits=8 \
+    --enable-osmesa \
     --with-dri-driverdir=%{_libdir}/dri \
     --enable-egl \
     --enable-gles1 \
@@ -258,7 +241,7 @@ export CXXFLAGS="$RPM_OPT_FLAGS"
 %endif
     %{?dri_drivers}
 
-make %{?_smp_mflags}
+make %{?_smp_mflags} MKDEP=/bin/true
 
 pushd ../%{manpages}
 autoreconf -v --install
@@ -281,9 +264,9 @@ install -d $RPM_BUILD_ROOT%{_libdir}/dri
 # use gallium driver iff built
 [ -f %{_lib}/gallium/r300_dri.so ] && cp %{_lib}/gallium/r300_dri.so %{_lib}/r300_dri.so
 [ -f %{_lib}/gallium/r600_dri.so ] && cp %{_lib}/gallium/r600_dri.so %{_lib}/r600_dri.so
-[ -f %{_lib}/gallium/swrastg_dri.so ] && mv %{_lib}/gallium/swrastg_dri.so %{_lib}/swrast_dri.so
+[ -f %{_lib}/gallium/swrast_dri.so ] && mv %{_lib}/gallium/swrast_dri.so %{_lib}/swrast_dri.so
 
-for f in i810 i915 i965 mach64 mga r128 r200 r300 r600 radeon savage sis swrast tdfx unichrome nouveau_vieux gallium/vmwgfx ; do
+for f in i915 i965 r200 r300 r600 radeon swrast nouveau_vieux gallium/vmwgfx ; do
     so=%{_lib}/${f}_dri.so
     test -e $so && echo $so
 done | xargs install -m 0755 -t $RPM_BUILD_ROOT%{_libdir}/dri >& /dev/null || :
@@ -369,24 +352,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/dri/nouveau_vieux_dri.so
 %endif
 %{_libdir}/dri/swrast_dri.so
-%exclude %{_libdir}/dri/swrastg_dri.so
-
-%files dri-drivers-dri1
-%defattr(-,root,root,-)
-%doc docs/COPYING
-%if %{with_hardware}
-%ifarch %{ix86} x86_64
-%{_libdir}/dri/unichrome_dri.so
-%ifarch %{ix86}
-%{_libdir}/dri/i810_dri.so
-%{_libdir}/dri/sis_dri.so
-%endif
-%endif
-%{_libdir}/dri/r128_dri.so
-%{_libdir}/dri/mga_dri.so
-%{_libdir}/dri/savage_dri.so
-%{_libdir}/dri/tdfx_dri.so
-%endif
 
 %files -n khrplatform-devel
 %defattr(-,root,root,-)
@@ -462,6 +427,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/osmesa.pc
 
 %changelog
+* Mon Nov 14 2011 Dave Airlie <airlied@redhat.com> 7.12-0.1
+- rebase to upstream snapshot of 7.12
+
 * Mon Nov 14 2011 Adam Jackson <ajax@redhat.com> 7.11-12
 - Rebuild for new libllvm soname
 
