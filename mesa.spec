@@ -26,7 +26,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.11
-Release: 11%{?dist}
+Release: 12%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -68,7 +68,7 @@ BuildRequires: libXi-devel
 BuildRequires: libXmu-devel
 BuildRequires: elfutils
 BuildRequires: python
-BuildRequires: llvm-static
+BuildRequires: llvm-static >= 3.0
 BuildRequires: libxml2-python
 BuildRequires: libudev-devel
 BuildRequires: libtalloc-devel
@@ -462,6 +462,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/osmesa.pc
 
 %changelog
+* Mon Nov 14 2011 Adam Jackson <ajax@redhat.com> 7.11-12
+- Rebuild for new libllvm soname
+
 * Wed Nov 09 2011 Adam Jackson <ajax@redhat.com> 7.11-11
 - Obsolete more -llvmcore (#752152)
 
