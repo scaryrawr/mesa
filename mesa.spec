@@ -26,7 +26,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.12
-Release: 0.1%{?dist}
+Release: 0.2%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -45,13 +45,13 @@ Patch8: mesa-7.10-llvmcore.patch
 
 BuildRequires: pkgconfig autoconf automake libtool
 %if %{with_hardware}
-BuildRequires: kernel-headers >= 2.6.27-0.305.rc5.git6
+BuildRequires: kernel-headers
 BuildRequires: xorg-x11-server-devel
 %endif
-BuildRequires: libdrm-devel >= 2.4.24-1
+BuildRequires: libdrm-devel >= 2.4.27-1
 BuildRequires: libXxf86vm-devel
-BuildRequires: expat-devel >= 2.0
-BuildRequires: xorg-x11-proto-devel >= 7.4-35
+BuildRequires: expat-devel
+BuildRequires: xorg-x11-proto-devel
 BuildRequires: makedepend
 BuildRequires: libselinux-devel
 BuildRequires: libXext-devel
@@ -76,10 +76,7 @@ Group: System Environment/Libraries
 Requires(post): /sbin/ldconfig
 Requires(postun): /sbin/ldconfig
 Provides: libGL
-Requires: libdrm%{?isa} >= 2.4.23-1
-%if %{with_hardware}
-Conflicts: xorg-x11-server-Xorg < 1.4.99.901-14
-%endif
+Requires: mesa-dri-drivers%{?_isa} = %{version}-%{release}
 
 %description libGL
 Mesa libGL runtime library.
@@ -90,7 +87,6 @@ Group: System Environment/Libraries
 Requires(post): /sbin/ldconfig
 Requires(postun): /sbin/ldconfig
 Requires: mesa-dri-drivers%{?_isa} = %{version}-%{release}
-Requires: libdrm%{?isa} >= 2.4.23-1
 
 %description libEGL
 Mesa libEGL runtime libraries
@@ -101,7 +97,6 @@ Group: System Environment/Libraries
 Requires(post): /sbin/ldconfig
 Requires(postun): /sbin/ldconfig
 Requires: mesa-dri-drivers%{?_isa} = %{version}-%{release}
-Requires: libdrm%{?isa} >= 2.4.23-1
 
 %description libGLES
 Mesa GLES runtime libraries
@@ -141,7 +136,6 @@ Summary: Mesa libGL development package
 Group: Development/Libraries
 Requires: mesa-libGL = %{version}-%{release}
 Provides: libGL-devel
-Conflicts: xorg-x11-proto-devel <= 7.2-12
 
 %description libGL-devel
 Mesa libGL development package
@@ -427,6 +421,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/osmesa.pc
 
 %changelog
+* Wed Nov 16 2011 Adam Jackson <ajax@redhat.com> 7.12-0.2
+- Cleanups to BuildRequires, Requires, Conflicts, etc.
+
 * Mon Nov 14 2011 Dave Airlie <airlied@redhat.com> 7.12-0.1
 - rebase to upstream snapshot of 7.12
 
