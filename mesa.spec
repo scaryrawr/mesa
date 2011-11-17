@@ -26,7 +26,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.12
-Release: 0.2%{?dist}
+Release: 0.3%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -112,16 +112,10 @@ Summary: Mesa-based DRI drivers
 Group: User Interface/X Hardware Support
 Requires: mesa-dri-filesystem%{?_isa}
 Obsoletes: mesa-dri-drivers-experimental < 0:7.10-0.24
+Obsoletes: mesa-dri-drivers-dri1 < 7.12
 Obsoletes: mesa-dri-llvmcore <= 7.12
 %description dri-drivers
 Mesa-based DRI drivers.
-
-%package dri-drivers-dri1
-Summary: Mesa-based DRI1 drivers
-Group: User Interface/X Hardware Support
-Requires: mesa-dri-filesystem%{?isa}
-%description dri-drivers-dri1
-Mesa-based DRI1 drivers.
 
 %package -n khrplatform-devel
 Summary: Khronos platform development package
@@ -421,6 +415,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/osmesa.pc
 
 %changelog
+* Thu Nov 17 2011 Adam Jackson <ajax@redhat.com> 7.12-0.3
+- mesa-dri-drivers Obsoletes: mesa-dri-drivers-dri1 < 7.12
+
 * Wed Nov 16 2011 Adam Jackson <ajax@redhat.com> 7.12-0.2
 - Cleanups to BuildRequires, Requires, Conflicts, etc.
 
