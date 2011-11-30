@@ -20,13 +20,13 @@
 %define _default_patch_fuzz 2
 
 %define manpages gl-manpages-1.0.1
-%define gitdate 20111114
+%define gitdate 20111129
 #% define snapshot 
 
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.12
-Release: 0.3%{?dist}
+Release: 0.4%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -37,8 +37,6 @@ URL: http://www.mesa3d.org
 Source0: %{name}-%{gitdate}.tar.xz
 Source2: %{manpages}.tar.bz2
 Source3: make-git-snapshot.sh
-
-Patch2: mesa-7.1-nukeglthread-debug.patch
 
 #Patch7: mesa-7.1-link-shared.patch
 Patch8: mesa-7.10-llvmcore.patch
@@ -61,7 +59,7 @@ BuildRequires: libXi-devel
 BuildRequires: libXmu-devel
 BuildRequires: elfutils
 BuildRequires: python
-BuildRequires: llvm-static >= 3.0
+BuildRequires: llvm-devel >= 3.0
 BuildRequires: libxml2-python
 BuildRequires: libudev-devel
 BuildRequires: libtalloc-devel
@@ -196,7 +194,6 @@ Mesa offscreen rendering development package
 %prep
 #%setup -q -n Mesa-%{version}%{?snapshot} -b0 -b2
 %setup -q -n mesa-%{gitdate} -b2
-%patch2 -p1 -b .intel-glthread
 #patch7 -p1 -b .dricore
 %patch8 -p1 -b .llvmcore
 
@@ -215,6 +212,7 @@ export CXXFLAGS="$RPM_OPT_FLAGS"
 
 %configure %{common_flags} \
     --enable-osmesa \
+    --enable-xcb \
     --with-dri-driverdir=%{_libdir}/dri \
     --enable-egl \
     --enable-gles1 \
@@ -415,6 +413,11 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/osmesa.pc
 
 %changelog
+* Tue Nov 29 2011 Adam Jackson <ajax@redhat.com> 7.12-0.4
+- Today's git snapshot
+- --enable-xcb
+- mesa-7.1-nukeglthread-debug.patch: Drop
+
 * Thu Nov 17 2011 Adam Jackson <ajax@redhat.com> 7.12-0.3
 - mesa-dri-drivers Obsoletes: mesa-dri-drivers-dri1 < 7.12
 
