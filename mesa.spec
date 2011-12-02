@@ -26,7 +26,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.12
-Release: 0.4%{?dist}
+Release: 0.5%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -224,6 +224,7 @@ export CXXFLAGS="$RPM_OPT_FLAGS"
 %else
     --disable-gallium-llvm \
     --with-gallium-drivers=swrast \
+    --enable-dri \
 %endif
     %{?dri_drivers}
 
@@ -413,6 +414,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/osmesa.pc
 
 %changelog
+* Fri Dec 02 2011 Dan Horák <dan[at]danny.cz> 7.12-0.5
+- fix build on s390(x)
+
 * Tue Nov 29 2011 Adam Jackson <ajax@redhat.com> 7.12-0.4
 - Today's git snapshot
 - --enable-xcb
