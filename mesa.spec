@@ -1,5 +1,9 @@
+%if 0%{?rhel}
+%define rhel_no_hw_arches ppc ppc64
+%endif
+
 # S390 doesn't have video cards, but we need swrast for xserver's GLX
-%ifarch s390 s390x
+%ifarch s390 s390x %{?rhel_no_hw_arches}
 %define with_hardware 0
 %define dri_drivers --with-dri-drivers=swrast
 %else
@@ -20,13 +24,13 @@
 %define _default_patch_fuzz 2
 
 %define manpages gl-manpages-1.0.1
-%define gitdate 20111129
+%define gitdate 20111214
 #% define snapshot 
 
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.12
-Release: 0.5%{?dist}
+Release: 0.6%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -59,7 +63,9 @@ BuildRequires: libXi-devel
 BuildRequires: libXmu-devel
 BuildRequires: elfutils
 BuildRequires: python
+%if %{with_hardware}
 BuildRequires: llvm-devel >= 3.0
+%endif
 BuildRequires: libxml2-python
 BuildRequires: libudev-devel
 BuildRequires: libtalloc-devel
@@ -414,6 +420,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/osmesa.pc
 
 %changelog
+* Wed Dec 14 2011 Adam Jackson <ajax@redhat.com> 7.12-0.6
+- Today's git snapshot
+- Disable hardware drivers on ppc* in RHEL
+
 * Fri Dec 02 2011 Dan Horák <dan[at]danny.cz> 7.12-0.5
 - fix build on s390(x)
 
