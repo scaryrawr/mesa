@@ -24,13 +24,13 @@
 %define _default_patch_fuzz 2
 
 %define manpages gl-manpages-1.0.1
-%define gitdate 20111214
+%define gitdate 20120105
 #% define snapshot 
 
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 7.12
-Release: 0.6%{?dist}
+Release: 0.7%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -371,6 +371,7 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_includedir}/EGL
 %{_includedir}/EGL/eglext.h
 %{_includedir}/EGL/egl.h
+%{_includedir}/EGL/eglmesaext.h
 %{_includedir}/EGL/eglplatform.h
 %dir %{_includedir}/KHR
 %{_includedir}/KHR/khrplatform.h
@@ -420,6 +421,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/osmesa.pc
 
 %changelog
+* Thu Jan 05 2012 Adam Jackson <ajax@redhat.com> 7.12-0.7
+- Today's git snapshot
+
 * Wed Dec 14 2011 Adam Jackson <ajax@redhat.com> 7.12-0.6
 - Today's git snapshot
 - Disable hardware drivers on ppc* in RHEL
