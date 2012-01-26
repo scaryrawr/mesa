@@ -24,13 +24,13 @@
 %define _default_patch_fuzz 2
 
 %define manpages gl-manpages-1.0.1
-%define gitdate 20120105
+%define gitdate 20120126
 #% define snapshot 
 
 Summary: Mesa graphics libraries
 Name: mesa
-Version: 7.12
-Release: 0.7%{?dist}
+Version: 8.0
+Release: 0.1%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -411,7 +411,7 @@ rm -rf $RPM_BUILD_ROOT
 %files libOSMesa
 %defattr(-,root,root,-)
 %doc docs/COPYING
-%{_libdir}/libOSMesa.so.7*
+%{_libdir}/libOSMesa.so.8*
 
 %files libOSMesa-devel
 %defattr(-,root,root,-)
@@ -421,6 +421,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/osmesa.pc
 
 %changelog
+* Thu Jan 26 2012 Dave Airlie <airlied@redhat.com> 8.0-0.1
+- initial 8.0 snapshot
+
 * Thu Jan 05 2012 Adam Jackson <ajax@redhat.com> 7.12-0.7
 - Today's git snapshot
 
