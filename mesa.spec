@@ -24,21 +24,21 @@
 %define _default_patch_fuzz 2
 
 %define manpages gl-manpages-1.0.1
-%define gitdate 20120126
+#% define gitdate 20120126
 #% define snapshot 
 
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 8.0
-Release: 0.2%{?dist}
+Release: 1%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
 
 #Source0: http://downloads.sf.net/mesa3d/MesaLib-%{version}.tar.bz2
 #Source0: http://www.mesa3d.org/beta/MesaLib-%{version}%{?snapshot}.tar.bz2
-#Source0: ftp://ftp.freedesktop.org/pub/%{name}/%{version}/MesaLib-%{version}.tar.bz2
-Source0: %{name}-%{gitdate}.tar.xz
+Source0: ftp://ftp.freedesktop.org/pub/%{name}/%{version}/MesaLib-%{version}.tar.bz2
+#Source0: %{name}-%{gitdate}.tar.xz
 Source2: %{manpages}.tar.bz2
 Source3: make-git-snapshot.sh
 
@@ -198,8 +198,8 @@ Mesa offscreen rendering development package
 
 
 %prep
-#%setup -q -n Mesa-%{version}%{?snapshot} -b0 -b2
-%setup -q -n mesa-%{gitdate} -b2
+%setup -q -n Mesa-%{version}%{?snapshot} -b0 -b2
+#setup -q -n mesa-%{gitdate} -b2
 #patch7 -p1 -b .dricore
 %patch8 -p1 -b .llvmcore
 
@@ -425,6 +425,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/osmesa.pc
 
 %changelog
+* Mon Feb 13 2012 Adam Jackson <ajax@redhat.com> 8.0-1
+- Mesa 8.0
+
 * Mon Feb 13 2012 Adam Jackson <ajax@redhat.com> 8.0-0.2
 - Default to DRI libGL on all arches (#789402)
 
