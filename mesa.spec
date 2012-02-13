@@ -30,7 +30,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 8.0
-Release: 0.1%{?dist}
+Release: 0.2%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -204,6 +204,10 @@ Mesa offscreen rendering development package
 %patch8 -p1 -b .llvmcore
 
 %build
+
+# default to dri (not xlib) for libGL on all arches
+# XXX please fix upstream
+sed -i 's/^default_driver.*$/default_driver="dri"/' configure.ac
 
 autoreconf --install  
 
@@ -421,6 +425,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/osmesa.pc
 
 %changelog
+* Mon Feb 13 2012 Adam Jackson <ajax@redhat.com> 8.0-0.2
+- Default to DRI libGL on all arches (#789402)
+
 * Thu Jan 26 2012 Dave Airlie <airlied@redhat.com> 8.0-0.1
 - initial 8.0 snapshot
 
