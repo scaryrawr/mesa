@@ -29,7 +29,7 @@
 
 Summary: Mesa graphics libraries
 Name: mesa
-Version: 8.0
+Version: 8.0.1
 Release: 1%{?dist}
 License: MIT
 Group: System Environment/Libraries
@@ -425,6 +425,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/osmesa.pc
 
 %changelog
+* Fri Feb 17 2012 Adam Jackson <ajax@redhat.com> 8.0.1-1
+- Mesa 8.0.1
+
 * Mon Feb 13 2012 Adam Jackson <ajax@redhat.com> 8.0-1
 - Mesa 8.0
 
