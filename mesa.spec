@@ -30,7 +30,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 8.0.1
-Release: 1%{?dist}
+Release: 2%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -70,6 +70,8 @@ BuildRequires: libxml2-python
 BuildRequires: libudev-devel
 BuildRequires: libtalloc-devel
 BuildRequires: bison flex
+BuildRequires: pkgconfig(wayland-client)
+BuildRequires: pkgconfig(wayland-server)
 
 %description
 Mesa
@@ -197,6 +199,48 @@ Requires: mesa-libOSMesa = %{version}-%{release}
 Mesa offscreen rendering development package
 
 
+%package libgbm
+Summary: Mesa gbm library
+Group: System Environment/Libraries
+Requires(post): /sbin/ldconfig
+Requires(postun): /sbin/ldconfig
+Provides: libgbm
+
+%description libgbm
+Mesa gbm runtime library.
+
+
+%package libgbm-devel
+Summary: Mesa libgbm development package
+Group: Development/Libraries
+Requires: mesa-libgbm%{?_isa} = %{version}-%{release}
+Provides: libgbm-devel
+
+%description libgbm-devel
+Mesa libgbm development package
+
+
+%package libwayland-egl
+Summary: Mesa libwayland-egl library
+Group: System Environment/Libraries
+Requires(post): /sbin/ldconfig
+Requires(postun): /sbin/ldconfig
+Provides: libwayland-egl
+
+%description libwayland-egl
+Mesa libwayland-egl runtime library.
+
+
+%package libwayland-egl-devel
+Summary: Mesa libwayland-egl development package
+Group: Development/Libraries
+Requires: mesa-libwayland-egl%{?_isa} = %{version}-%{release}
+Provides: libwayland-egl-devel
+
+%description libwayland-egl-devel
+Mesa libwayland-egl development package
+
+
 %prep
 %setup -q -n Mesa-%{version}%{?snapshot} -b0 -b2
 #setup -q -n mesa-%{gitdate} -b2
@@ -228,6 +272,9 @@ export CXXFLAGS="$RPM_OPT_FLAGS"
     --enable-gles1 \
     --enable-gles2 \
     --disable-gallium-egl \
+    --with-egl-platforms=x11,wayland,drm \
+    --enable-shared-glapi \
+    --enable-gbm \
 %if %{with_hardware}
     --with-gallium-drivers=r300,r600,nouveau,swrast \
     --enable-gallium-llvm \
@@ -304,6 +351,10 @@ rm -rf $RPM_BUILD_ROOT
 %postun libEGL -p /sbin/ldconfig
 %post libGLES -p /sbin/ldconfig
 %postun libGLES -p /sbin/ldconfig
+%post libgbm -p /sbin/ldconfig
+%postun libgbm -p /sbin/ldconfig
+%post libwayland-egl -p /sbin/ldconfig
+%postun libwayland-egl -p /sbin/ldconfig
 
 %files libGL
 %defattr(-,root,root,-)
@@ -424,7 +475,37 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libOSMesa.so
 %{_libdir}/pkgconfig/osmesa.pc
 
+%files libgbm
+%defattr(-,root,root,-)
+%doc docs/COPYING
+%{_libdir}/libgbm.so.1
+%{_libdir}/libgbm.so.1.*
+
+%files libgbm-devel
+%defattr(-,root,root,-)
+%{_libdir}/libgbm.so
+%{_includedir}/gbm.h
+%{_libdir}/pkgconfig/gbm.pc
+
+%files libwayland-egl
+%defattr(-,root,root,-)
+%doc docs/COPYING
+%{_libdir}/libwayland-egl.so.1
+%{_libdir}/libwayland-egl.so.1.*
+
+%files libwayland-egl-devel
+%defattr(-,root,root,-)
+%{_libdir}/libwayland-egl.so
+%{_libdir}/pkgconfig/wayland-egl.pc
+
 %changelog
+* Sat Feb 18 2012 Thorsten Leemhuis <fedora@leemhuis.info> 8.0.1-2
+- a few changes for weston, the wayland reference compositor (#790542):
+- enable gbm and shared-glapi in configure command (the latter is required by 
+  the former) and add subpackages libgbm and libgbm-devel
+- add --with-egl-platforms=x11,wayland,drm to configure command and add 
+  subpackages libwayland-egl and libwayland-egl-devel
+
 * Fri Feb 17 2012 Adam Jackson <ajax@redhat.com> 8.0.1-1
 - Mesa 8.0.1
 
