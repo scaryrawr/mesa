@@ -30,7 +30,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 8.0.1
-Release: 2%{?dist}
+Release: 3%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -44,6 +44,8 @@ Source3: make-git-snapshot.sh
 
 #Patch7: mesa-7.1-link-shared.patch
 Patch8: mesa-7.10-llvmcore.patch
+
+Patch10: mesa-8.0.1-git.patch
 
 BuildRequires: pkgconfig autoconf automake libtool
 %if %{with_hardware}
@@ -246,6 +248,7 @@ Mesa libwayland-egl development package
 #setup -q -n mesa-%{gitdate} -b2
 #patch7 -p1 -b .dricore
 %patch8 -p1 -b .llvmcore
+%patch10 -p1 -b .git
 
 %build
 
@@ -499,6 +502,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/wayland-egl.pc
 
 %changelog
+* Thu Mar 01 2012 Adam Jackson <ajax@redhat.com> 8.0.1-3
+- mesa-8.0.1-git.patch: Sync with 8.0 branch (commit a3080987)
+
 * Sat Feb 18 2012 Thorsten Leemhuis <fedora@leemhuis.info> 8.0.1-2
 - a few changes for weston, the wayland reference compositor (#790542):
 - enable gbm and shared-glapi in configure command (the latter is required by 
