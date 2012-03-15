@@ -30,7 +30,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 8.0.1
-Release: 3%{?dist}
+Release: 4%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -242,6 +242,24 @@ Provides: libwayland-egl-devel
 %description libwayland-egl-devel
 Mesa libwayland-egl development package
 
+%package libxatracker
+Summary: Mesa XA state tracker for vmware
+Group: System Environment/Libraries
+Requires(post): /sbin/ldconfig
+Requires(postun): /sbin/ldconfig
+Provides: libxatracker
+
+%description libxatracker
+Mesa XA state tracker for vmware
+
+%package libxatracker-devel
+Summary: Mesa XA state tracker development package
+Group: Development/Libraries
+Requires: mesa-libxatracker%{?_isa} = %{version}-%{release}
+Provides: libxatracker-devel
+
+%description libxatracker-devel
+Mesa XA state tracker development package
 
 %prep
 %setup -q -n Mesa-%{version}%{?snapshot} -b0 -b2
@@ -279,8 +297,9 @@ export CXXFLAGS="$RPM_OPT_FLAGS"
     --enable-shared-glapi \
     --enable-gbm \
 %if %{with_hardware}
-    --with-gallium-drivers=r300,r600,nouveau,swrast \
+    --with-gallium-drivers=svga,r300,r600,nouveau,swrast \
     --enable-gallium-llvm \
+    --enable-xa \
 %else
     --disable-gallium-llvm \
     --with-gallium-drivers=swrast \
@@ -401,6 +420,7 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 %{_libdir}/dri/nouveau_dri.so
 %{_libdir}/dri/nouveau_vieux_dri.so
+%{_libdir}/dri/vmwgfx_dri.so
 %endif
 %{_libdir}/dri/swrast_dri.so
 
@@ -501,7 +521,28 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libwayland-egl.so
 %{_libdir}/pkgconfig/wayland-egl.pc
 
+%files libxatracker
+%defattr(-,root,root,-)
+%doc docs/COPYING
+%if %{with_hardware}
+%{_libdir}/libxatracker.so.1
+%{_libdir}/libxatracker.so.1.*
+%endif
+
+%files libxatracker-devel
+%defattr(-,root,root,-)
+%if %{with_hardware}
+%{_libdir}/libxatracker.so
+%{_includedir}/xa_tracker.h
+%{_includedir}/xa_composite.h
+%{_includedir}/xa_context.h
+%{_libdir}/pkgconfig/xatracker.pc
+%endif
+
 %changelog
+* Thu Mar 15 2012 Dave Airlie <airlied@gmail.com> 8.0.1-4
+- enable vmwgfx + xa state tracker
+
 * Thu Mar 01 2012 Adam Jackson <ajax@redhat.com> 8.0.1-3
 - mesa-8.0.1-git.patch: Sync with 8.0 branch (commit a3080987)
 
