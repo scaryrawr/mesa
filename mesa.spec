@@ -30,7 +30,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 8.0.1
-Release: 4%{?dist}
+Release: 5%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -397,8 +397,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libGLESv1_CM.so.1.*
 %{_libdir}/libGLESv2.so.2
 %{_libdir}/libGLESv2.so.2.*
-%{_libdir}/libglapi.so.0
-%{_libdir}/libglapi.so.0.*
 
 %files dri-filesystem
 %defattr(-,root,root,-)
@@ -407,6 +405,8 @@ rm -rf $RPM_BUILD_ROOT
 
 %files dri-drivers
 %defattr(-,root,root,-)
+%{_libdir}/libglapi.so.0
+%{_libdir}/libglapi.so.0.*
 %if %{with_hardware}
 %{_libdir}/dri/radeon_dri.so
 %{_libdir}/dri/r200_dri.so
@@ -440,6 +440,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_includedir}/GL/internal/dri_interface.h
 %{_libdir}/pkgconfig/dri.pc
 %{_libdir}/libGL.so
+%{_libdir}/libglapi.so
 %{_libdir}/pkgconfig/gl.pc
 %{_datadir}/man/man3/gl[^uX]*.3gl*
 %{_datadir}/man/man3/glX*.3gl*
@@ -471,7 +472,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/glesv2.pc
 %{_libdir}/libGLESv1_CM.so
 %{_libdir}/libGLESv2.so
-%{_libdir}/libglapi.so
 
 %files libGLU
 %defattr(-,root,root,-)
@@ -540,6 +540,11 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Mon Mar 19 2012 Adam Jackson <ajax@redhat.com> 8.0.1-5
+- Move libglapi into -dri-drivers instead of -libGLES as being marginally
+  more appropriate (libGL wants to have DRI drivers, but doesn't need to
+  have a full libGLES too).
+
 * Thu Mar 15 2012 Dave Airlie <airlied@gmail.com> 8.0.1-4
 - enable vmwgfx + xa state tracker
 
