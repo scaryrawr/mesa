@@ -30,7 +30,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 8.0.1
-Release: 5%{?dist}
+Release: 6%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -44,7 +44,7 @@ Source3: make-git-snapshot.sh
 
 #Patch7: mesa-7.1-link-shared.patch
 Patch8: mesa-7.10-llvmcore.patch
-
+Patch9: mesa-8.0-llvmpipe-shmget.patch
 Patch10: mesa-8.0.1-git.patch
 
 BuildRequires: pkgconfig autoconf automake libtool
@@ -266,6 +266,7 @@ Mesa XA state tracker development package
 #setup -q -n mesa-%{gitdate} -b2
 #patch7 -p1 -b .dricore
 %patch8 -p1 -b .llvmcore
+%patch9 -p1 -b .shmget
 %patch10 -p1 -b .git
 
 %build
@@ -540,6 +541,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Wed Mar 21 2012 Adam Jackson <ajax@redhat.com> 8.0.1-6
+- mesa-8.0.1-llvmpipe-shmget.patch: Use ShmGetImage if possible
+
 * Mon Mar 19 2012 Adam Jackson <ajax@redhat.com> 8.0.1-5
 - Move libglapi into -dri-drivers instead of -libGLES as being marginally
   more appropriate (libGL wants to have DRI drivers, but doesn't need to
