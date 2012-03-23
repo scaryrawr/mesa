@@ -30,7 +30,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 8.0.1
-Release: 6%{?dist}
+Release: 7%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -46,6 +46,7 @@ Source3: make-git-snapshot.sh
 Patch8: mesa-7.10-llvmcore.patch
 Patch9: mesa-8.0-llvmpipe-shmget.patch
 Patch10: mesa-8.0.1-git.patch
+Patch11: mesa-8.0-nouveau-tfp-blacklist.patch
 
 BuildRequires: pkgconfig autoconf automake libtool
 %if %{with_hardware}
@@ -268,6 +269,7 @@ Mesa XA state tracker development package
 %patch8 -p1 -b .llvmcore
 %patch9 -p1 -b .shmget
 %patch10 -p1 -b .git
+%patch11 -p1 -b .nouveau
 
 %build
 
@@ -541,6 +543,10 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Fri Mar 23 2012 Adam Jackson <ajax@redhat.com> 8.0.1-7
+- mesa-8.0-nouveau-tfp-blacklist.patch: gnome-shell blacklisting: nvfx and
+  below with <= 64M of vram, and all nv30.
+
 * Wed Mar 21 2012 Adam Jackson <ajax@redhat.com> 8.0.1-6
 - mesa-8.0.1-llvmpipe-shmget.patch: Use ShmGetImage if possible
 
