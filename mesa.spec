@@ -30,7 +30,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 8.0.1
-Release: 7%{?dist}
+Release: 8%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -543,6 +543,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Wed Mar 28 2012 Adam Jackson <ajax@redhat.com> 8.0.1-8
+- mesa-8.0.1-llvmpipe-shmget.patch: Fix image pitch bug.
+
 * Fri Mar 23 2012 Adam Jackson <ajax@redhat.com> 8.0.1-7
 - mesa-8.0-nouveau-tfp-blacklist.patch: gnome-shell blacklisting: nvfx and
   below with <= 64M of vram, and all nv30.

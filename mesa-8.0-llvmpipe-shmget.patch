@@ -110,7 +110,7 @@ diff -up Mesa-8.0.1/src/glx/drisw_glx.c.shmget Mesa-8.0.1/src/glx/drisw_glx.c
 +    do {
 +	int i;
 +	char *src = ximage->data;
-+	int dst_width = align(ximage->width * ximage->bits_per_pixel / 8, 128);
++	int dst_width = align(ximage->width * ximage->bits_per_pixel / 8, 256);
 +
 +	for (i = 0; i < ximage->height; i++) {
 +	    memcpy(data, src, ximage->bytes_per_line);
