@@ -30,7 +30,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 8.0.2
-Release: 1%{?dist}
+Release: 2%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -47,7 +47,7 @@ Patch8: mesa-7.10-llvmcore.patch
 Patch9: mesa-8.0-llvmpipe-shmget.patch
 Patch10: 0001-intel-fix-null-dereference-processing-HiZ-buffer.patch
 Patch11: mesa-8.0-nouveau-tfp-blacklist.patch
-
+Patch12: mesa-8.0.1-fix-16bpp.patch
 
 BuildRequires: pkgconfig autoconf automake libtool
 %if %{with_hardware}
@@ -277,6 +277,7 @@ Mesa shared glapi
 %patch9 -p1 -b .shmget
 %patch10 -p1 -b .intel-hiz-fix
 %patch11 -p1 -b .nouveau
+%patch12 -p1 -b .16bpp
 
 %build
 
@@ -349,11 +350,7 @@ done | xargs install -m 0755 -t $RPM_BUILD_ROOT%{_libdir}/dri >& /dev/null || :
 
 # strip out undesirable headers
 pushd $RPM_BUILD_ROOT%{_includedir}/GL 
-rm -f [a-fh-np-wyz]*.h glf*.h glut*.h
-popd
-
-pushd $RPM_BUILD_ROOT%{_libdir}
-rm -f xorg/modules/drivers/modesetting_drv.so
+rm -f [vw]*.h
 popd
 
 # man pages
@@ -552,6 +549,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Mon Apr 02 2012 Adam Jackson <ajax@redhat.com> 8.0.2-2
+- mesa-8.0.1-fix-16bpp.patch: Fix 16bpp in llvmpipe
+
 * Sat Mar 31 2012 Dave Airlie <airlied@redhat.com> 8.0.2-1
 - get latest 8.0.2 set of fixes
 

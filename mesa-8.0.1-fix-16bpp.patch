@@ -1,0 +1,27 @@
+diff -up Mesa-8.0.1/src/glx/drisw_glx.c.jx Mesa-8.0.1/src/glx/drisw_glx.c
+--- Mesa-8.0.1/src/glx/drisw_glx.c.jx	2012-04-02 10:34:23.000000000 -0400
++++ Mesa-8.0.1/src/glx/drisw_glx.c	2012-04-02 11:44:19.296407735 -0400
+@@ -274,7 +274,9 @@ swrastShmGetImage(__DRIdrawable *read, c
+     do {
+ 	int i;
+ 	char *src = ximage->data;
+-	int dst_width = align(ximage->width * ximage->bits_per_pixel / 8, 256);
++	int bytes_per_pixel = ((ximage->bits_per_pixel + 7) / 8);
++	int dst_width = align(ximage->width * bytes_per_pixel,
++			      64 * bytes_per_pixel);
+ 
+ 	for (i = 0; i < ximage->height; i++) {
+ 	    memcpy(data, src, ximage->bytes_per_line);
+diff -up Mesa-8.0.1/src/mesa/state_tracker/st_manager.c.jx Mesa-8.0.1/src/mesa/state_tracker/st_manager.c
+--- Mesa-8.0.1/src/mesa/state_tracker/st_manager.c.jx	2012-02-14 18:44:00.000000000 -0500
++++ Mesa-8.0.1/src/mesa/state_tracker/st_manager.c	2012-04-02 12:02:14.613964417 -0400
+@@ -528,6 +528,9 @@ st_context_teximage(struct st_context_if
+       if (util_format_get_component_bits(internal_format,
+                UTIL_FORMAT_COLORSPACE_RGB, 3) > 0)
+          internalFormat = GL_RGBA;
++      else if (util_format_get_component_bits(internal_format,
++                 UTIL_FORMAT_COLORSPACE_RGB, 0) == 5)
++         internalFormat = GL_RGB5;
+       else
+          internalFormat = GL_RGB;
+ 
