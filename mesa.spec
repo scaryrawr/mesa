@@ -30,7 +30,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 8.0.2
-Release: 2%{?dist}
+Release: 3%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -86,6 +86,11 @@ Group: System Environment/Libraries
 Requires(post): /sbin/ldconfig
 Requires(postun): /sbin/ldconfig
 Provides: libGL
+# F17+'s libX11 changes extension libs to use _XGetRequest(), so if we built
+# against that, require it too
+%if 0%{?fedora} > 16
+Requires: libX11 >= 1.4.99.1
+%endif
 
 %description libGL
 Mesa libGL runtime library.
@@ -549,6 +554,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Tue Apr 10 2012 Adam Jackson <ajax@redhat.com> 8.0.2-3
+- Require newer libX11 on F17+
+
 * Mon Apr 02 2012 Adam Jackson <ajax@redhat.com> 8.0.2-2
 - mesa-8.0.1-fix-16bpp.patch: Fix 16bpp in llvmpipe
 
