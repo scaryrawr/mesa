@@ -20,28 +20,26 @@
 %define _default_patch_fuzz 2
 
 %define manpages gl-manpages-1.0.1
-#% define gitdate 20120126
+%define gitdate 20120424
 #% define snapshot 
 
 Summary: Mesa graphics libraries
 Name: mesa
-Version: 8.0.2
-Release: 4%{?dist}
+Version: 8.1
+Release: 0.1%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
 
 #Source0: http://downloads.sf.net/mesa3d/MesaLib-%{version}.tar.bz2
 #Source0: http://www.mesa3d.org/beta/MesaLib-%{version}%{?snapshot}.tar.bz2
-Source0: ftp://ftp.freedesktop.org/pub/%{name}/%{version}/MesaLib-%{version}.tar.bz2
-#Source0: %{name}-%{gitdate}.tar.xz
+#Source0: ftp://ftp.freedesktop.org/pub/%{name}/%{version}/MesaLib-%{version}.tar.bz2
+Source0: %{name}-%{gitdate}.tar.xz
 Source2: %{manpages}.tar.bz2
 Source3: make-git-snapshot.sh
 
 #Patch7: mesa-7.1-link-shared.patch
-Patch8: mesa-7.10-llvmcore.patch
 Patch9: mesa-8.0-llvmpipe-shmget.patch
-Patch10: 0001-intel-fix-null-dereference-processing-HiZ-buffer.patch
 Patch11: mesa-8.0-nouveau-tfp-blacklist.patch
 Patch12: mesa-8.0.1-fix-16bpp.patch
 
@@ -271,12 +269,10 @@ Requires(postun): /sbin/ldconfig
 Mesa shared glapi
 
 %prep
-%setup -q -n Mesa-%{version}%{?snapshot} -b2
-#setup -q -n mesa-%{gitdate} -b2
+#% setup -q -n Mesa-%{version}%{?snapshot} -b2
+%setup -q -n mesa-%{gitdate} -b2
 #patch7 -p1 -b .dricore
-%patch8 -p1 -b .llvmcore
-%patch9 -p1 -b .shmget
-%patch10 -p1 -b .intel-hiz-fix
+#%patch9 -p1 -b .shmget
 %patch11 -p1 -b .nouveau
 %patch12 -p1 -b .16bpp
 
@@ -354,6 +350,10 @@ pushd $RPM_BUILD_ROOT%{_includedir}/GL
 rm -f [vw]*.h
 popd
 
+# remove .la files
+rm -f $RPM_BUILD_ROOT%{_libdir}/*.la
+rm -f $RPM_BUILD_ROOT%{_libdir}/dri/*.la
+
 # man pages
 pushd ../%{manpages}
 make %{?_smp_mflags} install DESTDIR=$RPM_BUILD_ROOT
@@ -417,11 +417,14 @@ rm -rf $RPM_BUILD_ROOT
 
 %files dri-drivers
 %defattr(-,root,root,-)
+%config(noreplace) %{_sysconfdir}/drirc
 %if %{with_hardware}
 %{_libdir}/dri/radeon_dri.so
 %{_libdir}/dri/r200_dri.so
 %{_libdir}/dri/r300_dri.so
 %{_libdir}/dri/r600_dri.so
+%{_libdir}/dri/libdricore.so
+%{_libdir}/dri/libglsl.so
 %ifarch %{ix86} x86_64 ia64
 %{_libdir}/dri/i915_dri.so
 %ifnarch ia64
@@ -550,6 +553,10 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Tue Apr 24 2012 Richard Hughes <rhughes@redhat.com> 8.0.3-0.1
+- Rebuild with new git snapshot
+- Remove upstreamed patches
+
 * Tue Apr 24 2012 Karsten Hopp <karsten@redhat.com> 8.0.2-4
 - disable llvm on PPC(64) in Fedora as recommended in bugzilla 769803
 
