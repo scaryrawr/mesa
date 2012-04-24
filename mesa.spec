@@ -551,7 +551,7 @@ rm -rf $RPM_BUILD_ROOT
 
 %changelog
 * Tue Apr 24 2012 Karsten Hopp <karsten@redhat.com> 8.0.2-4
-- disable llvm in Fedora as recommended in bugzilla 769803
+- disable llvm on PPC(64) in Fedora as recommended in bugzilla 769803
 
 * Tue Apr 10 2012 Adam Jackson <ajax@redhat.com> 8.0.2-3
 - Require newer libX11 on F17+
