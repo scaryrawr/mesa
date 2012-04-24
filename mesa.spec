@@ -1,9 +1,5 @@
-%if 0%{?rhel}
-%define rhel_no_hw_arches ppc ppc64
-%endif
-
-# S390 doesn't have video cards, but we need swrast for xserver's GLX
-%ifarch s390 s390x %{?rhel_no_hw_arches}
+# S390/PPC doesn't have video cards, but we need swrast for xserver's GLX
+%ifarch s390 s390x ppc ppc64
 %define with_hardware 0
 %define dri_drivers --with-dri-drivers=swrast
 %else
@@ -30,7 +26,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 8.0.2
-Release: 3%{?dist}
+Release: 4%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -554,6 +550,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Tue Apr 24 2012 Karsten Hopp <karsten@redhat.com> 8.0.2-4
+- disable llvm in Fedora as recommended in bugzilla 769803
+
 * Tue Apr 10 2012 Adam Jackson <ajax@redhat.com> 8.0.2-3
 - Require newer libX11 on F17+
 
