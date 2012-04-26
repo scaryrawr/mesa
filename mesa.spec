@@ -7,9 +7,11 @@
 %define base_drivers nouveau,radeon,r200
 %ifarch %{ix86}
 %define ix86_drivers ,i915,i965
+%define with_vmware 1
 %endif
 %ifarch x86_64
 %define amd64_drivers ,i915,i965
+%define with_vmware 1
 %endif
 %ifarch ia64
 %define ia64_drivers ,i915
@@ -26,7 +28,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 8.1
-Release: 0.1%{?dist}
+Release: 0.2%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -240,6 +242,7 @@ Provides: libwayland-egl-devel
 %description libwayland-egl-devel
 Mesa libwayland-egl development package
 
+%if 0%{?with_vmware}
 %package libxatracker
 Summary: Mesa XA state tracker for vmware
 Group: System Environment/Libraries
@@ -258,6 +261,7 @@ Provides: libxatracker-devel
 
 %description libxatracker-devel
 Mesa XA state tracker development package
+%endif
 
 %package libglapi
 Summary: Mesa shared glapi
@@ -305,9 +309,9 @@ export CXXFLAGS="$RPM_OPT_FLAGS"
     --enable-shared-glapi \
     --enable-gbm \
 %if %{with_hardware}
-    --with-gallium-drivers=svga,r300,r600,nouveau,swrast \
+    --with-gallium-drivers=%{?with_vmware:svga,}r300,r600,nouveau,swrast \
     --enable-gallium-llvm \
-    --enable-xa \
+    %{?with_vmware:--enable-xa} \
 %else
     --disable-gallium-llvm \
     --with-gallium-drivers=swrast \
@@ -433,7 +437,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 %{_libdir}/dri/nouveau_dri.so
 %{_libdir}/dri/nouveau_vieux_dri.so
+%if 0%{?with_vmware}
 %{_libdir}/dri/vmwgfx_dri.so
+%endif
 %endif
 %{_libdir}/dri/swrast_dri.so
 
@@ -534,6 +540,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libwayland-egl.so
 %{_libdir}/pkgconfig/wayland-egl.pc
 
+%if 0%{?with_vmware}
 %files libxatracker
 %defattr(-,root,root,-)
 %doc docs/COPYING
@@ -551,8 +558,12 @@ rm -rf $RPM_BUILD_ROOT
 %{_includedir}/xa_context.h
 %{_libdir}/pkgconfig/xatracker.pc
 %endif
+%endif
 
 %changelog
+* Thu Apr 26 2012 Adam Jackson <ajax@redhat.com> 8.1-0.2
+- Don't build vmware stuff on non-x86 (#815444)
+
 * Tue Apr 24 2012 Richard Hughes <rhughes@redhat.com> 8.0.3-0.1
 - Rebuild with new git snapshot
 - Remove upstreamed patches
