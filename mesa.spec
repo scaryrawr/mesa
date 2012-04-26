@@ -427,8 +427,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/dri/r200_dri.so
 %{_libdir}/dri/r300_dri.so
 %{_libdir}/dri/r600_dri.so
-%{_libdir}/dri/libdricore.so
-%{_libdir}/dri/libglsl.so
 %ifarch %{ix86} x86_64 ia64
 %{_libdir}/dri/i915_dri.so
 %ifnarch ia64
@@ -441,6 +439,8 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/dri/vmwgfx_dri.so
 %endif
 %endif
+%{_libdir}/dri/libdricore.so
+%{_libdir}/dri/libglsl.so
 %{_libdir}/dri/swrast_dri.so
 
 %files -n khrplatform-devel
@@ -561,6 +561,11 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Thu Apr 26 2012 Karsten Hopp <karsten@redhat.com> 8.1-0.2
+- move drirc into with_hardware section (Dave Airlie)
+- libdricore.so and libglsl.so get built and installed on
+  non-hardware archs, include them in the file list
+
 * Thu Apr 26 2012 Adam Jackson <ajax@redhat.com> 8.1-0.2
 - Don't build vmware stuff on non-x86 (#815444)
 
