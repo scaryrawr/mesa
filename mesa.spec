@@ -421,8 +421,8 @@ rm -rf $RPM_BUILD_ROOT
 
 %files dri-drivers
 %defattr(-,root,root,-)
-%config(noreplace) %{_sysconfdir}/drirc
 %if %{with_hardware}
+%config(noreplace) %{_sysconfdir}/drirc
 %{_libdir}/dri/radeon_dri.so
 %{_libdir}/dri/r200_dri.so
 %{_libdir}/dri/r300_dri.so
