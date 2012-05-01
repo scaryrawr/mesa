@@ -6,17 +6,17 @@
 %define with_hardware 1
 %define base_drivers nouveau,radeon,r200
 %ifarch %{ix86}
-%define ix86_drivers ,i915,i965
+%define platform_drivers ,i915,i965
 %define with_vmware 1
 %endif
 %ifarch x86_64
-%define amd64_drivers ,i915,i965
+%define platform_drivers ,i915,i965
 %define with_vmware 1
 %endif
 %ifarch ia64
-%define ia64_drivers ,i915
+%define platform_drivers ,i915
 %endif
-%define dri_drivers --with-dri-drivers=%{base_drivers}%{?ix86_drivers}%{?amd64_drivers}%{?ia64_drivers}
+%define dri_drivers --with-dri-drivers=%{base_drivers}%{?platform_drivers}
 %endif
 
 %define _default_patch_fuzz 2
@@ -28,7 +28,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 8.1
-Release: 0.2%{?dist}
+Release: 0.3%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -222,6 +222,7 @@ Provides: libgbm-devel
 Mesa libgbm development package
 
 
+%if !0%{?rhel}
 %package libwayland-egl
 Summary: Mesa libwayland-egl library
 Group: System Environment/Libraries
@@ -241,6 +242,8 @@ Provides: libwayland-egl-devel
 
 %description libwayland-egl-devel
 Mesa libwayland-egl development package
+%endif
+
 
 %if 0%{?with_vmware}
 %package libxatracker
@@ -305,7 +308,7 @@ export CXXFLAGS="$RPM_OPT_FLAGS"
     --enable-gles1 \
     --enable-gles2 \
     --disable-gallium-egl \
-    --with-egl-platforms=x11,wayland,drm \
+    --with-egl-platforms=x11,drm%{!?rhel:,wayland} \
     --enable-shared-glapi \
     --enable-gbm \
 %if %{with_hardware}
@@ -337,17 +340,10 @@ make install DESTDIR=$RPM_BUILD_ROOT DRI_DIRS=
 mkdir -p $RPM_BUILD_ROOT%{_includedir}/KHR
 install -m 0644 include/KHR/*.h $RPM_BUILD_ROOT%{_includedir}/KHR
 
-# just the DRI drivers that are sane
-install -d $RPM_BUILD_ROOT%{_libdir}/dri
-# use gallium driver iff built
-[ -f %{_lib}/gallium/r300_dri.so ] && cp %{_lib}/gallium/r300_dri.so %{_lib}/r300_dri.so
-[ -f %{_lib}/gallium/r600_dri.so ] && cp %{_lib}/gallium/r600_dri.so %{_lib}/r600_dri.so
-[ -f %{_lib}/gallium/swrast_dri.so ] && mv %{_lib}/gallium/swrast_dri.so %{_lib}/swrast_dri.so
-
-for f in i915 i965 r200 r300 r600 radeon swrast nouveau_vieux gallium/vmwgfx ; do
-    so=%{_lib}/${f}_dri.so
-    test -e $so && echo $so
-done | xargs install -m 0755 -t $RPM_BUILD_ROOT%{_libdir}/dri >& /dev/null || :
+%if 0%{?rhel}
+# remove pre-DX7 drivers
+rm -f $RPM_BUILD_ROOT%{_libdir}/dri/{radeon,r200,nouveau_vieux}*
+%endif
 
 # strip out undesirable headers
 pushd $RPM_BUILD_ROOT%{_includedir}/GL 
@@ -355,8 +351,7 @@ rm -f [vw]*.h
 popd
 
 # remove .la files
-rm -f $RPM_BUILD_ROOT%{_libdir}/*.la
-rm -f $RPM_BUILD_ROOT%{_libdir}/dri/*.la
+find $RPM_BUILD_ROOT -name \*.la | xargs rm -f
 
 # man pages
 pushd ../%{manpages}
@@ -387,8 +382,10 @@ rm -rf $RPM_BUILD_ROOT
 %postun libGLES -p /sbin/ldconfig
 %post libgbm -p /sbin/ldconfig
 %postun libgbm -p /sbin/ldconfig
+%if !0%{?rhel}
 %post libwayland-egl -p /sbin/ldconfig
 %postun libwayland-egl -p /sbin/ldconfig
+%endif
 
 %files libGL
 %defattr(-,root,root,-)
@@ -423,8 +420,11 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 %if %{with_hardware}
 %config(noreplace) %{_sysconfdir}/drirc
+%if !0%{?rhel}
 %{_libdir}/dri/radeon_dri.so
 %{_libdir}/dri/r200_dri.so
+%{_libdir}/dri/nouveau_vieux_dri.so
+%endif
 %{_libdir}/dri/r300_dri.so
 %{_libdir}/dri/r600_dri.so
 %ifarch %{ix86} x86_64 ia64
@@ -434,7 +434,6 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 %endif
 %{_libdir}/dri/nouveau_dri.so
-%{_libdir}/dri/nouveau_vieux_dri.so
 %if 0%{?with_vmware}
 %{_libdir}/dri/vmwgfx_dri.so
 %endif
@@ -529,6 +528,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_includedir}/gbm.h
 %{_libdir}/pkgconfig/gbm.pc
 
+%if !0%{?rhel}
 %files libwayland-egl
 %defattr(-,root,root,-)
 %doc docs/COPYING
@@ -539,6 +539,7 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 %{_libdir}/libwayland-egl.so
 %{_libdir}/pkgconfig/wayland-egl.pc
+%endif
 
 %if 0%{?with_vmware}
 %files libxatracker
@@ -561,6 +562,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Tue May 01 2012 Adam Jackson <ajax@redhat.com> 8.1-0.3
+- More RHEL tweaking: no pre-DX7 drivers, no wayland.
+
 * Thu Apr 26 2012 Karsten Hopp <karsten@redhat.com> 8.1-0.2
 - move drirc into with_hardware section (Dave Airlie)
 - libdricore.so and libglsl.so get built and installed on
