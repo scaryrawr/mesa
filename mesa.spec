@@ -36,7 +36,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 8.1
-Release: 0.4%{?dist}
+Release: 0.5%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -289,7 +289,7 @@ Mesa shared glapi
 #% setup -q -n Mesa-%{version}%{?snapshot} -b2
 %setup -q -n mesa-%{gitdate} -b2
 #patch7 -p1 -b .dricore
-#%patch9 -p1 -b .shmget
+%patch9 -p1 -b .shmget
 %patch11 -p1 -b .nouveau
 %patch12 -p1 -b .16bpp
 
@@ -572,6 +572,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Thu May 17 2012 Adam Jackson <ajax@redhat.com> 8.1-0.5
+- mesa-8.0-llvmpipe-shmget.patch: Rediff for 8.1.
+
 * Thu May 10 2012 Karsten Hopp <karsten@redhat.com> 8.1-0.4
 - revert disabling of hardware drivers, disable only llvm on PPC*
   (#819060)
