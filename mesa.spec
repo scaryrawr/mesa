@@ -30,13 +30,13 @@
 %define _default_patch_fuzz 2
 
 %define manpages gl-manpages-1.0.1
-%define gitdate 20120424
+%define gitdate 20120603
 #% define snapshot 
 
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 8.1
-Release: 0.5%{?dist}
+Release: 0.6%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -73,7 +73,7 @@ BuildRequires: elfutils
 BuildRequires: python
 %if %{with_hardware}
 %if 0%{?with_llvm}
-BuildRequires: llvm-devel >= 3.0
+BuildRequires: llvm-devel >= 3.1
 %endif
 %endif
 BuildRequires: libxml2-python
@@ -572,6 +572,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Sun Jun 03 2012 Dave Airlie <airlied@redhat.com> 8.1-0.6
+- rebase to git master + build on top of llvm 3.1
+
 * Thu May 17 2012 Adam Jackson <ajax@redhat.com> 8.1-0.5
 - mesa-8.0-llvmpipe-shmget.patch: Rediff for 8.1.
 
