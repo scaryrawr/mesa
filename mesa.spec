@@ -36,7 +36,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 8.1
-Release: 0.7%{?dist}
+Release: 0.8%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -325,6 +325,7 @@ export CXXFLAGS="$RPM_OPT_FLAGS"
     --with-gallium-drivers=%{?with_vmware:svga,}r300,r600,nouveau,swrast \
     %{?with_llvm:--enable-gallium-llvm} \
     %{?with_vmware:--enable-xa} \
+    %{?with_llvm:--with-llvm-shared-libs} \
 %else
     --disable-gallium-llvm \
     --with-gallium-drivers=swrast \
@@ -572,6 +573,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Wed Jun 13 2012 Dave Airlie <airlied@redhat.com> 8.1-0.8
+- enable shared llvm usage.
+
 * Thu Jun 07 2012 Adam Jackson <ajax@redhat.com> 8.1-0.7
 - Disable llvm on non-x86 (#829020)
 
