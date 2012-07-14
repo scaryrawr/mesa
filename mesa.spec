@@ -36,7 +36,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 8.1
-Release: 0.8%{?dist}
+Release: 0.9%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -89,8 +89,6 @@ Mesa
 %package libGL
 Summary: Mesa libGL runtime libraries and DRI drivers
 Group: System Environment/Libraries
-Requires(post): /sbin/ldconfig
-Requires(postun): /sbin/ldconfig
 Provides: libGL
 # F17+'s libX11 changes extension libs to use _XGetRequest(), so if we built
 # against that, require it too
@@ -104,8 +102,6 @@ Mesa libGL runtime library.
 %package libEGL
 Summary: Mesa libEGL runtime libraries
 Group: System Environment/Libraries
-Requires(post): /sbin/ldconfig
-Requires(postun): /sbin/ldconfig
 
 %description libEGL
 Mesa libEGL runtime libraries
@@ -113,8 +109,6 @@ Mesa libEGL runtime libraries
 %package libGLES
 Summary: Mesa libGLES runtime libraries
 Group: System Environment/Libraries
-Requires(post): /sbin/ldconfig
-Requires(postun): /sbin/ldconfig
 
 %description libGLES
 Mesa GLES runtime libraries
@@ -173,8 +167,6 @@ Mesa libGLES development package
 %package libGLU
 Summary: Mesa libGLU runtime library
 Group: System Environment/Libraries
-Requires(post): /sbin/ldconfig
-Requires(postun): /sbin/ldconfig
 Provides: libGLU
 
 %description libGLU
@@ -194,8 +186,6 @@ Mesa libGLU development package
 %package libOSMesa
 Summary: Mesa offscreen rendering libraries
 Group: System Environment/Libraries
-Requires(post): /sbin/ldconfig
-Requires(postun): /sbin/ldconfig
 Provides: libOSMesa
 
 %description libOSMesa
@@ -214,8 +204,6 @@ Mesa offscreen rendering development package
 %package libgbm
 Summary: Mesa gbm library
 Group: System Environment/Libraries
-Requires(post): /sbin/ldconfig
-Requires(postun): /sbin/ldconfig
 Provides: libgbm
 
 %description libgbm
@@ -236,8 +224,6 @@ Mesa libgbm development package
 %package libwayland-egl
 Summary: Mesa libwayland-egl library
 Group: System Environment/Libraries
-Requires(post): /sbin/ldconfig
-Requires(postun): /sbin/ldconfig
 Provides: libwayland-egl
 
 %description libwayland-egl
@@ -259,8 +245,6 @@ Mesa libwayland-egl development package
 %package libxatracker
 Summary: Mesa XA state tracker for vmware
 Group: System Environment/Libraries
-Requires(post): /sbin/ldconfig
-Requires(postun): /sbin/ldconfig
 Provides: libxatracker
 
 %description libxatracker
@@ -279,8 +263,6 @@ Mesa XA state tracker development package
 %package libglapi
 Summary: Mesa shared glapi
 Group: System Environment/Libraries
-Requires(post): /sbin/ldconfig
-Requires(postun): /sbin/ldconfig
 
 %description libglapi
 Mesa shared glapi
@@ -391,11 +373,17 @@ rm -rf $RPM_BUILD_ROOT
 %postun libEGL -p /sbin/ldconfig
 %post libGLES -p /sbin/ldconfig
 %postun libGLES -p /sbin/ldconfig
+%post libglapi -p /sbin/ldconfig
+%postun libglapi -p /sbin/ldconfig
 %post libgbm -p /sbin/ldconfig
 %postun libgbm -p /sbin/ldconfig
 %if !0%{?rhel}
 %post libwayland-egl -p /sbin/ldconfig
 %postun libwayland-egl -p /sbin/ldconfig
+%endif
+%if 0%{?with_vmware}
+%post libxatracker -p /sbin/ldconfig
+%postun libxatracker -p /sbin/ldconfig
 %endif
 
 %files libGL
@@ -573,6 +561,10 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Sat Jul 14 2012 Ville Skyttä <ville.skytta@iki.fi> - 8.1-0.9
+- Call ldconfig at -libglapi and -libxatracker post(un)install time.
+- Drop redundant ldconfig dependencies, let rpm auto-add them.
+
 * Wed Jun 13 2012 Dave Airlie <airlied@redhat.com> 8.1-0.8
 - enable shared llvm usage.
 
