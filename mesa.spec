@@ -30,13 +30,13 @@
 %define _default_patch_fuzz 2
 
 %define manpages gl-manpages-1.0.1
-%define gitdate 20120716
+%define gitdate 20120717
 #% define snapshot 
 
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 8.1
-Release: 0.10%{?dist}
+Release: 0.11%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -317,8 +317,6 @@ export CXXFLAGS="$RPM_OPT_FLAGS"
 %endif
     %{?dri_drivers}
 
-#ignore the man behind the curtain. - temp workaround mesa build bug
-cd src/egl/wayland; make; cd -
 make %{?_smp_mflags} MKDEP=/bin/true
 
 pushd ../%{manpages}
@@ -564,6 +562,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Tue Jul 17 2012 Dave Airlie <airlied@redhat.com> 8.1-0.11
+- upstream snapshot: fixes build issues
+
 * Tue Jul 17 2012 Dave Airlie <airlied@redhat.com> 8.1-0.10
 - snapshot mesa: add some build hackarounds 
 
