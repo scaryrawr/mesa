@@ -30,13 +30,13 @@
 %define _default_patch_fuzz 2
 
 %define manpages gl-manpages-1.0.1
-%define gitdate 20120603
+%define gitdate 20120716
 #% define snapshot 
 
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 8.1
-Release: 0.9%{?dist}
+Release: 0.10%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -52,13 +52,14 @@ Source3: make-git-snapshot.sh
 Patch9: mesa-8.0-llvmpipe-shmget.patch
 Patch11: mesa-8.0-nouveau-tfp-blacklist.patch
 Patch12: mesa-8.0.1-fix-16bpp.patch
+Patch13: mesa-8.1-fixglpc.patch
 
 BuildRequires: pkgconfig autoconf automake libtool
 %if %{with_hardware}
 BuildRequires: kernel-headers
 BuildRequires: xorg-x11-server-devel
 %endif
-BuildRequires: libdrm-devel >= 2.4.27-1
+BuildRequires: libdrm-devel >= 2.4.37
 BuildRequires: libXxf86vm-devel
 BuildRequires: expat-devel
 BuildRequires: xorg-x11-proto-devel
@@ -274,6 +275,7 @@ Mesa shared glapi
 %patch9 -p1 -b .shmget
 %patch11 -p1 -b .nouveau
 %patch12 -p1 -b .16bpp
+%patch13 -p1 -b .fixglpc
 
 %build
 
@@ -315,6 +317,8 @@ export CXXFLAGS="$RPM_OPT_FLAGS"
 %endif
     %{?dri_drivers}
 
+#ignore the man behind the curtain. - temp workaround mesa build bug
+cd src/egl/wayland; make; cd -
 make %{?_smp_mflags} MKDEP=/bin/true
 
 pushd ../%{manpages}
@@ -437,8 +441,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/dri/vmwgfx_dri.so
 %endif
 %endif
-%{_libdir}/dri/libdricore.so
-%{_libdir}/dri/libglsl.so
+%{_libdir}/libdricore*.so*
 %{_libdir}/dri/swrast_dri.so
 
 %files -n khrplatform-devel
@@ -561,6 +564,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Tue Jul 17 2012 Dave Airlie <airlied@redhat.com> 8.1-0.10
+- snapshot mesa: add some build hackarounds 
+
 * Sat Jul 14 2012 Ville Skyttä <ville.skytta@iki.fi> - 8.1-0.9
 - Call ldconfig at -libglapi and -libxatracker post(un)install time.
 - Drop redundant ldconfig dependencies, let rpm auto-add them.
