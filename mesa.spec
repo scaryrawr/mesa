@@ -36,7 +36,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 8.1
-Release: 0.11%{?dist}
+Release: 0.12%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -562,6 +562,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Fri Jul 20 2012 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 8.1-0.12
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_18_Mass_Rebuild
+
 * Tue Jul 17 2012 Dave Airlie <airlied@redhat.com> 8.1-0.11
 - upstream snapshot: fixes build issues
 
