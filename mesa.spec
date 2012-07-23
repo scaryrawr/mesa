@@ -36,7 +36,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 8.1
-Release: 0.12%{?dist}
+Release: 0.13%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -306,7 +306,7 @@ export CXXFLAGS="$RPM_OPT_FLAGS"
     --enable-shared-glapi \
     --enable-gbm \
 %if %{with_hardware}
-    --with-gallium-drivers=%{?with_vmware:svga,}r300,r600,nouveau,swrast \
+    --with-gallium-drivers=%{?with_vmware:svga,}r300,r600,radeonsi,nouveau,swrast \
     %{?with_llvm:--enable-gallium-llvm} \
     %{?with_vmware:--enable-xa} \
     %{?with_llvm:--with-llvm-shared-libs} \
@@ -336,7 +336,7 @@ mkdir -p $RPM_BUILD_ROOT%{_includedir}/KHR
 install -m 0644 include/KHR/*.h $RPM_BUILD_ROOT%{_includedir}/KHR
 
 %if 0%{?rhel}
-# remove pre-DX7 drivers
+# remove pre-DX9 drivers
 rm -f $RPM_BUILD_ROOT%{_libdir}/dri/{radeon,r200,nouveau_vieux}*
 %endif
 
@@ -428,6 +428,7 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 %{_libdir}/dri/r300_dri.so
 %{_libdir}/dri/r600_dri.so
+%{_libdir}/dri/radeonsi_dri.so
 %ifarch %{ix86} x86_64 ia64
 %{_libdir}/dri/i915_dri.so
 %ifnarch ia64
@@ -562,6 +563,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Mon Jul 23 2012 Adam Jackson <ajax@redhat.com> 8.1-0.13
+- Build radeonsi (#842194)
+
 * Fri Jul 20 2012 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 8.1-0.12
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_18_Mass_Rebuild
 
