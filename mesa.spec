@@ -8,7 +8,7 @@
 %define dri_drivers --with-dri-drivers=swrast
 %else
 # llvm is a joke on non-x86
-%ifarch %{ix86} x86_64
+%ifarch %{ix86} x86_64 ppc ppc64 ppc64p7
 %define with_llvm 1
 %endif
 %define with_hardware 1
@@ -36,7 +36,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 8.1
-Release: 0.13%{?dist}
+Release: 0.14%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -565,7 +565,8 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
-* Tue Jul 24 2012 Adam Jackson <ajax@redhat.com>
+* Tue Jul 24 2012 Adam Jackson <ajax@redhat.com> 8.1-0.14
+- Re-enable llvm on ppc, being worked on
 - Don't BuildReq on wayland things in RHEL
 
 * Mon Jul 23 2012 Adam Jackson <ajax@redhat.com> 8.1-0.13
