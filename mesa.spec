@@ -81,8 +81,10 @@ BuildRequires: libxml2-python
 BuildRequires: libudev-devel
 BuildRequires: libtalloc-devel
 BuildRequires: bison flex
+%if !0%{?rhel}
 BuildRequires: pkgconfig(wayland-client)
 BuildRequires: pkgconfig(wayland-server)
+%endif
 
 %description
 Mesa
@@ -563,6 +565,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Tue Jul 24 2012 Adam Jackson <ajax@redhat.com>
+- Don't BuildReq on wayland things in RHEL
+
 * Mon Jul 23 2012 Adam Jackson <ajax@redhat.com> 8.1-0.13
 - Build radeonsi (#842194)
 
