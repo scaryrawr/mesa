@@ -36,7 +36,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 8.1
-Release: 0.14%{?dist}
+Release: 0.15%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -308,10 +308,14 @@ export CXXFLAGS="$RPM_OPT_FLAGS"
     --enable-shared-glapi \
     --enable-gbm \
 %if %{with_hardware}
-    --with-gallium-drivers=%{?with_vmware:svga,}r300,r600,radeonsi,nouveau,swrast \
-    %{?with_llvm:--enable-gallium-llvm} \
     %{?with_vmware:--enable-xa} \
-    %{?with_llvm:--with-llvm-shared-libs} \
+%if 0%{?with_llvm}
+    --with-gallium-drivers=%{?with_vmware:svga,}r300,r600,radeonsi,nouveau,swrast \
+    --enable-gallium-llvm \
+    --with-llvm-shared-libs \
+%else
+    --with-gallium-drivers=%{?with_vmware:svga,}r300,r600,nouveau,swrast \
+%endif
 %else
     --disable-gallium-llvm \
     --with-gallium-drivers=swrast \
@@ -430,7 +434,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 %{_libdir}/dri/r300_dri.so
 %{_libdir}/dri/r600_dri.so
+%if 0%{?with_llvm}
 %{_libdir}/dri/radeonsi_dri.so
+%endif
 %ifarch %{ix86} x86_64 ia64
 %{_libdir}/dri/i915_dri.so
 %ifnarch ia64
@@ -565,6 +571,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Wed Jul 25 2012 Peter Robinson <pbrobinson@fedoraproject.org> 8.1-0.15
+- Fix building on platforms with HW and without LLVM
+
 * Tue Jul 24 2012 Adam Jackson <ajax@redhat.com> 8.1-0.14
 - Re-enable llvm on ppc, being worked on
 - Don't BuildReq on wayland things in RHEL
