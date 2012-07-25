@@ -8,7 +8,7 @@
 %define dri_drivers --with-dri-drivers=swrast
 %else
 # llvm is a joke on non-x86
-%ifarch %{ix86} x86_64 ppc ppc64 ppc64p7
+%ifarch %{ix86} x86_64 ppc ppc64 ppc64p7 %{arm}
 %define with_llvm 1
 %endif
 %define with_hardware 1
@@ -36,7 +36,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 8.1
-Release: 0.15%{?dist}
+Release: 0.16%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -571,6 +571,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Wed Jul 25 2012 Peter Robinson <pbrobinson@fedoraproject.org> 8.1-0.16
+- Enable LLVM on ARM
+
 * Wed Jul 25 2012 Peter Robinson <pbrobinson@fedoraproject.org> 8.1-0.15
 - Fix building on platforms with HW and without LLVM
 
