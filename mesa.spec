@@ -30,13 +30,13 @@
 %define _default_patch_fuzz 2
 
 %define manpages gl-manpages-1.0.1
-%define gitdate 20120717
+%define gitdate 20120816
 #% define snapshot 
 
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 8.1
-Release: 0.16%{?dist}
+Release: 0.17%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -52,14 +52,13 @@ Source3: make-git-snapshot.sh
 Patch9: mesa-8.0-llvmpipe-shmget.patch
 Patch11: mesa-8.0-nouveau-tfp-blacklist.patch
 Patch12: mesa-8.0.1-fix-16bpp.patch
-Patch13: mesa-8.1-fixglpc.patch
 
 BuildRequires: pkgconfig autoconf automake libtool
 %if %{with_hardware}
 BuildRequires: kernel-headers
 BuildRequires: xorg-x11-server-devel
 %endif
-BuildRequires: libdrm-devel >= 2.4.37
+BuildRequires: libdrm-devel >= 2.4.38
 BuildRequires: libXxf86vm-devel
 BuildRequires: expat-devel
 BuildRequires: xorg-x11-proto-devel
@@ -277,7 +276,6 @@ Mesa shared glapi
 %patch9 -p1 -b .shmget
 %patch11 -p1 -b .nouveau
 %patch12 -p1 -b .16bpp
-%patch13 -p1 -b .fixglpc
 
 %build
 
@@ -571,6 +569,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Thu Aug 16 2012 Dave Airlie <airlied@redhat.com> 8.1-0.17
+- upstream snapshot
+
 * Wed Jul 25 2012 Peter Robinson <pbrobinson@fedoraproject.org> 8.1-0.16
 - Enable LLVM on ARM
 
