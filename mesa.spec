@@ -36,7 +36,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 8.1
-Release: 0.17%{?dist}
+Release: 0.18%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -321,7 +321,8 @@ export CXXFLAGS="$RPM_OPT_FLAGS"
 %endif
     %{?dri_drivers}
 
-make %{?_smp_mflags} MKDEP=/bin/true
+#%{?_smp_mflags} - broke parallel make in glsl
+make MKDEP=/bin/true
 
 pushd ../%{manpages}
 autoreconf -v --install
@@ -569,6 +570,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Fri Aug 17 2012 Dave Airlie <airlied@redhat.com> 8.1-0.18
+- parallel make seems broken - on 16 way machine internally.
+
 * Thu Aug 16 2012 Dave Airlie <airlied@redhat.com> 8.1-0.17
 - upstream snapshot
 
