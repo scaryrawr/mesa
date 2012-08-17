@@ -342,7 +342,7 @@ install -m 0644 include/KHR/*.h $RPM_BUILD_ROOT%{_includedir}/KHR
 
 %if 0%{?rhel}
 # remove pre-DX9 drivers
-rm -f $RPM_BUILD_ROOT%{_libdir}/dri/{radeon,r200,nouveau_vieux}*
+rm -f $RPM_BUILD_ROOT%{_libdir}/dri/{radeon,r200,nouveau_vieux}_dri.*
 %endif
 
 # strip out undesirable headers
