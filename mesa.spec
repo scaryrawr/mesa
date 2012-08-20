@@ -7,7 +7,7 @@
 %define with_hardware 0
 %define dri_drivers --with-dri-drivers=swrast
 %else
-# llvm is a joke on non-x86
+# llvm support only works on some arches
 %ifarch %{ix86} x86_64 ppc ppc64 ppc64p7 %{arm}
 %define with_llvm 1
 %endif
