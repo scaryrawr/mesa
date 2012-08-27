@@ -30,13 +30,13 @@
 %define _default_patch_fuzz 2
 
 %define manpages gl-manpages-1.0.1
-%define gitdate 20120816
+%define gitdate 20120827
 #% define snapshot 
 
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 8.1
-Release: 0.18%{?dist}
+Release: 0.19%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -52,6 +52,13 @@ Source3: make-git-snapshot.sh
 Patch9: mesa-8.0-llvmpipe-shmget.patch
 Patch11: mesa-8.0-nouveau-tfp-blacklist.patch
 Patch12: mesa-8.0.1-fix-16bpp.patch
+
+# Revert libkms usage so we don't need to revive it
+Patch13: mesa-no-libkms.patch
+
+# Courtesy of Mageia cauldron:
+# Fix undefined syms: http://svnweb.mageia.org/packages/cauldron/mesa/current/SOURCES/0001-Fix-undefined-symbols-in-libOSMesa-and-libglapi.patch?revision=278531&view=co
+Patch101: mesa-undefined-symbols.patch
 
 BuildRequires: pkgconfig autoconf automake libtool
 %if %{with_hardware}
@@ -276,6 +283,8 @@ Mesa shared glapi
 %patch9 -p1 -b .shmget
 %patch11 -p1 -b .nouveau
 %patch12 -p1 -b .16bpp
+%patch13 -p1 -b .no-libkms
+%patch101 -p1 -b .syms
 
 %build
 
@@ -570,6 +579,11 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Mon Aug 27 2012 Adam Jackson <ajax@redhat.com> 8.1-0.19
+- Today's git snap
+- Revert dependency on libkms
+- Patch from Mageia to fix some undefined symbols
+
 * Fri Aug 17 2012 Dave Airlie <airlied@redhat.com> 8.1-0.18
 - parallel make seems broken - on 16 way machine internally.
 
