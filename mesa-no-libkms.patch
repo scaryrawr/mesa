@@ -1,0 +1,307 @@
+Reverts:
+a669a5055eadae85ffa000cea19a2241d0699348
+6bb71b8cbe6b17a5d59e369631502e642804406e
+
+diff --git a/configure.ac b/configure.ac
+index c30bcf0..54b50a6 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -1226,8 +1226,6 @@ if test "x$enable_gbm" = xyes; then
+         if test "x$enable_shared_glapi" = xno; then
+             AC_MSG_ERROR([gbm_dri requires --enable-shared-glapi])
+         fi
+-        PKG_CHECK_MODULES([LIBKMS], [libkms], [],
+-                          AC_MSG_ERROR([gbm needs libkms]))
+     fi
+ fi
+ GBM_PC_REQ_PRIV="libudev"
+diff --git a/include/GL/internal/dri_interface.h b/include/GL/internal/dri_interface.h
+index 09f63ff..f35f857 100644
+--- a/include/GL/internal/dri_interface.h
++++ b/include/GL/internal/dri_interface.h
+@@ -935,7 +935,8 @@ struct __DRIdri2ExtensionRec {
+ 
+ #define __DRI_IMAGE_USE_SHARE		0x0001
+ #define __DRI_IMAGE_USE_SCANOUT		0x0002
+-#define __DRI_IMAGE_USE_CURSOR		0x0004 /* Depricated */
++#define __DRI_IMAGE_USE_CURSOR		0x0004
++#define __DRI_IMAGE_USE_WRITE		0x0008
+ 
+ /**
+  * queryImage attributes
+@@ -984,6 +985,13 @@ struct __DRIimageExtensionRec {
+    GLboolean (*validateUsage)(__DRIimage *image, unsigned int use);
+ 
+    /**
++    * Write data into image.
++    *
++    * \since 4
++    */
++   int (*write)(__DRIimage *image, const void *buf, size_t count);
++
++   /**
+     * Create an image out of a sub-region of a parent image.  This
+     * entry point lets us create individual __DRIimages for different
+     * planes in a planar buffer (typically yuv), for example.  While a
+diff --git a/src/egl/drivers/dri2/Makefile.am b/src/egl/drivers/dri2/Makefile.am
+index 45f7dfa..49ec06b 100644
+--- a/src/egl/drivers/dri2/Makefile.am
++++ b/src/egl/drivers/dri2/Makefile.am
+@@ -30,7 +30,6 @@ AM_CFLAGS = \
+ 	$(DEFINES) \
+ 	$(LIBDRM_CFLAGS) \
+ 	$(LIBUDEV_CFLAGS) \
+-	$(LIBKMS_CFLAGS) \
+ 	-DDEFAULT_DRIVER_DIR=\"$(DRI_DRIVER_SEARCH_DIR)\"
+ 
+ noinst_LTLIBRARIES = libegl_dri2.la
+diff --git a/src/gbm/Makefile.am b/src/gbm/Makefile.am
+index e22c55c..f079da1 100644
+--- a/src/gbm/Makefile.am
++++ b/src/gbm/Makefile.am
+@@ -7,7 +7,6 @@ AM_CFLAGS = \
+ 	-I$(top_srcdir)/include \
+ 	-I$(top_srcdir)/src/gbm/main \
+ 	$(LIBUDEV_CFLAGS) \
+-	$(LIBKMS_CFLAGS) \
+ 	$(DLOPEN_CFLAGS) \
+ 	$(DEFINES)
+ 
+@@ -19,7 +18,7 @@ libgbm_la_SOURCES = \
+ 	main/backend.c \
+ 	main/common.c
+ libgbm_la_LDFLAGS = -version-info 1:0
+-libgbm_la_LIBADD = $(LIBUDEV_LIBS) $(LIBKMS_LIBS) $(DLOPEN_LIBS)
++libgbm_la_LIBADD = $(LIBUDEV_LIBS) $(DLOPEN_LIBS)
+ 
+ if HAVE_EGL_PLATFORM_WAYLAND
+ AM_CPPFLAGS = -DHAVE_WAYLAND_PLATFORM
+diff --git a/src/gbm/backends/dri/gbm_dri.c b/src/gbm/backends/dri/gbm_dri.c
+index 1831f13..173e727 100644
+--- a/src/gbm/backends/dri/gbm_dri.c
++++ b/src/gbm/backends/dri/gbm_dri.c
+@@ -299,21 +299,13 @@ gbm_dri_is_format_supported(struct gbm_device *gbm,
+ static int
+ gbm_dri_bo_write(struct gbm_bo *_bo, const void *buf, size_t count)
+ {
++   struct gbm_dri_device *dri = gbm_dri_device(_bo->gbm);
+    struct gbm_dri_bo *bo = gbm_dri_bo(_bo);
+-   void *ptr;
+-   int ret;
+-
+-   if (bo->bo == NULL)
+-      return -1;
+ 
+-   ret = kms_bo_map(bo->bo, &ptr);
+-   if (ret < 0)
++   if (dri->image->base.version < 4)
+       return -1;
+ 
+-   memcpy(ptr, buf, count);
+-
+-   kms_bo_unmap(bo->bo);
+-   return 0;
++   return dri->image->write(bo->image, buf, count);
+ }
+ 
+ static void
+@@ -322,10 +314,7 @@ gbm_dri_bo_destroy(struct gbm_bo *_bo)
+    struct gbm_dri_device *dri = gbm_dri_device(_bo->gbm);
+    struct gbm_dri_bo *bo = gbm_dri_bo(_bo);
+ 
+-   if (bo->image != NULL)
+-      dri->image->destroyImage(bo->image);
+-   if (bo->bo != NULL)
+-      kms_bo_destroy(&bo->bo);
++   dri->image->destroyImage(bo->image);
+    free(bo);
+ }
+ 
+@@ -461,6 +450,9 @@ gbm_dri_bo_create(struct gbm_device *gbm,
+    int dri_format;
+    unsigned dri_use = 0;
+ 
++   if (dri->image->base.version < 4 && (usage & GBM_BO_USE_WRITE))
++      return NULL;
++
+    bo = calloc(1, sizeof *bo);
+    if (bo == NULL)
+       return NULL;
+@@ -469,33 +461,6 @@ gbm_dri_bo_create(struct gbm_device *gbm,
+    bo->base.base.width = width;
+    bo->base.base.height = height;
+ 
+-   if (usage & GBM_BO_USE_WRITE) {
+-      int ret;
+-      unsigned attrs[7] = {
+-         KMS_WIDTH, 64,
+-         KMS_HEIGHT, 64,
+-         KMS_BO_TYPE, KMS_BO_TYPE_SCANOUT_X8R8G8B8,
+-         KMS_TERMINATE_PROP_LIST,
+-      };
+-
+-      if (!(usage & GBM_BO_USE_CURSOR_64X64))
+-         return NULL;
+-
+-      if (dri->kms == NULL)
+-         return NULL;
+-
+-      ret = kms_bo_create(dri->kms, attrs, &bo->bo);
+-      if (ret < 0) {
+-         free(bo);
+-         return NULL;
+-      }
+-
+-      kms_bo_get_prop(bo->bo, KMS_PITCH, &bo->base.base.stride);
+-      kms_bo_get_prop(bo->bo, KMS_HANDLE, (unsigned*)&bo->base.base.handle);
+-
+-      return &bo->base.base;
+-   }
+-
+    switch (format) {
+    case GBM_FORMAT_RGB565:
+       dri_format =__DRI_IMAGE_FORMAT_RGB565;
+@@ -519,6 +484,8 @@ gbm_dri_bo_create(struct gbm_device *gbm,
+       dri_use |= __DRI_IMAGE_USE_SCANOUT;
+    if (usage & GBM_BO_USE_CURSOR_64X64)
+       dri_use |= __DRI_IMAGE_USE_CURSOR;
++   if (usage & GBM_BO_USE_WRITE)
++      dri_use |= __DRI_IMAGE_USE_WRITE;
+ 
+    /* Gallium drivers requires shared in order to get the handle/stride */
+    dri_use |= __DRI_IMAGE_USE_SHARE;
+@@ -601,21 +568,13 @@ dri_device_create(int fd)
+    dri->base.type = GBM_DRM_DRIVER_TYPE_DRI;
+    dri->base.base.name = "drm";
+ 
+-   kms_create(fd, &dri->kms);
+-   if (dri->kms == NULL)
+-      goto err_kms;
+-
+    ret = dri_screen_create(dri);
+-   if (ret)
+-      goto err_dri;
++   if (ret) {
++      free(dri);
++      return NULL;
++   }
+ 
+    return &dri->base.base;
+-
+-err_dri:
+-   kms_destroy(&dri->kms);
+-err_kms:
+-   free(dri);
+-   return NULL;
+ }
+ 
+ struct gbm_backend gbm_dri_backend = {
+diff --git a/src/gbm/backends/dri/gbm_driint.h b/src/gbm/backends/dri/gbm_driint.h
+index 4b619a0..f404368 100644
+--- a/src/gbm/backends/dri/gbm_driint.h
++++ b/src/gbm/backends/dri/gbm_driint.h
+@@ -30,8 +30,6 @@
+ 
+ #include "gbmint.h"
+ 
+-#include "libkms.h"
+-
+ #include "common.h"
+ #include "common_drm.h"
+ 
+@@ -43,9 +41,6 @@ struct gbm_dri_surface;
+ struct gbm_dri_device {
+    struct gbm_drm_device base;
+ 
+-   /* Only used for cursors */
+-   struct kms_driver *kms;
+-
+    void *driver;
+ 
+    __DRIscreen *screen;
+@@ -77,9 +72,6 @@ struct gbm_dri_bo {
+    struct gbm_drm_bo base;
+ 
+    __DRIimage *image;
+-
+-   /* Only used for cursors */
+-   struct kms_bo *bo;
+ };
+ 
+ struct gbm_dri_surface {
+diff --git a/src/mesa/drivers/dri/intel/intel_regions.h b/src/mesa/drivers/dri/intel/intel_regions.h
+index 4ff0efe..782d669 100644
+--- a/src/mesa/drivers/dri/intel/intel_regions.h
++++ b/src/mesa/drivers/dri/intel/intel_regions.h
+@@ -144,6 +144,7 @@ intel_region_get_aligned_offset(struct intel_region *region, uint32_t x,
+ struct __DRIimageRec {
+    struct intel_region *region;
+    GLenum internal_format;
++   uint32_t usage;
+    uint32_t dri_format;
+    GLuint format;
+    uint32_t offset;
+diff --git a/src/mesa/drivers/dri/intel/intel_screen.c b/src/mesa/drivers/dri/intel/intel_screen.c
+index 103fcd2..f4c1602 100644
+--- a/src/mesa/drivers/dri/intel/intel_screen.c
++++ b/src/mesa/drivers/dri/intel/intel_screen.c
+@@ -339,7 +339,13 @@ intel_create_image(__DRIscreen *screen,
+       tiling = I915_TILING_NONE;
+    }
+ 
++   /* We only support write for cursor drm images */
++   if ((use & __DRI_IMAGE_USE_WRITE) &&
++       use != (__DRI_IMAGE_USE_WRITE | __DRI_IMAGE_USE_CURSOR))
++      return NULL;
++
+    image = intel_allocate_image(format, loaderPrivate);
++   image->usage = use;
+    cpp = _mesa_get_format_bytes(image->format);
+    image->region =
+       intel_region_alloc(intelScreen, tiling, cpp, width, height, true);
+@@ -393,6 +399,7 @@ intel_dup_image(__DRIimage *orig_image, void *loaderPrivate)
+    }
+ 
+    image->internal_format = orig_image->internal_format;
++   image->usage           = orig_image->usage;
+    image->dri_format      = orig_image->dri_format;
+    image->format          = orig_image->format;
+    image->offset          = orig_image->offset;
+@@ -409,9 +416,29 @@ intel_validate_usage(__DRIimage *image, unsigned int use)
+ 	 return GL_FALSE;
+    }
+ 
++   /* We only support write for cursor drm images */
++   if ((use & __DRI_IMAGE_USE_WRITE) &&
++       use != (__DRI_IMAGE_USE_WRITE | __DRI_IMAGE_USE_CURSOR))
++      return GL_FALSE;
++
+    return GL_TRUE;
+ }
+ 
++static int
++intel_image_write(__DRIimage *image, const void *buf, size_t count)
++{
++   if (image->region->map_refcount)
++      return -1;
++   if (!(image->usage & __DRI_IMAGE_USE_WRITE))
++      return -1;
++
++   drm_intel_bo_map(image->region->bo, true);
++   memcpy(image->region->bo->virtual, buf, count);
++   drm_intel_bo_unmap(image->region->bo);
++
++   return 0;
++}
++
+ static __DRIimage *
+ intel_create_sub_image(__DRIimage *parent,
+                        int width, int height, int dri_format,
+@@ -463,6 +490,7 @@ static struct __DRIimageExtensionRec intelImageExtension = {
+     intel_query_image,
+     intel_dup_image,
+     intel_validate_usage,
++    intel_image_write,
+     intel_create_sub_image
+ };
+ 

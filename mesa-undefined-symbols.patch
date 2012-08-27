@@ -1,0 +1,57 @@
+From 6a934ff6638352b2c28cf5a7452fed2f32853c17 Mon Sep 17 00:00:00 2001
+From: Anssi Hannula <anssi.hannula@iki.fi>
+Date: Sun, 5 Aug 2012 00:47:06 +0300
+Subject: [PATCH] Fix undefined symbols in libOSMesa and libglapi
+
+---
+ src/mapi/shared-glapi/Makefile.am   |    2 +-
+ src/mesa/Makefile.am                |    2 +-
+ src/mesa/drivers/osmesa/Makefile.am |    6 ++++++
+ 3 files changed, 8 insertions(+), 2 deletions(-)
+
+diff --git a/src/mapi/shared-glapi/Makefile.am b/src/mapi/shared-glapi/Makefile.am
+index 8db7688..8d41db2 100644
+--- a/src/mapi/shared-glapi/Makefile.am
++++ b/src/mapi/shared-glapi/Makefile.am
+@@ -6,7 +6,7 @@ include $(top_srcdir)/src/mapi/mapi/sources.mak
+ 
+ lib_LTLIBRARIES = libglapi.la
+ libglapi_la_SOURCES = $(MAPI_GLAPI_FILES)
+-libglapi_la_LDFLAGS = -no-undefined
++libglapi_la_LDFLAGS = -no-undefined -pthread
+ 
+ include $(GLAPI)/gen/glapi_gen.mk
+ glapi_mapi_tmp.h : $(GLAPI)/gen/gl_and_es_API.xml $(glapi_gen_mapi_deps)
+diff --git a/src/mesa/Makefile.am b/src/mesa/Makefile.am
+index bb70ed6..82b2f36 100644
+--- a/src/mesa/Makefile.am
++++ b/src/mesa/Makefile.am
+@@ -120,7 +120,7 @@ libmesa_la_SOURCES = \
+ 	$(MESA_CXX_FILES) \
+         $(MESA_ASM_FILES_FOR_ARCH)
+ 
+-libmesa_la_LIBADD = $(top_builddir)/src/glsl/libglsl.la
++libmesa_la_LIBADD = $(top_builddir)/src/glsl/libglsl.la -ldl
+ libmesa_la_LDFLAGS =
+ 
+ libmesagallium_la_SOURCES = \
+diff --git a/src/mesa/drivers/osmesa/Makefile.am b/src/mesa/drivers/osmesa/Makefile.am
+index dbee925..5a1d88e 100644
+--- a/src/mesa/drivers/osmesa/Makefile.am
++++ b/src/mesa/drivers/osmesa/Makefile.am
+@@ -39,6 +39,12 @@ lib@OSMESA_LIB@_la_LDFLAGS = -module -version-number @OSMESA_VERSION@ -shared -n
+ lib@OSMESA_LIB@_la_LIBADD = \
+ 	$(top_builddir)/src/mesa/libmesa.la \
+ 	$(top_builddir)/src/mapi/glapi/libglapi.la
++lib@OSMESA_LIB@_la_LIBTOOLFLAGS = --tag=CXX
++
++if HAVE_SHARED_GLAPI
++lib@OSMESA_LIB@_la_LDFLAGS += -L$(top_builddir)/$(LIB_DIR)
++lib@OSMESA_LIB@_la_LIBADD += -lglapi
++endif
+ 
+ # Provide compatibility with scripts for the old Mesa build system for
+ # a while by putting a link to the driver into /lib of the build tree.
+-- 
+1.7.10
+
