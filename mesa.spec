@@ -7,9 +7,11 @@
 %define with_hardware 0
 %define dri_drivers --with-dri-drivers=swrast
 %else
-# llvm support only works on some arches
-%ifarch %{ix86} x86_64 ppc ppc64 ppc64p7 %{arm}
+# llvm support only works on some arches (ppc back off for the moment)
+%ifarch %{ix86} x86_64 %{arm}
 %define with_llvm 1
+%else
+%define swrastc ,swrast
 %endif
 %define with_hardware 1
 %define base_drivers nouveau,radeon,r200
@@ -24,19 +26,18 @@
 %ifarch ia64
 %define platform_drivers ,i915
 %endif
-%define dri_drivers --with-dri-drivers=%{base_drivers}%{?platform_drivers}
+%define dri_drivers --with-dri-drivers=%{base_drivers}%{?platform_drivers}%{?swrastc}
 %endif
 
 %define _default_patch_fuzz 2
 
-%define manpages gl-manpages-1.0.1
-%define gitdate 20120827
+%define gitdate 20120907
 #% define snapshot 
 
 Summary: Mesa graphics libraries
 Name: mesa
-Version: 8.1
-Release: 0.19%{?dist}
+Version: 9.0
+Release: 0.1%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -45,16 +46,12 @@ URL: http://www.mesa3d.org
 #Source0: http://www.mesa3d.org/beta/MesaLib-%{version}%{?snapshot}.tar.bz2
 #Source0: ftp://ftp.freedesktop.org/pub/%{name}/%{version}/MesaLib-%{version}.tar.bz2
 Source0: %{name}-%{gitdate}.tar.xz
-Source2: %{manpages}.tar.bz2
 Source3: make-git-snapshot.sh
 
 #Patch7: mesa-7.1-link-shared.patch
 Patch9: mesa-8.0-llvmpipe-shmget.patch
 Patch11: mesa-8.0-nouveau-tfp-blacklist.patch
 Patch12: mesa-8.0.1-fix-16bpp.patch
-
-# Revert libkms usage so we don't need to revive it
-Patch13: mesa-no-libkms.patch
 
 # Courtesy of Mageia cauldron:
 # Fix undefined syms: http://svnweb.mageia.org/packages/cauldron/mesa/current/SOURCES/0001-Fix-undefined-symbols-in-libOSMesa-and-libglapi.patch?revision=278531&view=co
@@ -150,6 +147,7 @@ Khronos platform development package
 Summary: Mesa libGL development package
 Group: Development/Libraries
 Requires: mesa-libGL = %{version}-%{release}
+Requires: gl-manpages
 Provides: libGL-devel
 
 %description libGL-devel
@@ -172,24 +170,6 @@ Requires: khrplatform-devel >= %{version}-%{release}
 
 %description libGLES-devel
 Mesa libGLES development package
-
-%package libGLU
-Summary: Mesa libGLU runtime library
-Group: System Environment/Libraries
-Provides: libGLU
-
-%description libGLU
-Mesa libGLU runtime library
-
-
-%package libGLU-devel
-Summary: Mesa libGLU development package
-Group: Development/Libraries
-Requires: mesa-libGLU = %{version}-%{release}
-Provides: libGLU-devel
-
-%description libGLU-devel
-Mesa libGLU development package
 
 
 %package libOSMesa
@@ -277,13 +257,12 @@ Group: System Environment/Libraries
 Mesa shared glapi
 
 %prep
-#% setup -q -n Mesa-%{version}%{?snapshot} -b2
-%setup -q -n mesa-%{gitdate} -b2
+#% setup -q -n Mesa-%{version}%{?snapshot}
+%setup -q -n mesa-%{gitdate}
 #patch7 -p1 -b .dricore
 %patch9 -p1 -b .shmget
 %patch11 -p1 -b .nouveau
 %patch12 -p1 -b .16bpp
-%patch13 -p1 -b .no-libkms
 %patch101 -p1 -b .syms
 
 %build
@@ -321,23 +300,16 @@ export CXXFLAGS="$RPM_OPT_FLAGS"
     --enable-gallium-llvm \
     --with-llvm-shared-libs \
 %else
-    --with-gallium-drivers=%{?with_vmware:svga,}r300,r600,nouveau,swrast \
+    --with-gallium-drivers=%{?with_vmware:svga,}r300,r600,nouveau \
 %endif
 %else
     --disable-gallium-llvm \
-    --with-gallium-drivers=swrast \
     --enable-dri \
 %endif
     %{?dri_drivers}
 
 #%{?_smp_mflags} - broke parallel make in glsl
 make MKDEP=/bin/true
-
-pushd ../%{manpages}
-autoreconf -v --install
-%configure
-make %{?_smp_mflags}
-popd
 
 %install
 rm -rf $RPM_BUILD_ROOT
@@ -362,11 +334,6 @@ popd
 # remove .la files
 find $RPM_BUILD_ROOT -name \*.la | xargs rm -f
 
-# man pages
-pushd ../%{manpages}
-make %{?_smp_mflags} install DESTDIR=$RPM_BUILD_ROOT
-popd
-
 # this keeps breaking, check it early.  note that the exit from eu-ftr is odd.
 pushd $RPM_BUILD_ROOT%{_libdir}
 for i in libOSMesa*.so libGL.so ; do
@@ -381,8 +348,6 @@ rm -rf $RPM_BUILD_ROOT
 
 %post libGL -p /sbin/ldconfig
 %postun libGL -p /sbin/ldconfig
-%post libGLU -p /sbin/ldconfig
-%postun libGLU -p /sbin/ldconfig
 %post libOSMesa -p /sbin/ldconfig
 %postun libOSMesa -p /sbin/ldconfig
 %post libEGL -p /sbin/ldconfig
@@ -477,8 +442,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libGL.so
 %{_libdir}/libglapi.so
 %{_libdir}/pkgconfig/gl.pc
-%{_datadir}/man/man3/gl[^uX]*.3gl*
-%{_datadir}/man/man3/glX*.3gl*
 
 %files libEGL-devel
 %defattr(-,root,root,-)
@@ -507,19 +470,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/glesv2.pc
 %{_libdir}/libGLESv1_CM.so
 %{_libdir}/libGLESv2.so
-
-%files libGLU
-%defattr(-,root,root,-)
-%{_libdir}/libGLU.so.1
-%{_libdir}/libGLU.so.1.3.*
-
-%files libGLU-devel
-%defattr(-,root,root,-)
-%{_libdir}/libGLU.so
-%{_libdir}/pkgconfig/glu.pc
-%{_includedir}/GL/glu.h
-%{_includedir}/GL/glu_mangle.h
-%{_datadir}/man/man3/glu*.3gl*
 
 %files libOSMesa
 %defattr(-,root,root,-)
@@ -579,6 +529,16 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Fri Sep 07 2012 Adam Jackson <ajax@redhat.com> 9.0-0.1
+- Switch to 9.0 prerelease branch
+- Today's git snap of same
+- Switch to irritatingly-slow swrast instead of intolerably-slow softpipe
+  on non-llvm arches
+- Re-disable llvm on PPC until it's in shape enough to make pixels appear
+- Drop libGLU subpackage, split off upstream
+- Drop manpages, require gl-manpages from libGL-devel instead
+- Capitulate to libkms until upstream stops needing it again
+
 * Mon Aug 27 2012 Adam Jackson <ajax@redhat.com> 8.1-0.19
 - Today's git snap
 - Revert dependency on libkms
