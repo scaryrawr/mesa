@@ -1,0 +1,47 @@
+From 4104ce76e435612d2561a3e3cc79f47199ec41ce Mon Sep 17 00:00:00 2001
+From: Dave Airlie <airlied@redhat.com>
+Date: Fri, 14 Sep 2012 10:05:53 +1000
+Subject: [PATCH 1/2] mesa: use a prefix for the program lex
+
+This avoids us making a global yylex symbol which will interfere will
+all sorts of apps.
+
+with libdricore which can't do symbol visibility currently we pollute
+the namespace with this.
+
+This is a candidate for 9.0 & stable branches.
+
+Signed-off-by: Dave Airlie <airlied@redhat.com>
+---
+ src/mesa/Makefile.am             |    2 +-
+ src/mesa/program/program_lexer.l |    1 +
+ 2 files changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/src/mesa/Makefile.am b/src/mesa/Makefile.am
+index 57325af..8e4530d 100644
+--- a/src/mesa/Makefile.am
++++ b/src/mesa/Makefile.am
+@@ -73,7 +73,7 @@ main/api_exec_es1.c: main/APIspec.xml main/es_generator.py main/APIspecutil.py m
+ 
+ program/program_parse.tab.c program/program_parse.tab.h: program/program_parse.y
+ 	$(MKDIR_P) program
+-	$(AM_V_GEN) $(YACC) -v -d --output=program/program_parse.tab.c $<
++	$(AM_V_GEN) $(YACC) -p "_mesa_program_" -v -d --output=program/program_parse.tab.c $<
+ 
+ program/lex.yy.c: program/program_lexer.l
+ 	$(MKDIR_P) program
+diff --git a/src/mesa/program/program_lexer.l b/src/mesa/program/program_lexer.l
+index 0a50dab..0947bb0 100644
+--- a/src/mesa/program/program_lexer.l
++++ b/src/mesa/program/program_lexer.l
+@@ -165,6 +165,7 @@ szf    [HR]?
+ cc     C?
+ sat    (_SAT)?
+ 
++%option prefix="_mesa_program_"
+ %option bison-bridge bison-locations reentrant noyywrap
+ %%
+ 
+-- 
+1.7.10.2
+
