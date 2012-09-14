@@ -36,7 +36,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 8.1
-Release: 0.20%{?dist}
+Release: 0.21%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -58,6 +58,7 @@ Patch13: mesa-no-libkms.patch
 
 # fix yylex collision
 Patch14: mesa-fix-yylex.patch
+Patch15: mesa-fix-yylex-2.patch
 
 # Courtesy of Mageia cauldron:
 # Fix undefined syms: http://svnweb.mageia.org/packages/cauldron/mesa/current/SOURCES/0001-Fix-undefined-symbols-in-libOSMesa-and-libglapi.patch?revision=278531&view=co
@@ -288,6 +289,7 @@ Mesa shared glapi
 %patch12 -p1 -b .16bpp
 %patch13 -p1 -b .no-libkms
 %patch14 -p1 -b .yylex
+%patch15 -p1 -b .yylex2
 %patch101 -p1 -b .syms
 
 %build
@@ -583,6 +585,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Fri Sep 14 2012 Dave Airlie <airlied@redhat.com> 8.1-0.21
+- why fix one yylex when you can fix two
+
 * Fri Sep 14 2012 Dave Airlie <airlied@redhat.com> 8.1-0.20
 - fix yylex collision reported on irc by hughsie
 

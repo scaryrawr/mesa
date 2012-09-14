@@ -1,0 +1,60 @@
+From 3f95ff8bfeaf839ec6c70dbed95d68f9e44861e2 Mon Sep 17 00:00:00 2001
+From: Dave Airlie <airlied@gmail.com>
+Date: Fri, 14 Sep 2012 19:59:54 +1000
+Subject: [PATCH] glcpp: fix abuse of yylex
+
+So glcpp tried to workaround yylex its own way, but failed,
+do it properly.
+
+This fixes another crash found after fixing the first crash.
+
+this is a candidate for 9.0 and stable branches
+
+Signed-off-by: Dave Airlie <airlied@redhat.com>
+---
+ src/glsl/glcpp/Makefile.am   | 2 +-
+ src/glsl/glcpp/glcpp-parse.y | 8 --------
+ 2 files changed, 1 insertion(+), 9 deletions(-)
+
+diff --git a/src/glsl/glcpp/Makefile.am b/src/glsl/glcpp/Makefile.am
+index 7a95b68..87affce 100644
+--- a/src/glsl/glcpp/Makefile.am
++++ b/src/glsl/glcpp/Makefile.am
+@@ -31,7 +31,7 @@ AM_CFLAGS = \
+ 	$(LIBRARY_DEFINES) \
+ 	$(API_DEFINES)
+ 
+-AM_YFLAGS = -v -d
++AM_YFLAGS = -v -d -p "glcpp_parser_"
+ AM_LFLAGS = --nounistd -o$(LEX_OUTPUT_ROOT).c
+ 
+ noinst_LTLIBRARIES = libglcpp.la
+diff --git a/src/glsl/glcpp/glcpp-parse.y b/src/glsl/glcpp/glcpp-parse.y
+index bf6f3ad..fb9bc58 100644
+--- a/src/glsl/glcpp/glcpp-parse.y
++++ b/src/glsl/glcpp/glcpp-parse.y
+@@ -133,8 +133,6 @@ _glcpp_parser_skip_stack_change_if (glcpp_parser_t *parser, YYLTYPE *loc,
+ static void
+ _glcpp_parser_skip_stack_pop (glcpp_parser_t *parser, YYLTYPE *loc);
+ 
+-#define yylex glcpp_parser_lex
+-
+ static int
+ glcpp_parser_lex (YYSTYPE *yylval, YYLTYPE *yylloc, glcpp_parser_t *parser);
+ 
+@@ -1197,12 +1195,6 @@ glcpp_parser_create (const struct gl_extensions *extensions, int api)
+ 	return parser;
+ }
+ 
+-int
+-glcpp_parser_parse (glcpp_parser_t *parser)
+-{
+-	return yyparse (parser);
+-}
+-
+ void
+ glcpp_parser_destroy (glcpp_parser_t *parser)
+ {
+-- 
+1.7.11.4
+
