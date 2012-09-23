@@ -30,13 +30,13 @@
 %define _default_patch_fuzz 2
 
 %define manpages gl-manpages-1.0.1
-%define gitdate 20120827
+%define gitdate 20120924
 #% define snapshot 
 
 Summary: Mesa graphics libraries
 Name: mesa
-Version: 8.1
-Release: 0.21%{?dist}
+Version: 9.0
+Release: 0.1%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -55,10 +55,6 @@ Patch12: mesa-8.0.1-fix-16bpp.patch
 
 # Revert libkms usage so we don't need to revive it
 Patch13: mesa-no-libkms.patch
-
-# fix yylex collision
-Patch14: mesa-fix-yylex.patch
-Patch15: mesa-fix-yylex-2.patch
 
 # Courtesy of Mageia cauldron:
 # Fix undefined syms: http://svnweb.mageia.org/packages/cauldron/mesa/current/SOURCES/0001-Fix-undefined-symbols-in-libOSMesa-and-libglapi.patch?revision=278531&view=co
@@ -288,8 +284,6 @@ Mesa shared glapi
 %patch11 -p1 -b .nouveau
 %patch12 -p1 -b .16bpp
 %patch13 -p1 -b .no-libkms
-%patch14 -p1 -b .yylex
-%patch15 -p1 -b .yylex2
 %patch101 -p1 -b .syms
 
 %build
@@ -585,6 +579,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Mon Sep 24 2012 Dave Airlie <airlied@redhat.com> 9.0-0.1
+- rebase to latest upstream 9.0 pre-release branch
+
 * Fri Sep 14 2012 Dave Airlie <airlied@redhat.com> 8.1-0.21
 - why fix one yylex when you can fix two
 
