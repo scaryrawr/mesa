@@ -45,6 +45,7 @@ URL: http://www.mesa3d.org
 #Source0: http://www.mesa3d.org/beta/MesaLib-%{version}%{?snapshot}.tar.bz2
 #Source0: ftp://ftp.freedesktop.org/pub/%{name}/%{version}/MesaLib-%{version}.tar.bz2
 Source0: %{name}-%{gitdate}.tar.xz
+Source1: ftp://ftp.freedesktop.org/pub/mesa/glu/glu-9.0.0.tar.bz2
 Source2: %{manpages}.tar.bz2
 Source3: make-git-snapshot.sh
 
@@ -278,7 +279,7 @@ Mesa shared glapi
 
 %prep
 #% setup -q -n Mesa-%{version}%{?snapshot} -b2
-%setup -q -n mesa-%{gitdate} -b2
+%setup -q -n mesa-%{gitdate} -b1 -b2
 #patch7 -p1 -b .dricore
 %patch9 -p1 -b .shmget
 %patch11 -p1 -b .nouveau
@@ -333,6 +334,11 @@ export CXXFLAGS="$RPM_OPT_FLAGS"
 #%{?_smp_mflags} - broke parallel make in glsl
 make MKDEP=/bin/true
 
+pushd ../glu-9.0.0
+%configure --disable-static
+make %{?_smp_mflags}
+popd
+
 pushd ../%{manpages}
 autoreconf -v --install
 %configure
@@ -357,6 +363,11 @@ rm -f $RPM_BUILD_ROOT%{_libdir}/dri/{radeon,r200,nouveau_vieux}_dri.*
 # strip out undesirable headers
 pushd $RPM_BUILD_ROOT%{_includedir}/GL 
 rm -f [vw]*.h
+popd
+
+# glu
+pushd ../glu-9.0.0
+make %{?_smp_mflags} install DESTDIR=$RPM_BUILD_ROOT
 popd
 
 # remove .la files
@@ -581,6 +592,7 @@ rm -rf $RPM_BUILD_ROOT
 %changelog
 * Mon Sep 24 2012 Dave Airlie <airlied@redhat.com> 9.0-0.1
 - rebase to latest upstream 9.0 pre-release branch
+- add back glu from new upstream (split for f18 later)
 
 * Fri Sep 14 2012 Dave Airlie <airlied@redhat.com> 8.1-0.21
 - why fix one yylex when you can fix two
