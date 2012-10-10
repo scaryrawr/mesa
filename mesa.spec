@@ -31,14 +31,13 @@
 
 %define _default_patch_fuzz 2
 
-%define manpages gl-manpages-1.0.1
 %define gitdate 20120924
 #% define snapshot 
 
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 9.0
-Release: 0.3%{?dist}
+Release: 0.4%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -47,8 +46,6 @@ URL: http://www.mesa3d.org
 #Source0: http://www.mesa3d.org/beta/MesaLib-%{version}%{?snapshot}.tar.bz2
 #Source0: ftp://ftp.freedesktop.org/pub/%{name}/%{version}/MesaLib-%{version}.tar.bz2
 Source0: %{name}-%{gitdate}.tar.xz
-Source1: ftp://ftp.freedesktop.org/pub/mesa/glu/glu-9.0.0.tar.bz2
-Source2: %{manpages}.tar.bz2
 Source3: make-git-snapshot.sh
 
 #Patch7: mesa-7.1-link-shared.patch
@@ -154,6 +151,7 @@ Khronos platform development package
 Summary: Mesa libGL development package
 Group: Development/Libraries
 Requires: mesa-libGL = %{version}-%{release}
+Requires: gl-manpages
 Provides: libGL-devel
 
 %description libGL-devel
@@ -176,24 +174,6 @@ Requires: khrplatform-devel >= %{version}-%{release}
 
 %description libGLES-devel
 Mesa libGLES development package
-
-%package libGLU
-Summary: Mesa libGLU runtime library
-Group: System Environment/Libraries
-Provides: libGLU
-
-%description libGLU
-Mesa libGLU runtime library
-
-
-%package libGLU-devel
-Summary: Mesa libGLU development package
-Group: Development/Libraries
-Requires: mesa-libGLU = %{version}-%{release}
-Provides: libGLU-devel
-
-%description libGLU-devel
-Mesa libGLU development package
 
 
 %package libOSMesa
@@ -281,14 +261,23 @@ Group: System Environment/Libraries
 Mesa shared glapi
 
 %prep
-#% setup -q -n Mesa-%{version}%{?snapshot} -b2
-%setup -q -n mesa-%{gitdate} -b1 -b2
+#% setup -q -n Mesa-%{version}%{?snapshot}
+%setup -q -n mesa-%{gitdate}
 #patch7 -p1 -b .dricore
-%patch9 -p1 -b .shmget
 %patch11 -p1 -b .nouveau
-%patch12 -p1 -b .16bpp
 %patch13 -p1 -b .no-libkms
 %patch101 -p1 -b .syms
+
+# this fastpath is:
+# - broken with swrast classic
+# - broken on 24bpp
+# - not a huge win anyway
+# - ABI-broken wrt upstream
+# - eventually obsoleted by vgem
+#
+# dear ajax: fix this one way or the other
+#patch9 -p1 -b .shmget
+#patch12 -p1 -b .16bpp
 
 %build
 
@@ -337,17 +326,6 @@ export CXXFLAGS="$RPM_OPT_FLAGS"
 #%{?_smp_mflags} - broke parallel make in glsl
 make MKDEP=/bin/true
 
-pushd ../glu-9.0.0
-%configure --disable-static
-make %{?_smp_mflags}
-popd
-
-pushd ../%{manpages}
-autoreconf -v --install
-%configure
-make %{?_smp_mflags}
-popd
-
 %install
 rm -rf $RPM_BUILD_ROOT
 
@@ -368,18 +346,8 @@ pushd $RPM_BUILD_ROOT%{_includedir}/GL
 rm -f [vw]*.h
 popd
 
-# glu
-pushd ../glu-9.0.0
-make %{?_smp_mflags} install DESTDIR=$RPM_BUILD_ROOT
-popd
-
 # remove .la files
 find $RPM_BUILD_ROOT -name \*.la | xargs rm -f
-
-# man pages
-pushd ../%{manpages}
-make %{?_smp_mflags} install DESTDIR=$RPM_BUILD_ROOT
-popd
 
 # this keeps breaking, check it early.  note that the exit from eu-ftr is odd.
 pushd $RPM_BUILD_ROOT%{_libdir}
@@ -395,8 +363,6 @@ rm -rf $RPM_BUILD_ROOT
 
 %post libGL -p /sbin/ldconfig
 %postun libGL -p /sbin/ldconfig
-%post libGLU -p /sbin/ldconfig
-%postun libGLU -p /sbin/ldconfig
 %post libOSMesa -p /sbin/ldconfig
 %postun libOSMesa -p /sbin/ldconfig
 %post libEGL -p /sbin/ldconfig
@@ -491,8 +457,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libGL.so
 %{_libdir}/libglapi.so
 %{_libdir}/pkgconfig/gl.pc
-%{_datadir}/man/man3/gl[^uX]*.3gl*
-%{_datadir}/man/man3/glX*.3gl*
 
 %files libEGL-devel
 %defattr(-,root,root,-)
@@ -521,19 +485,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/glesv2.pc
 %{_libdir}/libGLESv1_CM.so
 %{_libdir}/libGLESv2.so
-
-%files libGLU
-%defattr(-,root,root,-)
-%{_libdir}/libGLU.so.1
-%{_libdir}/libGLU.so.1.3.*
-
-%files libGLU-devel
-%defattr(-,root,root,-)
-%{_libdir}/libGLU.so
-%{_libdir}/pkgconfig/glu.pc
-%{_includedir}/GL/glu.h
-%{_includedir}/GL/glu_mangle.h
-%{_datadir}/man/man3/glu*.3gl*
 
 %files libOSMesa
 %defattr(-,root,root,-)
@@ -593,6 +544,10 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Wed Oct 10 2012 Adam Jackson <ajax@redhat.com> 9.0-0.4
+- Switch to external gl-manpages and libGLU
+- Drop ShmGetImage fastpath for a bit
+
 * Mon Oct 01 2012 Dan Horák <dan[at]danny.cz> 9.0-0.3
 - explicit BR: libGL-devel is required on s390(x), it's probbaly brought in indirectly on x86
 - gallium drivers must be set explicitely for s390(x) otherwise also r300, r600 and vmwgfx are also built
