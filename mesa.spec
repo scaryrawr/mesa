@@ -264,7 +264,6 @@ Mesa shared glapi
 #setup -q -n mesa-%{gitdate}
 %patch1 -p1 -b .git
 %patch11 -p1 -b .nouveau
-%patch13 -p1 -b .no-libkms
 #patch101 -p1 -b .syms
 
 # this fastpath is:
