@@ -1,12 +1,8 @@
-Reverts:
-a669a5055eadae85ffa000cea19a2241d0699348
-6bb71b8cbe6b17a5d59e369631502e642804406e
-
 diff --git a/configure.ac b/configure.ac
-index c30bcf0..54b50a6 100644
+index 8badb72..2a3e766 100644
 --- a/configure.ac
 +++ b/configure.ac
-@@ -1226,8 +1226,6 @@ if test "x$enable_gbm" = xyes; then
+@@ -1217,8 +1217,6 @@ if test "x$enable_gbm" = xyes; then
          if test "x$enable_shared_glapi" = xno; then
              AC_MSG_ERROR([gbm_dri requires --enable-shared-glapi])
          fi
@@ -16,33 +12,115 @@ index c30bcf0..54b50a6 100644
  fi
  GBM_PC_REQ_PRIV="libudev"
 diff --git a/include/GL/internal/dri_interface.h b/include/GL/internal/dri_interface.h
-index 09f63ff..f35f857 100644
+index 1e0f1d0..f35f857 100644
 --- a/include/GL/internal/dri_interface.h
 +++ b/include/GL/internal/dri_interface.h
-@@ -935,7 +935,8 @@ struct __DRIdri2ExtensionRec {
+@@ -923,10 +923,6 @@ struct __DRIdri2ExtensionRec {
+  * __DRI_IMAGE_FORMAT_NONE is for images that aren't directly usable
+  * by the driver (YUV planar formats) but serve as a base image for
+  * creating sub-images for the different planes within the image.
+- *
+- * R8, GR88 and NONE should not be used with createImageFormName or
+- * createImage, and are returned by query from sub images created with
+- * createImageFromNames (NONE, see above) and fromPlane (R8 & GR88).
+  */
+ #define __DRI_IMAGE_FORMAT_RGB565       0x1001
+ #define __DRI_IMAGE_FORMAT_XRGB8888     0x1002
+@@ -939,50 +935,8 @@ struct __DRIdri2ExtensionRec {
  
  #define __DRI_IMAGE_USE_SHARE		0x0001
  #define __DRI_IMAGE_USE_SCANOUT		0x0002
 -#define __DRI_IMAGE_USE_CURSOR		0x0004 /* Depricated */
+-
+-
+-/**
+- * Four CC formats that matches with WL_DRM_FORMAT_* from wayland_drm.h
+- * and GBM_FORMAT_* from gbm.h, used with createImageFromNames.
+- *
+- * \since 5
+- */
+-
+-#define __DRI_IMAGE_FOURCC_RGB565	0x36314752
+-#define __DRI_IMAGE_FOURCC_ARGB8888	0x34325241
+-#define __DRI_IMAGE_FOURCC_XRGB8888	0x34325258
+-#define __DRI_IMAGE_FOURCC_ABGR8888	0x34324241
+-#define __DRI_IMAGE_FOURCC_XBGR8888	0x34324258
+-#define __DRI_IMAGE_FOURCC_YUV410	0x39565559
+-#define __DRI_IMAGE_FOURCC_YUV411	0x31315559
+-#define __DRI_IMAGE_FOURCC_YUV420	0x32315559
+-#define __DRI_IMAGE_FOURCC_YUV422	0x36315559
+-#define __DRI_IMAGE_FOURCC_YUV444	0x34325559
+-#define __DRI_IMAGE_FOURCC_NV12		0x3231564e
+-#define __DRI_IMAGE_FOURCC_NV16		0x3631564e
+-#define __DRI_IMAGE_FOURCC_YUYV		0x56595559
+-
+-
+-/**
+- * Queryable on images created by createImageFromNames.
+- *
+- * RGB and RGBA are may be usable directly as images but its still
+- * recommended to call fromPlanar with plane == 0.
+- *
+- * Y_U_V, Y_UV and Y_XUXV all requires call to fromPlanar to create
+- * usable sub-images, sampling from images return raw YUV data and
+- * color conversion needs to be done in the shader.
+- *
+- * \since 5
+- */
+-
+-#define __DRI_IMAGE_COMPONENTS_RGB	0x3001
+-#define __DRI_IMAGE_COMPONENTS_RGBA	0x3002
+-#define __DRI_IMAGE_COMPONENTS_Y_U_V	0x3003
+-#define __DRI_IMAGE_COMPONENTS_Y_UV	0x3004
+-#define __DRI_IMAGE_COMPONENTS_Y_XUXV	0x3005
+-
 +#define __DRI_IMAGE_USE_CURSOR		0x0004
 +#define __DRI_IMAGE_USE_WRITE		0x0008
  
  /**
   * queryImage attributes
-@@ -984,6 +985,13 @@ struct __DRIimageExtensionRec {
+@@ -994,7 +948,6 @@ struct __DRIdri2ExtensionRec {
+ #define __DRI_IMAGE_ATTRIB_FORMAT	0x2003 /* available in versions 3+ */
+ #define __DRI_IMAGE_ATTRIB_WIDTH	0x2004 /* available in versions 4+ */
+ #define __DRI_IMAGE_ATTRIB_HEIGHT	0x2005
+-#define __DRI_IMAGE_ATTRIB_COMPONENTS	0x2006 /* available in versions 5+ */
+ 
+ typedef struct __DRIimageRec          __DRIimage;
+ typedef struct __DRIimageExtensionRec __DRIimageExtension;
+@@ -1032,17 +985,11 @@ struct __DRIimageExtensionRec {
     GLboolean (*validateUsage)(__DRIimage *image, unsigned int use);
  
     /**
+-    * Unlike createImageFromName __DRI_IMAGE_FORMAT is not but instead
+-    * __DRI_IMAGE_FOURCC and strides are in bytes not pixels. Stride is
+-    * also per block and not per pixel (for non-RGB, see gallium blocks).
 +    * Write data into image.
-+    *
+     *
+-    * \since 5
 +    * \since 4
-+    */
+     */
+-   __DRIimage *(*createImageFromNames)(__DRIscreen *screen,
+-                                       int width, int height, int fourcc,
+-                                       int *names, int num_names,
+-                                       int *strides, int *offsets,
+-                                       void *loaderPrivate);
 +   int (*write)(__DRIimage *image, const void *buf, size_t count);
-+
-+   /**
+ 
+    /**
      * Create an image out of a sub-region of a parent image.  This
-     * entry point lets us create individual __DRIimages for different
-     * planes in a planar buffer (typically yuv), for example.  While a
+@@ -1059,8 +1006,10 @@ struct __DRIimageExtensionRec {
+     *
+     * \since 5
+     */
+-    __DRIimage *(*fromPlanar)(__DRIimage *image, int plane,
+-                              void *loaderPrivate);
++    __DRIimage *(*createSubImage)(__DRIimage *image,
++                                  int width, int height, int format,
++                                  int offset, int pitch,
++                                  void *loaderPrivate);
+ };
+ 
+ 
 diff --git a/src/egl/drivers/dri2/Makefile.am b/src/egl/drivers/dri2/Makefile.am
 index 45f7dfa..49ec06b 100644
 --- a/src/egl/drivers/dri2/Makefile.am
@@ -55,6 +133,322 @@ index 45f7dfa..49ec06b 100644
  	-DDEFAULT_DRIVER_DIR=\"$(DRI_DRIVER_SEARCH_DIR)\"
  
  noinst_LTLIBRARIES = libegl_dri2.la
+diff --git a/src/egl/drivers/dri2/egl_dri2.c b/src/egl/drivers/dri2/egl_dri2.c
+index f2cce74..7326b85 100644
+--- a/src/egl/drivers/dri2/egl_dri2.c
++++ b/src/egl/drivers/dri2/egl_dri2.c
+@@ -1093,16 +1093,68 @@ dri2_create_image_mesa_drm_buffer(_EGLDisplay *disp, _EGLContext *ctx,
+  * wl_drm format code to a description of the planes in the buffer
+  * that lets us create a __DRIimage for each of the planes. */
+ 
+-static const struct wl_drm_components_descriptor {
+-   uint32_t dri_components;
++static const struct wl_drm_format_descriptor {
++   uint32_t wl_format;
+    EGLint components;
+    int nplanes;
+-} wl_drm_components[] = {
+-   { __DRI_IMAGE_COMPONENTS_RGB, EGL_TEXTURE_RGB, 1 },
+-   { __DRI_IMAGE_COMPONENTS_RGBA, EGL_TEXTURE_RGBA, 1 },
+-   { __DRI_IMAGE_COMPONENTS_Y_U_V, EGL_TEXTURE_Y_U_V_WL, 3 },
+-   { __DRI_IMAGE_COMPONENTS_Y_UV, EGL_TEXTURE_Y_UV_WL, 2 },
+-   { __DRI_IMAGE_COMPONENTS_Y_XUXV, EGL_TEXTURE_Y_XUXV_WL, 2 },
++   struct {
++      int buffer_index;
++      int width_shift;
++      int height_shift;
++      uint32_t dri_format;
++      int cpp;
++   } planes[3];
++} wl_drm_formats[] = {
++   { WL_DRM_FORMAT_ARGB8888, EGL_TEXTURE_RGBA, 1,
++     { { 0, 0, 0, __DRI_IMAGE_FORMAT_ARGB8888, 4 }, } },
++
++   { WL_DRM_FORMAT_XRGB8888, EGL_TEXTURE_RGB, 1,
++     { { 0, 0, 0, __DRI_IMAGE_FORMAT_XRGB8888, 4 }, } },
++
++   { WL_DRM_FORMAT_YUV410, EGL_TEXTURE_Y_U_V_WL, 3,
++     { { 0, 0, 0, __DRI_IMAGE_FORMAT_R8, 1 },
++       { 1, 2, 2, __DRI_IMAGE_FORMAT_R8, 1 },
++       { 2, 2, 2, __DRI_IMAGE_FORMAT_R8, 1 } } },
++
++   { WL_DRM_FORMAT_YUV411, EGL_TEXTURE_Y_U_V_WL, 3,
++     { { 0, 0, 0, __DRI_IMAGE_FORMAT_R8, 1 },
++       { 1, 2, 0, __DRI_IMAGE_FORMAT_R8, 1 },
++       { 2, 2, 0, __DRI_IMAGE_FORMAT_R8, 1 } } },
++
++   { WL_DRM_FORMAT_YUV420, EGL_TEXTURE_Y_U_V_WL, 3,
++     { { 0, 0, 0, __DRI_IMAGE_FORMAT_R8, 1 },
++       { 1, 1, 1, __DRI_IMAGE_FORMAT_R8, 1 },
++       { 2, 1, 1, __DRI_IMAGE_FORMAT_R8, 1 } } },
++
++   { WL_DRM_FORMAT_YUV422, EGL_TEXTURE_Y_U_V_WL, 3,
++     { { 0, 0, 0, __DRI_IMAGE_FORMAT_R8, 1 },
++       { 1, 1, 0, __DRI_IMAGE_FORMAT_R8, 1 },
++       { 2, 1, 0, __DRI_IMAGE_FORMAT_R8, 1 } } },
++
++   { WL_DRM_FORMAT_YUV444, EGL_TEXTURE_Y_U_V_WL, 3,
++     { { 0, 0, 0, __DRI_IMAGE_FORMAT_R8, 1 },
++       { 1, 0, 0, __DRI_IMAGE_FORMAT_R8, 1 },
++       { 2, 0, 0, __DRI_IMAGE_FORMAT_R8, 1 } } },
++
++   { WL_DRM_FORMAT_NV12, EGL_TEXTURE_Y_UV_WL, 2,
++     { { 0, 0, 0, __DRI_IMAGE_FORMAT_R8, 1 },
++       { 1, 1, 1, __DRI_IMAGE_FORMAT_GR88, 2 } } },
++
++   { WL_DRM_FORMAT_NV16, EGL_TEXTURE_Y_UV_WL, 2,
++     { { 0, 0, 0, __DRI_IMAGE_FORMAT_R8, 1 },
++       { 1, 1, 0, __DRI_IMAGE_FORMAT_GR88, 2 } } },
++
++   /* For YUYV buffers, we set up two overlapping DRI images and treat
++    * them as planar buffers in the compositors.  Plane 0 is GR88 and
++    * samples YU or YV pairs and places Y into the R component, while
++    * plane 1 is ARGB and samples YUYV clusters and places pairs and
++    * places U into the G component and V into A.  This lets the
++    * texture sampler interpolate the Y components correctly when
++    * sampling from plane 0, and interpolate U and V correctly when
++    * sampling from plane 1. */
++   { WL_DRM_FORMAT_YUYV, EGL_TEXTURE_Y_XUXV_WL, 2,
++     { { 0, 0, 0, __DRI_IMAGE_FORMAT_GR88, 2 },
++       { 0, 1, 0, __DRI_IMAGE_FORMAT_ARGB8888, 4 } } }
+ };
+ 
+ static _EGLImage *
+@@ -1112,11 +1164,13 @@ dri2_create_image_wayland_wl_buffer(_EGLDisplay *disp, _EGLContext *ctx,
+ {
+    struct wl_drm_buffer *buffer = (struct wl_drm_buffer *) _buffer;
+    struct dri2_egl_display *dri2_dpy = dri2_egl_display(disp);
+-   const struct wl_drm_components_descriptor *f;
+    __DRIimage *dri_image;
+    _EGLImageAttribs attrs;
+    EGLint err;
+-   int32_t plane;
++   uint32_t format;
++   int32_t offset, stride, plane, width, height;
++   int cpp, index;
++   const struct wl_drm_format_descriptor *f;
+ 
+    if (!wayland_buffer_is_drm(&buffer->buffer))
+        return NULL;
+@@ -1135,12 +1189,17 @@ dri2_create_image_wayland_wl_buffer(_EGLDisplay *disp, _EGLContext *ctx,
+       return NULL;
+    }
+ 
+-   dri_image = dri2_dpy->image->fromPlanar(buffer->driver_buffer, plane, NULL);
++   width = buffer->buffer.width >> f->planes[plane].width_shift;
++   height = buffer->buffer.height >> f->planes[plane].height_shift;
++   format = f->planes[plane].dri_format;
++   cpp = f->planes[plane].cpp;
++   index = f->planes[plane].buffer_index;
++   offset = buffer->offset[index];
++   stride = buffer->stride[index];
+ 
+-   if (dri_image == NULL) {
+-      _eglError(EGL_BAD_PARAMETER, "dri2_create_image_wayland_wl_buffer");
+-      return NULL;
+-   }
++   dri_image = dri2_dpy->image->createSubImage(buffer->driver_buffer,
++                                               width, height, format,
++                                               offset, stride / cpp, NULL);
+ 
+    return dri2_create_image(disp, dri_image);
+ }
+@@ -1301,31 +1360,24 @@ dri2_wl_reference_buffer(void *user_data, uint32_t name,
+ {
+    _EGLDisplay *disp = user_data;
+    struct dri2_egl_display *dri2_dpy = dri2_egl_display(disp);
+-   __DRIimage *img;
+-   int i, dri_components = 0;
+-
+-   img = dri2_dpy->image->createImageFromNames(dri2_dpy->dri_screen,
+-                                               buffer->buffer.width,
+-                                               buffer->buffer.height,
+-                                               buffer->format, (int*)&name, 1,
+-                                               buffer->stride,
+-                                               buffer->offset,
+-                                               NULL);
+-
+-   if (img == NULL)
+-      return;
+-
+-   dri2_dpy->image->queryImage(img, __DRI_IMAGE_ATTRIB_COMPONENTS, &dri_components);
++   int i;
+ 
+-   buffer->driver_format = NULL;
+-   for (i = 0; i < ARRAY_SIZE(wl_drm_components); i++)
+-      if (wl_drm_components[i].dri_components == dri_components)
+-         buffer->driver_format = &wl_drm_components[i];
++   for (i = 0; i < ARRAY_SIZE(wl_drm_formats); i++)
++      if (wl_drm_formats[i].wl_format == buffer->format) {
++         buffer->driver_format = &wl_drm_formats[i];
++         break;
++      }
+ 
+    if (buffer->driver_format == NULL)
+-      dri2_dpy->image->destroyImage(img);
+-   else
+-      buffer->driver_buffer = img;
++      return;
++
++   buffer->driver_buffer =
++      dri2_dpy->image->createImageFromName(dri2_dpy->dri_screen,
++                                           buffer->buffer.width,
++                                           buffer->buffer.height, 
++                                           __DRI_IMAGE_FORMAT_NONE, name,
++                                           buffer->stride[0] / 4,
++                                           NULL);
+ }
+ 
+ static void
+@@ -1390,7 +1442,7 @@ dri2_query_wayland_buffer_wl(_EGLDriver *drv, _EGLDisplay *disp,
+                              EGLint attribute, EGLint *value)
+ {
+    struct wl_drm_buffer *buffer = (struct wl_drm_buffer *) _buffer;
+-   const struct wl_drm_components_descriptor *format;
++   const struct wl_drm_format_descriptor *format;
+ 
+    if (!wayland_buffer_is_drm(&buffer->buffer))
+       return EGL_FALSE;
+diff --git a/src/gallium/state_trackers/dri/common/dri_screen.h b/src/gallium/state_trackers/dri/common/dri_screen.h
+index ff48b02..2818e9c 100644
+--- a/src/gallium/state_trackers/dri/common/dri_screen.h
++++ b/src/gallium/state_trackers/dri/common/dri_screen.h
+@@ -86,7 +86,6 @@ struct __DRIimageRec {
+    unsigned level;
+    unsigned layer;
+    uint32_t dri_format;
+-   uint32_t dri_components;
+ 
+    void *loader_private;
+ };
+diff --git a/src/gallium/state_trackers/dri/drm/dri2.c b/src/gallium/state_trackers/dri/drm/dri2.c
+index 2f83dab..d7f4dd6 100644
+--- a/src/gallium/state_trackers/dri/drm/dri2.c
++++ b/src/gallium/state_trackers/dri/drm/dri2.c
+@@ -574,7 +574,6 @@ dri2_create_image(__DRIscreen *_screen,
+    img->level = 0;
+    img->layer = 0;
+    img->dri_format = format;
+-   img->dri_components = 0;
+ 
+    img->loader_private = loaderPrivate;
+    return img;
+@@ -613,11 +612,6 @@ dri2_query_image(__DRIimage *image, int attrib, int *value)
+    case __DRI_IMAGE_ATTRIB_HEIGHT:
+       *value = image->texture->height0;
+       return GL_TRUE;
+-   case __DRI_IMAGE_ATTRIB_COMPONENTS:
+-      if (image->dri_components == 0)
+-         return GL_FALSE;
+-      *value = image->dri_components;
+-      return GL_TRUE;
+    default:
+       return GL_FALSE;
+    }
+@@ -636,8 +630,6 @@ dri2_dup_image(__DRIimage *image, void *loaderPrivate)
+    pipe_resource_reference(&img->texture, image->texture);
+    img->level = image->level;
+    img->layer = image->layer;
+-   /* This should be 0 for sub images, but dup is also used for base images. */
+-   img->dri_components = image->dri_components;
+    img->loader_private = loaderPrivate;
+ 
+    return img;
+@@ -657,76 +649,6 @@ dri2_validate_usage(__DRIimage *image, unsigned int use)
+       return GL_FALSE;
+ }
+ 
+-static __DRIimage *
+-dri2_from_names(__DRIscreen *screen, int width, int height, int format,
+-                int *names, int num_names, int *strides, int *offsets,
+-                void *loaderPrivate)
+-{
+-   __DRIimage *img;
+-   int stride, dri_components;
+-
+-   if (num_names != 1)
+-      return NULL;
+-   if (offsets[0] != 0)
+-      return NULL;
+-
+-   switch(format) {
+-   case __DRI_IMAGE_FOURCC_RGB565:
+-      format = __DRI_IMAGE_FORMAT_RGB565;
+-      dri_components = __DRI_IMAGE_COMPONENTS_RGB;
+-      break;
+-   case __DRI_IMAGE_FOURCC_ARGB8888:
+-      format = __DRI_IMAGE_FORMAT_ARGB8888;
+-      dri_components = __DRI_IMAGE_COMPONENTS_RGBA;
+-      break;
+-   case __DRI_IMAGE_FOURCC_XRGB8888:
+-      format = __DRI_IMAGE_FORMAT_XRGB8888;
+-      dri_components = __DRI_IMAGE_COMPONENTS_RGB;
+-      break;
+-   case __DRI_IMAGE_FOURCC_ABGR8888:
+-      format = __DRI_IMAGE_FORMAT_ABGR8888;
+-      dri_components = __DRI_IMAGE_COMPONENTS_RGBA;
+-      break;
+-   case __DRI_IMAGE_FOURCC_XBGR8888:
+-      format = __DRI_IMAGE_FORMAT_XBGR8888;
+-      dri_components = __DRI_IMAGE_COMPONENTS_RGB;
+-      break;
+-   default:
+-      return NULL;
+-   }
+-
+-   /* Strides are in bytes not pixels. */
+-   stride = strides[0] /4;
+-
+-   img = dri2_create_image_from_name(screen, width, height, format,
+-                                     names[0], stride, loaderPrivate);
+-   if (img == NULL)
+-      return NULL;
+-
+-   img->dri_components = dri_components;
+-   return img;
+-}
+-
+-static __DRIimage *
+-dri2_from_planar(__DRIimage *image, int plane, void *loaderPrivate)
+-{
+-   __DRIimage *img;
+-
+-   if (plane != 0)
+-      return NULL;
+-
+-   if (image->dri_components == 0)
+-      return NULL;
+-
+-   img = dri2_dup_image(image, loaderPrivate);
+-   if (img == NULL)
+-      return NULL;
+-
+-   /* set this to 0 for sub images. */
+-   img->dri_components = 0;
+-   return img;
+-}
+-
+ static void
+ dri2_destroy_image(__DRIimage *img)
+ {
+@@ -735,7 +657,7 @@ dri2_destroy_image(__DRIimage *img)
+ }
+ 
+ static struct __DRIimageExtensionRec dri2ImageExtension = {
+-    { __DRI_IMAGE, 5 },
++    { __DRI_IMAGE, 4 },
+     dri2_create_image_from_name,
+     dri2_create_image_from_renderbuffer,
+     dri2_destroy_image,
+@@ -743,8 +665,6 @@ static struct __DRIimageExtensionRec dri2ImageExtension = {
+     dri2_query_image,
+     dri2_dup_image,
+     dri2_validate_usage,
+-    dri2_from_names,
+-    dri2_from_planar,
+ };
+ 
+ /*
 diff --git a/src/gbm/Makefile.am b/src/gbm/Makefile.am
 index e22c55c..f079da1 100644
 --- a/src/gbm/Makefile.am
@@ -77,7 +471,7 @@ index e22c55c..f079da1 100644
  if HAVE_EGL_PLATFORM_WAYLAND
  AM_CPPFLAGS = -DHAVE_WAYLAND_PLATFORM
 diff --git a/src/gbm/backends/dri/gbm_dri.c b/src/gbm/backends/dri/gbm_dri.c
-index 1831f13..173e727 100644
+index d8b1cc7..173e727 100644
 --- a/src/gbm/backends/dri/gbm_dri.c
 +++ b/src/gbm/backends/dri/gbm_dri.c
 @@ -299,21 +299,13 @@ gbm_dri_is_format_supported(struct gbm_device *gbm,
@@ -88,10 +482,10 @@ index 1831f13..173e727 100644
     struct gbm_dri_bo *bo = gbm_dri_bo(_bo);
 -   void *ptr;
 -   int ret;
--
+ 
 -   if (bo->bo == NULL)
 -      return -1;
- 
+-
 -   ret = kms_bo_map(bo->bo, &ptr);
 -   if (ret < 0)
 +   if (dri->image->base.version < 4)
@@ -117,7 +511,90 @@ index 1831f13..173e727 100644
     free(bo);
  }
  
-@@ -461,6 +450,9 @@ gbm_dri_bo_create(struct gbm_device *gbm,
+@@ -363,7 +352,7 @@ gbm_dri_bo_import(struct gbm_device *gbm,
+    struct gbm_dri_bo *bo;
+    __DRIimage *image;
+    unsigned dri_use = 0;
+-   int gbm_format;
++   int dri_format, width, height, gbm_format, stride, cpp, offset;
+ 
+    /* Required for query image WIDTH & HEIGHT */
+    if (dri->image->base.version < 4)
+@@ -376,15 +365,20 @@ gbm_dri_bo_import(struct gbm_device *gbm,
+       struct wl_drm_buffer *wb = (struct wl_drm_buffer *) buffer;
+ 
+       image = wb->driver_buffer;
+-
++      stride = wb->stride[0];
++      offset = wb->offset[0];
++      cpp = 4;
+       switch (wb->format) {
+       case WL_DRM_FORMAT_XRGB8888:
++         dri_format = __DRI_IMAGE_FORMAT_XRGB8888;
+          gbm_format = GBM_FORMAT_XRGB8888;
+          break;
+       case WL_DRM_FORMAT_ARGB8888:
++         dri_format = __DRI_IMAGE_FORMAT_ARGB8888;
+          gbm_format = GBM_FORMAT_ARGB8888;
+          break;
+       case WL_DRM_FORMAT_YUYV:
++         dri_format = __DRI_IMAGE_FORMAT_ARGB8888;
+          gbm_format = GBM_FORMAT_YUYV;
+          break;
+       default:
+@@ -396,15 +390,15 @@ gbm_dri_bo_import(struct gbm_device *gbm,
+ 
+    case GBM_BO_IMPORT_EGL_IMAGE:
+    {
+-      int dri_format;
+       if (dri->lookup_image == NULL)
+          return NULL;
+ 
+       image = dri->lookup_image(dri->screen, buffer, dri->lookup_user_data);
+       dri->image->queryImage(image, __DRI_IMAGE_ATTRIB_FORMAT, &dri_format);
+       gbm_format = gbm_dri_to_gbm_format(dri_format);
+-      if (gbm_format == 0)
+-         return NULL;
++      dri->image->queryImage(image, __DRI_IMAGE_ATTRIB_STRIDE, &stride);
++      offset = 0;
++      cpp = 4;
+       break;
+    }
+ 
+@@ -417,7 +411,13 @@ gbm_dri_bo_import(struct gbm_device *gbm,
+    if (bo == NULL)
+       return NULL;
+ 
+-   bo->image = dri->image->dupImage(image, NULL);
++   dri->image->queryImage(image, __DRI_IMAGE_ATTRIB_WIDTH, &width);
++   dri->image->queryImage(image, __DRI_IMAGE_ATTRIB_HEIGHT, &height);
++
++   bo->image = dri->image->createSubImage(image,
++                                          width, height, dri_format,
++                                          offset, stride / cpp, NULL);
++
+ 
+    if (usage & GBM_BO_USE_SCANOUT)
+       dri_use |= __DRI_IMAGE_USE_SCANOUT;
+@@ -430,14 +430,10 @@ gbm_dri_bo_import(struct gbm_device *gbm,
+    }
+ 
+    bo->base.base.gbm = gbm;
++   bo->base.base.width = width;
++   bo->base.base.height = height;
++   bo->base.base.stride = stride;
+    bo->base.base.format = gbm_format;
+-
+-   dri->image->queryImage(bo->image, __DRI_IMAGE_ATTRIB_WIDTH,
+-                          (int*)&bo->base.base.width);
+-   dri->image->queryImage(bo->image, __DRI_IMAGE_ATTRIB_HEIGHT,
+-                          (int*)&bo->base.base.height);
+-   dri->image->queryImage(bo->image, __DRI_IMAGE_ATTRIB_STRIDE,
+-                          (int*)&bo->base.base.stride);
+    dri->image->queryImage(bo->image, __DRI_IMAGE_ATTRIB_HANDLE,
+                           &bo->base.base.handle.s32);
+ 
+@@ -454,6 +450,9 @@ gbm_dri_bo_create(struct gbm_device *gbm,
     int dri_format;
     unsigned dri_use = 0;
  
@@ -127,7 +604,7 @@ index 1831f13..173e727 100644
     bo = calloc(1, sizeof *bo);
     if (bo == NULL)
        return NULL;
-@@ -469,33 +461,6 @@ gbm_dri_bo_create(struct gbm_device *gbm,
+@@ -462,33 +461,6 @@ gbm_dri_bo_create(struct gbm_device *gbm,
     bo->base.base.width = width;
     bo->base.base.height = height;
  
@@ -161,7 +638,7 @@ index 1831f13..173e727 100644
     switch (format) {
     case GBM_FORMAT_RGB565:
        dri_format =__DRI_IMAGE_FORMAT_RGB565;
-@@ -519,6 +484,8 @@ gbm_dri_bo_create(struct gbm_device *gbm,
+@@ -512,6 +484,8 @@ gbm_dri_bo_create(struct gbm_device *gbm,
        dri_use |= __DRI_IMAGE_USE_SCANOUT;
     if (usage & GBM_BO_USE_CURSOR_64X64)
        dri_use |= __DRI_IMAGE_USE_CURSOR;
@@ -170,7 +647,7 @@ index 1831f13..173e727 100644
  
     /* Gallium drivers requires shared in order to get the handle/stride */
     dri_use |= __DRI_IMAGE_USE_SHARE;
-@@ -601,21 +568,13 @@ dri_device_create(int fd)
+@@ -594,21 +568,13 @@ dri_device_create(int fd)
     dri->base.type = GBM_DRM_DRIVER_TYPE_DRI;
     dri->base.base.name = "drm";
  
@@ -230,10 +707,30 @@ index 4b619a0..f404368 100644
  
  struct gbm_dri_surface {
 diff --git a/src/mesa/drivers/dri/intel/intel_regions.h b/src/mesa/drivers/dri/intel/intel_regions.h
-index 4ff0efe..782d669 100644
+index 7480853..782d669 100644
 --- a/src/mesa/drivers/dri/intel/intel_regions.h
 +++ b/src/mesa/drivers/dri/intel/intel_regions.h
-@@ -144,6 +144,7 @@ intel_region_get_aligned_offset(struct intel_region *region, uint32_t x,
+@@ -141,38 +141,13 @@ uint32_t
+ intel_region_get_aligned_offset(struct intel_region *region, uint32_t x,
+                                 uint32_t y);
+ 
+-/**
+- * Used with images created with image_from_names
+- * to help support planar images.
+- */
+-struct intel_image_format {
+-   int fourcc;
+-   int components;
+-   int nplanes;
+-   struct {
+-      int buffer_index;
+-      int width_shift;
+-      int height_shift;
+-      uint32_t dri_format;
+-      int cpp;
+-   } planes[3];
+-};
+-
  struct __DRIimageRec {
     struct intel_region *region;
     GLenum internal_format;
@@ -241,11 +738,92 @@ index 4ff0efe..782d669 100644
     uint32_t dri_format;
     GLuint format;
     uint32_t offset;
+-
+-   /*
+-    * Need to save these here between calls to
+-    * image_from_names and calls to image_from_planar.
+-    */
+-   uint32_t strides[3];
+-   uint32_t offsets[3];
+-   struct intel_image_format *planar_format;
+-
+    void *data;
+ };
+ 
 diff --git a/src/mesa/drivers/dri/intel/intel_screen.c b/src/mesa/drivers/dri/intel/intel_screen.c
-index 103fcd2..f4c1602 100644
+index 7476ca0..b245314 100644
 --- a/src/mesa/drivers/dri/intel/intel_screen.c
 +++ b/src/mesa/drivers/dri/intel/intel_screen.c
-@@ -339,7 +339,13 @@ intel_create_image(__DRIscreen *screen,
+@@ -190,59 +190,6 @@ static const struct __DRI2flushExtensionRec intelFlushExtension = {
+     dri2InvalidateDrawable,
+ };
+ 
+-struct intel_image_format intel_image_formats[] = {
+-   { __DRI_IMAGE_FOURCC_ARGB8888, __DRI_IMAGE_COMPONENTS_RGBA, 1,
+-     { { 0, 0, 0, __DRI_IMAGE_FORMAT_ARGB8888, 4 } } },
+-
+-   { __DRI_IMAGE_FOURCC_XRGB8888, __DRI_IMAGE_COMPONENTS_RGB, 1,
+-     { { 0, 0, 0, __DRI_IMAGE_FORMAT_XRGB8888, 4 }, } },
+-
+-   { __DRI_IMAGE_FOURCC_YUV410, __DRI_IMAGE_COMPONENTS_Y_U_V, 3,
+-     { { 0, 0, 0, __DRI_IMAGE_FORMAT_R8, 1 },
+-       { 1, 2, 2, __DRI_IMAGE_FORMAT_R8, 1 },
+-       { 2, 2, 2, __DRI_IMAGE_FORMAT_R8, 1 } } },
+-
+-   { __DRI_IMAGE_FOURCC_YUV411, __DRI_IMAGE_COMPONENTS_Y_U_V, 3,
+-     { { 0, 0, 0, __DRI_IMAGE_FORMAT_R8, 1 },
+-       { 1, 2, 0, __DRI_IMAGE_FORMAT_R8, 1 },
+-       { 2, 2, 0, __DRI_IMAGE_FORMAT_R8, 1 } } },
+-
+-   { __DRI_IMAGE_FOURCC_YUV420, __DRI_IMAGE_COMPONENTS_Y_U_V, 3,
+-     { { 0, 0, 0, __DRI_IMAGE_FORMAT_R8, 1 },
+-       { 1, 1, 1, __DRI_IMAGE_FORMAT_R8, 1 },
+-       { 2, 1, 1, __DRI_IMAGE_FORMAT_R8, 1 } } },
+-
+-   { __DRI_IMAGE_FOURCC_YUV422, __DRI_IMAGE_COMPONENTS_Y_U_V, 3,
+-     { { 0, 0, 0, __DRI_IMAGE_FORMAT_R8, 1 },
+-       { 1, 1, 0, __DRI_IMAGE_FORMAT_R8, 1 },
+-       { 2, 1, 0, __DRI_IMAGE_FORMAT_R8, 1 } } },
+-
+-   { __DRI_IMAGE_FOURCC_YUV444, __DRI_IMAGE_COMPONENTS_Y_U_V, 3,
+-     { { 0, 0, 0, __DRI_IMAGE_FORMAT_R8, 1 },
+-       { 1, 0, 0, __DRI_IMAGE_FORMAT_R8, 1 },
+-       { 2, 0, 0, __DRI_IMAGE_FORMAT_R8, 1 } } },
+-
+-   { __DRI_IMAGE_FOURCC_NV12, __DRI_IMAGE_COMPONENTS_Y_UV, 2,
+-     { { 0, 0, 0, __DRI_IMAGE_FORMAT_R8, 1 },
+-       { 1, 1, 1, __DRI_IMAGE_FORMAT_GR88, 2 } } },
+-
+-   { __DRI_IMAGE_FOURCC_NV16, __DRI_IMAGE_COMPONENTS_Y_UV, 2,
+-     { { 0, 0, 0, __DRI_IMAGE_FORMAT_R8, 1 },
+-       { 1, 1, 0, __DRI_IMAGE_FORMAT_GR88, 2 } } },
+-
+-   /* For YUYV buffers, we set up two overlapping DRI images and treat
+-    * them as planar buffers in the compositors.  Plane 0 is GR88 and
+-    * samples YU or YV pairs and places Y into the R component, while
+-    * plane 1 is ARGB and samples YUYV clusters and places pairs and
+-    * places U into the G component and V into A.  This lets the
+-    * texture sampler interpolate the Y components correctly when
+-    * sampling from plane 0, and interpolate U and V correctly when
+-    * sampling from plane 1. */
+-   { __DRI_IMAGE_FOURCC_YUYV, __DRI_IMAGE_COMPONENTS_Y_XUXV, 2,
+-     { { 0, 0, 0, __DRI_IMAGE_FORMAT_GR88, 2 },
+-       { 0, 1, 0, __DRI_IMAGE_FORMAT_ARGB8888, 4 } } }
+-};
+-
+ static __DRIimage *
+ intel_allocate_image(int dri_format, void *loaderPrivate)
+ {
+@@ -302,7 +249,7 @@ intel_create_image_from_name(__DRIscreen *screen,
+ 
+     image = intel_allocate_image(format, loaderPrivate);
+     if (image->format == MESA_FORMAT_NONE)
+-       cpp = 1;
++       cpp = 0;
+     else
+        cpp = _mesa_get_format_bytes(image->format);
+     image->region = intel_region_alloc_for_handle(intelScreen,
+@@ -392,7 +339,13 @@ intel_create_image(__DRIscreen *screen,
        tiling = I915_TILING_NONE;
     }
  
@@ -259,15 +837,37 @@ index 103fcd2..f4c1602 100644
     cpp = _mesa_get_format_bytes(image->format);
     image->region =
        intel_region_alloc(intelScreen, tiling, cpp, width, height, true);
-@@ -393,6 +399,7 @@ intel_dup_image(__DRIimage *orig_image, void *loaderPrivate)
+@@ -425,11 +378,6 @@ intel_query_image(__DRIimage *image, int attrib, int *value)
+    case __DRI_IMAGE_ATTRIB_HEIGHT:
+       *value = image->region->height;
+       return true;
+-   case __DRI_IMAGE_ATTRIB_COMPONENTS:
+-      if (image->planar_format == NULL)
+-         return false;
+-      *value = image->planar_format->components;
+-      return true;
+   default:
+       return false;
+    }
+@@ -451,15 +399,12 @@ intel_dup_image(__DRIimage *orig_image, void *loaderPrivate)
     }
  
     image->internal_format = orig_image->internal_format;
+-   image->planar_format   = orig_image->planar_format;
 +   image->usage           = orig_image->usage;
     image->dri_format      = orig_image->dri_format;
     image->format          = orig_image->format;
     image->offset          = orig_image->offset;
-@@ -409,9 +416,29 @@ intel_validate_usage(__DRIimage *image, unsigned int use)
+    image->data            = loaderPrivate;
+-
+-   memcpy(image->strides, orig_image->strides, sizeof(image->strides));
+-   memcpy(image->offsets, orig_image->offsets, sizeof(image->offsets));
+-
++   
+    return image;
+ }
+ 
+@@ -471,76 +416,40 @@ intel_validate_usage(__DRIimage *image, unsigned int use)
  	 return GL_FALSE;
     }
  
@@ -279,29 +879,100 @@ index 103fcd2..f4c1602 100644
     return GL_TRUE;
  }
  
+-static __DRIimage *
+-intel_create_image_from_names(__DRIscreen *screen,
+-                              int width, int height, int fourcc,
+-                              int *names, int num_names,
+-                              int *strides, int *offsets,
+-                              void *loaderPrivate)
 +static int
 +intel_image_write(__DRIimage *image, const void *buf, size_t count)
-+{
+ {
+-    struct intel_image_format *f = NULL;
+-    __DRIimage *image;
+-    int i, index;
+-
+-    if (screen == NULL || names == NULL || num_names != 1)
+-        return NULL;
+-
+-    for (i = 0; i < ARRAY_SIZE(intel_image_formats); i++) {
+-        if (intel_image_formats[i].fourcc == fourcc) {
+-           f = &intel_image_formats[i];
+-        }
+-    }
 +   if (image->region->map_refcount)
 +      return -1;
 +   if (!(image->usage & __DRI_IMAGE_USE_WRITE))
 +      return -1;
-+
+ 
+-    if (f == NULL)
+-        return NULL;
 +   drm_intel_bo_map(image->region->bo, true);
 +   memcpy(image->region->bo->virtual, buf, count);
 +   drm_intel_bo_unmap(image->region->bo);
-+
+ 
+-    image = intel_create_image_from_name(screen, width, height,
+-                                         __DRI_IMAGE_FORMAT_NONE,
+-                                         names[0], strides[0],
+-                                         loaderPrivate);
+-
+-    if (image == NULL)
+-        return NULL;
+-
+-    image->planar_format = f;
+-    for (i = 0; i < f->nplanes; i++) {
+-        index = f->planes[i].buffer_index;
+-        image->offsets[index] = offsets[index];
+-        image->strides[index] = strides[index];
+-    }
+-
+-    return image;
 +   return 0;
-+}
-+
+ }
+ 
  static __DRIimage *
- intel_create_sub_image(__DRIimage *parent,
-                        int width, int height, int dri_format,
-@@ -463,6 +490,7 @@ static struct __DRIimageExtensionRec intelImageExtension = {
+-intel_from_planar(__DRIimage *parent, int plane, void *loaderPrivate)
++intel_create_sub_image(__DRIimage *parent,
++                       int width, int height, int dri_format,
++                       int offset, int pitch, void *loaderPrivate)
+ {
+-    int width, height, offset, stride, dri_format, cpp, index, pitch;
+-    struct intel_image_format *f;
+-    uint32_t mask_x, mask_y;
+     __DRIimage *image;
+-
+-    if (parent == NULL || parent->planar_format == NULL)
+-        return NULL;
+-
+-    f = parent->planar_format;
+-
+-    if (plane >= f->nplanes)
+-        return NULL;
+-
+-    width = parent->region->width >> f->planes[plane].width_shift;
+-    height = parent->region->height >> f->planes[plane].height_shift;
+-    dri_format = f->planes[plane].dri_format;
+-    index = f->planes[plane].buffer_index;
+-    offset = parent->offsets[index];
+-    stride = parent->strides[index];
++    int cpp;
++    uint32_t mask_x, mask_y;
+ 
+     image = intel_allocate_image(dri_format, loaderPrivate);
+-    cpp = _mesa_get_format_bytes(image->format); /* safe since no none format */
+-    pitch = stride / cpp;
++    cpp = _mesa_get_format_bytes(image->format);
+     if (offset + height * cpp * pitch > parent->region->bo->size) {
+        _mesa_warning(NULL, "intel_create_sub_image: subimage out of bounds");
+        FREE(image);
+@@ -581,8 +490,8 @@ static struct __DRIimageExtensionRec intelImageExtension = {
      intel_query_image,
      intel_dup_image,
      intel_validate_usage,
+-    intel_create_image_from_names,
+-    intel_from_planar
 +    intel_image_write,
-     intel_create_sub_image
++    intel_create_sub_image
  };
  
+ static const __DRIextension *intelScreenExtensions[] = {

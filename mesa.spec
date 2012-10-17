@@ -31,22 +31,24 @@
 
 %define _default_patch_fuzz 2
 
-%define gitdate 20120907
+#define gitdate 20120924
 #% define snapshot 
 
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 9.0
-Release: 0.1%{?dist}
+Release: 1%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
 
 #Source0: http://downloads.sf.net/mesa3d/MesaLib-%{version}.tar.bz2
 #Source0: http://www.mesa3d.org/beta/MesaLib-%{version}%{?snapshot}.tar.bz2
-#Source0: ftp://ftp.freedesktop.org/pub/%{name}/%{version}/MesaLib-%{version}.tar.bz2
-Source0: %{name}-%{gitdate}.tar.xz
+Source0: ftp://ftp.freedesktop.org/pub/%{name}/%{version}/MesaLib-%{version}.tar.bz2
+#Source0: %{name}-%{gitdate}.tar.xz
 Source3: make-git-snapshot.sh
+
+Patch1: mesa-9.0-12-gd56ee24.patch
 
 #Patch7: mesa-7.1-link-shared.patch
 Patch9: mesa-8.0-llvmpipe-shmget.patch
@@ -88,6 +90,7 @@ BuildRequires: bison flex
 BuildRequires: pkgconfig(wayland-client)
 BuildRequires: pkgconfig(wayland-server)
 %endif
+BuildRequires: mesa-libGL-devel
 
 %description
 Mesa
@@ -257,13 +260,23 @@ Group: System Environment/Libraries
 Mesa shared glapi
 
 %prep
-#% setup -q -n Mesa-%{version}%{?snapshot}
-%setup -q -n mesa-%{gitdate}
-#patch7 -p1 -b .dricore
-%patch9 -p1 -b .shmget
+%setup -q -n Mesa-%{version}%{?snapshot}
+#setup -q -n mesa-%{gitdate}
+%patch1 -p1 -b .git
 %patch11 -p1 -b .nouveau
-%patch12 -p1 -b .16bpp
-%patch101 -p1 -b .syms
+%patch13 -p1 -b .no-libkms
+#patch101 -p1 -b .syms
+
+# this fastpath is:
+# - broken with swrast classic
+# - broken on 24bpp
+# - not a huge win anyway
+# - ABI-broken wrt upstream
+# - eventually obsoleted by vgem
+#
+# dear ajax: fix this one way or the other
+#patch9 -p1 -b .shmget
+#patch12 -p1 -b .16bpp
 
 %build
 
@@ -529,15 +542,31 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
-* Fri Sep 07 2012 Adam Jackson <ajax@redhat.com> 9.0-0.1
-- Switch to 9.0 prerelease branch
-- Today's git snap of same
-- Switch to irritatingly-slow swrast instead of intolerably-slow softpipe
-  on non-llvm arches
-- Re-disable llvm on PPC until it's in shape enough to make pixels appear
-- Drop libGLU subpackage, split off upstream
-- Drop manpages, require gl-manpages from libGL-devel instead
-- Capitulate to libkms until upstream stops needing it again
+* Wed Oct 10 2012 Adam Jackson <ajax@redhat.com> 9.0-1
+- Mesa 9.0
+- mesa-9.0-12-gd56ee24.patch: sync with 9.0 branch in git
+
+* Wed Oct 10 2012 Adam Jackson <ajax@redhat.com> 9.0-0.4
+- Switch to external gl-manpages and libGLU
+- Drop ShmGetImage fastpath for a bit
+
+* Mon Oct 01 2012 Dan Horák <dan[at]danny.cz> 9.0-0.3
+- explicit BR: libGL-devel is required on s390(x), it's probbaly brought in indirectly on x86
+- gallium drivers must be set explicitely for s390(x) otherwise also r300, r600 and vmwgfx are also built
+
+* Mon Sep 24 2012 Adam Jackson <ajax@redhat.com> 9.0-0.2
+- Switch to swrast classic instead of softpipe for non-llvm arches
+- Re-disable llvm on ppc until it can draw pixels
+
+* Mon Sep 24 2012 Dave Airlie <airlied@redhat.com> 9.0-0.1
+- rebase to latest upstream 9.0 pre-release branch
+- add back glu from new upstream (split for f18 later)
+
+* Fri Sep 14 2012 Dave Airlie <airlied@redhat.com> 8.1-0.21
+- why fix one yylex when you can fix two
+
+* Fri Sep 14 2012 Dave Airlie <airlied@redhat.com> 8.1-0.20
+- fix yylex collision reported on irc by hughsie
 
 * Mon Aug 27 2012 Adam Jackson <ajax@redhat.com> 8.1-0.19
 - Today's git snap
