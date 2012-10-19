@@ -37,7 +37,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 9.0
-Release: 1%{?dist}
+Release: 2%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -54,10 +54,7 @@ Patch1: mesa-9.0-12-gd56ee24.patch
 Patch9: mesa-8.0-llvmpipe-shmget.patch
 Patch11: mesa-8.0-nouveau-tfp-blacklist.patch
 Patch12: mesa-8.0.1-fix-16bpp.patch
-
-# Courtesy of Mageia cauldron:
-# Fix undefined syms: http://svnweb.mageia.org/packages/cauldron/mesa/current/SOURCES/0001-Fix-undefined-symbols-in-libOSMesa-and-libglapi.patch?revision=278531&view=co
-Patch101: mesa-undefined-symbols.patch
+Patch13: mesa-9.0-wayland-0.99.patch
 
 BuildRequires: pkgconfig autoconf automake libtool
 %if %{with_hardware}
@@ -87,8 +84,8 @@ BuildRequires: libudev-devel
 BuildRequires: libtalloc-devel
 BuildRequires: bison flex
 %if !0%{?rhel}
-BuildRequires: pkgconfig(wayland-client)
-BuildRequires: pkgconfig(wayland-server)
+BuildRequires: pkgconfig(wayland-client) >= 0.99
+BuildRequires: pkgconfig(wayland-server) >= 0.99
 %endif
 BuildRequires: mesa-libGL-devel
 
@@ -264,7 +261,7 @@ Mesa shared glapi
 #setup -q -n mesa-%{gitdate}
 %patch1 -p1 -b .git
 %patch11 -p1 -b .nouveau
-#patch101 -p1 -b .syms
+%patch13 -p1 -b .wl099
 
 # this fastpath is:
 # - broken with swrast classic
@@ -541,6 +538,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Fri Oct 19 2012 Adam Jackson <ajax@redhat.com> 9.0-2
+- Rebuild for wayland 0.99
+
 * Wed Oct 10 2012 Adam Jackson <ajax@redhat.com> 9.0-1
 - Mesa 9.0
 - mesa-9.0-12-gd56ee24.patch: sync with 9.0 branch in git
