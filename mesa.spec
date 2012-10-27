@@ -37,7 +37,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 9.0
-Release: 2%{?dist}
+Release: 3%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -313,6 +313,7 @@ export CXXFLAGS="$RPM_OPT_FLAGS"
 %endif
 %else
     --disable-gallium-llvm \
+    --with-gallium-drivers=swrast \
     --enable-dri \
 %endif
     %{?dri_drivers}
@@ -538,6 +539,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Sat Oct 27 2012 Dan Horák <dan[at]danny.cz> 9.0-3
+- gallium drivers must be set explicitely for s390(x) otherwise also r300, r600 and vmwgfx are built
+
 * Fri Oct 19 2012 Adam Jackson <ajax@redhat.com> 9.0-2
 - Rebuild for wayland 0.99
 
@@ -551,7 +555,7 @@ rm -rf $RPM_BUILD_ROOT
 
 * Mon Oct 01 2012 Dan Horák <dan[at]danny.cz> 9.0-0.3
 - explicit BR: libGL-devel is required on s390(x), it's probbaly brought in indirectly on x86
-- gallium drivers must be set explicitely for s390(x) otherwise also r300, r600 and vmwgfx are also built
+- gallium drivers must be set explicitely for s390(x) otherwise also r300, r600 and vmwgfx are built
 
 * Mon Sep 24 2012 Adam Jackson <ajax@redhat.com> 9.0-0.2
 - Switch to swrast classic instead of softpipe for non-llvm arches
