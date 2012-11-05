@@ -291,8 +291,10 @@ Mesa shared glapi
 sed -i 's/^default_driver.*$/default_driver="dri"/' configure.ac
 
 # need to use libdrm_nouveau2 on F17
+%if !0%{?rhel}
 %if 0%{?fedora} < 18
 sed -i 's/\<libdrm_nouveau\>/&2/' configure.ac
+%endif
 %endif
 
 %build
