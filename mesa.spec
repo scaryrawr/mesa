@@ -45,7 +45,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 9.0
-Release: 4%{?dist}
+Release: 5%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -56,13 +56,12 @@ Source0: ftp://ftp.freedesktop.org/pub/%{name}/%{version}/MesaLib-%{version}.tar
 #Source0: %{name}-%{gitdate}.tar.xz
 Source3: make-git-snapshot.sh
 
-Patch1: mesa-9.0-18-g5fe5aa8.patch
+Patch1: mesa-9.0-19-g895a587.patch
 
 #Patch7: mesa-7.1-link-shared.patch
 Patch9: mesa-8.0-llvmpipe-shmget.patch
 Patch11: mesa-8.0-nouveau-tfp-blacklist.patch
 Patch12: mesa-8.0.1-fix-16bpp.patch
-Patch13: mesa-9.0-wayland-0.99.patch
 
 BuildRequires: pkgconfig autoconf automake libtool
 %if %{with_hardware}
@@ -269,11 +268,6 @@ Mesa shared glapi
 #setup -q -n mesa-%{gitdate}
 %patch1 -p1 -b .git
 %patch11 -p1 -b .nouveau
-# yes, conditional patch.  sorry.
-%if 0%{?fedora} < 18
-%else
-%patch13 -p1 -b .wl099
-%endif
 
 # this fastpath is:
 # - broken with swrast classic
@@ -558,6 +552,10 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Wed Nov 07 2012 Dave Airlie <airlied@redhat.com> 9.0-5
+- mesa-9.0-19-g895a587.patch: sync with 9.0 branch with git
+- drop wayland patch its in git now.
+
 * Thu Nov 01 2012 Adam Jackson <ajax@redhat.com> 9.0-4
 - mesa-9.0-18-g5fe5aa8: sync with 9.0 branch in git
 - Portability fixes for F17: old wayland, old llvm.
