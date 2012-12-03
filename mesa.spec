@@ -44,8 +44,8 @@
 
 Summary: Mesa graphics libraries
 Name: mesa
-Version: 9.0
-Release: 5%{?dist}
+Version: 9.0.1
+Release: 1%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -55,8 +55,6 @@ URL: http://www.mesa3d.org
 Source0: ftp://ftp.freedesktop.org/pub/%{name}/%{version}/MesaLib-%{version}.tar.bz2
 #Source0: %{name}-%{gitdate}.tar.xz
 Source3: make-git-snapshot.sh
-
-Patch1: mesa-9.0-19-g895a587.patch
 
 #Patch7: mesa-7.1-link-shared.patch
 Patch9: mesa-8.0-llvmpipe-shmget.patch
@@ -266,7 +264,6 @@ Mesa shared glapi
 %prep
 %setup -q -n Mesa-%{version}%{?snapshot}
 #setup -q -n mesa-%{gitdate}
-%patch1 -p1 -b .git
 %patch11 -p1 -b .nouveau
 
 # this fastpath is:
@@ -552,6 +549,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Mon Dec 03 2012 Adam Jackson <ajax@redhat.com> 9.0.1-1
+- Mesa 9.0.1
+
 * Wed Nov 07 2012 Dave Airlie <airlied@redhat.com> 9.0-5
 - mesa-9.0-19-g895a587.patch: sync with 9.0 branch with git
 - drop wayland patch its in git now.
