@@ -1,5 +1,8 @@
 %if 0%{?rhel}
 %define rhel_no_hw_arches ppc ppc64 ppc64p7
+%define with_private_llvm 1
+%else
+%define with_private_llvm 0
 %endif
 
 # f17 support wayland 0.85, llvm 3.0 means no radeonsi
@@ -45,7 +48,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 9.0.1
-Release: 1%{?dist}
+Release: 2%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -81,7 +84,11 @@ BuildRequires: elfutils
 BuildRequires: python
 %if %{with_hardware}
 %if 0%{?with_llvm}
+%if 0%{?with_private_llvm}
+BuildRequires: mesa-private-llvm-devel
+%else
 BuildRequires: llvm-devel >= 3.0
+%endif
 %endif
 %endif
 BuildRequires: libxml2-python
@@ -281,6 +288,12 @@ Mesa shared glapi
 # XXX please fix upstream
 sed -i 's/^default_driver.*$/default_driver="dri"/' configure.ac
 
+%if 0%{with_private_llvm}
+sed -i 's/llvm-config/mesa-private-llvm-config-%{__isa_bits}/g' configure.ac
+sed -i 's/`$LLVM_CONFIG --version`/&-mesa/' configure.ac
+sed -i 's/llvm-tblgen/mesa-private-&/' src/gallium/drivers/radeon/Makefile
+%endif
+
 # need to use libdrm_nouveau2 on F17
 %if !0%{?rhel}
 %if 0%{?fedora} < 18
@@ -328,8 +341,7 @@ export CXXFLAGS="$RPM_OPT_FLAGS"
 %endif
     %{?dri_drivers}
 
-#%{?_smp_mflags} - broke parallel make in glsl
-make MKDEP=/bin/true
+make %{?_smp_mflags} MKDEP=/bin/true
 
 %install
 rm -rf $RPM_BUILD_ROOT
@@ -549,6 +561,10 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Wed Dec 05 2012 Adam Jackson <ajax@redhat.com> 9.0.1-2
+- Allow linking against a private version of LLVM libs for RHEL7
+- Build with -j again
+
 * Mon Dec 03 2012 Adam Jackson <ajax@redhat.com> 9.0.1-1
 - Mesa 9.0.1
 
