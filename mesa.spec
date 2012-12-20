@@ -3,6 +3,7 @@
 %define with_private_llvm 1
 %else
 %define with_private_llvm 0
+%define with_wayland 1
 %endif
 
 # f17 support wayland 0.85, llvm 3.0 means no radeonsi
@@ -48,7 +49,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 9.0.1
-Release: 2%{?dist}
+Release: 3%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -59,10 +60,14 @@ Source0: ftp://ftp.freedesktop.org/pub/%{name}/%{version}/MesaLib-%{version}.tar
 #Source0: %{name}-%{gitdate}.tar.xz
 Source3: make-git-snapshot.sh
 
+# $ git diff-tree -p mesa-9.0.1..origin/9.0 > `git describe origin/9.0`.patch
+Patch0: mesa-9.0.1-22-gd0a9ab2.patch
+
 #Patch7: mesa-7.1-link-shared.patch
 Patch9: mesa-8.0-llvmpipe-shmget.patch
 Patch11: mesa-8.0-nouveau-tfp-blacklist.patch
 Patch12: mesa-8.0.1-fix-16bpp.patch
+Patch13: mesa-9.0.1-less-cxx-please.patch
 
 BuildRequires: pkgconfig autoconf automake libtool
 %if %{with_hardware}
@@ -271,6 +276,7 @@ Mesa shared glapi
 %prep
 %setup -q -n Mesa-%{version}%{?snapshot}
 #setup -q -n mesa-%{gitdate}
+%patch0 -p1 -b .git
 %patch11 -p1 -b .nouveau
 
 # this fastpath is:
@@ -283,6 +289,8 @@ Mesa shared glapi
 # dear ajax: fix this one way or the other
 #patch9 -p1 -b .shmget
 #patch12 -p1 -b .16bpp
+
+%patch13 -p1 -b .less-cpp
 
 # default to dri (not xlib) for libGL on all arches
 # XXX please fix upstream
@@ -306,7 +314,12 @@ sed -i 's/\<libdrm_nouveau\>/&2/' configure.ac
 autoreconf --install  
 
 export CFLAGS="$RPM_OPT_FLAGS"
-export CXXFLAGS="$RPM_OPT_FLAGS"
+# C++ note: we never say "catch" in the source.  we do say "typeid" once,
+# in an assert, which is patched out above.  LLVM doesn't use RTTI or throw.
+#
+# We do say 'catch' in the clover and d3d1x state trackers, but we're not
+# building those yet.
+export CXXFLAGS="$RPM_OPT_FLAGS -fno-rtti -fno-exceptions"
 %ifarch %{ix86}
 # i do not have words for how much the assembly dispatch code infuriates me
 %define common_flags --enable-selinux --enable-pic --disable-asm
@@ -322,7 +335,7 @@ export CXXFLAGS="$RPM_OPT_FLAGS"
     --enable-gles1 \
     --enable-gles2 \
     --disable-gallium-egl \
-    --with-egl-platforms=x11,drm%{!?rhel:,wayland} \
+    --with-egl-platforms=x11,drm%{?with_wayland:,wayland} \
     --enable-shared-glapi \
     --enable-gbm \
 %if %{with_hardware}
@@ -561,6 +574,12 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Thu Dec 20 2012 Adam Jackson <ajax@redhat.com> 9.0.1-3
+- mesa-9.0.1-22-gd0a9ab2.patch: Sync with git
+- Build with -fno-rtti -fno-exceptions, modest size and speed win
+- mesa-9.0.1-less-cxx-please.patch: Remove the only use of typeid() so the
+  above works.
+
 * Wed Dec 05 2012 Adam Jackson <ajax@redhat.com> 9.0.1-2
 - Allow linking against a private version of LLVM libs for RHEL7
 - Build with -j again
