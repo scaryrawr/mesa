@@ -49,7 +49,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 9.0.1
-Release: 3%{?dist}
+Release: 4%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -59,6 +59,11 @@ URL: http://www.mesa3d.org
 Source0: ftp://ftp.freedesktop.org/pub/%{name}/%{version}/MesaLib-%{version}.tar.bz2
 #Source0: %{name}-%{gitdate}.tar.xz
 Source3: make-git-snapshot.sh
+
+# src/gallium/auxiliary/postprocess/pp_mlaa* have an ... interestingly worded license.
+# Source4 contains email correspondence clarifying the license terms.
+# Fedora opts to ignore the optional part of clause 2 and treat that code as 2 clause BSD.
+Source4: Mesa-MLAA-License-Clarification-Email.txt
 
 # $ git diff-tree -p mesa-9.0.1..origin/9.0 > `git describe origin/9.0`.patch
 Patch0: mesa-9.0.1-22-gd0a9ab2.patch
@@ -309,6 +314,8 @@ sed -i 's/\<libdrm_nouveau\>/&2/' configure.ac
 %endif
 %endif
 
+cp %{SOURCE4} docs/
+
 %build
 
 autoreconf --install  
@@ -434,7 +441,7 @@ rm -rf $RPM_BUILD_ROOT
 
 %files dri-filesystem
 %defattr(-,root,root,-)
-%doc docs/COPYING
+%doc docs/COPYING docs/Mesa-MLAA-License-Clarification-Email.txt
 %dir %{_libdir}/dri
 
 %files libglapi
@@ -574,6 +581,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Tue Jan 15 2013 Tom Callaway <spot@fedoraproject.org> 9.0.1-4
+- clarify license on pp_mlaa* files
+
 * Thu Dec 20 2012 Adam Jackson <ajax@redhat.com> 9.0.1-3
 - mesa-9.0.1-22-gd0a9ab2.patch: Sync with git
 - Build with -fno-rtti -fno-exceptions, modest size and speed win
