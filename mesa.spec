@@ -92,6 +92,7 @@ BuildRequires: libXi-devel
 BuildRequires: libXmu-devel
 BuildRequires: elfutils
 BuildRequires: python
+BuildRequires: gettext
 %if %{with_hardware}
 %if 0%{?with_llvm}
 %if 0%{?with_private_llvm}
