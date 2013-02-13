@@ -11,7 +11,7 @@
 %define min_wayland_version 0.85
 %else
 %define min_wayland_version 1.0
-%define with_radeonsi 1
+#define with_radeonsi 1
 %endif
 
 # S390 doesn't have video cards, but we need swrast for xserver's GLX
@@ -43,21 +43,21 @@
 
 %define _default_patch_fuzz 2
 
-#define gitdate 20120924
+%define gitdate 20130213
 #% define snapshot 
 
 Summary: Mesa graphics libraries
 Name: mesa
-Version: 9.0.1
-Release: 4%{?dist}
+Version: 9.1
+Release: 0.1%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
 
 #Source0: http://downloads.sf.net/mesa3d/MesaLib-%{version}.tar.bz2
 #Source0: http://www.mesa3d.org/beta/MesaLib-%{version}%{?snapshot}.tar.bz2
-Source0: ftp://ftp.freedesktop.org/pub/%{name}/%{version}/MesaLib-%{version}.tar.bz2
-#Source0: %{name}-%{gitdate}.tar.xz
+#Source0: ftp://ftp.freedesktop.org/pub/%{name}/%{version}/MesaLib-%{version}.tar.bz2
+Source0: %{name}-%{gitdate}.tar.xz
 Source3: make-git-snapshot.sh
 
 # src/gallium/auxiliary/postprocess/pp_mlaa* have an ... interestingly worded license.
@@ -65,21 +65,18 @@ Source3: make-git-snapshot.sh
 # Fedora opts to ignore the optional part of clause 2 and treat that code as 2 clause BSD.
 Source4: Mesa-MLAA-License-Clarification-Email.txt
 
-# $ git diff-tree -p mesa-9.0.1..origin/9.0 > `git describe origin/9.0`.patch
-Patch0: mesa-9.0.1-22-gd0a9ab2.patch
-
 #Patch7: mesa-7.1-link-shared.patch
 Patch9: mesa-8.0-llvmpipe-shmget.patch
-Patch11: mesa-8.0-nouveau-tfp-blacklist.patch
+#Patch11: mesa-8.0-nouveau-tfp-blacklist.patch
 Patch12: mesa-8.0.1-fix-16bpp.patch
-Patch13: mesa-9.0.1-less-cxx-please.patch
+#Patch13: mesa-9.0.1-less-cxx-please.patch
 
 BuildRequires: pkgconfig autoconf automake libtool
 %if %{with_hardware}
 BuildRequires: kernel-headers
 BuildRequires: xorg-x11-server-devel
 %endif
-BuildRequires: libdrm-devel >= 2.4.38
+BuildRequires: libdrm-devel >= 2.4.42
 BuildRequires: libXxf86vm-devel
 BuildRequires: expat-devel
 BuildRequires: xorg-x11-proto-devel
@@ -279,10 +276,9 @@ Group: System Environment/Libraries
 Mesa shared glapi
 
 %prep
-%setup -q -n Mesa-%{version}%{?snapshot}
-#setup -q -n mesa-%{gitdate}
-%patch0 -p1 -b .git
-%patch11 -p1 -b .nouveau
+#%setup -q -n Mesa-%{version}%{?snapshot}
+%setup -q -n mesa-%{gitdate}
+#%patch11 -p1 -b .nouveau
 
 # this fastpath is:
 # - broken with swrast classic
@@ -295,7 +291,7 @@ Mesa shared glapi
 #patch9 -p1 -b .shmget
 #patch12 -p1 -b .16bpp
 
-%patch13 -p1 -b .less-cpp
+#%patch13 -p1 -b .less-cpp
 
 # default to dri (not xlib) for libGL on all arches
 # XXX please fix upstream
@@ -345,6 +341,7 @@ export CXXFLAGS="$RPM_OPT_FLAGS -fno-rtti -fno-exceptions"
     --with-egl-platforms=x11,drm%{?with_wayland:,wayland} \
     --enable-shared-glapi \
     --enable-gbm \
+    --disable-opencl \
 %if %{with_hardware}
     %{?with_vmware:--enable-xa} \
 %if 0%{?with_llvm}
@@ -581,6 +578,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Wed Feb 13 2013 Dave Airlie <airlied@redhat.com> 9.1-0.1
+- snapshot mesa 9.1 branch
+
 * Tue Jan 15 2013 Tom Callaway <spot@fedoraproject.org> 9.0.1-4
 - clarify license on pp_mlaa* files
 

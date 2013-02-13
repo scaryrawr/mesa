@@ -13,7 +13,7 @@ echo HEAD ${1:-HEAD}
 
 rm -rf $DIRNAME
 
-git clone --depth 1 -b 9.0 ${REF:+--reference $REF} \
+git clone --depth 1 -b 9.1 ${REF:+--reference $REF} \
 	git://git.freedesktop.org/git/mesa/mesa $DIRNAME
 
 GIT_DIR=$DIRNAME/.git git archive --format=tar --prefix=$DIRNAME/ ${1:-HEAD} \
