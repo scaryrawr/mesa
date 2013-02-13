@@ -65,6 +65,9 @@ Source3: make-git-snapshot.sh
 # Fedora opts to ignore the optional part of clause 2 and treat that code as 2 clause BSD.
 Source4: Mesa-MLAA-License-Clarification-Email.txt
 
+# -fno-rtti makes nv50 assert angry
+Patch0: nv50-fix-build.patch
+Patch1: intel-revert-gl3.patch
 #Patch7: mesa-7.1-link-shared.patch
 Patch9: mesa-8.0-llvmpipe-shmget.patch
 #Patch11: mesa-8.0-nouveau-tfp-blacklist.patch
@@ -278,6 +281,8 @@ Mesa shared glapi
 %prep
 #%setup -q -n Mesa-%{version}%{?snapshot}
 %setup -q -n mesa-%{gitdate}
+%patch0 -p1 -b .nv50rtti
+%patch1 -p1 -b .nogl3
 #%patch11 -p1 -b .nouveau
 
 # this fastpath is:
@@ -515,6 +520,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_includedir}/GLES2/gl2platform.h
 %{_includedir}/GLES2/gl2.h
 %{_includedir}/GLES2/gl2ext.h
+%{_includedir}/GLES3/gl3platform.h
+%{_includedir}/GLES3/gl3.h
+%{_includedir}/GLES3/gl3ext.h
 %{_libdir}/pkgconfig/glesv1_cm.pc
 %{_libdir}/pkgconfig/glesv2.pc
 %{_libdir}/libGLESv1_CM.so
