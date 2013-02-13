@@ -464,6 +464,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/dri/r600_dri.so
 %if 0%{?with_llvm} && 0%{?with_radeonsi}
 %{_libdir}/dri/radeonsi_dri.so
+%{_libdir}/libllvmradeon9.1.0.so
 %endif
 %ifarch %{ix86} x86_64 ia64
 %{_libdir}/dri/i915_dri.so
