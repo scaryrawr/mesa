@@ -11,7 +11,7 @@
 %define min_wayland_version 0.85
 %else
 %define min_wayland_version 1.0
-#define with_radeonsi 1
+%define with_radeonsi 1
 %endif
 
 # S390 doesn't have video cards, but we need swrast for xserver's GLX
@@ -49,7 +49,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 9.1
-Release: 0.1%{?dist}
+Release: 0.2%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -588,6 +588,10 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Tue Feb 19 2013 Jens Petersen <petersen@redhat.com> - 9.1-0.2
+- build against llvm-3.2
+- turn on radeonsi
+
 * Wed Feb 13 2013 Dave Airlie <airlied@redhat.com> 9.1-0.1
 - snapshot mesa 9.1 branch
 
