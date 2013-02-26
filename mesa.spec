@@ -49,7 +49,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 9.1
-Release: 0.2%{?dist}
+Release: 0.3%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -359,7 +359,7 @@ export CXXFLAGS="$RPM_OPT_FLAGS -fno-rtti -fno-exceptions"
 %endif
 %else
     --disable-gallium-llvm \
-    --with-gallium-drivers=swrast \
+    --with-gallium-drivers= \
     --enable-dri \
 %endif
     %{?dri_drivers}
@@ -588,6 +588,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Tue Feb 26 2013 Adam Jackson <ajax@redhat.com> 9.1-0.3
+- Fix s390*'s swrast to be classic not softpipe
+
 * Tue Feb 19 2013 Jens Petersen <petersen@redhat.com> - 9.1-0.2
 - build against llvm-3.2
 - turn on radeonsi
