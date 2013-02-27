@@ -49,7 +49,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 9.1
-Release: 0.3%{?dist}
+Release: 0.4%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -476,6 +476,8 @@ rm -rf $RPM_BUILD_ROOT
 %if 0%{?with_vmware}
 %{_libdir}/dri/vmwgfx_dri.so
 %endif
+%else
+%exclude %{_sysconfdir}/drirc
 %endif
 %{_libdir}/libdricore*.so*
 %{_libdir}/dri/swrast_dri.so
@@ -588,6 +590,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Wed Feb 27 2013 Dan Horák <dan[at]danny.cz> - 9.1-0.4
+- /etc/drirc is always created, so exclude it on platforms without hw drivers
+
 * Tue Feb 26 2013 Adam Jackson <ajax@redhat.com> 9.1-0.3
 - Fix s390*'s swrast to be classic not softpipe
 
