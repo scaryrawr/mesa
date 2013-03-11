@@ -43,21 +43,20 @@
 
 %define _default_patch_fuzz 2
 
-%define gitdate 20130213
+#define gitdate 20130213
 #% define snapshot 
 
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 9.1
-Release: 0.4%{?dist}
+Release: 1%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
 
-#Source0: http://downloads.sf.net/mesa3d/MesaLib-%{version}.tar.bz2
 #Source0: http://www.mesa3d.org/beta/MesaLib-%{version}%{?snapshot}.tar.bz2
-#Source0: ftp://ftp.freedesktop.org/pub/%{name}/%{version}/MesaLib-%{version}.tar.bz2
-Source0: %{name}-%{gitdate}.tar.xz
+Source0: ftp://ftp.freedesktop.org/pub/%{name}/%{version}/MesaLib-%{version}.tar.bz2
+#Source0: %{name}-%{gitdate}.tar.xz
 Source3: make-git-snapshot.sh
 
 # src/gallium/auxiliary/postprocess/pp_mlaa* have an ... interestingly worded license.
@@ -280,8 +279,8 @@ Group: System Environment/Libraries
 Mesa shared glapi
 
 %prep
-#%setup -q -n Mesa-%{version}%{?snapshot}
-%setup -q -n mesa-%{gitdate}
+%setup -q -n Mesa-%{version}%{?snapshot}
+#setup -q -n mesa-%{gitdate}
 %patch0 -p1 -b .nv50rtti
 %patch1 -p1 -b .nogl3
 #%patch11 -p1 -b .nouveau
@@ -590,6 +589,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Fri Mar 08 2013 Adam Jackson <ajax@redhat.com> 9.1-1
+- Mesa 9.1
+
 * Wed Feb 27 2013 Dan Horák <dan[at]danny.cz> - 9.1-0.4
 - /etc/drirc is always created, so exclude it on platforms without hw drivers
 

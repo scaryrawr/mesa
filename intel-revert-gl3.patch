@@ -1,8 +1,7 @@
-diff --git a/src/mesa/drivers/dri/intel/intel_extensions.c b/src/mesa/drivers/dri/intel/intel_extensions.c
-index 4e7b5da..1562f59 100755
---- a/src/mesa/drivers/dri/intel/intel_extensions.c
-+++ b/src/mesa/drivers/dri/intel/intel_extensions.c
-@@ -135,9 +135,11 @@ intelInitExtensions(struct gl_context *ctx)
+diff -up Mesa-9.1/src/mesa/drivers/dri/intel/intel_extensions.c.jx Mesa-9.1/src/mesa/drivers/dri/intel/intel_extensions.c
+--- Mesa-9.1/src/mesa/drivers/dri/intel/intel_extensions.c.jx	2013-02-22 20:45:52.000000000 -0500
++++ Mesa-9.1/src/mesa/drivers/dri/intel/intel_extensions.c	2013-03-11 17:39:07.069991819 -0400
+@@ -137,9 +137,11 @@ intelInitExtensions(struct gl_context *c
        ctx->Extensions.ARB_seamless_cube_map = true;
        ctx->Extensions.ARB_shader_bit_encoding = true;
        ctx->Extensions.ARB_shader_texture_lod = true;
@@ -13,12 +12,11 @@ index 4e7b5da..1562f59 100755
 +#endif
        ctx->Extensions.ARB_texture_compression_rgtc = true;
        ctx->Extensions.ARB_texture_rg = true;
-       ctx->Extensions.ARB_vertex_type_2_10_10_10_rev = true;
-diff --git a/src/mesa/drivers/dri/intel/intel_screen.c b/src/mesa/drivers/dri/intel/intel_screen.c
-index 750cb78..c0b63d3 100644
---- a/src/mesa/drivers/dri/intel/intel_screen.c
-+++ b/src/mesa/drivers/dri/intel/intel_screen.c
-@@ -1039,9 +1039,15 @@ intel_screen_make_configs(__DRIscreen *dri_screen)
+       ctx->Extensions.ARB_texture_rgb10_a2ui = true;
+diff -up Mesa-9.1/src/mesa/drivers/dri/intel/intel_screen.c.jx Mesa-9.1/src/mesa/drivers/dri/intel/intel_screen.c
+--- Mesa-9.1/src/mesa/drivers/dri/intel/intel_screen.c.jx	2013-02-22 20:46:23.000000000 -0500
++++ Mesa-9.1/src/mesa/drivers/dri/intel/intel_screen.c	2013-03-11 17:40:31.235111004 -0400
+@@ -1038,9 +1038,15 @@ intel_screen_make_configs(__DRIscreen *d
  static void
  set_max_gl_versions(struct intel_screen *screen)
  {
@@ -35,19 +33,19 @@ index 750cb78..c0b63d3 100644
           screen->max_gl_core_version = 31;
           screen->max_gl_compat_version = 30;
           screen->max_gl_es1_version = 11;
-@@ -1054,10 +1060,17 @@ set_max_gl_versions(struct intel_screen *screen)
+@@ -1053,10 +1059,17 @@ set_max_gl_versions(struct intel_screen
        }
        break;
     case 6:
 -      screen->max_gl_core_version = 31;
 -      screen->max_gl_compat_version = 30;
 -      screen->max_gl_es1_version = 11;
--      screen->max_gl_es2_version = 20;
+-      screen->max_gl_es2_version = 30;
 +      if (has_texture_float) {
 +         screen->max_gl_core_version = 31;
 +         screen->max_gl_compat_version = 30;
 +         screen->max_gl_es1_version = 11;
-+         screen->max_gl_es2_version = 20;
++         screen->max_gl_es2_version = 30;
 +      } else {
 +         screen->max_gl_core_version = 0;
 +         screen->max_gl_compat_version = 21;
