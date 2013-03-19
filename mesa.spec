@@ -49,7 +49,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 9.1
-Release: 1%{?dist}
+Release: 2%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -72,6 +72,7 @@ Patch9: mesa-8.0-llvmpipe-shmget.patch
 #Patch11: mesa-8.0-nouveau-tfp-blacklist.patch
 Patch12: mesa-8.0.1-fix-16bpp.patch
 #Patch13: mesa-9.0.1-less-cxx-please.patch
+Patch14: i965-hack-hiz-snb-fix.patch
 
 BuildRequires: pkgconfig autoconf automake libtool
 %if %{with_hardware}
@@ -298,6 +299,8 @@ Mesa shared glapi
 
 #%patch13 -p1 -b .less-cpp
 
+# hack from chromium - awaiting real upstream fix
+%patch14 -p1 -b .snbfix
 # default to dri (not xlib) for libGL on all arches
 # XXX please fix upstream
 sed -i 's/^default_driver.*$/default_driver="dri"/' configure.ac
@@ -589,6 +592,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Tue Mar 19 2013 Dave Airlie <airlied@redhat.com> 9.1-2
+- add SNB hang workaround from chromium
+
 * Fri Mar 08 2013 Adam Jackson <ajax@redhat.com> 9.1-1
 - Mesa 9.1
 
