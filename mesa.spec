@@ -48,7 +48,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 9.1
-Release: 3%{?dist}
+Release: 4%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -308,7 +308,6 @@ sed -i 's/^default_driver.*$/default_driver="dri"/' configure.ac
 %if 0%{with_private_llvm}
 sed -i 's/llvm-config/mesa-private-llvm-config-%{__isa_bits}/g' configure.ac
 sed -i 's/`$LLVM_CONFIG --version`/&-mesa/' configure.ac
-sed -i 's/llvm-tblgen/mesa-private-&/' src/gallium/drivers/radeon/Makefile
 %endif
 
 # need to use libdrm_nouveau2 on F17
@@ -592,6 +591,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Tue Mar 26 2013 Adam Jackson <ajax@redhat.com> 9.1-4
+- Fix build with private LLVM
+
 * Tue Mar 19 2013 Adam Jackson <ajax@redhat.com> 9.1-3
 - mesa-9.1-53-gd0ccb5b.patch: Sync with today's git
 
