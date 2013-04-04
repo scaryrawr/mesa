@@ -1,0 +1,33 @@
+From a499fd73461257f284bd3194f9198dc484acd373 Mon Sep 17 00:00:00 2001
+From: Adam Jackson <ajax@redhat.com>
+Date: Thu, 4 Apr 2013 17:16:22 -0400
+Subject: [PATCH] llvmpipe: Work without sse2 if llvm is new enough
+
+At least on llvm 3.2 this appears to work fine.  Tested on an Athlon XP
+2600+, which has sse and 3dnow but not sse2.
+
+Signed-off-by: Adam Jackson <ajax@redhat.com>
+---
+ src/gallium/drivers/llvmpipe/lp_screen.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/src/gallium/drivers/llvmpipe/lp_screen.c b/src/gallium/drivers/llvmpipe/lp_screen.c
+index 6700887..ebcf680 100644
+--- a/src/gallium/drivers/llvmpipe/lp_screen.c
++++ b/src/gallium/drivers/llvmpipe/lp_screen.c
+@@ -485,9 +485,10 @@ llvmpipe_create_screen(struct sw_winsys *winsys)
+ {
+    struct llvmpipe_screen *screen;
+ 
+-#ifdef PIPE_ARCH_X86
+-   /* require SSE2 due to LLVM PR6960. */
+    util_cpu_detect();
++
++#if defined(PIPE_ARCH_X86) && HAVE_LLVM < 0x0302
++   /* require SSE2 due to LLVM PR6960. */
+    if (!util_cpu_caps.has_sse2)
+        return NULL;
+ #endif
+-- 
+1.8.2
+
