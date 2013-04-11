@@ -48,7 +48,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 9.1
-Release: 5%{?dist}
+Release: 6%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -592,7 +592,7 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
-* Thu Apr 11 2013 Dave Airlie <airlied@redhat.com> 9.1-5
+* Thu Apr 11 2013 Dave Airlie <airlied@redhat.com> 9.1-6
 - enable glx tls for glamor to work properly
 
 * Thu Apr 04 2013 Adam Jackson <ajax@redhat.com> 9.1-5
