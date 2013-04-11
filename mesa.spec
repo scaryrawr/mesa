@@ -105,7 +105,6 @@ BuildRequires: llvm-devel >= 3.0
 %endif
 BuildRequires: libxml2-python
 BuildRequires: libudev-devel
-BuildRequires: libtalloc-devel
 BuildRequires: bison flex
 %if !0%{?rhel}
 BuildRequires: pkgconfig(wayland-client) >= %{min_wayland_version}
@@ -350,6 +349,7 @@ export CXXFLAGS="$RPM_OPT_FLAGS -fno-rtti -fno-exceptions"
     --enable-shared-glapi \
     --enable-gbm \
     --disable-opencl \
+    --enable-glx-tls \
 %if %{with_hardware}
     %{?with_vmware:--enable-xa} \
 %if 0%{?with_llvm}
@@ -592,6 +592,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Thu Apr 11 2013 Dave Airlie <airlied@redhat.com> 9.1-5
+- enable glx tls for glamor to work properly
+
 * Thu Apr 04 2013 Adam Jackson <ajax@redhat.com> 9.1-5
 - Enable llvmpipe even on non-SSE2 machines (#909473)
 
