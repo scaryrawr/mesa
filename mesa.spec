@@ -47,8 +47,8 @@
 
 Summary: Mesa graphics libraries
 Name: mesa
-Version: 9.1
-Release: 6%{?dist}
+Version: 9.1.1
+Release: 1%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -64,7 +64,7 @@ Source3: make-git-snapshot.sh
 Source4: Mesa-MLAA-License-Clarification-Email.txt
 
 # git diff-tree -p mesa-9.1..origin/9.1 > `git describe origin/9.1`.patch
-Patch0: mesa-9.1-53-gd0ccb5b.patch
+Patch0: mesa-9.1.1-53-g3cff41c.patch
 
 Patch1: nv50-fix-build.patch
 Patch2: intel-revert-gl3.patch
@@ -592,6 +592,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Sat Apr 27 2013 Dave Airlie <airlied@redhat.com> 9.1.1-1
+- rebase to Mesa 9.1.1 + fixes from git
+
 * Thu Apr 11 2013 Dave Airlie <airlied@redhat.com> 9.1-6
 - enable glx tls for glamor to work properly
 
