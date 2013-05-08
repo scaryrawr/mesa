@@ -105,6 +105,7 @@ BuildRequires: pkgconfig(wayland-server) >= %{min_wayland_version}
 %endif
 BuildRequires: mesa-libGL-devel
 BuildRequires: libvdpau-devel
+BuildRequires: zlib-devel
 
 %description
 Mesa
