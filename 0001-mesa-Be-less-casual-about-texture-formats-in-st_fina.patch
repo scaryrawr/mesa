@@ -1,0 +1,39 @@
+From dfe652d12c62c270e00f093518a05c6966661b8a Mon Sep 17 00:00:00 2001
+From: Adam Jackson <ajax@redhat.com>
+Date: Mon, 6 May 2013 16:04:03 -0400
+Subject: [PATCH] mesa: Be less casual about texture formats in
+ st_finalize_texture
+
+Commit 62452883 removed a hunk like
+
+    if (firstImageFormat != stObj->pt->format)
+        st_view_format = firstImageFormat;
+
+from update_single_texture().  This broke piglit/glx-tfp on AMD Barts
+(and probably others), as that hunk was compensating for the mesa and
+gallium layers disagreeing about the format.
+
+Fix this by not ignoring the alpha channel in st_finalize_texture when
+considering whether two 32-bit formats are sufficiently compatible.
+
+Signed-off-by: Adam Jackson <ajax@redhat.com>
+---
+ src/mesa/state_tracker/st_cb_texture.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/mesa/state_tracker/st_cb_texture.c b/src/mesa/state_tracker/st_cb_texture.c
+index 123ed2b..0f2656c 100644
+--- a/src/mesa/state_tracker/st_cb_texture.c
++++ b/src/mesa/state_tracker/st_cb_texture.c
+@@ -1567,7 +1567,7 @@ st_finalize_texture(struct gl_context *ctx,
+     */
+    if (stObj->pt) {
+       if (stObj->pt->target != gl_target_to_pipe(stObj->base.Target) ||
+-          !st_sampler_compat_formats(stObj->pt->format, firstImageFormat) ||
++          stObj->pt->format != firstImageFormat ||
+           stObj->pt->last_level < stObj->lastLevel ||
+           stObj->pt->width0 != ptWidth ||
+           stObj->pt->height0 != ptHeight ||
+-- 
+1.8.2.1
+

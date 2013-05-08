@@ -16,14 +16,8 @@
 # S390 doesn't have video cards, but we need swrast for xserver's GLX
 %ifarch s390 s390x
 %define with_hardware 0
-%define dri_drivers --with-dri-drivers=swrast
+%define dri_drivers --with-dri-drivers=
 %else
-# llvm support only works on some arches (ppc back off for the moment)
-%ifarch %{ix86} x86_64 %{arm}
-%define with_llvm 1
-%else
-%define swrastc ,swrast
-%endif
 %define with_hardware 1
 %define base_drivers nouveau,radeon,r200
 %ifarch %{ix86}
@@ -34,28 +28,28 @@
 %define platform_drivers ,i915,i965
 %define with_vmware 1
 %endif
-%ifarch ia64
-%define platform_drivers ,i915
-%endif
-%define dri_drivers --with-dri-drivers=%{base_drivers}%{?platform_drivers}%{?swrastc}
+%define dri_drivers --with-dri-drivers=%{base_drivers}%{?platform_drivers}
 %endif
 
 %define _default_patch_fuzz 2
 
-#define gitdate 20130213
+%define gitdate 20130508
 #% define snapshot 
 
 Summary: Mesa graphics libraries
 Name: mesa
-Version: 9.1.1
-Release: 1%{?dist}
+Version: 9.2
+Release: 0.1.%{gitdate}%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
 
 #Source0: http://www.mesa3d.org/beta/MesaLib-%{version}%{?snapshot}.tar.bz2
-Source0: ftp://ftp.freedesktop.org/pub/%{name}/%{version}/MesaLib-%{version}.tar.bz2
-#Source0: %{name}-%{gitdate}.tar.xz
+#Source0: ftp://ftp.freedesktop.org/pub/%{name}/%{version}/MesaLib-%{version}.tar.bz2
+# Source0: MesaLib-%{version}.tar.xz
+Source0: %{name}-%{gitdate}.tar.xz
+Source1: sanitize-tarball.sh
+Source2: make-release-tarball.sh
 Source3: make-git-snapshot.sh
 
 # src/gallium/auxiliary/postprocess/pp_mlaa* have an ... interestingly worded license.
@@ -67,13 +61,15 @@ Source4: Mesa-MLAA-License-Clarification-Email.txt
 Patch0: mesa-9.1.1-53-g3cff41c.patch
 
 Patch1: nv50-fix-build.patch
-Patch2: intel-revert-gl3.patch
-#Patch7: mesa-7.1-link-shared.patch
 Patch9: mesa-8.0-llvmpipe-shmget.patch
-#Patch11: mesa-8.0-nouveau-tfp-blacklist.patch
 Patch12: mesa-8.0.1-fix-16bpp.patch
 Patch14: i965-hack-hiz-snb-fix.patch
-Patch15: 0001-llvmpipe-Work-without-sse2-if-llvm-is-new-enough.patch
+Patch15: mesa-9.2-hardware-float.patch
+Patch16: mesa-9.2-no-useless-vdpau.patch
+# this is suboptimal, or so dave says:
+# http://lists.freedesktop.org/archives/mesa-dev/2013-May/039169.html
+Patch17: 0001-mesa-Be-less-casual-about-texture-formats-in-st_fina.patch
+Patch18: mesa-9.2-llvmpipe-on-big-endian.patch
 
 BuildRequires: pkgconfig autoconf automake libtool
 %if %{with_hardware}
@@ -94,15 +90,12 @@ BuildRequires: libXmu-devel
 BuildRequires: elfutils
 BuildRequires: python
 BuildRequires: gettext
-%if %{with_hardware}
-%if 0%{?with_llvm}
 %if 0%{?with_private_llvm}
 BuildRequires: mesa-private-llvm-devel
 %else
 BuildRequires: llvm-devel >= 3.0
 %endif
-%endif
-%endif
+BuildRequires: elfutils-libelf-devel
 BuildRequires: libxml2-python
 BuildRequires: libudev-devel
 BuildRequires: bison flex
@@ -111,6 +104,7 @@ BuildRequires: pkgconfig(wayland-client) >= %{min_wayland_version}
 BuildRequires: pkgconfig(wayland-server) >= %{min_wayland_version}
 %endif
 BuildRequires: mesa-libGL-devel
+BuildRequires: libvdpau-devel
 
 %description
 Mesa
@@ -119,11 +113,6 @@ Mesa
 Summary: Mesa libGL runtime libraries and DRI drivers
 Group: System Environment/Libraries
 Provides: libGL
-# F17+'s libX11 changes extension libs to use _XGetRequest(), so if we built
-# against that, require it too
-%if 0%{?fedora} > 16
-Requires: libX11 >= 1.4.99.1
-%endif
 
 %description libGL
 Mesa libGL runtime library.
@@ -157,6 +146,13 @@ Obsoletes: mesa-dri-drivers-dri1 < 7.12
 Obsoletes: mesa-dri-llvmcore <= 7.12
 %description dri-drivers
 Mesa-based DRI drivers.
+
+%package vdpau-drivers
+Summary: Mesa-based DRI drivers
+Group: User Interface/X Hardware Support
+Requires: mesa-dri-filesystem%{?_isa}
+%description vdpau-drivers
+Mesa-based VDPAU drivers.
 
 %package -n khrplatform-devel
 Summary: Khronos platform development package
@@ -280,12 +276,11 @@ Group: System Environment/Libraries
 Mesa shared glapi
 
 %prep
-%setup -q -n Mesa-%{version}%{?snapshot}
-#setup -q -n mesa-%{gitdate}
-%patch0 -p1 -b .git
+#setup -q -n Mesa-%{version}%{?snapshot}
+%setup -q -n mesa-%{gitdate}
+grep -q ^/ src/gallium/auxiliary/vl/vl_decoder.c && exit 1
+#patch0 -p1 -b .git
 %patch1 -p1 -b .nv50rtti
-%patch2 -p1 -b .nogl3
-#%patch11 -p1 -b .nouveau
 
 # this fastpath is:
 # - broken with swrast classic
@@ -300,10 +295,11 @@ Mesa shared glapi
 
 # hack from chromium - awaiting real upstream fix
 %patch14 -p1 -b .snbfix
-%patch15 -p1 -b .sse2
-# default to dri (not xlib) for libGL on all arches
-# XXX please fix upstream
-sed -i 's/^default_driver.*$/default_driver="dri"/' configure.ac
+
+%patch15 -p1 -b .hwfloat
+%patch16 -p1 -b .vdpau
+%patch17 -p1 -b .tfp
+%patch18 -p1 -b .be
 
 %if 0%{with_private_llvm}
 sed -i 's/llvm-config/mesa-private-llvm-config-%{__isa_bits}/g' configure.ac
@@ -339,30 +335,27 @@ export CXXFLAGS="$RPM_OPT_FLAGS -fno-rtti -fno-exceptions"
 
 %configure %{common_flags} \
     --enable-osmesa \
-    --enable-xcb \
     --with-dri-driverdir=%{_libdir}/dri \
     --enable-egl \
-    --enable-gles1 \
+    --disable-gles1 \
     --enable-gles2 \
     --disable-gallium-egl \
+    --disable-xvmc \
+    --enable-vdpau \
     --with-egl-platforms=x11,drm%{?with_wayland:,wayland} \
     --enable-shared-glapi \
     --enable-gbm \
     --disable-opencl \
     --enable-glx-tls \
-%if %{with_hardware}
-    %{?with_vmware:--enable-xa} \
-%if 0%{?with_llvm}
-    --with-gallium-drivers=%{?with_vmware:svga,}r300,r600,%{?with_radeonsi:radeonsi,}nouveau,swrast \
+    --enable-texture-float=hardware \
     --enable-gallium-llvm \
     --with-llvm-shared-libs \
-%else
-    --with-gallium-drivers=%{?with_vmware:svga,}r300,r600,nouveau \
-%endif
-%else
-    --disable-gallium-llvm \
-    --with-gallium-drivers= \
     --enable-dri \
+%if %{with_hardware}
+    %{?with_vmware:--enable-xa} \
+    --with-gallium-drivers=%{?with_vmware:svga,}r300,r600,%{?with_radeonsi:radeonsi,}nouveau,swrast \
+%else
+    --with-gallium-drivers=swrast \
 %endif
     %{?dri_drivers}
 
@@ -371,22 +364,15 @@ make %{?_smp_mflags} MKDEP=/bin/true
 %install
 rm -rf $RPM_BUILD_ROOT
 
-# core libs and headers, but not drivers.
-make install DESTDIR=$RPM_BUILD_ROOT DRI_DIRS=
-
-# not installed by make install, grr
-mkdir -p $RPM_BUILD_ROOT%{_includedir}/KHR
-install -m 0644 include/KHR/*.h $RPM_BUILD_ROOT%{_includedir}/KHR
+make install DESTDIR=$RPM_BUILD_ROOT
 
 %if 0%{?rhel}
 # remove pre-DX9 drivers
 rm -f $RPM_BUILD_ROOT%{_libdir}/dri/{radeon,r200,nouveau_vieux}_dri.*
 %endif
 
-# strip out undesirable headers
-pushd $RPM_BUILD_ROOT%{_includedir}/GL 
-rm -f [vw]*.h
-popd
+# strip out useless headers
+rm -f $RPM_BUILD_ROOT%{_includedir}/GL/w*.h
 
 # remove .la files
 find $RPM_BUILD_ROOT -name \*.la | xargs rm -f
@@ -439,8 +425,6 @@ rm -rf $RPM_BUILD_ROOT
 %files libGLES
 %defattr(-,root,root,-)
 %doc docs/COPYING
-%{_libdir}/libGLESv1_CM.so.1
-%{_libdir}/libGLESv1_CM.so.1.*
 %{_libdir}/libGLESv2.so.2
 %{_libdir}/libGLESv2.so.2.*
 
@@ -448,6 +432,7 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 %doc docs/COPYING docs/Mesa-MLAA-License-Clarification-Email.txt
 %dir %{_libdir}/dri
+%dir %{_libdir}/vdpau
 
 %files libglapi
 %{_libdir}/libglapi.so.0
@@ -464,15 +449,12 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 %{_libdir}/dri/r300_dri.so
 %{_libdir}/dri/r600_dri.so
-%if 0%{?with_llvm} && 0%{?with_radeonsi}
+%if 0%{?with_radeonsi}
 %{_libdir}/dri/radeonsi_dri.so
-%{_libdir}/libllvmradeon9.1.1.so
 %endif
-%ifarch %{ix86} x86_64 ia64
+%ifarch %{ix86} x86_64
 %{_libdir}/dri/i915_dri.so
-%ifnarch ia64
 %{_libdir}/dri/i965_dri.so
-%endif
 %endif
 %{_libdir}/dri/nouveau_dri.so
 %if 0%{?with_vmware}
@@ -483,6 +465,13 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 %{_libdir}/libdricore*.so*
 %{_libdir}/dri/swrast_dri.so
+
+%if %{with_hardware}
+# should be explicit here but meh
+%files vdpau-drivers
+%defattr(-,root,root,-)
+%{_libdir}/vdpau/*.so*
+%endif
 
 %files -n khrplatform-devel
 %defattr(-,root,root,-)
@@ -517,11 +506,6 @@ rm -rf $RPM_BUILD_ROOT
 
 %files libGLES-devel
 %defattr(-,root,root,-)
-%dir %{_includedir}/GLES
-%{_includedir}/GLES/egl.h
-%{_includedir}/GLES/gl.h
-%{_includedir}/GLES/glext.h
-%{_includedir}/GLES/glplatform.h
 %dir %{_includedir}/GLES2
 %{_includedir}/GLES2/gl2platform.h
 %{_includedir}/GLES2/gl2.h
@@ -529,9 +513,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_includedir}/GLES3/gl3platform.h
 %{_includedir}/GLES3/gl3.h
 %{_includedir}/GLES3/gl3ext.h
-%{_libdir}/pkgconfig/glesv1_cm.pc
 %{_libdir}/pkgconfig/glesv2.pc
-%{_libdir}/libGLESv1_CM.so
 %{_libdir}/libGLESv2.so
 
 %files libOSMesa
@@ -592,6 +574,13 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Wed May 08 2013 Adam Jackson <ajax@redhat.com> 9.2-0.1.20130508
+- Switch to Mesa master (pre 9.2)
+- Fix llvmpipe on big-endian and enable llvmpipe everywhere
+- Build vdpau drivers for r600/radeonsi/nouveau
+- Enable hardware floating-point texture support
+- Drop GLESv1, nothing's using it, let's not start
+
 * Sat Apr 27 2013 Dave Airlie <airlied@redhat.com> 9.1.1-1
 - rebase to Mesa 9.1.1 + fixes from git
 

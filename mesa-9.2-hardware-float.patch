@@ -1,0 +1,131 @@
+From 5bfa2890c634883260429e7360a3a0367ef47316 Mon Sep 17 00:00:00 2001
+From: Adam Jackson <ajax@redhat.com>
+Date: Wed, 1 May 2013 13:23:13 -0400
+Subject: [PATCH] configure: --enable-texture-float={yes,no,hardware}
+
+This enables building float-texture support for hardware drivers but not
+software drivers.
+
+This is obviously not upstreamable in its current form.
+
+Signed-off-by: Adam Jackson <ajax@redhat.com>
+---
+ configure.ac                             | 6 +++---
+ src/gallium/drivers/llvmpipe/lp_screen.c | 9 +++++++++
+ src/gallium/drivers/softpipe/sp_screen.c | 9 +++++++++
+ 3 files changed, 21 insertions(+), 3 deletions(-)
+
+diff --git a/configure.ac b/configure.ac
+index 81d4a3f..970dacf 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -381,15 +381,15 @@ dnl
+ dnl potentially-infringing-but-nobody-knows-for-sure stuff
+ dnl
+ AC_ARG_ENABLE([texture-float],
+-    [AS_HELP_STRING([--enable-texture-float],
++    [AS_HELP_STRING([--enable-texture-float=yes,no,hardware],
+         [enable floating-point textures and renderbuffers @<:@default=disabled@:>@])],
+     [enable_texture_float="$enableval"],
+     [enable_texture_float=no]
+ )
+-if test "x$enable_texture_float" = xyes; then
++if test "x$enable_texture_float" = xyes -o "x$enable_texture_float" = xhardware; then
+     AC_MSG_WARN([Floating-point textures enabled.])
+     AC_MSG_WARN([Please consult docs/patents.txt with your lawyer before building Mesa.])
+-    DEFINES="$DEFINES -DTEXTURE_FLOAT_ENABLED"
++    DEFINES="$DEFINES -DTEXTURE_FLOAT_ENABLED=$enable_texture_float"
+ fi
+ 
+ GL_LIB_NAME='lib$(GL_LIB).'${LIB_EXTENSION}
+diff --git a/src/gallium/drivers/llvmpipe/lp_screen.c b/src/gallium/drivers/llvmpipe/lp_screen.c
+index 5ec1df6..a0406fc 100644
+--- a/src/gallium/drivers/llvmpipe/lp_screen.c
++++ b/src/gallium/drivers/llvmpipe/lp_screen.c
+@@ -306,6 +306,15 @@ llvmpipe_is_format_supported( struct pipe_screen *_screen,
+    if (!format_desc)
+       return FALSE;
+ 
++#if 1
++   if ((bind & PIPE_BIND_RENDER_TARGET) &&
++       format != PIPE_FORMAT_R9G9B9E5_FLOAT &&
++       format != PIPE_FORMAT_R11G11B10_FLOAT &&
++       util_format_is_float(format)) {
++      return FALSE;
++   }
++#endif
++
+    assert(target == PIPE_BUFFER ||
+           target == PIPE_TEXTURE_1D ||
+           target == PIPE_TEXTURE_1D_ARRAY ||
+diff --git a/src/gallium/drivers/softpipe/sp_screen.c b/src/gallium/drivers/softpipe/sp_screen.c
+index 937035e..2f5e571 100644
+--- a/src/gallium/drivers/softpipe/sp_screen.c
++++ b/src/gallium/drivers/softpipe/sp_screen.c
+@@ -291,6 +291,15 @@ softpipe_is_format_supported( struct pipe_screen *screen,
+    if (!format_desc)
+       return FALSE;
+ 
++#if 1
++   if ((bind & PIPE_BIND_RENDER_TARGET) &&
++       format != PIPE_FORMAT_R9G9B9E5_FLOAT &&
++       format != PIPE_FORMAT_R11G11B10_FLOAT &&
++       util_format_is_float(format)) {
++      return FALSE;
++   }
++#endif
++
+    if (sample_count > 1)
+       return FALSE;
+ 
+-- 
+1.8.2.1
+
+diff -up mesa-20130508/src/gallium/auxiliary/util/u_format_table.py.jx mesa-20130508/src/gallium/auxiliary/util/u_format_table.py
+--- mesa-20130508/src/gallium/auxiliary/util/u_format_table.py.jx	2013-05-08 13:23:41.000000000 -0400
++++ mesa-20130508/src/gallium/auxiliary/util/u_format_table.py	2013-05-08 15:20:02.145510681 -0400
+@@ -133,15 +133,35 @@ def write_format_table(formats):
+         print "   },"
+         print "   %s," % (colorspace_map(format.colorspace),)
+         if format.colorspace != ZS and format.channels[0].pure == False:
+-            print "   &util_format_%s_unpack_rgba_8unorm," % format.short_name() 
+-            print "   &util_format_%s_pack_rgba_8unorm," % format.short_name() 
+-            if format.layout == 's3tc' or format.layout == 'rgtc':
+-                print "   &util_format_%s_fetch_rgba_8unorm," % format.short_name()
+-            else:
+-                print "   NULL, /* fetch_rgba_8unorm */" 
+-            print "   &util_format_%s_unpack_rgba_float," % format.short_name() 
+-            print "   &util_format_%s_pack_rgba_float," % format.short_name() 
+-            print "   &util_format_%s_fetch_rgba_float," % format.short_name()
++	    if "float" in format.short_name():
++		print "#if 0"
++		print "   &util_format_%s_unpack_rgba_8unorm," % format.short_name() 
++		print "   &util_format_%s_pack_rgba_8unorm," % format.short_name() 
++		if format.layout == 's3tc' or format.layout == 'rgtc':
++		    print "   &util_format_%s_fetch_rgba_8unorm," % format.short_name()
++		else:
++		    print "   NULL, /* fetch_rgba_8unorm */" 
++		print "   &util_format_%s_unpack_rgba_float," % format.short_name() 
++		print "   &util_format_%s_pack_rgba_float," % format.short_name() 
++		print "   &util_format_%s_fetch_rgba_float," % format.short_name()
++		print "#else"
++		print "   NULL, /* unpack_rgba_8unorm */" 
++		print "   NULL, /* pack_rgba_8unorm */" 
++		print "   NULL, /* fetch_rgba_8unorm */" 
++		print "   NULL, /* unpack_rgba_float */" 
++		print "   NULL, /* pack_rgba_float */" 
++		print "   NULL, /* fetch_rgba_float */" 
++		print "#endif"
++	    else:
++		print "   &util_format_%s_unpack_rgba_8unorm," % format.short_name() 
++		print "   &util_format_%s_pack_rgba_8unorm," % format.short_name() 
++		if format.layout == 's3tc' or format.layout == 'rgtc':
++		    print "   &util_format_%s_fetch_rgba_8unorm," % format.short_name()
++		else:
++		    print "   NULL, /* fetch_rgba_8unorm */" 
++		print "   &util_format_%s_unpack_rgba_float," % format.short_name() 
++		print "   &util_format_%s_pack_rgba_float," % format.short_name() 
++		print "   &util_format_%s_fetch_rgba_float," % format.short_name()
+         else:
+             print "   NULL, /* unpack_rgba_8unorm */" 
+             print "   NULL, /* pack_rgba_8unorm */" 
