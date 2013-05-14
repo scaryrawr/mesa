@@ -1,0 +1,224 @@
+From 430343da5988f53ee6eedffb55ab38fa7cf64fd5 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Marek=20Ol=C5=A1=C3=A1k?= <maraeo@gmail.com>
+Date: Fri, 10 May 2013 03:42:23 +0200
+Subject: [PATCH] st/mesa: handle texture_from_pixmap and other surface-based
+ textures correctly
+
+There were 2 issues with it:
+1) The texture format which should be used for texturing was only set
+   in gl_texture_image::TexFormat, which wasn't used for sampler views.
+2) Textures are sometimes reallocated under some circumstances
+   in st_finalize_texture, which is unacceptable if the texture comes
+   from a window system.
+
+The issues are resolved as follows:
+1) If surface_based is true (texture_from_pixmap, etc.), store the format
+   in a new variable st_texture_object::surface_format.
+2) Don't reallocate a surface-based texture in st_finalize_texture.
+
+Also don't use st_ChooseTextureFormat is st_context_teximage, because
+the format is dictated by the caller.
+
+This fixes the glx-tfp piglit test.
+---
+ src/mesa/state_tracker/st_atom_texture.c |  3 ++-
+ src/mesa/state_tracker/st_cb_eglimage.c  |  1 +
+ src/mesa/state_tracker/st_cb_texture.c   |  7 ++++++-
+ src/mesa/state_tracker/st_format.c       | 35 --------------------------------
+ src/mesa/state_tracker/st_format.h       |  4 ----
+ src/mesa/state_tracker/st_manager.c      | 25 +++++------------------
+ src/mesa/state_tracker/st_texture.h      | 10 +++++++--
+ 7 files changed, 22 insertions(+), 63 deletions(-)
+
+diff --git a/src/mesa/state_tracker/st_atom_texture.c b/src/mesa/state_tracker/st_atom_texture.c
+index 8d1250f..d79e04c 100644
+--- a/src/mesa/state_tracker/st_atom_texture.c
++++ b/src/mesa/state_tracker/st_atom_texture.c
+@@ -239,7 +239,8 @@ update_single_texture(struct st_context *st,
+          st_mesa_format_to_pipe_format(stObj->base._BufferObjectFormat);
+    }
+    else {
+-      view_format = stObj->pt->format;
++      view_format =
++         stObj->surface_based ? stObj->surface_format : stObj->pt->format;
+ 
+       /* If sRGB decoding is off, use the linear format */
+       if (samp->sRGBDecode == GL_SKIP_DECODE_EXT) {
+diff --git a/src/mesa/state_tracker/st_cb_eglimage.c b/src/mesa/state_tracker/st_cb_eglimage.c
+index b162870..a396b9e 100644
+--- a/src/mesa/state_tracker/st_cb_eglimage.c
++++ b/src/mesa/state_tracker/st_cb_eglimage.c
+@@ -131,6 +131,7 @@ st_bind_surface(struct gl_context *ctx, GLenum target,
+    stObj->width0 = ps->width;
+    stObj->height0 = ps->height;
+    stObj->depth0 = 1;
++   stObj->surface_format = ps->format;
+ 
+    _mesa_dirty_texobj(ctx, texObj, GL_TRUE);
+ }
+diff --git a/src/mesa/state_tracker/st_cb_texture.c b/src/mesa/state_tracker/st_cb_texture.c
+index 123ed2b..56dbe85 100644
+--- a/src/mesa/state_tracker/st_cb_texture.c
++++ b/src/mesa/state_tracker/st_cb_texture.c
+@@ -1540,6 +1540,11 @@ st_finalize_texture(struct gl_context *ctx,
+       pipe_sampler_view_release(st->pipe, &stObj->sampler_view);
+    }
+ 
++   /* If this texture comes from a window system, there is nothing else to do. */
++   if (stObj->surface_based) {
++      return GL_TRUE;
++   }
++
+    /* Find gallium format for the Mesa texture */
+    firstImageFormat = st_mesa_format_to_pipe_format(firstImage->base.TexFormat);
+ 
+@@ -1567,7 +1572,7 @@ st_finalize_texture(struct gl_context *ctx,
+     */
+    if (stObj->pt) {
+       if (stObj->pt->target != gl_target_to_pipe(stObj->base.Target) ||
+-          !st_sampler_compat_formats(stObj->pt->format, firstImageFormat) ||
++          stObj->pt->format != firstImageFormat ||
+           stObj->pt->last_level < stObj->lastLevel ||
+           stObj->pt->width0 != ptWidth ||
+           stObj->pt->height0 != ptHeight ||
+diff --git a/src/mesa/state_tracker/st_format.c b/src/mesa/state_tracker/st_format.c
+index c9c6163..56f3a4a 100644
+--- a/src/mesa/state_tracker/st_format.c
++++ b/src/mesa/state_tracker/st_format.c
+@@ -1800,41 +1800,6 @@ st_QuerySamplesForFormat(struct gl_context *ctx, GLenum target,
+ }
+ 
+ 
+-GLboolean
+-st_sampler_compat_formats(enum pipe_format format1, enum pipe_format format2)
+-{
+-   if (format1 == format2)
+-      return GL_TRUE;
+-
+-   if (format1 == PIPE_FORMAT_B8G8R8A8_UNORM &&
+-       format2 == PIPE_FORMAT_B8G8R8X8_UNORM)
+-      return GL_TRUE;
+-
+-   if (format1 == PIPE_FORMAT_B8G8R8X8_UNORM &&
+-       format2 == PIPE_FORMAT_B8G8R8A8_UNORM)
+-      return GL_TRUE;
+-
+-   if (format1 == PIPE_FORMAT_A8B8G8R8_UNORM &&
+-       format2 == PIPE_FORMAT_X8B8G8R8_UNORM)
+-      return GL_TRUE;
+-
+-   if (format1 == PIPE_FORMAT_X8B8G8R8_UNORM &&
+-       format2 == PIPE_FORMAT_A8B8G8R8_UNORM)
+-      return GL_TRUE;
+-
+-   if (format1 == PIPE_FORMAT_A8R8G8B8_UNORM &&
+-       format2 == PIPE_FORMAT_X8R8G8B8_UNORM)
+-      return GL_TRUE;
+-
+-   if (format1 == PIPE_FORMAT_X8R8G8B8_UNORM &&
+-       format2 == PIPE_FORMAT_A8R8G8B8_UNORM)
+-      return GL_TRUE;
+-
+-   return GL_FALSE;
+-}
+-
+-
+-
+ /**
+  * This is used for translating texture border color and the clear
+  * color.  For example, the clear color is interpreted according to
+diff --git a/src/mesa/state_tracker/st_format.h b/src/mesa/state_tracker/st_format.h
+index 0a1c18d..6e97dcb 100644
+--- a/src/mesa/state_tracker/st_format.h
++++ b/src/mesa/state_tracker/st_format.h
+@@ -70,10 +70,6 @@ size_t
+ st_QuerySamplesForFormat(struct gl_context *ctx, GLenum target,
+                          GLenum internalFormat, int samples[16]);
+ 
+-/* can we use a sampler view to translate these formats
+-   only used to make TFP so far */
+-extern GLboolean
+-st_sampler_compat_formats(enum pipe_format format1, enum pipe_format format2);
+ 
+ 
+ extern void
+diff --git a/src/mesa/state_tracker/st_manager.c b/src/mesa/state_tracker/st_manager.c
+index 5561af6..9e537f3 100644
+--- a/src/mesa/state_tracker/st_manager.c
++++ b/src/mesa/state_tracker/st_manager.c
+@@ -467,7 +467,7 @@ st_context_flush(struct st_context_iface *stctxi, unsigned flags,
+ static boolean
+ st_context_teximage(struct st_context_iface *stctxi,
+                     enum st_texture_type tex_type,
+-                    int level, enum pipe_format internal_format,
++                    int level, enum pipe_format pipe_format,
+                     struct pipe_resource *tex, boolean mipmap)
+ {
+    struct st_context *st = (struct st_context *) stctxi;
+@@ -511,29 +511,13 @@ st_context_teximage(struct st_context_iface *stctxi,
+    texImage = _mesa_get_tex_image(ctx, texObj, target, level);
+    stImage = st_texture_image(texImage);
+    if (tex) {
+-      gl_format texFormat;
+-
+-      /*
+-       * XXX When internal_format and tex->format differ, st_finalize_texture
+-       * needs to allocate a new texture with internal_format and copy the
+-       * texture here into the new one.  It will result in surface_copy being
+-       * called on surfaces whose formats differ.
+-       *
+-       * To avoid that, internal_format is (wrongly) ignored here.  A sane fix
+-       * is to use a sampler view.
+-       */
+-      if (!st_sampler_compat_formats(tex->format, internal_format))
+-	 internal_format = tex->format;
+-     
+-      if (util_format_get_component_bits(internal_format,
+-               UTIL_FORMAT_COLORSPACE_RGB, 3) > 0)
++      gl_format texFormat = st_pipe_format_to_mesa_format(pipe_format);
++
++      if (util_format_has_alpha(tex->format))
+          internalFormat = GL_RGBA;
+       else
+          internalFormat = GL_RGB;
+ 
+-      texFormat = st_ChooseTextureFormat(ctx, target, internalFormat,
+-                                         GL_BGRA, GL_UNSIGNED_BYTE);
+-
+       _mesa_init_teximage_fields(ctx, texImage,
+                                  tex->width0, tex->height0, 1, 0,
+                                  internalFormat, texFormat);
+@@ -562,6 +546,7 @@ st_context_teximage(struct st_context_iface *stctxi,
+    stObj->width0 = width;
+    stObj->height0 = height;
+    stObj->depth0 = depth;
++   stObj->surface_format = pipe_format;
+ 
+    _mesa_dirty_texobj(ctx, texObj, GL_TRUE);
+    _mesa_unlock_texture(ctx, texObj);
+diff --git a/src/mesa/state_tracker/st_texture.h b/src/mesa/state_tracker/st_texture.h
+index da899c9..c15aeae 100644
+--- a/src/mesa/state_tracker/st_texture.h
++++ b/src/mesa/state_tracker/st_texture.h
+@@ -87,10 +87,16 @@ struct st_texture_object
+     */
+    struct pipe_sampler_view *sampler_view;
+ 
+-   /* True if there is/was a surface bound to this texture object.  It helps
+-    * track whether the texture object is surface based or not.
++   /* True if this texture comes from the window system. Such a texture
++    * cannot be reallocated and the format can only be changed with a sampler
++    * view or a surface.
+     */
+    GLboolean surface_based;
++
++   /* If surface_based is true, this format should be used for all sampler
++    * views and surfaces instead of pt->format.
++    */
++   enum pipe_format surface_format;
+ };
+ 
+ 
+-- 
+1.8.2.1
+

@@ -13,27 +13,39 @@
 %define with_radeonsi 1
 %endif
 
+%ifarch %{arm}
+%define with_freedreno 1
+%endif
+
 # S390 doesn't have video cards, but we need swrast for xserver's GLX
+# llvm (and thus llvmpipe) doesn't actually work on ppc32 or s390
+
+%ifnarch s390 ppc
+%define with_llvm 1
+%endif
+
 %ifarch s390 s390x
 %define with_hardware 0
-%define dri_drivers --with-dri-drivers=
+%ifarch s390
+%define base_drivers swrast
+%endif
 %else
 %define with_hardware 1
 %define base_drivers nouveau,radeon,r200
-%ifarch %{ix86}
+%ifarch %{ix86} x86_64
 %define platform_drivers ,i915,i965
 %define with_vmware 1
 %endif
-%ifarch x86_64
-%define platform_drivers ,i915,i965
-%define with_vmware 1
+%ifarch ppc
+%define platform_drivers ,swrast
 %endif
-%define dri_drivers --with-dri-drivers=%{base_drivers}%{?platform_drivers}
 %endif
+
+%define dri_drivers --with-dri-drivers=%{?base_drivers}%{?platform_drivers}
 
 %define _default_patch_fuzz 2
 
-%define gitdate 20130508
+%define gitdate 20130514
 #% define snapshot 
 
 Summary: Mesa graphics libraries
@@ -44,8 +56,6 @@ License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
 
-#Source0: http://www.mesa3d.org/beta/MesaLib-%{version}%{?snapshot}.tar.bz2
-#Source0: ftp://ftp.freedesktop.org/pub/%{name}/%{version}/MesaLib-%{version}.tar.bz2
 # Source0: MesaLib-%{version}.tar.xz
 Source0: %{name}-%{gitdate}.tar.xz
 Source1: sanitize-tarball.sh
@@ -57,18 +67,13 @@ Source3: make-git-snapshot.sh
 # Fedora opts to ignore the optional part of clause 2 and treat that code as 2 clause BSD.
 Source4: Mesa-MLAA-License-Clarification-Email.txt
 
-# git diff-tree -p mesa-9.1..origin/9.1 > `git describe origin/9.1`.patch
-Patch0: mesa-9.1.1-53-g3cff41c.patch
-
 Patch1: nv50-fix-build.patch
 Patch9: mesa-8.0-llvmpipe-shmget.patch
 Patch12: mesa-8.0.1-fix-16bpp.patch
-Patch14: i965-hack-hiz-snb-fix.patch
 Patch15: mesa-9.2-hardware-float.patch
 Patch16: mesa-9.2-no-useless-vdpau.patch
-# this is suboptimal, or so dave says:
-# http://lists.freedesktop.org/archives/mesa-dev/2013-May/039169.html
-Patch17: 0001-mesa-Be-less-casual-about-texture-formats-in-st_fina.patch
+# http://lists.freedesktop.org/archives/mesa-dev/2013-May/039265.html
+Patch17: 0001-st-mesa-handle-texture_from_pixmap-and-other-surface.patch
 Patch18: mesa-9.2-llvmpipe-on-big-endian.patch
 
 BuildRequires: pkgconfig autoconf automake libtool
@@ -132,17 +137,18 @@ Group: System Environment/Libraries
 %description libGLES
 Mesa GLES runtime libraries
 
-%package dri-filesystem
-Summary: Mesa DRI driver filesystem
+%package filesystem
+Summary: Mesa driver filesystem
 Group: User Interface/X Hardware Support
-%description dri-filesystem
-Mesa DRI driver filesystem
+Provides: mesa-dri-filesystem = %{version}-%{release}
+Obsoletes: mesa-dri-filesystem < %{version}-%{release}
+%description filesystem
+Mesa driver filesystem
 
 %package dri-drivers
 Summary: Mesa-based DRI drivers
 Group: User Interface/X Hardware Support
-Requires: mesa-dri-filesystem%{?_isa}
-Obsoletes: mesa-dri-drivers-experimental < 0:7.10-0.24
+Requires: mesa-filesystem%{?_isa}
 Obsoletes: mesa-dri-drivers-dri1 < 7.12
 Obsoletes: mesa-dri-llvmcore <= 7.12
 %description dri-drivers
@@ -151,7 +157,7 @@ Mesa-based DRI drivers.
 %package vdpau-drivers
 Summary: Mesa-based DRI drivers
 Group: User Interface/X Hardware Support
-Requires: mesa-dri-filesystem%{?_isa}
+Requires: mesa-filesystem%{?_isa}
 %description vdpau-drivers
 Mesa-based VDPAU drivers.
 
@@ -280,7 +286,6 @@ Mesa shared glapi
 #setup -q -n Mesa-%{version}%{?snapshot}
 %setup -q -n mesa-%{gitdate}
 grep -q ^/ src/gallium/auxiliary/vl/vl_decoder.c && exit 1
-#patch0 -p1 -b .git
 %patch1 -p1 -b .nv50rtti
 
 # this fastpath is:
@@ -293,9 +298,6 @@ grep -q ^/ src/gallium/auxiliary/vl/vl_decoder.c && exit 1
 # dear ajax: fix this one way or the other
 #patch9 -p1 -b .shmget
 #patch12 -p1 -b .16bpp
-
-# hack from chromium - awaiting real upstream fix
-%patch14 -p1 -b .snbfix
 
 %patch15 -p1 -b .hwfloat
 %patch16 -p1 -b .vdpau
@@ -329,12 +331,12 @@ export CFLAGS="$RPM_OPT_FLAGS"
 export CXXFLAGS="$RPM_OPT_FLAGS -fno-rtti -fno-exceptions"
 %ifarch %{ix86}
 # i do not have words for how much the assembly dispatch code infuriates me
-%define common_flags --enable-selinux --enable-pic --disable-asm
-%else
-%define common_flags --enable-selinux --enable-pic
+%define asm_flags --disable-asm
 %endif
 
-%configure %{common_flags} \
+%configure \
+    %{?asm_flags} \
+    --enable-selinux \
     --enable-osmesa \
     --with-dri-driverdir=%{_libdir}/dri \
     --enable-egl \
@@ -349,14 +351,14 @@ export CXXFLAGS="$RPM_OPT_FLAGS -fno-rtti -fno-exceptions"
     --disable-opencl \
     --enable-glx-tls \
     --enable-texture-float=hardware \
-    --enable-gallium-llvm \
-    --with-llvm-shared-libs \
+    %{?with_llvm:--enable-gallium-llvm} \
+    %{?with_llvm:--with-llvm-shared-libs} \
     --enable-dri \
 %if %{with_hardware}
     %{?with_vmware:--enable-xa} \
-    --with-gallium-drivers=%{?with_vmware:svga,}r300,r600,%{?with_radeonsi:radeonsi,}nouveau,swrast \
+    --with-gallium-drivers=%{?with_vmware:svga,}%{?with_radeonsi:radeonsi,}%{?with_llvm:swrast,}%{?with_freedreno:freedreno,}r300,r600,nouveau \
 %else
-    --with-gallium-drivers=swrast \
+    --with-gallium-drivers=%{?with_llvm:swrast} \
 %endif
     %{?dri_drivers}
 
@@ -371,6 +373,9 @@ make install DESTDIR=$RPM_BUILD_ROOT
 # remove pre-DX9 drivers
 rm -f $RPM_BUILD_ROOT%{_libdir}/dri/{radeon,r200,nouveau_vieux}_dri.*
 %endif
+
+# libvdpau opens the versioned name, don't bother including the unversioned
+rm -f $RPM_BUILD_ROOT%{_libdir}/vdpau/*.so
 
 # strip out useless headers
 rm -f $RPM_BUILD_ROOT%{_includedir}/GL/w*.h
@@ -429,7 +434,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libGLESv2.so.2
 %{_libdir}/libGLESv2.so.2.*
 
-%files dri-filesystem
+%files filesystem
 %defattr(-,root,root,-)
 %doc docs/COPYING docs/Mesa-MLAA-License-Clarification-Email.txt
 %dir %{_libdir}/dri
@@ -457,6 +462,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/dri/i915_dri.so
 %{_libdir}/dri/i965_dri.so
 %endif
+%if 0%{?with_freedreno}
+%{_libdir}/dri/freedreno_dri.so
+%endif
 %{_libdir}/dri/nouveau_dri.so
 %if 0%{?with_vmware}
 %{_libdir}/dri/vmwgfx_dri.so
@@ -468,10 +476,11 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/dri/swrast_dri.so
 
 %if %{with_hardware}
-# should be explicit here but meh
 %files vdpau-drivers
 %defattr(-,root,root,-)
-%{_libdir}/vdpau/*.so*
+%{_libdir}/vdpau/libvdpau_nouveau.so.1*
+%{_libdir}/vdpau/libvdpau_r600.so.1*
+%{_libdir}/vdpau/libvdpau_radeonsi.so.1*
 %endif
 
 %files -n khrplatform-devel
@@ -575,6 +584,13 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Tue May 14 2013 Adam Jackson <ajax@redhat.com> 9.2-0.1.20130514
+- Today's git snap
+- Revert to swrast on ppc32 and s390 since llvm doesn't actually work
+- Build freedreno on arm
+- Drop snb hang workaround (upstream 1dfea559)
+- Rename filesystem package
+
 * Wed May 08 2013 Adam Jackson <ajax@redhat.com> 9.2-0.1.20130508
 - Switch to Mesa master (pre 9.2)
 - Fix llvmpipe on big-endian and enable llvmpipe everywhere
@@ -739,340 +755,3 @@ rm -rf $RPM_BUILD_ROOT
 * Tue Apr 24 2012 Richard Hughes <rhughes@redhat.com> 8.0.3-0.1
 - Rebuild with new git snapshot
 - Remove upstreamed patches
-
-* Tue Apr 24 2012 Karsten Hopp <karsten@redhat.com> 8.0.2-4
-- disable llvm on PPC(64) in Fedora as recommended in bugzilla 769803
-
-* Tue Apr 10 2012 Adam Jackson <ajax@redhat.com> 8.0.2-3
-- Require newer libX11 on F17+
-
-* Mon Apr 02 2012 Adam Jackson <ajax@redhat.com> 8.0.2-2
-- mesa-8.0.1-fix-16bpp.patch: Fix 16bpp in llvmpipe
-
-* Sat Mar 31 2012 Dave Airlie <airlied@redhat.com> 8.0.2-1
-- get latest 8.0.2 set of fixes
-
-* Wed Mar 28 2012 Adam Jackson <ajax@redhat.com> 8.0.1-9
-- Subpackage libglapi instead of abusing -dri-drivers for it to keep minimal
-  disk space minimal. (#807750)
-
-* Wed Mar 28 2012 Adam Jackson <ajax@redhat.com> 8.0.1-8
-- mesa-8.0.1-llvmpipe-shmget.patch: Fix image pitch bug.
-
-* Fri Mar 23 2012 Adam Jackson <ajax@redhat.com> 8.0.1-7
-- mesa-8.0-nouveau-tfp-blacklist.patch: gnome-shell blacklisting: nvfx and
-  below with <= 64M of vram, and all nv30.
-
-* Wed Mar 21 2012 Adam Jackson <ajax@redhat.com> 8.0.1-6
-- mesa-8.0.1-llvmpipe-shmget.patch: Use ShmGetImage if possible
-
-* Mon Mar 19 2012 Adam Jackson <ajax@redhat.com> 8.0.1-5
-- Move libglapi into -dri-drivers instead of -libGLES as being marginally
-  more appropriate (libGL wants to have DRI drivers, but doesn't need to
-  have a full libGLES too).
-
-* Thu Mar 15 2012 Dave Airlie <airlied@gmail.com> 8.0.1-4
-- enable vmwgfx + xa state tracker
-
-* Thu Mar 01 2012 Adam Jackson <ajax@redhat.com> 8.0.1-3
-- mesa-8.0.1-git.patch: Sync with 8.0 branch (commit a3080987)
-
-* Sat Feb 18 2012 Thorsten Leemhuis <fedora@leemhuis.info> 8.0.1-2
-- a few changes for weston, the wayland reference compositor (#790542):
-- enable gbm and shared-glapi in configure command (the latter is required by 
-  the former) and add subpackages libgbm and libgbm-devel
-- add --with-egl-platforms=x11,wayland,drm to configure command and add 
-  subpackages libwayland-egl and libwayland-egl-devel
-
-* Fri Feb 17 2012 Adam Jackson <ajax@redhat.com> 8.0.1-1
-- Mesa 8.0.1
-
-* Mon Feb 13 2012 Adam Jackson <ajax@redhat.com> 8.0-1
-- Mesa 8.0
-
-* Mon Feb 13 2012 Adam Jackson <ajax@redhat.com> 8.0-0.2
-- Default to DRI libGL on all arches (#789402)
-
-* Thu Jan 26 2012 Dave Airlie <airlied@redhat.com> 8.0-0.1
-- initial 8.0 snapshot
-
-* Thu Jan 05 2012 Adam Jackson <ajax@redhat.com> 7.12-0.7
-- Today's git snapshot
-
-* Wed Dec 14 2011 Adam Jackson <ajax@redhat.com> 7.12-0.6
-- Today's git snapshot
-- Disable hardware drivers on ppc* in RHEL
-
-* Fri Dec 02 2011 Dan Horák <dan[at]danny.cz> 7.12-0.5
-- fix build on s390(x)
-
-* Tue Nov 29 2011 Adam Jackson <ajax@redhat.com> 7.12-0.4
-- Today's git snapshot
-- --enable-xcb
-- mesa-7.1-nukeglthread-debug.patch: Drop
-
-* Thu Nov 17 2011 Adam Jackson <ajax@redhat.com> 7.12-0.3
-- mesa-dri-drivers Obsoletes: mesa-dri-drivers-dri1 < 7.12
-
-* Wed Nov 16 2011 Adam Jackson <ajax@redhat.com> 7.12-0.2
-- Cleanups to BuildRequires, Requires, Conflicts, etc.
-
-* Mon Nov 14 2011 Dave Airlie <airlied@redhat.com> 7.12-0.1
-- rebase to upstream snapshot of 7.12
-
-* Mon Nov 14 2011 Adam Jackson <ajax@redhat.com> 7.11-12
-- Rebuild for new libllvm soname
-
-* Wed Nov 09 2011 Adam Jackson <ajax@redhat.com> 7.11-11
-- Obsolete more -llvmcore (#752152)
-
-* Thu Nov 03 2011 Dave Airlie <airlied@redhat.com> 7.11-10
-- snapshot latest mesa 7.11 stable branch (what will be 7.11.1)
-
-* Thu Nov 03 2011 Adam Jackson <ajax@redhat.com> 7.11-9
-- mesa-7.11-fix-sw-24bpp.patch: Fix software rendering in 24bpp.
-
-* Fri Oct 28 2011 Adam Jackson <ajax@redhat.com> 7.11-8
-- mesa-7.11-intel-swap-event.patch: Disable GLX_INTEL_swap_event by default;
-  DRI2 enables it explicitly, but swrast doesn't and oughtn't. (#748747)
-
-* Mon Oct 24 2011 Adam Jackson <ajax@redhat.com> 7.11-6
-- 0001-nv50-fix-max-texture-levels.patch: Fix maximum texture size on
-  nouveau (and thus, gnome-shell init on wide display setups) (#748540)
-
-* Mon Oct 24 2011 Adam Jackson <ajax@redhat.com> 7.11-5
-- mesa-7.11-drisw-glx13.patch: Fix GLX 1.3 ctors with swrast (#747276)
-
-* Fri Sep 09 2011 Adam Jackson <ajax@redhat.com> 7.11-4
-- mesa-7.11-generic-wmb.patch: Add generic write memory barrier macro for
-  non-PC arches.
-
-* Thu Sep 08 2011 Adam Jackson <ajax@redhat.com> 7.11-3
-- Add khrplatform-devel subpackage so {EGL,GLES}-devel are usable
-
-* Wed Aug  3 2011 Michel Salim <salimma@fedoraproject.org> - 7.11-2
-- Rebuild against final LLVM 2.9 release
-
-* Tue Aug 02 2011 Adam Jackson <ajax@redhat.com> 7.11-1
-- Mesa 7.11
-- Redo the driver arch exclusion, yet again.  Dear secondary arches: unless
-  it's an on-motherboard driver like i915, all PCI drivers are to be built
-  for all PCI arches.
-
-* Sat Jul 30 2011 Dave Airlie <airlied@redhat.com> 7.11-0.18.20110730.0
-- rebase to latest upstream snapshot (same as F15)
-
-* Thu Jul 07 2011 Peter Lemenkov <lemenkov@gmail.com> - 7.11-0.16.20110620.0
-- Fix building on ppc (some dri1 drivers are missing)
-
-* Wed Jul  6 2011 Ville Skyttä <ville.skytta@iki.fi> - 7.11-0.15.20110620.0
-- More include dir ownership fixes (#682357).
-
-* Tue Jul 05 2011 Adam Jackson <ajax@redhat.com> 7.11-0.14.20110620.0
-- Arch-dep and file ownership fixes (#682357)
-
-* Mon Jun 20 2011 Dave Airlie <airlied@redhat.com> 7.11-0.13.20110620.0
-- rebase to 20 June snapshot from upstream - new gallium config options
-
-* Mon Jun 20 2011 Dave Airlie <airlied@redhat.com> 7.11-0.12.20110412.0
-- dropping DRI1 is premature, fix swrastg upstream first.
-
-* Tue May 10 2011 Dan Horák <dan[at]danny.cz> 7.11-0.11.20110412.0
-- r300 needs to be explicitely disabled when with_hardware == 0
-
-* Mon May 09 2011 Adam Jackson <ajax@redhat.com> 7.11-0.10.20110412.0
-- Drop the separate build pass for osmesa, no longer needed.
-
-* Mon May 09 2011 Adam Jackson <ajax@redhat.com> 7.11-0.9.20110412.0
-- Drop dri1 subpackage (and its drivers), use "swrastg" consistently.
-
-* Mon May 09 2011 Adam Jackson <ajax@redhat.com> 7.11-0.8.20110412.0
-- Use llvm-libs' shared lib instead of rolling our own.
-
-* Mon Apr 18 2011 Adam Jackson <ajax@redhat.com> 7.11-0.7.20110412.0
-- Fix intel driver exclusion to be better arched (#697555)
-
-* Tue Apr 12 2011 Dave Airlie <airlied@redhat.com> 7.11-0.6.20110412.0
-- latest upstream snapshot to fix r200 regression.
-
-* Fri Apr 01 2011 Dave Airlie <airlied@redhat.com> 7.11-0.5.20110401.0
-- Revert upstream patches causing SNB regression.
-
-* Fri Apr 01 2011 Dave Airlie <airlied@redhat.com> 7.11-0.4.20110401.0
-- upstream snapshot again - proper fix for ILK + nv50 gnome-shell issue
-
-* Wed Mar 30 2011 Dave Airlie <airlied@redhat.com> 7.11-0.3.20110330.0
-- mesa-intel-fix-gs-rendering-regression.patch, attempt to fix gnome shell
-  rendering.
-
-* Wed Mar 30 2011 Dave Airlie <airlied@redhat.com> 7.11-0.2.20110330.0
-- snapshot upstream again to hopefully fix ILK bug
-
-* Sun Mar 27 2011 Dave Airlie <airlied@redhat.com> 7.11-0.1.20110327.0
-- pull latest snapshot + 3 post snapshot fixes
-
-* Wed Mar 23 2011 Adam Jackson <ajax@redhat.com> 7.10.1-1
-- mesa 7.10.1
-
-* Fri Mar 18 2011 Dennis Gilmore <dennis@ausil.us> 7.10-0.30
-- fall back to non native jit on sparc.
-
-* Mon Mar 14 2011 Dave Airlie <airlied@redhat.com> 7.10-0.29
-- use g++ to link llvmcore.so so it gets libstdc++ (#674079)
-
-* Fri Mar 04 2011 Dan Horák <dan[at]danny.cz> 7.10-0.28
-- enable gallium-llvm only when with_hardware is set (workarounds linking
-  failure on s390(x))
-
-* Wed Feb 23 2011 Jerome Glisse <jglisse@redhat.com> 7.10-0.27
-- Build without -fno-omit-frame-pointer as gcc 4.6.0 seems to lead to
-  bogus code with that option (#679924)
-
-* Wed Feb 09 2011 Adam Jackson <ajax@redhat.com> 7.10-0.26
-- BuildRequires: libdrm >= 2.4.24-0 (#668363)
-
-* Tue Feb 08 2011 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 7.10-0.25
-- Rebuilt for https://fedoraproject.org/wiki/Fedora_15_Mass_Rebuild
-
-* Thu Jan 20 2011 Ben Skeggs <bskeggs@redhat.com> 7.10-0.24
-- nouveau: move out of -experimental
-
-* Thu Jan 20 2011 Ben Skeggs <bskeggs@redhat.com> 7.10-0.23
-- nouveau: nvc0 (fermi) backport + nv10/nv20 gnome-shell fixes
-
-* Tue Jan 18 2011 Adam Jackson <ajax@redhat.com> 7.10-0.22
-- Add -dri-filesystem common subpackage for directory and COPYING
-- Add -dri-llvmcore subpackage and buildsystem hack
-
-* Tue Jan 18 2011 Adam Jackson <ajax@redhat.com> 7.10-0.21
-- Fix the s390 case a different way
-- s/i686/%%{ix86}
-- Add libudev support for wayland (Casey Dahlin)
-
-* Tue Jan 18 2011 Dan Horák <dan[at]danny.cz> 7.10-0.20
-- updated for s390(x), r300 is really built even when with_hardware == 0
-
-* Tue Jan 18 2011 Dave Airlie <airlied@redhat.com> 7.10-0.19
-- split out DRI1 drivers to reduce package size.
-
-* Fri Jan 07 2011 Dave Airlie <airlied@redhat.com> 7.10-0.18
-- new snapshot from 7.10 branch (include Radeon HD6xxx support)
-
-* Thu Dec 16 2010 Dave Airlie <airlied@redhat.com> 7.10-0.17
-- new snapshot from 7.10 branch
-
-* Wed Dec 15 2010 Adam Jackson <ajax@redhat.com> 7.10-0.16
-- Today's (yesterday's) git snap.
-- Switch the sourceball to xz.
-
-* Mon Dec 06 2010 Adam Jackson <ajax@redhat.com> 7.10-0.15
-- Really disable gallium EGL.  Requires disabling OpenVG due to buildsystem
-  nonsense.  Someone fix that someday. (Patch from krh)
-
-* Thu Dec 02 2010 Adam Jackson <ajax@redhat.com> 7.10-0.14
-- --disable-gallium-egl
-
-* Wed Dec 01 2010 Dan Horák <dan[at]danny.cz> 7.10-0.13
-- workaround failing build on s390(x)
-
-* Mon Nov 29 2010 Adam Jackson <ajax@redhat.com> 7.10-0.12
-- Today's git snap.
-
-* Thu Nov 18 2010 Adam Jackson <ajax@redhat.com> 7.10-0.11
-- Today's git snap.
-- Build with -fno-omit-frame-pointer for profiling.
-- Install swrastg as the swrast driver.
-- legacy-drivers.patch: Disable swrast classic.
-
-* Mon Nov 15 2010 Adam Jackson <ajax@redhat.com>
-- Drop Requires: mesa-dri-drivers from -experimental, not needed in a non-
-  dricore build.
-- Drop Requires: mesa-dri-drivers from -libGL, let comps do that.
-
-* Thu Nov 11 2010 Adam Jackson <ajax@redhat.com> 7.10-0.10
-- Build libOpenVG too
-- Add X driver ABI magic for vmwgfx
-- Linker script hack for swrastg to make it slightly less offensively huge
-
-* Mon Nov 08 2010 Dave Airlie <airlied@redhat.com> 7.10-0.9
-- update to latest git snap + enable r600g by default
-
-* Sat Nov 06 2010 Dave Airlie <airlied@redhat.com> 7.10-0.8
-- enable EGL/GLES
-
-* Wed Nov 03 2010 Dave Airlie <airlied@redhat.com> 7.10-0.7
-- fix r300g selection
-
-* Tue Nov 02 2010 Adam Jackson <ajax@redhat.com> 7.10-0.6
-- Use standard CFLAGS
-- Move swrastg_dri to -experimental
-
-* Mon Nov 01 2010 Adam Jackson <ajax@redhat.com> 7.10-0.5
-- BR: llvm-static not llvm-devel (#627965)
-
-* Thu Oct 28 2010 Adam Jackson <ajax@redhat.com> 7.10-0.4
-- -dri-drivers-experimental Requires dri-drivers (#556789)
-
-* Thu Oct 28 2010 Adam Jackson <ajax@redhat.com> 7.10-0.3
-- Drop demos and glx-utils subpackages, they have their own source package
-  now. (#605719)
-
-* Wed Oct 20 2010 Adam Jackson <ajax@redhat.com> 7.10-0.2
-- git snapshot, fixes osmesa linking issues
-
-* Wed Oct 20 2010 Adam Jackson <ajax@redhat.com> 7.10-0.1
-- git snapshot
-- Drop osmesa16 and osmesa32, nothing's using them
-
-* Tue Aug 24 2010 Dave Airlie <airlied@redhat.com> 7.9-0.7
-- latest git snapshot - enable talloc/llvm links
-
-* Tue Jul 20 2010 Dave Airlie <airlied@redhat.com> 7.9-0.6
-- snapshot latest git
-
-* Fri Jul 09 2010 Dave Airlie <airlied@redhat.com> 7.9-0.5
-- resnapshot latest git
-
-* Thu Jul 08 2010 Adam Jackson <ajax@redhat.com> 7.9-0.4
-- Install COPYING like we ought to.
-
-* Thu Jun 24 2010 Dan Horák <dan[at]danny.cz> 7.9-0.3
-- add libtool (needed by mesa-demos) to BR: - normally it's brought via
-    xorg-x11-util-macros and xorg-x11-server-devel, but not on platforms
-    without hardware drivers
-- build gallium drivers and the dri-drivers-experimental subpackage only
-    when hardware drivers are requested
-
-* Sat Jun 12 2010 Dave Airlie <airlied@redhat.com> 7.9-0.2
-- rebase to git snapshot with TFP fixes for r300 + gallium - enable r300g
-
-* Sun May 30 2010 Dave Airlie <airlied@redhat.com> 7.9-0.1
-- rebase to a git snapshot - disable vmwgfx
-
-* Mon Feb 08 2010 Ben Skeggs <bskeggs@redhat.com> 7.8-0.16
-- patch mesa to enable legacy nouveau driver build on i386
-
-* Mon Feb 08 2010 Ben Skeggs <bskeggs@redhat.com> 7.8-0.15
-- rebase for legacy nouveau drivers
-
-* Thu Feb 04 2010 Dave Airlie <airlied@redhat.com> 7.8-0.14
-- rebase again to fix r300
-
-* Wed Feb 03 2010 Dave Airlie <airlied@redhat.com> 7.8-0.13
-- update dri2proto requirement
-- add nouveau to experimental drivers set
-
-* Wed Jan 27 2010 Dave Airlie <airlied@redhat.com> 7.8-0.12
-- Fix radeon colors for rawhide
-
-* Thu Jan 21 2010 Dave Airlie <airlied@redhat.com> 7.8-0.11
-- rebase for new DRI2 API
-
-* Fri Jan 08 2010 Dave Airlie <airlied@redhat.com> 7.8-0.10
-- rebase to new snapshot with fix for radeon in it
-
-* Thu Jan 07 2010 Dave Airlie <airlied@redhat.com> 7.8-0.9
-- Disable dricore for now as it conflicts with upstream vis changes
-
-* Wed Jan 06 2010 Dave Airlie <airlied@redhat.com> 7.8-0.8
-- update to latest snapshot and fixup build

@@ -2,6 +2,12 @@
 #
 # usage: sanitize-tarball.sh [tarball]
 
+if [ -e /usr/bin/pxz ]; then
+    XZ=/usr/bin/pxz
+else
+    XZ=/usr/bin/xz
+fi
+
 dirname=$(basename $(basename "$1" .tar.bz2) .tar.xz)
 
 tar xf "$1"
@@ -42,4 +48,4 @@ vl_create_decoder(struct pipe_context *pipe,
 EOF
 
 popd
-tar Jcf $dirname.tar.xz $dirname
+tar cf - $dirname | $XZ > $dirname.tar.xz
