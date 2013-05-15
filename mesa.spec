@@ -51,7 +51,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 9.2
-Release: 0.2.%{gitdate}%{?dist}
+Release: 0.3.%{gitdate}%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -362,6 +362,9 @@ export CXXFLAGS="$RPM_OPT_FLAGS -fno-rtti -fno-exceptions"
 %endif
     %{?dri_drivers}
 
+# this seems to be neccessary for s390
+make -C src/mesa/drivers/dri/common/xmlpool/
+
 make %{?_smp_mflags} MKDEP=/bin/true
 
 %install
@@ -586,6 +589,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Wed May 15 2013 Adam Jackson <ajax@redhat.com> 9.2-0.3.20130514
+- Fix build ordering issue on s390x
+
 * Wed May 15 2013 Adam Jackson <ajax@redhat.com> 9.2-0.2.20130514
 - Fix filesystem for with_hardware == 0
 
