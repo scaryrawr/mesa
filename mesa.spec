@@ -51,7 +51,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 9.2
-Release: 0.1.%{gitdate}%{?dist}
+Release: 0.2.%{gitdate}%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -438,7 +438,9 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 %doc docs/COPYING docs/Mesa-MLAA-License-Clarification-Email.txt
 %dir %{_libdir}/dri
+%if %{with_hardware}
 %dir %{_libdir}/vdpau
+%endif
 
 %files libglapi
 %{_libdir}/libglapi.so.0
@@ -584,6 +586,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Wed May 15 2013 Adam Jackson <ajax@redhat.com> 9.2-0.2.20130514
+- Fix filesystem for with_hardware == 0
+
 * Tue May 14 2013 Adam Jackson <ajax@redhat.com> 9.2-0.1.20130514
 - Today's git snap
 - Revert to swrast on ppc32 and s390 since llvm doesn't actually work
