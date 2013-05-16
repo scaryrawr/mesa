@@ -446,8 +446,10 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 %doc docs/COPYING docs/Mesa-MLAA-License-Clarification-Email.txt
 %dir %{_libdir}/dri
-%if %{with_hardware}%{?with_vdpau}
+%if %{with_hardware}
+%if 0%{?with_vdpau}
 %dir %{_libdir}/vdpau
+%endif
 %endif
 
 %files libglapi
@@ -485,12 +487,14 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libdricore*.so*
 %{_libdir}/dri/swrast_dri.so
 
-%if %{with_hardware}%{?with_vdpau}
+%if %{with_hardware}
+%if 0%{?with_vdpau}
 %files vdpau-drivers
 %defattr(-,root,root,-)
 %{_libdir}/vdpau/libvdpau_nouveau.so.1*
 %{_libdir}/vdpau/libvdpau_r600.so.1*
 %{_libdir}/vdpau/libvdpau_radeonsi.so.1*
+%endif
 %endif
 
 %files -n khrplatform-devel
