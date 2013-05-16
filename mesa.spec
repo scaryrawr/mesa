@@ -2,6 +2,7 @@
 %define with_private_llvm 1
 %else
 %define with_private_llvm 0
+%define with_vdpau 1
 %define with_wayland 1
 %endif
 
@@ -109,7 +110,9 @@ BuildRequires: pkgconfig(wayland-client) >= %{min_wayland_version}
 BuildRequires: pkgconfig(wayland-server) >= %{min_wayland_version}
 %endif
 BuildRequires: mesa-libGL-devel
+%if 0%{?with_vdpau}
 BuildRequires: libvdpau-devel
+%endif
 BuildRequires: zlib-devel
 
 %description
@@ -154,12 +157,14 @@ Obsoletes: mesa-dri-llvmcore <= 7.12
 %description dri-drivers
 Mesa-based DRI drivers.
 
+%if 0%{?with_vdpau}
 %package vdpau-drivers
 Summary: Mesa-based DRI drivers
 Group: User Interface/X Hardware Support
 Requires: mesa-filesystem%{?_isa}
 %description vdpau-drivers
 Mesa-based VDPAU drivers.
+%endif
 
 %package -n khrplatform-devel
 Summary: Khronos platform development package
@@ -344,7 +349,7 @@ export CXXFLAGS="$RPM_OPT_FLAGS -fno-rtti -fno-exceptions"
     --enable-gles2 \
     --disable-gallium-egl \
     --disable-xvmc \
-    --enable-vdpau \
+    %{?with_vdpau:--enable-vdpau} \
     --with-egl-platforms=x11,drm%{?with_wayland:,wayland} \
     --enable-shared-glapi \
     --enable-gbm \
@@ -441,7 +446,7 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 %doc docs/COPYING docs/Mesa-MLAA-License-Clarification-Email.txt
 %dir %{_libdir}/dri
-%if %{with_hardware}
+%if %{with_hardware}%{?with_vdpau}
 %dir %{_libdir}/vdpau
 %endif
 
@@ -480,7 +485,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libdricore*.so*
 %{_libdir}/dri/swrast_dri.so
 
-%if %{with_hardware}
+%if %{with_hardware}%{?with_vdpau}
 %files vdpau-drivers
 %defattr(-,root,root,-)
 %{_libdir}/vdpau/libvdpau_nouveau.so.1*
