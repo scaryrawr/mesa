@@ -52,7 +52,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 9.2
-Release: 0.3.%{gitdate}%{?dist}
+Release: 0.4.%{gitdate}%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -96,10 +96,12 @@ BuildRequires: libXmu-devel
 BuildRequires: elfutils
 BuildRequires: python
 BuildRequires: gettext
+%if 0%{?with_llvm}
 %if 0%{?with_private_llvm}
 BuildRequires: mesa-private-llvm-devel
 %else
 BuildRequires: llvm-devel >= 3.0
+%endif
 %endif
 BuildRequires: elfutils-libelf-devel
 BuildRequires: libxml2-python
@@ -481,10 +483,15 @@ rm -rf $RPM_BUILD_ROOT
 %if 0%{?with_vmware}
 %{_libdir}/dri/vmwgfx_dri.so
 %endif
-%else
-%exclude %{_sysconfdir}/drirc
-%endif
 %{_libdir}/libdricore*.so*
+%endif
+# this is funky; it doesn't get built for gallium drivers, so it doesn't
+# exist on s390x where swrast is llvmpipe, but does exist on s390 where
+# swrast is classic mesa.  this seems like a bug?  in that it probably
+# means the gallium drivers are linking dricore statically?  fixme.
+%ifarch s390
+%{_libdir}/libdricore*.so*
+%endif
 %{_libdir}/dri/swrast_dri.so
 
 %if %{with_hardware}
@@ -598,6 +605,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Thu May 16 2013 Adam Jackson <ajax@redhat.com> 9.2-0.4.20130514
+- Fix yet more build issues on s390{,x}
+
 * Wed May 15 2013 Adam Jackson <ajax@redhat.com> 9.2-0.3.20130514
 - Fix build ordering issue on s390x
 
