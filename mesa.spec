@@ -11,7 +11,9 @@
 %define min_wayland_version 0.85
 %else
 %define min_wayland_version 1.0
+%ifnarch ppc
 %define with_radeonsi 1
+%endif
 %endif
 
 %ifarch %{arm}
@@ -52,7 +54,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 9.2
-Release: 0.4.%{gitdate}%{?dist}
+Release: 0.5.%{gitdate}%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -76,6 +78,7 @@ Patch16: mesa-9.2-no-useless-vdpau.patch
 # http://lists.freedesktop.org/archives/mesa-dev/2013-May/039265.html
 Patch17: 0001-st-mesa-handle-texture_from_pixmap-and-other-surface.patch
 Patch18: mesa-9.2-llvmpipe-on-big-endian.patch
+Patch19: mesa-9.2-no-gallium-osmesa.patch
 
 BuildRequires: pkgconfig autoconf automake libtool
 %if %{with_hardware}
@@ -310,6 +313,7 @@ grep -q ^/ src/gallium/auxiliary/vl/vl_decoder.c && exit 1
 %patch16 -p1 -b .vdpau
 %patch17 -p1 -b .tfp
 %patch18 -p1 -b .be
+%patch19 -p1 -b .osmesa
 
 %if 0%{with_private_llvm}
 sed -i 's/llvm-config/mesa-private-llvm-config-%{__isa_bits}/g' configure.ac
@@ -363,7 +367,7 @@ export CXXFLAGS="$RPM_OPT_FLAGS -fno-rtti -fno-exceptions"
     --enable-dri \
 %if %{with_hardware}
     %{?with_vmware:--enable-xa} \
-    --with-gallium-drivers=%{?with_vmware:svga,}%{?with_radeonsi:radeonsi,}%{?with_llvm:swrast,}%{?with_freedreno:freedreno,}r300,r600,nouveau \
+    --with-gallium-drivers=%{?with_vmware:svga,}%{?with_radeonsi:radeonsi,}%{?with_llvm:swrast,r600,}%{?with_freedreno:freedreno,}r300,nouveau \
 %else
     --with-gallium-drivers=%{?with_llvm:swrast} \
 %endif
@@ -468,9 +472,11 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/dri/nouveau_vieux_dri.so
 %endif
 %{_libdir}/dri/r300_dri.so
+%if 0%{?with_llvm}
 %{_libdir}/dri/r600_dri.so
 %if 0%{?with_radeonsi}
 %{_libdir}/dri/radeonsi_dri.so
+%endif
 %endif
 %ifarch %{ix86} x86_64
 %{_libdir}/dri/i915_dri.so
@@ -499,8 +505,10 @@ rm -rf $RPM_BUILD_ROOT
 %files vdpau-drivers
 %defattr(-,root,root,-)
 %{_libdir}/vdpau/libvdpau_nouveau.so.1*
+%if 0%{?with_llvm}
 %{_libdir}/vdpau/libvdpau_r600.so.1*
 %{_libdir}/vdpau/libvdpau_radeonsi.so.1*
+%endif
 %endif
 %endif
 
@@ -605,6 +613,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Fri May 17 2013 Adam Jackson <ajax@redhat.com> 9.2-0.5.20130514
+- Fix build issues on ppc32
+
 * Thu May 16 2013 Adam Jackson <ajax@redhat.com> 9.2-0.4.20130514
 - Fix yet more build issues on s390{,x}
 
