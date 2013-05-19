@@ -54,7 +54,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 9.2
-Release: 0.5.%{gitdate}%{?dist}
+Release: 0.6.%{gitdate}%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -483,7 +483,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/dri/i965_dri.so
 %endif
 %if 0%{?with_freedreno}
-%{_libdir}/dri/freedreno_dri.so
+%{_libdir}/dri/kgsl_dri.so
 %endif
 %{_libdir}/dri/nouveau_dri.so
 %if 0%{?with_vmware}
@@ -613,6 +613,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Sun May 19 2013 Peter Robinson <pbrobinson@fedoraproject.org> 9.2-0.6.20130514
+- Update the name of the freedreno driver
+
 * Fri May 17 2013 Adam Jackson <ajax@redhat.com> 9.2-0.5.20130514
 - Fix build issues on ppc32
 
