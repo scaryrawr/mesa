@@ -48,13 +48,13 @@
 
 %define _default_patch_fuzz 2
 
-%define gitdate 20130514
+%define gitdate 20130528
 #% define snapshot 
 
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 9.2
-Release: 0.6.%{gitdate}%{?dist}
+Release: 0.7.%{gitdate}%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -75,8 +75,6 @@ Patch9: mesa-8.0-llvmpipe-shmget.patch
 Patch12: mesa-8.0.1-fix-16bpp.patch
 Patch15: mesa-9.2-hardware-float.patch
 Patch16: mesa-9.2-no-useless-vdpau.patch
-# http://lists.freedesktop.org/archives/mesa-dev/2013-May/039265.html
-Patch17: 0001-st-mesa-handle-texture_from_pixmap-and-other-surface.patch
 Patch18: mesa-9.2-llvmpipe-on-big-endian.patch
 Patch19: mesa-9.2-no-gallium-osmesa.patch
 
@@ -311,7 +309,6 @@ grep -q ^/ src/gallium/auxiliary/vl/vl_decoder.c && exit 1
 
 %patch15 -p1 -b .hwfloat
 %patch16 -p1 -b .vdpau
-%patch17 -p1 -b .tfp
 %patch18 -p1 -b .be
 %patch19 -p1 -b .osmesa
 
@@ -613,6 +610,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Tue May 28 2013 Adam Jackson <ajax@redhat.com> 9.2-0.7.20130528
+- Today's git snap
+
 * Sun May 19 2013 Peter Robinson <pbrobinson@fedoraproject.org> 9.2-0.6.20130514
 - Update the name of the freedreno driver
 

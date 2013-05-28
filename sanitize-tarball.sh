@@ -2,6 +2,11 @@
 #
 # usage: sanitize-tarball.sh [tarball]
 
+if [ "x$1" = "x" ]; then
+    echo "Usage: sanitize-tarball.sh [tarball]"
+    exit 1
+fi
+
 if [ -e /usr/bin/pxz ]; then
     XZ=/usr/bin/pxz
 else
