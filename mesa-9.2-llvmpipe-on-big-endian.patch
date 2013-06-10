@@ -1,5 +1,18 @@
+diff --git a/src/gallium/auxiliary/draw/draw_private.h b/src/gallium/auxiliary/draw/draw_private.h
+index f30f9af..adde647 100644
+--- a/src/gallium/auxiliary/draw/draw_private.h
++++ b/src/gallium/auxiliary/draw/draw_private.h
+@@ -71,7 +71,7 @@ struct draw_pt_front_end;
+  */
+ struct draw_vertex_buffer {
+    const void *map;
+-   size_t size;
++   uint32_t size;
+ };
+ 
+ /**
 diff --git a/src/gallium/auxiliary/draw/draw_pt.c b/src/gallium/auxiliary/draw/draw_pt.c
-index 14dde67..bc300c0 100644
+index 131bd13..720d7b1 100644
 --- a/src/gallium/auxiliary/draw/draw_pt.c
 +++ b/src/gallium/auxiliary/draw/draw_pt.c
 @@ -326,6 +326,13 @@ draw_print_arrays(struct draw_context *draw, uint prim, int start, uint count)
@@ -16,8 +29,34 @@ index 14dde67..bc300c0 100644
           default:
              debug_printf("other format %s (fix me)\n",
                       util_format_name(draw->pt.vertex_element[j].src_format));
+diff --git a/src/gallium/auxiliary/gallivm/lp_bld_arit.c b/src/gallium/auxiliary/gallivm/lp_bld_arit.c
+index 3291ec4..08aec79 100644
+--- a/src/gallium/auxiliary/gallivm/lp_bld_arit.c
++++ b/src/gallium/auxiliary/gallivm/lp_bld_arit.c
+@@ -386,6 +386,10 @@ lp_build_add(struct lp_build_context *bld,
+          return lp_build_intrinsic_binary(builder, intrinsic, lp_build_vec_type(bld->gallivm, bld->type), a, b);
+    }
+ 
++   /* TODO: handle signed case */
++   if(type.norm && !type.floating && !type.fixed && !type.sign)
++      a = lp_build_min_simple(bld, a, lp_build_comp(bld, b));
++
+    if(LLVMIsConstant(a) && LLVMIsConstant(b))
+       if (type.floating)
+          res = LLVMConstFAdd(a, b);
+@@ -663,6 +667,10 @@ lp_build_sub(struct lp_build_context *bld,
+          return lp_build_intrinsic_binary(builder, intrinsic, lp_build_vec_type(bld->gallivm, bld->type), a, b);
+    }
+ 
++   /* TODO: handle signed case */
++   if(type.norm && !type.floating && !type.fixed && !type.sign)
++      a = lp_build_max_simple(bld, a, b);
++
+    if(LLVMIsConstant(a) && LLVMIsConstant(b))
+       if (type.floating)
+          res = LLVMConstFSub(a, b);
 diff --git a/src/gallium/auxiliary/gallivm/lp_bld_conv.c b/src/gallium/auxiliary/gallivm/lp_bld_conv.c
-index eb2d096..cf86f4d 100644
+index f11361a..cbea966 100644
 --- a/src/gallium/auxiliary/gallivm/lp_bld_conv.c
 +++ b/src/gallium/auxiliary/gallivm/lp_bld_conv.c
 @@ -80,82 +80,6 @@
@@ -526,19 +565,6 @@ index 8e4c07d..ee69473 100644
  
  LLVMValueRef
  lp_build_gather_values(struct gallivm_state * gallivm,
-diff --git a/src/gallium/auxiliary/gallivm/lp_bld_init.c b/src/gallium/auxiliary/gallivm/lp_bld_init.c
-index 4a428ee..a20fb77 100644
---- a/src/gallium/auxiliary/gallivm/lp_bld_init.c
-+++ b/src/gallium/auxiliary/gallivm/lp_bld_init.c
-@@ -49,7 +49,7 @@
-  *   - MC-JIT supports limited OSes (MacOSX and Linux)
-  * - standard JIT in LLVM 3.1, with backports
-  */
--#if defined(PIPE_ARCH_PPC_64)
-+#if defined(PIPE_ARCH_PPC_64) || defined(PIPE_ARCH_S390X)
- #  define USE_MCJIT 1
- #  define HAVE_AVX 0
- #elif HAVE_LLVM >= 0x0302 || (HAVE_LLVM == 0x0301 && defined(HAVE_JIT_AVX_SUPPORT))
 diff --git a/src/gallium/auxiliary/gallivm/lp_bld_sample_aos.c b/src/gallium/auxiliary/gallivm/lp_bld_sample_aos.c
 index c31b05d..104c24d 100644
 --- a/src/gallium/auxiliary/gallivm/lp_bld_sample_aos.c
@@ -700,6 +726,22 @@ index 08d817a..79116bc 100644
              } else {
                 shifted = masked;
              }
+diff --git a/src/gallium/auxiliary/util/u_cpu_detect.c b/src/gallium/auxiliary/util/u_cpu_detect.c
+index 7e6df9d..763b5cc 100644
+--- a/src/gallium/auxiliary/util/u_cpu_detect.c
++++ b/src/gallium/auxiliary/util/u_cpu_detect.c
+@@ -250,6 +250,11 @@ util_cpu_detect(void)
+    util_cpu_caps.nr_cpus = 1;
+ #endif
+ 
++   /* Make the fallback cacheline size nonzero so that it can be
++    * safely passed to align().
++    */
++   util_cpu_caps.cacheline = sizeof(void *);
++
+ #if defined(PIPE_ARCH_X86) || defined(PIPE_ARCH_X86_64)
+    if (has_cpuid()) {
+       uint32_t regs[4];
 diff --git a/src/gallium/auxiliary/util/u_format.h b/src/gallium/auxiliary/util/u_format.h
 index e4b9c36..3a04d89 100644
 --- a/src/gallium/auxiliary/util/u_format.h
@@ -1021,7 +1063,7 @@ index 1f6a56a..9c25451 100644
           uc->ui = (b << 24) | (g << 16) | (r << 8) | 0xff;
        }
 diff --git a/src/gallium/drivers/llvmpipe/lp_bld_depth.c b/src/gallium/drivers/llvmpipe/lp_bld_depth.c
-index df6a6c4..695ecec 100644
+index a8bd15f..f322131 100644
 --- a/src/gallium/drivers/llvmpipe/lp_bld_depth.c
 +++ b/src/gallium/drivers/llvmpipe/lp_bld_depth.c
 @@ -349,8 +349,6 @@ get_z_shift_and_mask(const struct util_format_description *format_desc,
@@ -1092,10 +1134,10 @@ index df6a6c4..695ecec 100644
     *mask = (1U << sz) - 1U;
  
 diff --git a/src/gallium/drivers/llvmpipe/lp_state_fs.c b/src/gallium/drivers/llvmpipe/lp_state_fs.c
-index a20cc78..3ef7266 100644
+index fc2ba5e..38e9fc7 100644
 --- a/src/gallium/drivers/llvmpipe/lp_state_fs.c
 +++ b/src/gallium/drivers/llvmpipe/lp_state_fs.c
-@@ -1007,12 +1007,17 @@ convert_to_blend_type(struct gallivm_state *gallivm,
+@@ -1015,12 +1015,17 @@ convert_to_blend_type(struct gallivm_state *gallivm,
     for (i = 0; i < num_srcs; ++i) {
        LLVMValueRef chans[4];
        LLVMValueRef res = NULL;
@@ -1114,7 +1156,7 @@ index a20cc78..3ef7266 100644
  
           for (k = 0; k < src_fmt->channel[j].size; ++k) {
              mask |= 1 << k;
-@@ -1038,11 +1043,9 @@ convert_to_blend_type(struct gallivm_state *gallivm,
+@@ -1046,11 +1051,9 @@ convert_to_blend_type(struct gallivm_state *gallivm,
           /* Insert bits into correct position */
           chans[j] = LLVMBuildShl(builder,
                                   chans[j],
@@ -1127,7 +1169,7 @@ index a20cc78..3ef7266 100644
           if (j == 0) {
              res = chans[j];
           } else {
-@@ -1156,12 +1159,17 @@ convert_from_blend_type(struct gallivm_state *gallivm,
+@@ -1166,12 +1169,17 @@ convert_from_blend_type(struct gallivm_state *gallivm,
     for (i = 0; i < num_srcs; ++i) {
        LLVMValueRef chans[4];
        LLVMValueRef res = NULL;
@@ -1146,7 +1188,7 @@ index a20cc78..3ef7266 100644
  
           assert(blend_type.width > src_fmt->channel[j].size);
  
-@@ -1172,7 +1180,7 @@ convert_from_blend_type(struct gallivm_state *gallivm,
+@@ -1182,7 +1190,7 @@ convert_from_blend_type(struct gallivm_state *gallivm,
           /* Extract bits */
           chans[j] = LLVMBuildLShr(builder,
                                    dst[i],
@@ -1155,29 +1197,6 @@ index a20cc78..3ef7266 100644
                                    "");
  
           chans[j] = LLVMBuildAnd(builder,
-diff --git a/src/gallium/include/pipe/p_config.h b/src/gallium/include/pipe/p_config.h
-index 9a09cee..f367933 100644
---- a/src/gallium/include/pipe/p_config.h
-+++ b/src/gallium/include/pipe/p_config.h
-@@ -110,6 +110,9 @@
- #endif
- #endif
- 
-+#if defined(__s390x__)
-+#define PIPE_ARCH_S390X
-+#endif
- 
- /*
-  * Endian detection.
-@@ -146,7 +149,7 @@
- 
- #if defined(PIPE_ARCH_X86) || defined(PIPE_ARCH_X86_64)
- #define PIPE_ARCH_LITTLE_ENDIAN
--#elif defined(PIPE_ARCH_PPC) || defined(PIPE_ARCH_PPC_64)
-+#elif defined(PIPE_ARCH_PPC) || defined(PIPE_ARCH_PPC_64) || defined(PIPE_ARCH_S390X)
- #define PIPE_ARCH_BIG_ENDIAN
- #endif
- 
 diff --git a/src/gallium/include/pipe/p_format.h b/src/gallium/include/pipe/p_format.h
 index 098b25b..1289983 100644
 --- a/src/gallium/include/pipe/p_format.h
@@ -1322,10 +1341,10 @@ index 8490480..4f76b0f 100644
        break;
     default:
 diff --git a/src/gallium/state_trackers/glx/xlib/xm_api.c b/src/gallium/state_trackers/glx/xlib/xm_api.c
-index e426192..6792ef2 100644
+index b758c8e..5f187e5 100644
 --- a/src/gallium/state_trackers/glx/xlib/xm_api.c
 +++ b/src/gallium/state_trackers/glx/xlib/xm_api.c
-@@ -329,10 +329,10 @@ choose_pixel_format(XMesaVisual v)
+@@ -328,10 +328,10 @@ choose_pixel_format(XMesaVisual v)
         && v->BitsPerPixel == 32) {
        if (native_byte_order) {
           /* no byteswapping needed */
@@ -1338,7 +1357,7 @@ index e426192..6792ef2 100644
        }
     }
     else if (   GET_REDMASK(v)   == 0xff0000
-@@ -341,10 +341,10 @@ choose_pixel_format(XMesaVisual v)
+@@ -340,10 +340,10 @@ choose_pixel_format(XMesaVisual v)
              && v->BitsPerPixel == 32) {
        if (native_byte_order) {
           /* no byteswapping needed */
@@ -1351,7 +1370,7 @@ index e426192..6792ef2 100644
        }
     }
     else if (   GET_REDMASK(v)   == 0x0000ff00
-@@ -353,10 +353,10 @@ choose_pixel_format(XMesaVisual v)
+@@ -352,10 +352,10 @@ choose_pixel_format(XMesaVisual v)
              && v->BitsPerPixel == 32) {
        if (native_byte_order) {
           /* no byteswapping needed */
@@ -1400,7 +1419,7 @@ index 6afdf40..e591d90 100644
  };
  
 diff --git a/src/gallium/tests/graw/fs-test.c b/src/gallium/tests/graw/fs-test.c
-index e59377f..0269ae0 100644
+index 685be92..b64f740 100644
 --- a/src/gallium/tests/graw/fs-test.c
 +++ b/src/gallium/tests/graw/fs-test.c
 @@ -31,8 +31,8 @@ static void usage(char *name)
@@ -1415,7 +1434,7 @@ index e59377f..0269ae0 100644
  };
  
 diff --git a/src/gallium/tests/graw/graw_util.h b/src/gallium/tests/graw/graw_util.h
-index febdf44..08f18f7 100644
+index 84456b4..d14bb89 100644
 --- a/src/gallium/tests/graw/graw_util.h
 +++ b/src/gallium/tests/graw/graw_util.h
 @@ -32,8 +32,8 @@ graw_util_create_window(struct graw_info *info,
@@ -1439,7 +1458,7 @@ index febdf44..08f18f7 100644
     temp.height0 = height;
     temp.depth0 = 1;
 diff --git a/src/gallium/tests/graw/quad-sample.c b/src/gallium/tests/graw/quad-sample.c
-index dd2865d..cfc4129 100644
+index 9100272..004040f 100644
 --- a/src/gallium/tests/graw/quad-sample.c
 +++ b/src/gallium/tests/graw/quad-sample.c
 @@ -18,8 +18,8 @@
@@ -1454,7 +1473,7 @@ index dd2865d..cfc4129 100644
  };
  
 diff --git a/src/gallium/tests/graw/shader-leak.c b/src/gallium/tests/graw/shader-leak.c
-index 9c6e0eb..1fdfb95 100644
+index 014e0cc..75e41e0 100644
 --- a/src/gallium/tests/graw/shader-leak.c
 +++ b/src/gallium/tests/graw/shader-leak.c
 @@ -18,8 +18,8 @@ static int num_iters = 100;
@@ -1469,7 +1488,7 @@ index 9c6e0eb..1fdfb95 100644
  };
  
 diff --git a/src/gallium/tests/graw/tri-gs.c b/src/gallium/tests/graw/tri-gs.c
-index 03b5234..0bb45fb 100644
+index 535825e..21a3a97 100644
 --- a/src/gallium/tests/graw/tri-gs.c
 +++ b/src/gallium/tests/graw/tri-gs.c
 @@ -14,8 +14,8 @@
@@ -1484,7 +1503,7 @@ index 03b5234..0bb45fb 100644
  };
  
 diff --git a/src/gallium/tests/graw/tri-instanced.c b/src/gallium/tests/graw/tri-instanced.c
-index 901ac86..41caae9 100644
+index d00e7e9..c8407f6 100644
 --- a/src/gallium/tests/graw/tri-instanced.c
 +++ b/src/gallium/tests/graw/tri-instanced.c
 @@ -17,8 +17,8 @@
@@ -1499,7 +1518,7 @@ index 901ac86..41caae9 100644
  };
  
 diff --git a/src/gallium/tests/graw/vs-test.c b/src/gallium/tests/graw/vs-test.c
-index 1ab6732..d63372d 100644
+index bfb40be..6d66d1f 100644
 --- a/src/gallium/tests/graw/vs-test.c
 +++ b/src/gallium/tests/graw/vs-test.c
 @@ -32,8 +32,8 @@ static void usage(char *name)
