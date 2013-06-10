@@ -48,13 +48,13 @@
 
 %define _default_patch_fuzz 2
 
-%define gitdate 20130528
+%define gitdate 20130610
 #% define snapshot 
 
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 9.2
-Release: 0.7.%{gitdate}%{?dist}
+Release: 0.8.%{gitdate}%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -610,6 +610,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Mon Jun 10 2013 Adam Jackson <ajax@redhat.com> 9.2-0.8.20130610
+- Today's git snap
+
 * Tue May 28 2013 Adam Jackson <ajax@redhat.com> 9.2-0.7.20130528
 - Today's git snap
 
