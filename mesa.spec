@@ -54,7 +54,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 9.2
-Release: 0.8.%{gitdate}%{?dist}
+Release: 0.9.%{gitdate}%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -77,6 +77,7 @@ Patch15: mesa-9.2-hardware-float.patch
 Patch16: mesa-9.2-no-useless-vdpau.patch
 Patch18: mesa-9.2-llvmpipe-on-big-endian.patch
 Patch19: mesa-9.2-no-gallium-osmesa.patch
+Patch20: 0001-Revert-i965-Disable-unused-pipeline-stages-once-at-s.patch
 
 BuildRequires: pkgconfig autoconf automake libtool
 %if %{with_hardware}
@@ -311,6 +312,7 @@ grep -q ^/ src/gallium/auxiliary/vl/vl_decoder.c && exit 1
 %patch16 -p1 -b .vdpau
 %patch18 -p1 -b .be
 %patch19 -p1 -b .osmesa
+%patch20 -p1 -b .revert
 
 %if 0%{with_private_llvm}
 sed -i 's/llvm-config/mesa-private-llvm-config-%{__isa_bits}/g' configure.ac
@@ -610,6 +612,10 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Tue Jun 11 2013 Adam Jackson <ajax@redhat.com> 9.2-0.9.20130610
+- 0001-Revert-i965-Disable-unused-pipeline-stages-once-at-s.patch: Fix some
+  hangs on ivb+
+
 * Mon Jun 10 2013 Adam Jackson <ajax@redhat.com> 9.2-0.8.20130610
 - Today's git snap
 
