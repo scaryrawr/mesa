@@ -54,7 +54,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 9.2
-Release: 0.9.%{gitdate}%{?dist}
+Release: 0.10.%{gitdate}%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -170,14 +170,6 @@ Requires: mesa-filesystem%{?_isa}
 Mesa-based VDPAU drivers.
 %endif
 
-%package -n khrplatform-devel
-Summary: Khronos platform development package
-Group: Development/Libraries
-BuildArch: noarch
-
-%description -n khrplatform-devel
-Khronos platform development package
-
 %package libGL-devel
 Summary: Mesa libGL development package
 Group: Development/Libraries
@@ -192,7 +184,8 @@ Mesa libGL development package
 Summary: Mesa libEGL development package
 Group: Development/Libraries
 Requires: mesa-libEGL = %{version}-%{release}
-Requires: khrplatform-devel >= %{version}-%{release}
+Provides: khrplatform-devel = %{version}-%{release}
+Obsoletes: khrplatform-devel < %{version}-%{release}
 
 %description libEGL-devel
 Mesa libEGL development package
@@ -201,7 +194,6 @@ Mesa libEGL development package
 Summary: Mesa libGLES development package
 Group: Development/Libraries
 Requires: mesa-libGLES = %{version}-%{release}
-Requires: khrplatform-devel >= %{version}-%{release}
 
 %description libGLES-devel
 Mesa libGLES development package
@@ -387,6 +379,10 @@ make install DESTDIR=$RPM_BUILD_ROOT
 rm -f $RPM_BUILD_ROOT%{_libdir}/dri/{radeon,r200,nouveau_vieux}_dri.*
 %endif
 
+%if !%{with_hardware}
+rm -f $RPM_BUILD_ROOT%{_sysconfdir}/drirc
+%endif
+
 # libvdpau opens the versioned name, don't bother including the unversioned
 rm -f $RPM_BUILD_ROOT%{_libdir}/vdpau/*.so
 
@@ -511,10 +507,6 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 %endif
 
-%files -n khrplatform-devel
-%defattr(-,root,root,-)
-%{_includedir}/KHR
-
 %files libGL-devel
 %defattr(-,root,root,-)
 %{_includedir}/GL/gl.h
@@ -612,6 +604,10 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Wed Jun 12 2013 Adam Jackson <ajax@redhat.com> 9.2-0.10.20130610
+- Fix s390x build
+- Fold khrplatform-devel in to libEGL-devel
+
 * Tue Jun 11 2013 Adam Jackson <ajax@redhat.com> 9.2-0.9.20130610
 - 0001-Revert-i965-Disable-unused-pipeline-stages-once-at-s.patch: Fix some
   hangs on ivb+
