@@ -54,7 +54,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 9.2
-Release: 0.11.%{gitdate}%{?dist}
+Release: 0.12.%{gitdate}%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -352,7 +352,7 @@ export CXXFLAGS="$RPM_OPT_FLAGS -fno-rtti -fno-exceptions"
     --enable-gbm \
     --disable-opencl \
     --enable-glx-tls \
-    --enable-texture-float=hardware \
+    --enable-texture-float=yes \
     %{?with_llvm:--enable-gallium-llvm} \
     %{?with_llvm:--with-llvm-shared-libs} \
     --enable-dri \
@@ -604,6 +604,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Mon Jun 17 2013 Adam Jackson <ajax@redhat.com> 9.2-0.12.20130610
+- Re-enable hardware float support (#975204)
+
 * Mon Jun 17 2013 Adam Jackson <ajax@redhat.com> 9.2-0.11.20130610
 - Fix evergreen on big-endian
 
