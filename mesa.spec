@@ -54,7 +54,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 9.2
-Release: 0.10.%{gitdate}%{?dist}
+Release: 0.11.%{gitdate}%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -604,6 +604,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Mon Jun 17 2013 Adam Jackson <ajax@redhat.com> 9.2-0.11.20130610
+- Fix evergreen on big-endian
+
 * Wed Jun 12 2013 Adam Jackson <ajax@redhat.com> 9.2-0.10.20130610
 - Fix s390x build
 - Fold khrplatform-devel in to libEGL-devel
