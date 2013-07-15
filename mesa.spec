@@ -78,6 +78,7 @@ Patch16: mesa-9.2-no-useless-vdpau.patch
 Patch18: mesa-9.2-llvmpipe-on-big-endian.patch
 Patch19: mesa-9.2-no-gallium-osmesa.patch
 Patch20: 0001-Revert-i965-Disable-unused-pipeline-stages-once-at-s.patch
+Patch30: mesa-llvmpipe-use-mcjit-on-arm.patch
 
 BuildRequires: pkgconfig autoconf automake libtool
 %if %{with_hardware}
@@ -305,6 +306,7 @@ grep -q ^/ src/gallium/auxiliary/vl/vl_decoder.c && exit 1
 %patch18 -p1 -b .be
 %patch19 -p1 -b .osmesa
 %patch20 -p1 -b .revert
+%patch30 -p1 -b .arm
 
 %if 0%{with_private_llvm}
 sed -i 's/llvm-config/mesa-private-llvm-config-%{__isa_bits}/g' configure.ac
@@ -604,6 +606,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Sun Jul 14 2013 Kyle McMartin <kyle@redhat.com>
+- Use LLVM::MCJIT on ARM and AArch64.
+
 * Mon Jun 17 2013 Adam Jackson <ajax@redhat.com> 9.2-0.12.20130610
 - Re-enable hardware float support (#975204)
 
