@@ -54,7 +54,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 9.2
-Release: 0.12.%{gitdate}%{?dist}
+Release: 0.13.%{gitdate}%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -606,7 +606,7 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
-* Sun Jul 14 2013 Kyle McMartin <kyle@redhat.com>
+* Sun Jul 14 2013 Kyle McMartin <kyle@redhat.com> 9.2-0.13.20130610
 - Use LLVM::MCJIT on ARM and AArch64.
 
 * Mon Jun 17 2013 Adam Jackson <ajax@redhat.com> 9.2-0.12.20130610
