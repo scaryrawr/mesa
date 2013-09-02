@@ -48,13 +48,13 @@
 
 %define _default_patch_fuzz 2
 
-%define gitdate 20130723
+%define gitdate 20130902
 #% define snapshot 
 
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 9.2
-Release: 0.15.%{gitdate}%{?dist}
+Release: 1.%{gitdate}%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -75,7 +75,6 @@ Patch9: mesa-8.0-llvmpipe-shmget.patch
 Patch12: mesa-8.0.1-fix-16bpp.patch
 Patch15: mesa-9.2-hardware-float.patch
 Patch16: mesa-9.2-no-useless-vdpau.patch
-Patch19: mesa-9.2-no-gallium-osmesa.patch
 Patch20: mesa-9.2-evergreen-big-endian.patch
 
 BuildRequires: pkgconfig autoconf automake libtool
@@ -301,7 +300,6 @@ grep -q ^/ src/gallium/auxiliary/vl/vl_decoder.c && exit 1
 
 %patch15 -p1 -b .hwfloat
 %patch16 -p1 -b .vdpau
-%patch19 -p1 -b .osmesa
 %patch20 -p1 -b .egbe
 
 %if 0%{with_private_llvm}
@@ -602,6 +600,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Mon Sep 02 2013 Dave Airlie <airlied@redhat.com> 9.2-1.20130902
+- 9.2 upstream release + fixes from git branch
+
 * Sat Aug 03 2013 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 9.2-0.15.20130723
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_20_Mass_Rebuild
 
