@@ -48,7 +48,7 @@
 
 %define _default_patch_fuzz 2
 
-%define gitdate 20130902
+%define gitdate 20130919
 #% define snapshot 
 
 Summary: Mesa graphics libraries
@@ -76,6 +76,9 @@ Patch12: mesa-8.0.1-fix-16bpp.patch
 Patch15: mesa-9.2-hardware-float.patch
 Patch16: mesa-9.2-no-useless-vdpau.patch
 Patch20: mesa-9.2-evergreen-big-endian.patch
+# https://bugs.freedesktop.org/show_bug.cgi?id=68665
+# http://cgit.freedesktop.org/mesa/mesa/commit/?id=b217d48364f368f541e53006af5dd56f664be24d
+Patch21: 0001-st-dri-do-not-create-a-new-context-for-msaa-copy.patch
 
 BuildRequires: pkgconfig autoconf automake libtool
 %if %{with_hardware}
@@ -301,6 +304,7 @@ grep -q ^/ src/gallium/auxiliary/vl/vl_decoder.c && exit 1
 %patch15 -p1 -b .hwfloat
 %patch16 -p1 -b .vdpau
 %patch20 -p1 -b .egbe
+%patch21 -p1 -b .msaa
 
 %if 0%{with_private_llvm}
 sed -i 's/llvm-config/mesa-private-llvm-config-%{__isa_bits}/g' configure.ac
@@ -600,6 +604,11 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Thu Sep 19 2013 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 9.2-1.20130919
+- Today's git snap of 9.2 branch
+- [NVE4] Fix crashing games when set AA to x2 on GTX760
+- (freedesktop 68665 rhbz 1001714 1001698 1001740 1004674)
+
 * Mon Sep 02 2013 Dave Airlie <airlied@redhat.com> 9.2-1.20130902
 - 9.2 upstream release + fixes from git branch
 
