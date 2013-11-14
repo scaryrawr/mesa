@@ -1,0 +1,32 @@
+From b2a32254d65c356604bbffda6e771dca0509e9ed Mon Sep 17 00:00:00 2001
+From: Rob Clark <robclark@freedesktop.org>
+Date: Sat, 13 Jul 2013 13:08:22 -0400
+Subject: [PATCH 02/17] freedreno/a3xx: fix viewport on gmem->mem resolve
+
+Signed-off-by: Rob Clark <robclark@freedesktop.org>
+---
+ src/gallium/drivers/freedreno/a3xx/fd3_gmem.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/src/gallium/drivers/freedreno/a3xx/fd3_gmem.c b/src/gallium/drivers/freedreno/a3xx/fd3_gmem.c
+index 1cb170a..9050166 100644
+--- a/src/gallium/drivers/freedreno/a3xx/fd3_gmem.c
++++ b/src/gallium/drivers/freedreno/a3xx/fd3_gmem.c
+@@ -168,6 +168,14 @@ fd3_emit_tile_gmem2mem(struct fd_context *ctx, uint32_t xoff, uint32_t yoff,
+ 	OUT_PKT0(ring, REG_A3XX_GRAS_CL_CLIP_CNTL, 1);
+ 	OUT_RING(ring, 0x00000000);   /* GRAS_CL_CLIP_CNTL */
+ 
++	OUT_PKT0(ring, REG_A3XX_GRAS_CL_VPORT_XOFFSET, 6);
++	OUT_RING(ring, A3XX_GRAS_CL_VPORT_XOFFSET((float)pfb->width/2.0 - 0.5));
++	OUT_RING(ring, A3XX_GRAS_CL_VPORT_XSCALE((float)pfb->width/2.0));
++	OUT_RING(ring, A3XX_GRAS_CL_VPORT_YOFFSET((float)pfb->height/2.0 - 0.5));
++	OUT_RING(ring, A3XX_GRAS_CL_VPORT_YSCALE(-(float)pfb->height/2.0));
++	OUT_RING(ring, A3XX_GRAS_CL_VPORT_ZOFFSET(0.0));
++	OUT_RING(ring, A3XX_GRAS_CL_VPORT_ZSCALE(1.0));
++
+ 	OUT_PKT0(ring, REG_A3XX_RB_MODE_CONTROL, 1);
+ 	OUT_RING(ring, A3XX_RB_MODE_CONTROL_RENDER_MODE(RB_RESOLVE_PASS) |
+ 			A3XX_RB_MODE_CONTROL_MARB_CACHE_SPLIT_MODE);
+-- 
+1.8.4.2
+

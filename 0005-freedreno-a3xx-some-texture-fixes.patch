@@ -1,0 +1,65 @@
+From 3da8868b5df98d8544091feeea7b6bb0f736324f Mon Sep 17 00:00:00 2001
+From: Rob Clark <robclark@freedesktop.org>
+Date: Mon, 5 Aug 2013 18:03:33 -0400
+Subject: [PATCH 05/17] freedreno/a3xx: some texture fixes
+
+Stop hard coding bits that indicate texture type (2d/3d/cube/etc).
+
+Signed-off-by: Rob Clark <robclark@freedesktop.org>
+---
+ src/gallium/drivers/freedreno/a3xx/fd3_texture.c | 25 +++++++++++++++++++++++-
+ 1 file changed, 24 insertions(+), 1 deletion(-)
+
+diff --git a/src/gallium/drivers/freedreno/a3xx/fd3_texture.c b/src/gallium/drivers/freedreno/a3xx/fd3_texture.c
+index ae08b8a..e56325b 100644
+--- a/src/gallium/drivers/freedreno/a3xx/fd3_texture.c
++++ b/src/gallium/drivers/freedreno/a3xx/fd3_texture.c
+@@ -87,6 +87,7 @@ fd3_sampler_state_create(struct pipe_context *pctx,
+ 	so->base = *cso;
+ 
+ 	so->texsamp0 =
++			COND(!cso->normalized_coords, A3XX_TEX_SAMP_0_UNNORM_COORDS) |
+ 			A3XX_TEX_SAMP_0_XY_MAG(tex_filter(cso->mag_img_filter)) |
+ 			A3XX_TEX_SAMP_0_XY_MIN(tex_filter(cso->min_img_filter)) |
+ 			A3XX_TEX_SAMP_0_WRAP_S(tex_clamp(cso->wrap_s)) |
+@@ -97,6 +98,28 @@ fd3_sampler_state_create(struct pipe_context *pctx,
+ 	return so;
+ }
+ 
++static enum a3xx_tex_type
++tex_type(unsigned target)
++{
++	switch (target) {
++	default:
++		assert(0);
++	case PIPE_BUFFER:
++	case PIPE_TEXTURE_1D:
++	case PIPE_TEXTURE_1D_ARRAY:
++		return A3XX_TEX_1D;
++	case PIPE_TEXTURE_RECT:
++	case PIPE_TEXTURE_2D:
++	case PIPE_TEXTURE_2D_ARRAY:
++		return A3XX_TEX_2D;
++	case PIPE_TEXTURE_3D:
++		return A3XX_TEX_3D;
++	case PIPE_TEXTURE_CUBE:
++	case PIPE_TEXTURE_CUBE_ARRAY:
++		return A3XX_TEX_CUBE;
++	}
++}
++
+ static struct pipe_sampler_view *
+ fd3_sampler_view_create(struct pipe_context *pctx, struct pipe_resource *prsc,
+ 		const struct pipe_sampler_view *cso)
+@@ -116,7 +139,7 @@ fd3_sampler_view_create(struct pipe_context *pctx, struct pipe_resource *prsc,
+ 	so->tex_resource =  rsc;
+ 
+ 	so->texconst0 =
+-			0x40000000 | /* ??? */
++			A3XX_TEX_CONST_0_TYPE(tex_type(prsc->target)) |
+ 			A3XX_TEX_CONST_0_FMT(fd3_pipe2tex(cso->format)) |
+ 			fd3_tex_swiz(cso->format, cso->swizzle_r, cso->swizzle_g,
+ 						cso->swizzle_b, cso->swizzle_a);
+-- 
+1.8.4.2
+

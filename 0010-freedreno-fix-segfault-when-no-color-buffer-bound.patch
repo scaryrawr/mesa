@@ -1,0 +1,216 @@
+From 12da4c1a6aa4b2a9cc337f669986a63c59fc3095 Mon Sep 17 00:00:00 2001
+From: Rob Clark <robclark@freedesktop.org>
+Date: Wed, 21 Aug 2013 13:20:05 -0400
+Subject: [PATCH 10/17] freedreno: fix segfault when no color buffer bound
+
+Don't crash when no color buffer bound.  Something caught when starting
+to run piglit, fixes a hanful of piglit tests.
+
+Signed-off-by: Rob Clark <robclark@freedesktop.org>
+---
+ src/gallium/drivers/freedreno/a2xx/fd2_gmem.c     |  6 +++---
+ src/gallium/drivers/freedreno/a3xx/fd3_gmem.c     | 15 +++++++++++----
+ src/gallium/drivers/freedreno/freedreno_context.c |  3 ++-
+ src/gallium/drivers/freedreno/freedreno_draw.c    |  4 ++--
+ src/gallium/drivers/freedreno/freedreno_gmem.c    | 18 +++++++++++-------
+ src/gallium/drivers/freedreno/freedreno_state.c   |  2 +-
+ src/gallium/drivers/freedreno/freedreno_util.h    | 10 ++++++++++
+ 7 files changed, 40 insertions(+), 18 deletions(-)
+
+diff --git a/src/gallium/drivers/freedreno/a2xx/fd2_gmem.c b/src/gallium/drivers/freedreno/a2xx/fd2_gmem.c
+index e239eed..93695bc 100644
+--- a/src/gallium/drivers/freedreno/a2xx/fd2_gmem.c
++++ b/src/gallium/drivers/freedreno/a2xx/fd2_gmem.c
+@@ -337,7 +337,7 @@ fd2_emit_tile_init(struct fd_context *ctx)
+ 	struct fd_ringbuffer *ring = ctx->ring;
+ 	struct pipe_framebuffer_state *pfb = &ctx->framebuffer;
+ 	struct fd_gmem_stateobj *gmem = &ctx->gmem;
+-	enum pipe_format format = pfb->cbufs[0]->format;
++	enum pipe_format format = pipe_surface_format(pfb->cbufs[0]);
+ 	uint32_t reg;
+ 
+ 	OUT_PKT3(ring, CP_SET_CONSTANT, 4);
+@@ -358,7 +358,7 @@ fd2_emit_tile_prep(struct fd_context *ctx, uint32_t xoff, uint32_t yoff,
+ {
+ 	struct fd_ringbuffer *ring = ctx->ring;
+ 	struct pipe_framebuffer_state *pfb = &ctx->framebuffer;
+-	enum pipe_format format = pfb->cbufs[0]->format;
++	enum pipe_format format = pipe_surface_format(pfb->cbufs[0]);
+ 
+ 	OUT_PKT3(ring, CP_SET_CONSTANT, 2);
+ 	OUT_RING(ring, CP_REG(REG_A2XX_RB_COLOR_INFO));
+@@ -379,7 +379,7 @@ fd2_emit_tile_renderprep(struct fd_context *ctx, uint32_t xoff, uint32_t yoff,
+ {
+ 	struct fd_ringbuffer *ring = ctx->ring;
+ 	struct pipe_framebuffer_state *pfb = &ctx->framebuffer;
+-	enum pipe_format format = pfb->cbufs[0]->format;
++	enum pipe_format format = pipe_surface_format(pfb->cbufs[0]);
+ 
+ 	OUT_PKT3(ring, CP_SET_CONSTANT, 2);
+ 	OUT_RING(ring, CP_REG(REG_A2XX_RB_COLOR_INFO));
+diff --git a/src/gallium/drivers/freedreno/a3xx/fd3_gmem.c b/src/gallium/drivers/freedreno/a3xx/fd3_gmem.c
+index 9050166..b9d0580 100644
+--- a/src/gallium/drivers/freedreno/a3xx/fd3_gmem.c
++++ b/src/gallium/drivers/freedreno/a3xx/fd3_gmem.c
+@@ -214,8 +214,12 @@ fd3_emit_tile_gmem2mem(struct fd_context *ctx, uint32_t xoff, uint32_t yoff,
+ 		}, 1);
+ 
+ 	if (ctx->resolve & (FD_BUFFER_DEPTH | FD_BUFFER_STENCIL)) {
+-		uint32_t base = depth_base(&ctx->gmem) *
+-				fd_resource(pfb->cbufs[0]->texture)->cpp;
++		uint32_t base = 0;
++		if (pfb->cbufs[0]) {
++			struct fd_resource *rsc =
++					fd_resource(pfb->cbufs[0]->texture);
++			base = depth_base(&ctx->gmem) * rsc->cpp;
++		}
+ 		emit_gmem2mem_surf(ring, RB_COPY_DEPTH_STENCIL, base, pfb->zsbuf);
+ 	}
+ 
+@@ -410,8 +414,11 @@ static void
+ fd3_emit_sysmem_prep(struct fd_context *ctx)
+ {
+ 	struct pipe_framebuffer_state *pfb = &ctx->framebuffer;
+-	struct fd_resource *rsc = fd_resource(pfb->cbufs[0]->texture);
+ 	struct fd_ringbuffer *ring = ctx->ring;
++	uint32_t pitch = 0;
++
++	if (pfb->cbufs[0])
++		pitch = fd_resource(pfb->cbufs[0]->texture)->pitch;
+ 
+ 	fd3_emit_restore(ctx);
+ 
+@@ -422,7 +429,7 @@ fd3_emit_sysmem_prep(struct fd_context *ctx)
+ 	emit_mrt(ring, pfb->nr_cbufs, pfb->cbufs, NULL, 0);
+ 
+ 	fd3_emit_rbrc_tile_state(ring,
+-			A3XX_RB_RENDER_CONTROL_BIN_WIDTH(rsc->pitch));
++			A3XX_RB_RENDER_CONTROL_BIN_WIDTH(pitch));
+ 
+ 	/* setup scissor/offset for current tile: */
+ 	OUT_PKT0(ring, REG_A3XX_PA_SC_WINDOW_OFFSET, 1);
+diff --git a/src/gallium/drivers/freedreno/freedreno_context.c b/src/gallium/drivers/freedreno/freedreno_context.c
+index 44d525b..1d03351 100644
+--- a/src/gallium/drivers/freedreno/freedreno_context.c
++++ b/src/gallium/drivers/freedreno/freedreno_context.c
+@@ -86,7 +86,8 @@ fd_context_render(struct pipe_context *pctx)
+ 	ctx->gmem_reason = 0;
+ 	ctx->num_draws = 0;
+ 
+-	fd_resource(pfb->cbufs[0]->texture)->dirty = false;
++	if (pfb->cbufs[0])
++		fd_resource(pfb->cbufs[0]->texture)->dirty = false;
+ 	if (pfb->zsbuf)
+ 		fd_resource(pfb->zsbuf->texture)->dirty = false;
+ }
+diff --git a/src/gallium/drivers/freedreno/freedreno_draw.c b/src/gallium/drivers/freedreno/freedreno_draw.c
+index b02b8b9..d4f8d34 100644
+--- a/src/gallium/drivers/freedreno/freedreno_draw.c
++++ b/src/gallium/drivers/freedreno/freedreno_draw.c
+@@ -193,8 +193,8 @@ fd_clear(struct pipe_context *pctx, unsigned buffers,
+ 	}
+ 
+ 	DBG("%x depth=%f, stencil=%u (%s/%s)", buffers, depth, stencil,
+-			util_format_name(pfb->cbufs[0]->format),
+-			pfb->zsbuf ? util_format_name(pfb->zsbuf->format) : "none");
++		util_format_short_name(pipe_surface_format(pfb->cbufs[0])),
++		util_format_short_name(pipe_surface_format(pfb->zsbuf)));
+ 
+ 	ctx->clear(ctx, buffers, color, depth, stencil);
+ 
+diff --git a/src/gallium/drivers/freedreno/freedreno_gmem.c b/src/gallium/drivers/freedreno/freedreno_gmem.c
+index 197d1d9..3d959c6 100644
+--- a/src/gallium/drivers/freedreno/freedreno_gmem.c
++++ b/src/gallium/drivers/freedreno/freedreno_gmem.c
+@@ -72,12 +72,15 @@ calculate_tiles(struct fd_context *ctx)
+ 	struct fd_gmem_stateobj *gmem = &ctx->gmem;
+ 	struct pipe_scissor_state *scissor = &ctx->max_scissor;
+ 	struct pipe_framebuffer_state *pfb = &ctx->framebuffer;
+-	uint32_t cpp = util_format_get_blocksize(pfb->cbufs[0]->format);
+ 	uint32_t gmem_size = ctx->screen->gmemsize_bytes;
+ 	uint32_t minx, miny, width, height;
+ 	uint32_t nbins_x = 1, nbins_y = 1;
+ 	uint32_t bin_w, bin_h;
+ 	uint32_t max_width = 992;
++	uint32_t cpp = 4;
++
++	if (pfb->cbufs[0])
++		cpp = util_format_get_blocksize(pfb->cbufs[0]->format);
+ 
+ 	if ((gmem->cpp == cpp) &&
+ 			!memcmp(&gmem->scissor, scissor, sizeof(gmem->scissor))) {
+@@ -211,15 +214,15 @@ fd_gmem_render_tiles(struct pipe_context *pctx)
+ 
+ 	if (sysmem) {
+ 		DBG("rendering sysmem (%s/%s)",
+-			util_format_name(pfb->cbufs[0]->format),
+-			pfb->zsbuf ? util_format_name(pfb->zsbuf->format) : "none");
++			util_format_short_name(pipe_surface_format(pfb->cbufs[0])),
++			util_format_short_name(pipe_surface_format(pfb->zsbuf)));
+ 		render_sysmem(ctx);
+ 	} else {
+ 		struct fd_gmem_stateobj *gmem = &ctx->gmem;
+-		DBG("rendering %dx%d tiles (%s/%s)", gmem->nbins_x, gmem->nbins_y,
+-			util_format_name(pfb->cbufs[0]->format),
+-			pfb->zsbuf ? util_format_name(pfb->zsbuf->format) : "none");
+ 		calculate_tiles(ctx);
++		DBG("rendering %dx%d tiles (%s/%s)", gmem->nbins_x, gmem->nbins_y,
++			util_format_short_name(pipe_surface_format(pfb->cbufs[0])),
++			util_format_short_name(pipe_surface_format(pfb->zsbuf)));
+ 		render_tiles(ctx);
+ 	}
+ 
+@@ -231,7 +234,8 @@ fd_gmem_render_tiles(struct pipe_context *pctx)
+ 
+ 	/* update timestamps on render targets: */
+ 	timestamp = fd_ringbuffer_timestamp(ctx->ring);
+-	fd_resource(pfb->cbufs[0]->texture)->timestamp = timestamp;
++	if (pfb->cbufs[0])
++		fd_resource(pfb->cbufs[0]->texture)->timestamp = timestamp;
+ 	if (pfb->zsbuf)
+ 		fd_resource(pfb->zsbuf->texture)->timestamp = timestamp;
+ 
+diff --git a/src/gallium/drivers/freedreno/freedreno_state.c b/src/gallium/drivers/freedreno/freedreno_state.c
+index 2f5d52c..f5290a9 100644
+--- a/src/gallium/drivers/freedreno/freedreno_state.c
++++ b/src/gallium/drivers/freedreno/freedreno_state.c
+@@ -120,7 +120,7 @@ fd_set_framebuffer_state(struct pipe_context *pctx,
+ 	unsigned i;
+ 
+ 	DBG("%d: cbufs[0]=%p, zsbuf=%p", ctx->needs_flush,
+-			cso->cbufs[0], cso->zsbuf);
++			framebuffer->cbufs[0], framebuffer->zsbuf);
+ 
+ 	fd_context_render(pctx);
+ 
+diff --git a/src/gallium/drivers/freedreno/freedreno_util.h b/src/gallium/drivers/freedreno/freedreno_util.h
+index 22857d2..9f10686 100644
+--- a/src/gallium/drivers/freedreno/freedreno_util.h
++++ b/src/gallium/drivers/freedreno/freedreno_util.h
+@@ -33,6 +33,7 @@
+ #include <freedreno_ringbuffer.h>
+ 
+ #include "pipe/p_format.h"
++#include "pipe/p_state.h"
+ #include "util/u_debug.h"
+ #include "util/u_math.h"
+ #include "util/u_half.h"
+@@ -79,6 +80,15 @@ static inline uint32_t DRAW(enum pc_di_primtype prim_type,
+ 			(1                 << 14);
+ }
+ 
++
++static inline enum pipe_format
++pipe_surface_format(struct pipe_surface *psurf)
++{
++	if (!psurf)
++		return PIPE_FORMAT_NONE;
++	return psurf->format;
++}
++
+ #define LOG_DWORDS 0
+ 
+ 
+-- 
+1.8.4.2
+
