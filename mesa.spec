@@ -48,12 +48,12 @@
 
 %define _default_patch_fuzz 2
 
-%define gitdate 20131114
+%define gitdate 20131128
 #% define snapshot 
 
 Summary: Mesa graphics libraries
 Name: mesa
-Version: 9.2.3
+Version: 9.2.4
 Release: 1.%{gitdate}%{?dist}
 License: MIT
 Group: System Environment/Libraries
@@ -76,25 +76,6 @@ Patch12: mesa-8.0.1-fix-16bpp.patch
 Patch15: mesa-9.2-hardware-float.patch
 Patch16: mesa-9.2-no-useless-vdpau.patch
 Patch20: mesa-9.2-evergreen-big-endian.patch
-
-# https://bugs.freedesktop.org/show_bug.cgi?id=71573
-Patch21: 0001-freedreno-a3xx-fix-color-inversion-on-mem-gmem-resto.patch
-Patch22: 0002-freedreno-a3xx-fix-viewport-on-gmem-mem-resolve.patch
-Patch23: 0003-freedreno-add-debug-option-to-disable-scissor-optimi.patch
-Patch24: 0004-freedreno-update-register-headers.patch
-Patch25: 0005-freedreno-a3xx-some-texture-fixes.patch
-Patch26: 0006-freedreno-a3xx-compiler-fix-CMP.patch
-Patch27: 0007-freedreno-a3xx-compiler-handle-saturate-on-dst.patch
-Patch28: 0008-freedreno-a3xx-compiler-use-max_reg-rather-than-file.patch
-Patch29: 0009-freedreno-a3xx-compiler-cat4-cannot-use-const-reg-as.patch
-Patch30: 0010-freedreno-fix-segfault-when-no-color-buffer-bound.patch
-Patch31: 0011-freedreno-a3xx-compiler-make-compiler-errors-more-us.patch
-Patch32: 0012-freedreno-a3xx-compiler-bit-of-re-arrange-cleanup.patch
-Patch33: 0013-freedreno-a3xx-compiler-fix-SGT-SLT-etc.patch
-Patch34: 0014-freedreno-a3xx-don-t-leak-so-much.patch
-Patch35: 0015-freedreno-a3xx-compiler-better-const-handling.patch
-Patch36: 0016-freedreno-a3xx-compiler-handle-sync-flags-better.patch
-Patch37: 0017-freedreno-updates-for-msm-drm-kms-driver.patch
 
 BuildRequires: pkgconfig autoconf automake libtool
 %if %{with_hardware}
@@ -320,24 +301,6 @@ grep -q ^/ src/gallium/auxiliary/vl/vl_decoder.c && exit 1
 %patch15 -p1 -b .hwfloat
 %patch16 -p1 -b .vdpau
 %patch20 -p1 -b .egbe
-
-%patch21 -p1
-%patch22 -p1
-%patch23 -p1
-%patch24 -p1
-%patch25 -p1
-%patch26 -p1
-%patch27 -p1
-%patch28 -p1
-%patch29 -p1
-%patch30 -p1
-%patch31 -p1
-%patch32 -p1
-%patch33 -p1
-%patch34 -p1
-%patch35 -p1
-%patch36 -p1
-%patch37 -p1
 
 %if 0%{with_private_llvm}
 sed -i 's/llvm-config/mesa-private-llvm-config-%{__isa_bits}/g' configure.ac
@@ -637,6 +600,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Thu Nov 28 2013 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 9.2.4-1.20131128
+- 9.2.4 upstream release
+
 * Thu Nov 14 2013 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 9.2.3-1.20131114
 - 9.2.3 upstream release
 
