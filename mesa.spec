@@ -48,12 +48,12 @@
 
 %define _default_patch_fuzz 2
 
-%define gitdate 20131128
+%define gitdate 20131206
 #% define snapshot 
 
 Summary: Mesa graphics libraries
 Name: mesa
-Version: 9.2.4
+Version: 10.0
 Release: 1.%{gitdate}%{?dist}
 License: MIT
 Group: System Environment/Libraries
@@ -70,11 +70,10 @@ Source3: make-git-snapshot.sh
 # Fedora opts to ignore the optional part of clause 2 and treat that code as 2 clause BSD.
 Source4: Mesa-MLAA-License-Clarification-Email.txt
 
-Patch1: nv50-fix-build.patch
+Patch1: mesa-10.0-nv50-fix-build.patch
 Patch9: mesa-8.0-llvmpipe-shmget.patch
 Patch12: mesa-8.0.1-fix-16bpp.patch
 Patch15: mesa-9.2-hardware-float.patch
-Patch16: mesa-9.2-no-useless-vdpau.patch
 Patch20: mesa-9.2-evergreen-big-endian.patch
 
 BuildRequires: pkgconfig autoconf automake libtool
@@ -299,7 +298,6 @@ grep -q ^/ src/gallium/auxiliary/vl/vl_decoder.c && exit 1
 #patch12 -p1 -b .16bpp
 
 %patch15 -p1 -b .hwfloat
-%patch16 -p1 -b .vdpau
 %patch20 -p1 -b .egbe
 
 %if 0%{with_private_llvm}
@@ -475,19 +473,12 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 %if 0%{?with_freedreno}
 %{_libdir}/dri/kgsl_dri.so
+%{_libdir}/dri/msm_dri.so
 %endif
 %{_libdir}/dri/nouveau_dri.so
 %if 0%{?with_vmware}
 %{_libdir}/dri/vmwgfx_dri.so
 %endif
-%{_libdir}/libdricore*.so*
-%endif
-# this is funky; it doesn't get built for gallium drivers, so it doesn't
-# exist on s390x where swrast is llvmpipe, but does exist on s390 where
-# swrast is classic mesa.  this seems like a bug?  in that it probably
-# means the gallium drivers are linking dricore statically?  fixme.
-%ifarch s390
-%{_libdir}/libdricore*.so*
 %endif
 %{_libdir}/dri/swrast_dri.so
 
@@ -584,8 +575,8 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 %doc docs/COPYING
 %if %{with_hardware}
-%{_libdir}/libxatracker.so.1
-%{_libdir}/libxatracker.so.1.*
+%{_libdir}/libxatracker.so.2
+%{_libdir}/libxatracker.so.2.*
 %endif
 
 %files libxatracker-devel
@@ -600,6 +591,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Sun Dec 01 2013 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 10.0-1.20131206
+- 10.0 upstream (RHBZ 1036361)
+
 * Thu Nov 28 2013 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 9.2.4-1.20131128
 - 9.2.4 upstream release
 
