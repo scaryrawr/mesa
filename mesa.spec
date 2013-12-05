@@ -48,12 +48,12 @@
 
 %define _default_patch_fuzz 2
 
-%define gitdate 20131205
+%define gitdate 20131128
 #% define snapshot 
 
 Summary: Mesa graphics libraries
 Name: mesa
-Version: 10.0
+Version: 9.2.4
 Release: 1.%{gitdate}%{?dist}
 License: MIT
 Group: System Environment/Libraries
@@ -299,7 +299,7 @@ grep -q ^/ src/gallium/auxiliary/vl/vl_decoder.c && exit 1
 #patch12 -p1 -b .16bpp
 
 %patch15 -p1 -b .hwfloat
-#patch16 -p1 -b .vdpau
+%patch16 -p1 -b .vdpau
 %patch20 -p1 -b .egbe
 
 %if 0%{with_private_llvm}
@@ -480,11 +480,15 @@ rm -rf $RPM_BUILD_ROOT
 %if 0%{?with_vmware}
 %{_libdir}/dri/vmwgfx_dri.so
 %endif
+%{_libdir}/libdricore*.so*
 %endif
 # this is funky; it doesn't get built for gallium drivers, so it doesn't
 # exist on s390x where swrast is llvmpipe, but does exist on s390 where
 # swrast is classic mesa.  this seems like a bug?  in that it probably
 # means the gallium drivers are linking dricore statically?  fixme.
+%ifarch s390
+%{_libdir}/libdricore*.so*
+%endif
 %{_libdir}/dri/swrast_dri.so
 
 %if %{with_hardware}
@@ -596,9 +600,6 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
-* Thu Dec 05 2013 Dave Airlie <airlied@redhat.com> 10.0-1.20131205
-- mesa 10.0 release branch git snapshot
-
 * Thu Nov 28 2013 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 9.2.4-1.20131128
 - 9.2.4 upstream release
 
