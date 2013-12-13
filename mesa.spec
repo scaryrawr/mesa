@@ -54,7 +54,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 9.2.4
-Release: 1.%{gitdate}%{?dist}
+Release: 2.%{gitdate}%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -76,6 +76,9 @@ Patch12: mesa-8.0.1-fix-16bpp.patch
 Patch15: mesa-9.2-hardware-float.patch
 Patch16: mesa-9.2-no-useless-vdpau.patch
 Patch20: mesa-9.2-evergreen-big-endian.patch
+
+# add GLX_MESA_copy_sub_buffer to all sw drivers for cogl/gnome
+Patch30: 0001-swrast-gallium-classic-add-MESA_copy_sub_buffer-supp.patch
 
 BuildRequires: pkgconfig autoconf automake libtool
 %if %{with_hardware}
@@ -301,6 +304,8 @@ grep -q ^/ src/gallium/auxiliary/vl/vl_decoder.c && exit 1
 %patch15 -p1 -b .hwfloat
 %patch16 -p1 -b .vdpau
 %patch20 -p1 -b .egbe
+
+%patch30 -p1 -b .copy_sub_buffer
 
 %if 0%{with_private_llvm}
 sed -i 's/llvm-config/mesa-private-llvm-config-%{__isa_bits}/g' configure.ac
@@ -600,6 +605,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Fri Dec 13 2013 Dave Airlie <airlied@redhat.com> 9.2.4-2.20131128
+- backport the GLX_MESA_copy_sub_buffer from upstream for cogl
+
 * Thu Nov 28 2013 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 9.2.4-1.20131128
 - 9.2.4 upstream release
 
