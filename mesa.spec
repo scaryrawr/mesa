@@ -27,7 +27,7 @@
 %define with_llvm 1
 %endif
 
-%ifarch s390 s390x
+%ifarch s390 s390x aarch64
 %define with_hardware 0
 %ifarch s390
 %define base_drivers swrast
@@ -54,7 +54,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 10.0
-Release: 2.%{gitdate}%{?dist}
+Release: 3.%{gitdate}%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -596,6 +596,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Tue Dec 17 2013 Dave Airlie <airlied@redhat.com> 10.0-3.20131206
+- don't build aarch64 with hardware for now
+
 * Fri Dec 13 2013 Dave Airlie <airlied@redhat.com> 10.0-2.20131206
 - add software driver copy_sub_buffer support from upstream
 
