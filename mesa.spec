@@ -1,5 +1,6 @@
 %if 0%{?rhel}
 %define with_private_llvm 1
+%define with_wayland 0
 %else
 %define with_private_llvm 0
 %define with_vdpau 1
@@ -11,7 +12,7 @@
 %define min_wayland_version 0.85
 %else
 %define min_wayland_version 1.0
-%ifnarch ppc
+%ifnarch ppc aarch64
 %define with_radeonsi 1
 %endif
 %endif
@@ -23,13 +24,13 @@
 # S390 doesn't have video cards, but we need swrast for xserver's GLX
 # llvm (and thus llvmpipe) doesn't actually work on ppc32 or s390
 
-%ifnarch s390 ppc
+%ifnarch s390 ppc aarch64
 %define with_llvm 1
 %endif
 
 %ifarch s390 s390x aarch64
 %define with_hardware 0
-%ifarch s390
+%ifarch s390 aarch64
 %define base_drivers swrast
 %endif
 %else
@@ -54,7 +55,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 10.0
-Release: 3.%{gitdate}%{?dist}
+Release: 4.%{gitdate}%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -109,7 +110,7 @@ BuildRequires: elfutils-libelf-devel
 BuildRequires: libxml2-python
 BuildRequires: libudev-devel
 BuildRequires: bison flex
-%if !0%{?rhel}
+%if 0%{?with_wayland}
 BuildRequires: pkgconfig(wayland-client) >= %{min_wayland_version}
 BuildRequires: pkgconfig(wayland-server) >= %{min_wayland_version}
 %endif
@@ -236,7 +237,7 @@ Provides: libgbm-devel
 Mesa libgbm development package
 
 
-%if !0%{?rhel}
+%if 0%{?with_wayland}
 %package libwayland-egl
 Summary: Mesa libwayland-egl library
 Group: System Environment/Libraries
@@ -415,7 +416,7 @@ rm -rf $RPM_BUILD_ROOT
 %postun libglapi -p /sbin/ldconfig
 %post libgbm -p /sbin/ldconfig
 %postun libgbm -p /sbin/ldconfig
-%if !0%{?rhel}
+%if 0%{?with_wayland}
 %post libwayland-egl -p /sbin/ldconfig
 %postun libwayland-egl -p /sbin/ldconfig
 %endif
@@ -562,7 +563,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_includedir}/gbm.h
 %{_libdir}/pkgconfig/gbm.pc
 
-%if !0%{?rhel}
+%if 0%{?with_wayland}
 %files libwayland-egl
 %defattr(-,root,root,-)
 %doc docs/COPYING
@@ -596,6 +597,11 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Wed Dec 18 2013 Peter Robinson <pbrobinson@fedoraproject.org> 10.0-4.20131206
+- use with_wayland for all wayland conditionals (instead of rhel)
+- don't build aarch64 with llvm support for now
+- fix aarch64 builds
+
 * Tue Dec 17 2013 Dave Airlie <airlied@redhat.com> 10.0-3.20131206
 - don't build aarch64 with hardware for now
 
