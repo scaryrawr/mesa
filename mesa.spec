@@ -48,13 +48,13 @@
 
 %define _default_patch_fuzz 2
 
-%define gitdate 20131128
+%define gitdate 20131220
 #% define snapshot 
 
 Summary: Mesa graphics libraries
 Name: mesa
-Version: 9.2.4
-Release: 2.%{gitdate}%{?dist}
+Version: 9.2.5
+Release: 1.%{gitdate}%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -605,6 +605,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Fri Dec 20 2013 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 9.2.5-1.20131220
+- 9.2.5 upstream release
+
 * Fri Dec 13 2013 Dave Airlie <airlied@redhat.com> 9.2.4-2.20131128
 - backport the GLX_MESA_copy_sub_buffer from upstream for cogl
 
