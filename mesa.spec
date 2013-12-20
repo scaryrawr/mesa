@@ -49,13 +49,13 @@
 
 %define _default_patch_fuzz 2
 
-%define gitdate 20131206
+%define gitdate 20131220
 #% define snapshot 
 
 Summary: Mesa graphics libraries
 Name: mesa
-Version: 10.0
-Release: 4.%{gitdate}%{?dist}
+Version: 10.0.1
+Release: 1.%{gitdate}%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -597,6 +597,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Fri Dec 20 2013 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 10.0.1-1.20131220
+- 10.0.1 upstream release
+
 * Wed Dec 18 2013 Peter Robinson <pbrobinson@fedoraproject.org> 10.0-4.20131206
 - use with_wayland for all wayland conditionals (instead of rhel)
 - don't build aarch64 with llvm support for now
