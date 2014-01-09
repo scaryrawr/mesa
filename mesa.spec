@@ -49,12 +49,12 @@
 
 %define _default_patch_fuzz 2
 
-%define gitdate 20131220
+%define gitdate 20140110
 #% define snapshot 
 
 Summary: Mesa graphics libraries
 Name: mesa
-Version: 10.0.1
+Version: 10.0.2
 Release: 1.%{gitdate}%{?dist}
 License: MIT
 Group: System Environment/Libraries
@@ -597,6 +597,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Fri Jan 10 2014 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 10.0.2-1.20140110
+- 10.0.2 upstream release
+
 * Fri Dec 20 2013 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 10.0.1-1.20131220
 - 10.0.1 upstream release
 
