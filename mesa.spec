@@ -39,6 +39,7 @@
 %ifarch %{ix86} x86_64
 %define platform_drivers ,i915,i965
 %define with_vmware 1
+%define with_opencl 1
 %endif
 %ifarch ppc
 %define platform_drivers ,swrast
@@ -49,13 +50,13 @@
 
 %define _default_patch_fuzz 2
 
-%define gitdate 20140110
+%define gitdate 20140118
 #% define snapshot 
 
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 10.0.2
-Release: 2.%{gitdate}%{?dist}
+Release: 3.%{gitdate}%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -79,6 +80,9 @@ Patch20: mesa-9.2-evergreen-big-endian.patch
 
 # backport from upstream to allow cogl use copy_sub_buffer
 Patch30: 0001-swrast-gallium-classic-add-MESA_copy_sub_buffer-supp.patch
+
+# https://bugs.freedesktop.org/show_bug.cgi?id=73512
+Patch99: 0001-opencl-use-versioned-.so-in-mesa.icd.patch
 
 BuildRequires: pkgconfig autoconf automake libtool
 %if %{with_hardware}
@@ -104,6 +108,9 @@ BuildRequires: gettext
 BuildRequires: mesa-private-llvm-devel
 %else
 BuildRequires: llvm-devel >= 3.0
+%if 0%{?with_opencl}
+BuildRequires: clang-devel >= 3.0
+%endif
 %endif
 %endif
 BuildRequires: elfutils-libelf-devel
@@ -119,6 +126,9 @@ BuildRequires: mesa-libGL-devel
 BuildRequires: libvdpau-devel
 %endif
 BuildRequires: zlib-devel
+%if 0%{?with_opencl}
+BuildRequires: libclc-devel llvm-static opencl-filesystem
+%endif
 
 %description
 Mesa
@@ -284,6 +294,25 @@ Group: System Environment/Libraries
 %description libglapi
 Mesa shared glapi
 
+
+%if 0%{?with_opencl}
+%package libOpenCL
+Summary: Mesa OpenCL runtime library
+Requires: ocl-icd
+Requires: libclc
+Requires: mesa-libgbm = %{version}-%{release}
+
+%description libOpenCL
+Mesa OpenCL runtime library.
+
+%package libOpenCL-devel
+Summary: Mesa OpenCL development package
+Requires: mesa-libOpenCL%{?_isa} = %{version}-%{release}
+
+%description libOpenCL-devel
+Mesa OpenCL development package.
+%endif
+
 %prep
 #setup -q -n Mesa-%{version}%{?snapshot}
 %setup -q -n mesa-%{gitdate}
@@ -306,6 +335,10 @@ grep -q ^/ src/gallium/auxiliary/vl/vl_decoder.c && exit 1
 
 %patch30 -p1 -b .copy_sub_buffer
 
+%if 0%{with_opencl}
+%patch99 -p1 -b .icd
+%endif
+
 %if 0%{with_private_llvm}
 sed -i 's/llvm-config/mesa-private-llvm-config-%{__isa_bits}/g' configure.ac
 sed -i 's/`$LLVM_CONFIG --version`/&-mesa/' configure.ac
@@ -322,7 +355,7 @@ cp %{SOURCE4} docs/
 
 %build
 
-autoreconf --install  
+autoreconf --install
 
 export CFLAGS="$RPM_OPT_FLAGS"
 # C++ note: we never say "catch" in the source.  we do say "typeid" once,
@@ -330,7 +363,7 @@ export CFLAGS="$RPM_OPT_FLAGS"
 #
 # We do say 'catch' in the clover and d3d1x state trackers, but we're not
 # building those yet.
-export CXXFLAGS="$RPM_OPT_FLAGS -fno-rtti -fno-exceptions"
+export CXXFLAGS="$RPM_OPT_FLAGS %{?with_opencl:-frtti -fexceptions} %{!?with_opencl:-fno-rtti -fno-exceptions}"
 %ifarch %{ix86}
 # i do not have words for how much the assembly dispatch code infuriates me
 %define asm_flags --disable-asm
@@ -350,7 +383,7 @@ export CXXFLAGS="$RPM_OPT_FLAGS -fno-rtti -fno-exceptions"
     --with-egl-platforms=x11,drm%{?with_wayland:,wayland} \
     --enable-shared-glapi \
     --enable-gbm \
-    --disable-opencl \
+    %{?with_opencl:--enable-opencl --enable-opencl-icd --with-clang-libdir=%{_prefix}/lib} %{!?with_opencl:--disable-opencl} \
     --enable-glx-tls \
     --enable-texture-float=yes \
     %{?with_llvm:--enable-gallium-llvm} \
@@ -359,6 +392,7 @@ export CXXFLAGS="$RPM_OPT_FLAGS -fno-rtti -fno-exceptions"
 %if %{with_hardware}
     %{?with_vmware:--enable-xa} \
     --with-gallium-drivers=%{?with_vmware:svga,}%{?with_radeonsi:radeonsi,}%{?with_llvm:swrast,r600,}%{?with_freedreno:freedreno,}r300,nouveau \
+    %{?with_llvm:--enable-r600-llvm-compiler} \
 %else
     --with-gallium-drivers=%{?with_llvm:swrast} \
 %endif
@@ -423,6 +457,10 @@ rm -rf $RPM_BUILD_ROOT
 %if 0%{?with_vmware}
 %post libxatracker -p /sbin/ldconfig
 %postun libxatracker -p /sbin/ldconfig
+%endif
+%if 0%{?with_opencl}
+%post libOpenCL -p /sbin/ldconfig
+%postun libOpenCL -p /sbin/ldconfig
 %endif
 
 %files libGL
@@ -596,7 +634,21 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 %endif
 
+%if 0%{?with_opencl}
+%files libOpenCL
+%{_libdir}/libMesaOpenCL.so.*
+%{_libdir}/gallium-pipe/
+%{_sysconfdir}/OpenCL/vendors/mesa.icd
+
+%files libOpenCL-devel
+%{_libdir}/libMesaOpenCL.so
+%endif
+
 %changelog
+* Sun Jan 19 2014 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 10.0.2-3.20140118
+- Enable OpenCL (RHBZ #887628)
+- Enable r600 llvm compiler (RHBZ #1055098)
+
 * Tue Jan 14 2014 Dave Airlie <airlied@redhat.com> 10.0.2-2.20140110
 - rebuild for llvm 3.4
 
