@@ -335,7 +335,7 @@ grep -q ^/ src/gallium/auxiliary/vl/vl_decoder.c && exit 1
 
 %patch30 -p1 -b .copy_sub_buffer
 
-%if 0%{with_opencl}
+%if 0%{?with_opencl}
 %patch99 -p1 -b .icd
 %endif
 
