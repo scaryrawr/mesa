@@ -51,7 +51,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 10.0.2
-Release: 4.%{gitdate}%{?dist}
+Release: 5.%{gitdate}%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -337,11 +337,6 @@ grep -q ^/ src/gallium/auxiliary/vl/vl_decoder.c && exit 1
 %if 0%{with_private_llvm}
 sed -i 's/llvm-config/mesa-private-llvm-config-%{__isa_bits}/g' configure.ac
 sed -i 's/`$LLVM_CONFIG --version`/&-mesa/' configure.ac
-%endif
-
-# need to use libdrm_nouveau2 on F17/RHEL
-%if !0%{?rhel}
-sed -i 's/\<libdrm_nouveau\>/&2/' configure.ac
 %endif
 
 cp %{SOURCE4} docs/
@@ -640,6 +635,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Sun Feb 02 2014 Kyle McMartin <kyle@redhat.com> - 10.0.2-5.20140118
+- Fix a thinko in previous commit wrt libdrm_nouveau2.
+
 * Sun Feb 02 2014 Kyle McMartin <kyle@redhat.com> - 10.0.2-4.20140118
 - Fix up building drivers on AArch64, enable LLVM there.
 - Eliminate some F17 cruft from the spec, since we don't support it anymore.
