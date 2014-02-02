@@ -7,30 +7,25 @@
 %define with_wayland 1
 %endif
 
-# f17 support wayland 0.85, llvm 3.0 means no radeonsi
-%if 0%{?fedora} < 18
-%define min_wayland_version 0.85
-%else
-%define min_wayland_version 1.0
-%ifnarch ppc aarch64
-%define with_radeonsi 1
+# S390 doesn't have video cards, but we need swrast for xserver's GLX
+# llvm (and thus llvmpipe) doesn't actually work on ppc32 or s390
+
+%ifnarch s390 ppc
+%define with_llvm 1
 %endif
+
+%define min_wayland_version 1.0
+%if !0%{?with_llvm}
+%define with_radeonsi 1
 %endif
 
 %ifarch %{arm}
 %define with_freedreno 1
 %endif
 
-# S390 doesn't have video cards, but we need swrast for xserver's GLX
-# llvm (and thus llvmpipe) doesn't actually work on ppc32 or s390
-
-%ifnarch s390 ppc aarch64
-%define with_llvm 1
-%endif
-
-%ifarch s390 s390x aarch64
+%ifarch s390 s390x
 %define with_hardware 0
-%ifarch s390 aarch64
+%ifarch s390
 %define base_drivers swrast
 %endif
 %else
@@ -56,7 +51,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 10.0.2
-Release: 3.%{gitdate}%{?dist}
+Release: 4.%{gitdate}%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -344,11 +339,9 @@ sed -i 's/llvm-config/mesa-private-llvm-config-%{__isa_bits}/g' configure.ac
 sed -i 's/`$LLVM_CONFIG --version`/&-mesa/' configure.ac
 %endif
 
-# need to use libdrm_nouveau2 on F17
+# need to use libdrm_nouveau2 on F17/RHEL
 %if !0%{?rhel}
-%if 0%{?fedora} < 18
 sed -i 's/\<libdrm_nouveau\>/&2/' configure.ac
-%endif
 %endif
 
 cp %{SOURCE4} docs/
@@ -533,7 +526,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/vdpau/libvdpau_nouveau.so.1*
 %if 0%{?with_llvm}
 %{_libdir}/vdpau/libvdpau_r600.so.1*
+%if 0%{?with_radeonsi}
 %{_libdir}/vdpau/libvdpau_radeonsi.so.1*
+%endif
 %endif
 %endif
 %endif
@@ -645,6 +640,13 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Sun Feb 02 2014 Kyle McMartin <kyle@redhat.com> - 10.0.2-4.20140118
+- Fix up building drivers on AArch64, enable LLVM there.
+- Eliminate some F17 cruft from the spec, since we don't support it anymore.
+- Conditionalize with_radeonsi on with_llvm instead of ppc,s390 && >F-17.
+- Conditionalize libvdpau_radeonsi.so.1* on with_radeonsi instead of simply
+  with_llvm to fix a build failure on AArch64.
+
 * Sun Jan 19 2014 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 10.0.2-3.20140118
 - Enable OpenCL (RHBZ #887628)
 - Enable r600 llvm compiler (RHBZ #1055098)
