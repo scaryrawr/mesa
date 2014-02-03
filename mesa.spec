@@ -39,6 +39,7 @@
 %ifarch %{ix86} x86_64
 %define platform_drivers ,i915,i965
 %define with_vmware 1
+%define with_xa     1
 %define with_opencl 1
 %endif
 %ifarch ppc ppc64le
@@ -271,14 +272,14 @@ Mesa libwayland-egl development package
 %endif
 
 
-%if 0%{?with_vmware}
+%if 0%{?with_xa}
 %package libxatracker
-Summary: Mesa XA state tracker for vmware
+Summary: Mesa XA state tracker
 Group: System Environment/Libraries
 Provides: libxatracker
 
 %description libxatracker
-Mesa XA state tracker for vmware
+Mesa XA state tracker
 
 %package libxatracker-devel
 Summary: Mesa XA state tracker development package
@@ -387,7 +388,7 @@ export CXXFLAGS="$RPM_OPT_FLAGS %{?with_opencl:-frtti -fexceptions} %{!?with_ope
     %{?with_llvm:--with-llvm-shared-libs} \
     --enable-dri \
 %if %{with_hardware}
-    %{?with_vmware:--enable-xa} \
+    %{?with_xa:--enable-xa} \
     --with-gallium-drivers=%{?with_vmware:svga,}%{?with_radeonsi:radeonsi,}%{?with_llvm:swrast,r600,}%{?with_freedreno:freedreno,}r300,nouveau \
 %else
     --with-gallium-drivers=%{?with_llvm:swrast} \
@@ -453,7 +454,7 @@ rm -rf $RPM_BUILD_ROOT
 %post libwayland-egl -p /sbin/ldconfig
 %postun libwayland-egl -p /sbin/ldconfig
 %endif
-%if 0%{?with_vmware}
+%if 0%{?with_xa}
 %post libxatracker -p /sbin/ldconfig
 %postun libxatracker -p /sbin/ldconfig
 %endif
@@ -616,7 +617,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/wayland-egl.pc
 %endif
 
-%if 0%{?with_vmware}
+%if 0%{?with_xa}
 %files libxatracker
 %defattr(-,root,root,-)
 %doc docs/COPYING
