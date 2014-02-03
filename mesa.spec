@@ -25,6 +25,7 @@
 
 %ifarch %{arm}
 %define with_freedreno 1
+%define with_xa        1
 %endif
 
 %ifarch s390 s390x ppc64le
