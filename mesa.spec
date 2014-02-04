@@ -15,7 +15,7 @@
 %endif
 
 %define min_wayland_version 1.0
-%if !0%{?with_llvm}
+%if 0%{?with_llvm}
 %define with_radeonsi 1
 %endif
 
@@ -51,7 +51,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 10.0.2
-Release: 5.%{gitdate}%{?dist}
+Release: 6.%{gitdate}%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -635,6 +635,10 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Tue Feb 04 2014 Kyle McMartin <kyle@redhat.com> - 10.0.2-6.20140118
+- Fix accidentally inverted logic that meant radeonsi_dri.so went missing
+  on all architectures instead of just ppc and s390. Sorry!
+
 * Sun Feb 02 2014 Kyle McMartin <kyle@redhat.com> - 10.0.2-5.20140118
 - Fix a thinko in previous commit wrt libdrm_nouveau2.
 
