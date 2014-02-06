@@ -45,13 +45,13 @@
 
 %define _default_patch_fuzz 2
 
-%define gitdate 20140118
+%define gitdate 20140206
 #% define snapshot 
 
 Summary: Mesa graphics libraries
 Name: mesa
-Version: 10.0.2
-Release: 6.%{gitdate}%{?dist}
+Version: 10.0.3
+Release: 1.%{gitdate}%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -635,6 +635,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Thu Feb 06 2014 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 10.0.3-1.20140206
+- 10.0.3 upstream release
+
 * Tue Feb 04 2014 Kyle McMartin <kyle@redhat.com> - 10.0.2-6.20140118
 - Fix accidentally inverted logic that meant radeonsi_dri.so went missing
   on all architectures instead of just ppc and s390. Sorry!
