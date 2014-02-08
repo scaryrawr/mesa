@@ -45,13 +45,13 @@
 
 %define _default_patch_fuzz 2
 
-%define gitdate 20140206
+%define gitdate 20140208
 #% define snapshot 
 
 Summary: Mesa graphics libraries
 Name: mesa
-Version: 10.0.3
-Release: 1.%{gitdate}%{?dist}
+Version: 10.1
+Release: 0.rc1.%{gitdate}%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -73,8 +73,6 @@ Patch12: mesa-8.0.1-fix-16bpp.patch
 Patch15: mesa-9.2-hardware-float.patch
 Patch20: mesa-9.2-evergreen-big-endian.patch
 
-# backport from upstream to allow cogl use copy_sub_buffer
-Patch30: 0001-swrast-gallium-classic-add-MESA_copy_sub_buffer-supp.patch
 
 # https://bugs.freedesktop.org/show_bug.cgi?id=73512
 Patch99: 0001-opencl-use-versioned-.so-in-mesa.icd.patch
@@ -95,6 +93,7 @@ BuildRequires: libXfixes-devel
 BuildRequires: libXdamage-devel
 BuildRequires: libXi-devel
 BuildRequires: libXmu-devel
+BuildRequires: libxshmfence-devel
 BuildRequires: elfutils
 BuildRequires: python
 BuildRequires: gettext
@@ -327,8 +326,6 @@ grep -q ^/ src/gallium/auxiliary/vl/vl_decoder.c && exit 1
 
 %patch15 -p1 -b .hwfloat
 %patch20 -p1 -b .egbe
-
-%patch30 -p1 -b .copy_sub_buffer
 
 %if 0%{?with_opencl}
 %patch99 -p1 -b .icd
@@ -635,6 +632,10 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Sat Feb 08 2014 Adel Gadllah <adel.gadllah@gmail.com> - 10.1-0.rc1.20140208
+- 10.1rc1
+- Drop upstreamed patches
+
 * Thu Feb 06 2014 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 10.0.3-1.20140206
 - 10.0.3 upstream release
 
