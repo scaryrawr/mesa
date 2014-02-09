@@ -26,6 +26,7 @@
 %ifarch %{arm}
 %define with_freedreno 1
 %define with_xa        1
+%define with_omx       1
 %endif
 
 %ifarch s390 s390x ppc64le
@@ -41,6 +42,7 @@
 %define with_vmware 1
 %define with_xa     1
 %define with_opencl 1
+%define with_omx    1
 %endif
 %ifarch ppc ppc64le
 %define platform_drivers ,swrast
@@ -130,6 +132,9 @@ BuildRequires: mesa-libGL-devel
 BuildRequires: libvdpau-devel
 %endif
 BuildRequires: zlib-devel
+%if 0%{?with_omx}
+BuildRequires: libomxil-bellagio-devel
+%endif
 %if 0%{?with_opencl}
 BuildRequires: libclc-devel llvm-static opencl-filesystem
 %endif
@@ -175,6 +180,16 @@ Obsoletes: mesa-dri-drivers-dri1 < 7.12
 Obsoletes: mesa-dri-llvmcore <= 7.12
 %description dri-drivers
 Mesa-based DRI drivers.
+
+%if 0%{?with_omx}
+%package omx-drivers
+Summary: Mesa-based OMX drivers
+Group: User Interface/X Hardware Support
+Requires: mesa-filesystem%{?_isa}
+Requires: libomxil-bellagio%{?_isa}
+%description omx-drivers
+Mesa-based OMX drivers.
+%endif
 
 %if 0%{?with_vdpau}
 %package vdpau-drivers
@@ -381,6 +396,7 @@ export CXXFLAGS="$RPM_OPT_FLAGS %{?with_opencl:-frtti -fexceptions} %{!?with_ope
     --with-egl-platforms=x11,drm%{?with_wayland:,wayland} \
     --enable-shared-glapi \
     --enable-gbm \
+    %{?with_omx:--enable-omx} \
     %{?with_opencl:--enable-opencl --enable-opencl-icd --with-clang-libdir=%{_prefix}/lib} %{!?with_opencl:--disable-opencl} \
     --enable-glx-tls \
     --enable-texture-float=yes \
@@ -527,6 +543,13 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/dri/swrast_dri.so
 
 %if %{with_hardware}
+%if 0%{?with_omx}
+%files omx-drivers
+%defattr(-,root,root,-)
+%{_libdir}/bellagio/libomx_nouveau.so*
+%{_libdir}/bellagio/libomx_r600.so*
+%{_libdir}/bellagio/libomx_radeonsi.so*
+%endif
 %if 0%{?with_vdpau}
 %files vdpau-drivers
 %defattr(-,root,root,-)
