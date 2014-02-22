@@ -45,13 +45,13 @@
 
 %define _default_patch_fuzz 2
 
-%define gitdate 20140208
+%define gitdate 20140222
 #% define snapshot 
 
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 10.1
-Release: 0.rc1.%{gitdate}%{?dist}
+Release: 0.rc2.%{gitdate}%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -632,6 +632,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Sat Feb 22 2014 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 10.1-0.rc2.20140222
+- 10.1-rc2
+
 * Sat Feb 08 2014 Adel Gadllah <adel.gadllah@gmail.com> - 10.1-0.rc1.20140208
 - 10.1rc1
 - Drop upstreamed patches
