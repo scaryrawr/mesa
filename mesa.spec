@@ -45,7 +45,7 @@
 
 %define _default_patch_fuzz 2
 
-%define gitdate 20140225
+%define gitdate 20140301
 #% define snapshot 
 
 Summary: Mesa graphics libraries
@@ -632,7 +632,7 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
-* Sat Mar 01 2014 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 10.1-0.rc3.20140225
+* Sat Mar 01 2014 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 10.1-0.rc3.20140301
 - 10.1-rc3
 
 * Tue Feb 25 2014 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 10.1-0.rc2.20140225
