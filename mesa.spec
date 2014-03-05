@@ -45,13 +45,13 @@
 
 %define _default_patch_fuzz 2
 
-%define gitdate 20140301
+%define gitdate 20140305
 #% define snapshot 
 
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 10.1
-Release: 0.rc3.%{gitdate}%{?dist}
+Release: 1.%{gitdate}%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -632,6 +632,12 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Wed Mar 05 2014 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 10.1-1.20140305
+- mesa: Bump version to 10.1 (final) (Ian Romanick)
+- glx/dri2: fix build failure on HURD (Julien Cristau)
+- i965: Validate (and resolve) all the bound textures. (Chris Forbes)
+- i965: Widen sampler key bitfields for 32 samplers (Chris Forbes)
+
 * Sat Mar 01 2014 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 10.1-0.rc3.20140301
 - 10.1-rc3
 
