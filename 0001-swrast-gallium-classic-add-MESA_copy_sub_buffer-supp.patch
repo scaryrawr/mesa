@@ -1,8 +1,8 @@
-From 31d3205208bced090f790e530d861c75615d14d0 Mon Sep 17 00:00:00 2001
+From ba00f2f6f54cbc5ffdb0f0b94bcd672d147cdc36 Mon Sep 17 00:00:00 2001
 From: Dave Airlie <airlied@gmail.com>
 Date: Thu, 28 Nov 2013 11:08:11 +1000
 Subject: [PATCH] swrast* (gallium, classic): add MESA_copy_sub_buffer support
- (v3-backport)
+ (v3)
 
 This patches add MESA_copy_sub_buffer support to the dri sw loader and
 then to gallium state tracker, llvmpipe, softpipe and other bits.
@@ -20,16 +20,10 @@ add to p_screen doc comments.
 
 v3: finish off winsys interfaces, add swrast classic support as well.
 
-backport to 9.2: old dri bits.
-
 Reviewed-by: Jose Fonseca <jfonseca@vmware.com>
 Signed-off-by: Dave Airlie <airlied@redhat.com>
 
-Conflicts:
-	src/gallium/state_trackers/dri/sw/drisw.c
-	src/gallium/targets/haiku-softpipe/GalliumContext.cpp
-	src/mesa/drivers/dri/common/dri_util.c
-	src/mesa/drivers/dri/swrast/swrast.c
+swrast: add support for copy_sub_buffer
 ---
  include/GL/internal/dri_interface.h                |  9 +++-
  src/gallium/auxiliary/vl/vl_winsys_dri.c           |  2 +-
@@ -50,6 +44,7 @@ Conflicts:
  src/gallium/state_trackers/glx/xlib/xm_st.c        |  2 +-
  src/gallium/state_trackers/vdpau/presentation.c    |  2 +-
  src/gallium/state_trackers/xvmc/surface.c          |  2 +-
+ .../targets/haiku-softpipe/GalliumContext.cpp      |  4 +-
  src/gallium/tests/graw/clear.c                     |  2 +-
  src/gallium/tests/graw/fs-test.c                   |  2 +-
  src/gallium/tests/graw/graw_util.h                 |  2 +-
@@ -68,16 +63,16 @@ Conflicts:
  src/gallium/winsys/sw/wayland/wayland_sw_winsys.c  |  3 +-
  src/gallium/winsys/sw/xlib/xlib_sw_winsys.c        |  3 +-
  src/glx/drisw_glx.c                                | 43 ++++++++++++++--
+ src/mesa/drivers/dri/common/dri_util.c             | 15 ++++++
  src/mesa/drivers/dri/common/dri_util.h             |  5 +-
- src/mesa/drivers/dri/common/drisw_util.c           | 15 ++++++
  src/mesa/drivers/dri/swrast/swrast.c               | 35 +++++++++++++
- 40 files changed, 225 insertions(+), 57 deletions(-)
+ 41 files changed, 227 insertions(+), 59 deletions(-)
 
 diff --git a/include/GL/internal/dri_interface.h b/include/GL/internal/dri_interface.h
-index 5c99d55..09c1406 100644
+index b012570..81f7e60 100644
 --- a/include/GL/internal/dri_interface.h
 +++ b/include/GL/internal/dri_interface.h
-@@ -439,7 +439,7 @@ struct __DRIdamageExtensionRec {
+@@ -437,7 +437,7 @@ struct __DRIdamageExtensionRec {
   * SWRast Loader extension.
   */
  #define __DRI_SWRAST_LOADER "DRI_SWRastLoader"
@@ -86,7 +81,7 @@ index 5c99d55..09c1406 100644
  struct __DRIswrastLoaderExtensionRec {
      __DRIextension base;
  
-@@ -463,6 +463,13 @@ struct __DRIswrastLoaderExtensionRec {
+@@ -461,6 +461,13 @@ struct __DRIswrastLoaderExtensionRec {
      void (*getImage)(__DRIdrawable *readable,
  		     int x, int y, int width, int height,
  		     char *data, void *loaderPrivate);
@@ -137,10 +132,10 @@ index 16a5ff1..5a91077 100644
  
  static void
 diff --git a/src/gallium/drivers/i915/i915_screen.c b/src/gallium/drivers/i915/i915_screen.c
-index 556dda8..0ff2640 100644
+index abb9796..8b29fc2 100644
 --- a/src/gallium/drivers/i915/i915_screen.c
 +++ b/src/gallium/drivers/i915/i915_screen.c
-@@ -419,7 +419,8 @@ static void
+@@ -423,7 +423,8 @@ static void
  i915_flush_frontbuffer(struct pipe_screen *screen,
                         struct pipe_resource *resource,
                         unsigned level, unsigned layer,
@@ -150,7 +145,7 @@ index 556dda8..0ff2640 100644
  {
     /* XXX: Dummy right now. */
     (void)screen;
-@@ -427,6 +428,7 @@ i915_flush_frontbuffer(struct pipe_screen *screen,
+@@ -431,6 +432,7 @@ i915_flush_frontbuffer(struct pipe_screen *screen,
     (void)level;
     (void)layer;
     (void)winsys_drawable_handle;
@@ -182,10 +177,10 @@ index 26df7f6..28cfa1f6 100644
  
  static void
 diff --git a/src/gallium/drivers/llvmpipe/lp_screen.c b/src/gallium/drivers/llvmpipe/lp_screen.c
-index b3cd77f..f488d6d 100644
+index 742e7f2..c8eb3ba 100644
 --- a/src/gallium/drivers/llvmpipe/lp_screen.c
 +++ b/src/gallium/drivers/llvmpipe/lp_screen.c
-@@ -403,7 +403,8 @@ static void
+@@ -411,7 +411,8 @@ static void
  llvmpipe_flush_frontbuffer(struct pipe_screen *_screen,
                             struct pipe_resource *resource,
                             unsigned level, unsigned layer,
@@ -195,7 +190,7 @@ index b3cd77f..f488d6d 100644
  {
     struct llvmpipe_screen *screen = llvmpipe_screen(_screen);
     struct sw_winsys *winsys = screen->winsys;
-@@ -411,10 +412,9 @@ llvmpipe_flush_frontbuffer(struct pipe_screen *_screen,
+@@ -419,10 +420,9 @@ llvmpipe_flush_frontbuffer(struct pipe_screen *_screen,
  
     assert(texture->dt);
     if (texture->dt)
@@ -208,10 +203,10 @@ index b3cd77f..f488d6d 100644
  llvmpipe_destroy_screen( struct pipe_screen *_screen )
  {
 diff --git a/src/gallium/drivers/noop/noop_pipe.c b/src/gallium/drivers/noop/noop_pipe.c
-index ac837b1..849a4d1 100644
+index 889e95e..27197a5 100644
 --- a/src/gallium/drivers/noop/noop_pipe.c
 +++ b/src/gallium/drivers/noop/noop_pipe.c
-@@ -288,7 +288,7 @@ static struct pipe_context *noop_create_context(struct pipe_screen *screen, void
+@@ -296,7 +296,7 @@ static struct pipe_context *noop_create_context(struct pipe_screen *screen, void
  static void noop_flush_frontbuffer(struct pipe_screen *_screen,
  				   struct pipe_resource *resource,
  				   unsigned level, unsigned layer,
@@ -243,10 +238,10 @@ index 2471fdb..8576e2f 100644
  
  static void
 diff --git a/src/gallium/drivers/softpipe/sp_screen.c b/src/gallium/drivers/softpipe/sp_screen.c
-index f6acdc8..3e3f366 100644
+index 0c8c94d..69cb09f 100644
 --- a/src/gallium/drivers/softpipe/sp_screen.c
 +++ b/src/gallium/drivers/softpipe/sp_screen.c
-@@ -364,7 +364,8 @@ static void
+@@ -369,7 +369,8 @@ static void
  softpipe_flush_frontbuffer(struct pipe_screen *_screen,
                             struct pipe_resource *resource,
                             unsigned level, unsigned layer,
@@ -256,7 +251,7 @@ index f6acdc8..3e3f366 100644
  {
     struct softpipe_screen *screen = softpipe_screen(_screen);
     struct sw_winsys *winsys = screen->winsys;
-@@ -372,7 +373,7 @@ softpipe_flush_frontbuffer(struct pipe_screen *_screen,
+@@ -377,7 +378,7 @@ softpipe_flush_frontbuffer(struct pipe_screen *_screen,
  
     assert(texture->dt);
     if (texture->dt)
@@ -266,10 +261,10 @@ index f6acdc8..3e3f366 100644
  
  static uint64_t
 diff --git a/src/gallium/drivers/trace/tr_screen.c b/src/gallium/drivers/trace/tr_screen.c
-index 5281ba8..b71ebbe 100644
+index c6745af..debd031 100644
 --- a/src/gallium/drivers/trace/tr_screen.c
 +++ b/src/gallium/drivers/trace/tr_screen.c
-@@ -210,7 +210,8 @@ static void
+@@ -209,7 +209,8 @@ static void
  trace_screen_flush_frontbuffer(struct pipe_screen *_screen,
                                 struct pipe_resource *_resource,
                                 unsigned level, unsigned layer,
@@ -279,7 +274,7 @@ index 5281ba8..b71ebbe 100644
  {
     struct trace_screen *tr_scr = trace_screen(_screen);
     struct trace_resource *tr_res = trace_resource(_resource);
-@@ -227,7 +228,7 @@ trace_screen_flush_frontbuffer(struct pipe_screen *_screen,
+@@ -226,7 +227,7 @@ trace_screen_flush_frontbuffer(struct pipe_screen *_screen,
     trace_dump_arg(ptr, context_private);
     */
  
@@ -289,7 +284,7 @@ index 5281ba8..b71ebbe 100644
     trace_dump_call_end();
  }
 diff --git a/src/gallium/include/pipe/p_screen.h b/src/gallium/include/pipe/p_screen.h
-index c487e8e..c0f4fd1 100644
+index 3ed7f26..bdd727d 100644
 --- a/src/gallium/include/pipe/p_screen.h
 +++ b/src/gallium/include/pipe/p_screen.h
 @@ -56,6 +56,7 @@ struct pipe_fence_handle;
@@ -300,7 +295,7 @@ index c487e8e..c0f4fd1 100644
  
  
  /**
-@@ -179,13 +180,13 @@ struct pipe_screen {
+@@ -181,13 +182,13 @@ struct pipe_screen {
      * displayed, eg copy fake frontbuffer.
      * \param winsys_drawable_handle  an opaque handle that the calling context
      *                                gets out-of-band
@@ -354,7 +349,7 @@ index 0b11fe3..d08ddd6 100644
     void 
     (*displaytarget_destroy)( struct sw_winsys *ws, 
 diff --git a/src/gallium/state_trackers/dri/sw/drisw.c b/src/gallium/state_trackers/dri/sw/drisw.c
-index 121a205..aa0d3e0 100644
+index 9f00a53..64a64af 100644
 --- a/src/gallium/state_trackers/dri/sw/drisw.c
 +++ b/src/gallium/state_trackers/dri/sw/drisw.c
 @@ -37,6 +37,7 @@
@@ -475,12 +470,12 @@ index 121a205..aa0d3e0 100644
  PUBLIC const __DRIextension *__driDriverExtensions[] = {
      &driCoreExtension.base,
      &driSWRastExtension.base,
-+    &driCopySubBufferExtension.base,
++    &driCopySubBufferExtension,
+     &gallium_config_options.base,
      NULL
  };
- 
 diff --git a/src/gallium/state_trackers/egl/common/native_helper.c b/src/gallium/state_trackers/egl/common/native_helper.c
-index b578a8a..5c2be19 100644
+index d1e1acd..4a77a50 100644
 --- a/src/gallium/state_trackers/egl/common/native_helper.c
 +++ b/src/gallium/state_trackers/egl/common/native_helper.c
 @@ -244,7 +244,7 @@ resource_surface_present(struct resource_surface *rsurf,
@@ -519,7 +514,7 @@ index fb69998..7f73a3a 100644
  }
  
 diff --git a/src/gallium/state_trackers/vdpau/presentation.c b/src/gallium/state_trackers/vdpau/presentation.c
-index c9f8ea7..e68e25f 100644
+index 81e0328..b574ddd 100644
 --- a/src/gallium/state_trackers/vdpau/presentation.c
 +++ b/src/gallium/state_trackers/vdpau/presentation.c
 @@ -269,7 +269,7 @@ vlVdpPresentationQueueDisplay(VdpPresentationQueue presentation_queue,
@@ -532,10 +527,10 @@ index c9f8ea7..e68e25f 100644
  
     pipe->screen->fence_reference(pipe->screen, &surf->fence, NULL);
 diff --git a/src/gallium/state_trackers/xvmc/surface.c b/src/gallium/state_trackers/xvmc/surface.c
-index 6a895aa..ea778a3 100644
+index 13f337c..f6876be 100644
 --- a/src/gallium/state_trackers/xvmc/surface.c
 +++ b/src/gallium/state_trackers/xvmc/surface.c
-@@ -441,7 +441,7 @@ Status XvMCPutSurface(Display *dpy, XvMCSurface *surface, Drawable drawable,
+@@ -447,7 +447,7 @@ Status XvMCPutSurface(Display *dpy, XvMCSurface *surface, Drawable drawable,
     pipe->screen->flush_frontbuffer
     (
        pipe->screen, tex, 0, 0,
@@ -544,6 +539,27 @@ index 6a895aa..ea778a3 100644
     );
  
     if(dump_window == -1) {
+diff --git a/src/gallium/targets/haiku-softpipe/GalliumContext.cpp b/src/gallium/targets/haiku-softpipe/GalliumContext.cpp
+index b750f65..1078cb7 100644
+--- a/src/gallium/targets/haiku-softpipe/GalliumContext.cpp
++++ b/src/gallium/targets/haiku-softpipe/GalliumContext.cpp
+@@ -504,14 +504,14 @@ GalliumContext::SwapBuffers(context_id contextID)
+ 		// We pass our destination bitmap to flush_fronbuffer which passes it
+ 		// to the private winsys display call.
+ 		fScreen->flush_frontbuffer(fScreen, surface->texture, 0, 0,
+-			context->bitmap);
++			context->bitmap, NULL);
+ 	}
+ 
+ 	#if 0
+ 	// TODO... should we flush the z stencil buffer?
+ 	pipe_surface* zSurface = stContext->state.framebuffer.zsbuf;
+ 	fScreen->flush_frontbuffer(fScreen, zSurface->texture, 0, 0,
+-		context->bitmap);
++		context->bitmap, NULL);
+ 	#endif
+ 
+ 	return B_OK;
 diff --git a/src/gallium/tests/graw/clear.c b/src/gallium/tests/graw/clear.c
 index 77c59db..f38da47 100644
 --- a/src/gallium/tests/graw/clear.c
@@ -558,7 +574,7 @@ index 77c59db..f38da47 100644
  
  static void init( void )
 diff --git a/src/gallium/tests/graw/fs-test.c b/src/gallium/tests/graw/fs-test.c
-index 38a2c4b..a01c014 100644
+index 4d38e08..0560e31 100644
 --- a/src/gallium/tests/graw/fs-test.c
 +++ b/src/gallium/tests/graw/fs-test.c
 @@ -240,7 +240,7 @@ static void draw( void )
@@ -584,7 +600,7 @@ index 8557285..1856f0d 100644
  
  
 diff --git a/src/gallium/tests/graw/gs-test.c b/src/gallium/tests/graw/gs-test.c
-index e4e4f61..1745c84 100644
+index 3ada18a..879bf3e 100644
 --- a/src/gallium/tests/graw/gs-test.c
 +++ b/src/gallium/tests/graw/gs-test.c
 @@ -347,7 +347,7 @@ static void draw( void )
@@ -597,7 +613,7 @@ index e4e4f61..1745c84 100644
  
  #define SIZE 16
 diff --git a/src/gallium/tests/graw/quad-sample.c b/src/gallium/tests/graw/quad-sample.c
-index 969ffa7..9960c30 100644
+index b4a29e1..2e248a8 100644
 --- a/src/gallium/tests/graw/quad-sample.c
 +++ b/src/gallium/tests/graw/quad-sample.c
 @@ -156,7 +156,7 @@ static void draw( void )
@@ -649,7 +665,7 @@ index f84463d..55bc3a5 100644
  
  
 diff --git a/src/gallium/tests/graw/vs-test.c b/src/gallium/tests/graw/vs-test.c
-index 5a7d0a0..ce1941d 100644
+index f7d4d73..0e9fc53 100644
 --- a/src/gallium/tests/graw/vs-test.c
 +++ b/src/gallium/tests/graw/vs-test.c
 @@ -234,7 +234,7 @@ static void draw( void )
@@ -746,10 +762,10 @@ index 2e12f6e..aae3ec5 100644
      /* nasty:
       */
 diff --git a/src/gallium/winsys/sw/hgl/hgl_sw_winsys.c b/src/gallium/winsys/sw/hgl/hgl_sw_winsys.c
-index 1d51dd6..f09272a 100644
+index b09584c..27eca2b 100644
 --- a/src/gallium/winsys/sw/hgl/hgl_sw_winsys.c
 +++ b/src/gallium/winsys/sw/hgl/hgl_sw_winsys.c
-@@ -147,7 +147,8 @@ hgl_winsys_displaytarget_unmap(struct sw_winsys* winsys,
+@@ -160,7 +160,8 @@ hgl_winsys_displaytarget_unmap(struct sw_winsys* winsys,
  
  static void
  hgl_winsys_displaytarget_display(struct sw_winsys* winsys,
@@ -802,7 +818,7 @@ index 6e71530..99da2ae 100644
     struct xlib_drawable *xlib_drawable = (struct xlib_drawable *)context_private;
     xlib_sw_display(xlib_drawable, dt);
 diff --git a/src/glx/drisw_glx.c b/src/glx/drisw_glx.c
-index 393be20..f903b2d 100644
+index cb1d650..13a4b96 100644
 --- a/src/glx/drisw_glx.c
 +++ b/src/glx/drisw_glx.c
 @@ -49,6 +49,7 @@ struct drisw_screen
@@ -892,7 +908,7 @@ index 393be20..f903b2d 100644
     /* FIXME: Figure out what other extensions can be ported here from dri2. */
     for (i = 0; extensions[i]; i++) {
        if ((strcmp(extensions[i]->name, __DRI_TEX_BUFFER) == 0)) {
-@@ -675,6 +703,8 @@ driswCreateScreen(int screen, struct glx_display *priv)
+@@ -673,6 +701,8 @@ driswCreateScreen(int screen, struct glx_display *priv)
  	 psc->core = (__DRIcoreExtension *) extensions[i];
        if (strcmp(extensions[i]->name, __DRI_SWRAST) == 0)
  	 psc->swrast = (__DRIswrastExtension *) extensions[i];
@@ -901,7 +917,7 @@ index 393be20..f903b2d 100644
     }
  
     if (psc->core == NULL || psc->swrast == NULL) {
-@@ -713,6 +743,9 @@ driswCreateScreen(int screen, struct glx_display *priv)
+@@ -718,6 +748,9 @@ driswCreateScreen(int screen, struct glx_display *priv)
     psp->createDrawable = driswCreateDrawable;
     psp->swapBuffers = driswSwapBuffers;
  
@@ -911,11 +927,34 @@ index 393be20..f903b2d 100644
     return &psc->base;
  
   handle_error:
+diff --git a/src/mesa/drivers/dri/common/dri_util.c b/src/mesa/drivers/dri/common/dri_util.c
+index 0bce77e..fd2eca7 100644
+--- a/src/mesa/drivers/dri/common/dri_util.c
++++ b/src/mesa/drivers/dri/common/dri_util.c
+@@ -873,3 +873,18 @@ const __DRIimageDriverExtension driImageDriverExtension = {
+     .getAPIMask                 = driGetAPIMask,
+     .createContextAttribs       = driCreateContextAttribs,
+ };
++
++/* swrast copy sub buffer entrypoint. */
++static void driCopySubBuffer(__DRIdrawable *pdp, int x, int y,
++                             int w, int h)
++{
++    assert(pdp->driScreenPriv->swrast_loader);
++
++    pdp->driScreenPriv->driver->CopySubBuffer(pdp, x, y, w, h);
++}
++
++/* for swrast only */
++const __DRIcopySubBufferExtension driCopySubBufferExtension = {
++   { __DRI_COPY_SUB_BUFFER, 1 },
++   .copySubBuffer = driCopySubBuffer,
++};
 diff --git a/src/mesa/drivers/dri/common/dri_util.h b/src/mesa/drivers/dri/common/dri_util.h
-index 900f048..4c71fe4 100644
+index 79a8564..4cfa75d 100644
 --- a/src/mesa/drivers/dri/common/dri_util.h
 +++ b/src/mesa/drivers/dri/common/dri_util.h
-@@ -65,7 +65,7 @@ extern const __DRIcoreExtension driCoreExtension;
+@@ -66,7 +66,7 @@ extern const __DRIcoreExtension driCoreExtension;
  extern const __DRIswrastExtension driSWRastExtension;
  extern const __DRIdri2Extension driDRI2Extension;
  extern const __DRI2configQueryExtension dri2ConfigQueryExtension;
@@ -924,7 +963,7 @@ index 900f048..4c71fe4 100644
  /**
   * Driver callback functions.
   *
-@@ -113,6 +113,9 @@ struct __DriverAPIRec {
+@@ -115,6 +115,9 @@ struct __DriverAPIRec {
                                      int width, int height);
  
      void (*ReleaseBuffer) (__DRIscreen *screenPrivate, __DRIbuffer *buffer);
@@ -934,34 +973,11 @@ index 900f048..4c71fe4 100644
  };
  
  extern const struct __DriverAPIRec driDriverAPI;
-diff --git a/src/mesa/drivers/dri/common/drisw_util.c b/src/mesa/drivers/dri/common/drisw_util.c
-index 89f03c3..0da4142 100644
---- a/src/mesa/drivers/dri/common/drisw_util.c
-+++ b/src/mesa/drivers/dri/common/drisw_util.c
-@@ -373,3 +373,18 @@ const __DRIswrastExtension driSWRastExtension = {
-     driCreateNewContextForAPI,
-     driCreateContextAttribs
- };
-+
-+/* swrast copy sub buffer entrypoint. */
-+static void driCopySubBuffer(__DRIdrawable *pdp, int x, int y,
-+                             int w, int h)
-+{
-+    assert(pdp->driScreenPriv->swrast_loader);
-+
-+    driDriverAPI.CopySubBuffer(pdp, x, y, w, h);
-+}
-+
-+/* for swrast only */
-+const __DRIcopySubBufferExtension driCopySubBufferExtension = {
-+   { __DRI_COPY_SUB_BUFFER, 1 },
-+   .copySubBuffer = driCopySubBuffer,
-+};
 diff --git a/src/mesa/drivers/dri/swrast/swrast.c b/src/mesa/drivers/dri/swrast/swrast.c
-index 3870673..eb6d23b 100644
+index 0e1c530..7eed5a4 100644
 --- a/src/mesa/drivers/dri/swrast/swrast.c
 +++ b/src/mesa/drivers/dri/swrast/swrast.c
-@@ -830,6 +830,39 @@ dri_unbind_context(__DRIcontext * cPriv)
+@@ -820,6 +820,39 @@ dri_unbind_context(__DRIcontext * cPriv)
      return GL_TRUE;
  }
  
@@ -999,20 +1015,22 @@ index 3870673..eb6d23b 100644
 +}
 +
  
- const struct __DriverAPIRec driDriverAPI = {
+ static const struct __DriverAPIRec swrast_driver_api = {
      .InitScreen = dri_init_screen,
-@@ -841,11 +874,13 @@ const struct __DriverAPIRec driDriverAPI = {
+@@ -831,6 +864,7 @@ static const struct __DriverAPIRec swrast_driver_api = {
      .SwapBuffers = dri_swap_buffers,
      .MakeCurrent = dri_make_current,
      .UnbindContext = dri_unbind_context,
 +    .CopySubBuffer = dri_copy_sub_buffer,
  };
  
- /* This is the table of extensions that the loader will dlsym() for. */
- PUBLIC const __DRIextension *__driDriverExtensions[] = {
+ static const struct __DRIDriverVtableExtensionRec swrast_vtable = {
+@@ -841,6 +875,7 @@ static const struct __DRIDriverVtableExtensionRec swrast_vtable = {
+ static const __DRIextension *swrast_driver_extensions[] = {
      &driCoreExtension.base,
      &driSWRastExtension.base,
 +    &driCopySubBufferExtension.base,
+     &swrast_vtable.base,
      NULL
  };
 -- 

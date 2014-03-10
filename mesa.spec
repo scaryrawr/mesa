@@ -1,23 +1,10 @@
 %if 0%{?rhel}
 %define with_private_llvm 1
+%define with_wayland 0
 %else
 %define with_private_llvm 0
 %define with_vdpau 1
 %define with_wayland 1
-%endif
-
-# f17 support wayland 0.85, llvm 3.0 means no radeonsi
-%if 0%{?fedora} < 18
-%define min_wayland_version 0.85
-%else
-%define min_wayland_version 1.0
-%ifnarch ppc
-%define with_radeonsi 1
-%endif
-%endif
-
-%ifarch %{arm}
-%define with_freedreno 1
 %endif
 
 # S390 doesn't have video cards, but we need swrast for xserver's GLX
@@ -25,6 +12,15 @@
 
 %ifnarch s390 ppc
 %define with_llvm 1
+%endif
+
+%define min_wayland_version 1.0
+%if 0%{?with_llvm}
+%define with_radeonsi 1
+%endif
+
+%ifarch %{arm}
+%define with_freedreno 1
 %endif
 
 %ifarch s390 s390x
@@ -38,6 +34,7 @@
 %ifarch %{ix86} x86_64
 %define platform_drivers ,i915,i965
 %define with_vmware 1
+%define with_opencl 1
 %endif
 %ifarch ppc
 %define platform_drivers ,swrast
@@ -48,12 +45,12 @@
 
 %define _default_patch_fuzz 2
 
-%define gitdate 20131220
+%define gitdate 20140206
 #% define snapshot 
 
 Summary: Mesa graphics libraries
 Name: mesa
-Version: 9.2.5
+Version: 10.0.3
 Release: 1.%{gitdate}%{?dist}
 License: MIT
 Group: System Environment/Libraries
@@ -70,15 +67,17 @@ Source3: make-git-snapshot.sh
 # Fedora opts to ignore the optional part of clause 2 and treat that code as 2 clause BSD.
 Source4: Mesa-MLAA-License-Clarification-Email.txt
 
-Patch1: nv50-fix-build.patch
+Patch1: mesa-10.0-nv50-fix-build.patch
 Patch9: mesa-8.0-llvmpipe-shmget.patch
 Patch12: mesa-8.0.1-fix-16bpp.patch
 Patch15: mesa-9.2-hardware-float.patch
-Patch16: mesa-9.2-no-useless-vdpau.patch
 Patch20: mesa-9.2-evergreen-big-endian.patch
 
-# add GLX_MESA_copy_sub_buffer to all sw drivers for cogl/gnome
+# backport from upstream to allow cogl use copy_sub_buffer
 Patch30: 0001-swrast-gallium-classic-add-MESA_copy_sub_buffer-supp.patch
+
+# https://bugs.freedesktop.org/show_bug.cgi?id=73512
+Patch99: 0001-opencl-use-versioned-.so-in-mesa.icd.patch
 
 BuildRequires: pkgconfig autoconf automake libtool
 %if %{with_hardware}
@@ -104,13 +103,16 @@ BuildRequires: gettext
 BuildRequires: mesa-private-llvm-devel
 %else
 BuildRequires: llvm-devel >= 3.0
+%if 0%{?with_opencl}
+BuildRequires: clang-devel >= 3.0
+%endif
 %endif
 %endif
 BuildRequires: elfutils-libelf-devel
 BuildRequires: libxml2-python
 BuildRequires: libudev-devel
 BuildRequires: bison flex
-%if !0%{?rhel}
+%if 0%{?with_wayland}
 BuildRequires: pkgconfig(wayland-client) >= %{min_wayland_version}
 BuildRequires: pkgconfig(wayland-server) >= %{min_wayland_version}
 %endif
@@ -119,6 +121,9 @@ BuildRequires: mesa-libGL-devel
 BuildRequires: libvdpau-devel
 %endif
 BuildRequires: zlib-devel
+%if 0%{?with_opencl}
+BuildRequires: libclc-devel llvm-static opencl-filesystem
+%endif
 
 %description
 Mesa
@@ -237,7 +242,7 @@ Provides: libgbm-devel
 Mesa libgbm development package
 
 
-%if !0%{?rhel}
+%if 0%{?with_wayland}
 %package libwayland-egl
 Summary: Mesa libwayland-egl library
 Group: System Environment/Libraries
@@ -284,6 +289,25 @@ Group: System Environment/Libraries
 %description libglapi
 Mesa shared glapi
 
+
+%if 0%{?with_opencl}
+%package libOpenCL
+Summary: Mesa OpenCL runtime library
+Requires: ocl-icd
+Requires: libclc
+Requires: mesa-libgbm = %{version}-%{release}
+
+%description libOpenCL
+Mesa OpenCL runtime library.
+
+%package libOpenCL-devel
+Summary: Mesa OpenCL development package
+Requires: mesa-libOpenCL%{?_isa} = %{version}-%{release}
+
+%description libOpenCL-devel
+Mesa OpenCL development package.
+%endif
+
 %prep
 #setup -q -n Mesa-%{version}%{?snapshot}
 %setup -q -n mesa-%{gitdate}
@@ -302,28 +326,24 @@ grep -q ^/ src/gallium/auxiliary/vl/vl_decoder.c && exit 1
 #patch12 -p1 -b .16bpp
 
 %patch15 -p1 -b .hwfloat
-%patch16 -p1 -b .vdpau
 %patch20 -p1 -b .egbe
 
 %patch30 -p1 -b .copy_sub_buffer
+
+%if 0%{?with_opencl}
+%patch99 -p1 -b .icd
+%endif
 
 %if 0%{with_private_llvm}
 sed -i 's/llvm-config/mesa-private-llvm-config-%{__isa_bits}/g' configure.ac
 sed -i 's/`$LLVM_CONFIG --version`/&-mesa/' configure.ac
 %endif
 
-# need to use libdrm_nouveau2 on F17
-%if !0%{?rhel}
-%if 0%{?fedora} < 18
-sed -i 's/\<libdrm_nouveau\>/&2/' configure.ac
-%endif
-%endif
-
 cp %{SOURCE4} docs/
 
 %build
 
-autoreconf --install  
+autoreconf --install
 
 export CFLAGS="$RPM_OPT_FLAGS"
 # C++ note: we never say "catch" in the source.  we do say "typeid" once,
@@ -331,7 +351,7 @@ export CFLAGS="$RPM_OPT_FLAGS"
 #
 # We do say 'catch' in the clover and d3d1x state trackers, but we're not
 # building those yet.
-export CXXFLAGS="$RPM_OPT_FLAGS -fno-rtti -fno-exceptions"
+export CXXFLAGS="$RPM_OPT_FLAGS %{?with_opencl:-frtti -fexceptions} %{!?with_opencl:-fno-rtti -fno-exceptions}"
 %ifarch %{ix86}
 # i do not have words for how much the assembly dispatch code infuriates me
 %define asm_flags --disable-asm
@@ -351,7 +371,7 @@ export CXXFLAGS="$RPM_OPT_FLAGS -fno-rtti -fno-exceptions"
     --with-egl-platforms=x11,drm%{?with_wayland:,wayland} \
     --enable-shared-glapi \
     --enable-gbm \
-    --disable-opencl \
+    %{?with_opencl:--enable-opencl --enable-opencl-icd --with-clang-libdir=%{_prefix}/lib} %{!?with_opencl:--disable-opencl} \
     --enable-glx-tls \
     --enable-texture-float=yes \
     %{?with_llvm:--enable-gallium-llvm} \
@@ -360,6 +380,7 @@ export CXXFLAGS="$RPM_OPT_FLAGS -fno-rtti -fno-exceptions"
 %if %{with_hardware}
     %{?with_vmware:--enable-xa} \
     --with-gallium-drivers=%{?with_vmware:svga,}%{?with_radeonsi:radeonsi,}%{?with_llvm:swrast,r600,}%{?with_freedreno:freedreno,}r300,nouveau \
+    %{?with_llvm:--enable-r600-llvm-compiler} \
 %else
     --with-gallium-drivers=%{?with_llvm:swrast} \
 %endif
@@ -417,13 +438,17 @@ rm -rf $RPM_BUILD_ROOT
 %postun libglapi -p /sbin/ldconfig
 %post libgbm -p /sbin/ldconfig
 %postun libgbm -p /sbin/ldconfig
-%if !0%{?rhel}
+%if 0%{?with_wayland}
 %post libwayland-egl -p /sbin/ldconfig
 %postun libwayland-egl -p /sbin/ldconfig
 %endif
 %if 0%{?with_vmware}
 %post libxatracker -p /sbin/ldconfig
 %postun libxatracker -p /sbin/ldconfig
+%endif
+%if 0%{?with_opencl}
+%post libOpenCL -p /sbin/ldconfig
+%postun libOpenCL -p /sbin/ldconfig
 %endif
 
 %files libGL
@@ -480,19 +505,12 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 %if 0%{?with_freedreno}
 %{_libdir}/dri/kgsl_dri.so
+%{_libdir}/dri/msm_dri.so
 %endif
 %{_libdir}/dri/nouveau_dri.so
 %if 0%{?with_vmware}
 %{_libdir}/dri/vmwgfx_dri.so
 %endif
-%{_libdir}/libdricore*.so*
-%endif
-# this is funky; it doesn't get built for gallium drivers, so it doesn't
-# exist on s390x where swrast is llvmpipe, but does exist on s390 where
-# swrast is classic mesa.  this seems like a bug?  in that it probably
-# means the gallium drivers are linking dricore statically?  fixme.
-%ifarch s390
-%{_libdir}/libdricore*.so*
 %endif
 %{_libdir}/dri/swrast_dri.so
 
@@ -503,7 +521,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/vdpau/libvdpau_nouveau.so.1*
 %if 0%{?with_llvm}
 %{_libdir}/vdpau/libvdpau_r600.so.1*
+%if 0%{?with_radeonsi}
 %{_libdir}/vdpau/libvdpau_radeonsi.so.1*
+%endif
 %endif
 %endif
 %endif
@@ -571,7 +591,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_includedir}/gbm.h
 %{_libdir}/pkgconfig/gbm.pc
 
-%if !0%{?rhel}
+%if 0%{?with_wayland}
 %files libwayland-egl
 %defattr(-,root,root,-)
 %doc docs/COPYING
@@ -589,8 +609,8 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 %doc docs/COPYING
 %if %{with_hardware}
-%{_libdir}/libxatracker.so.1
-%{_libdir}/libxatracker.so.1.*
+%{_libdir}/libxatracker.so.2
+%{_libdir}/libxatracker.so.2.*
 %endif
 
 %files libxatracker-devel
@@ -604,7 +624,20 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 %endif
 
+%if 0%{?with_opencl}
+%files libOpenCL
+%{_libdir}/libMesaOpenCL.so.*
+%{_libdir}/gallium-pipe/
+%{_sysconfdir}/OpenCL/vendors/mesa.icd
+
+%files libOpenCL-devel
+%{_libdir}/libMesaOpenCL.so
+%endif
+
 %changelog
+* Thu Feb 06 2014 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 10.0.3-1.20140206
+- 10.0.3 upstream release (merged from rawhide)
+
 * Fri Dec 20 2013 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 9.2.5-1.20131220
 - 9.2.5 upstream release
 
