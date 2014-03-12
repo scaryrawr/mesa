@@ -51,7 +51,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 10.0.3
-Release: 1.%{gitdate}%{?dist}
+Release: 2.%{gitdate}%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -380,7 +380,6 @@ export CXXFLAGS="$RPM_OPT_FLAGS %{?with_opencl:-frtti -fexceptions} %{!?with_ope
 %if %{with_hardware}
     %{?with_vmware:--enable-xa} \
     --with-gallium-drivers=%{?with_vmware:svga,}%{?with_radeonsi:radeonsi,}%{?with_llvm:swrast,r600,}%{?with_freedreno:freedreno,}r300,nouveau \
-    %{?with_llvm:--enable-r600-llvm-compiler} \
 %else
     --with-gallium-drivers=%{?with_llvm:swrast} \
 %endif
@@ -635,6 +634,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Wed Mar 12 2014 Dave Airlie <airlied@redhat.com> 10.0.3-2.20140206
+- disable r600 llvmcompiler on upstream advice.
+
 * Thu Feb 06 2014 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 10.0.3-1.20140206
 - 10.0.3 upstream release (merged from rawhide)
 
