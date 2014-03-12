@@ -45,13 +45,13 @@
 
 %define _default_patch_fuzz 2
 
-%define gitdate 20140206
+%define gitdate 20140312
 #% define snapshot 
 
 Summary: Mesa graphics libraries
 Name: mesa
-Version: 10.0.3
-Release: 2.%{gitdate}%{?dist}
+Version: 10.0.4
+Release: 1.%{gitdate}%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -634,6 +634,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Wed Mar 12 2014 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 10.0.4-1.20140312
+- 10.0.4 upstream release
+
 * Wed Mar 12 2014 Dave Airlie <airlied@redhat.com> 10.0.3-2.20140206
 - disable r600 llvmcompiler on upstream advice.
 
