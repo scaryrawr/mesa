@@ -51,7 +51,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 10.1
-Release: 3.%{gitdate}%{?dist}
+Release: 4.%{gitdate}%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -73,6 +73,8 @@ Patch12: mesa-8.0.1-fix-16bpp.patch
 Patch15: mesa-9.2-hardware-float.patch
 Patch20: mesa-9.2-evergreen-big-endian.patch
 
+# https://bugs.freedesktop.org/show_bug.cgi?id=75797#c1
+Patch21: 0001-mesa-Don-t-optimize-out-glClear-if-drawbuffer-size-i.patch
 
 # https://bugs.freedesktop.org/show_bug.cgi?id=73512
 Patch99: 0001-opencl-use-versioned-.so-in-mesa.icd.patch
@@ -328,6 +330,7 @@ grep -q ^/ src/gallium/auxiliary/vl/vl_decoder.c && exit 1
 
 %patch15 -p1 -b .hwfloat
 %patch20 -p1 -b .egbe
+%patch21 -p1 -b .clear
 
 %if 0%{?with_opencl}
 %patch99 -p1 -b .icd
@@ -635,6 +638,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Fri Mar 21 2014 Adam Jackson <ajax@redhat.com> 10.1-4.20140305
+- mesa: Don't optimize out glClear if drawbuffer size is 0x0 (fdo #75797)
+
 * Wed Mar 19 2014 Dave Airlie <airlied@redhat.com> 10.1-3.20140305
 - rebuild against backported llvm 3.4-5 for radeonsi GL 3.3 support.
 
