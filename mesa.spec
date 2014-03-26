@@ -7,10 +7,14 @@
 %define with_wayland 1
 %endif
 
+%ifarch ppc64le
+%undefine with_vdpau
+%endif
+
 # S390 doesn't have video cards, but we need swrast for xserver's GLX
 # llvm (and thus llvmpipe) doesn't actually work on ppc32 or s390
 
-%ifnarch s390 ppc
+%ifnarch s390 ppc  ppc64le
 %define with_llvm 1
 %endif
 
@@ -23,9 +27,9 @@
 %define with_freedreno 1
 %endif
 
-%ifarch s390 s390x
+%ifarch s390 s390x ppc64le
 %define with_hardware 0
-%ifarch s390
+%ifarch s390 ppc64le
 %define base_drivers swrast
 %endif
 %else
@@ -36,7 +40,7 @@
 %define with_vmware 1
 %define with_opencl 1
 %endif
-%ifarch ppc
+%ifarch ppc ppc64le
 %define platform_drivers ,swrast
 %endif
 %endif
@@ -51,7 +55,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 10.1
-Release: 4.%{gitdate}%{?dist}
+Release: 5.%{gitdate}%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -638,6 +642,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Wed Mar 26 2014 Adam Jackson <ajax@redhat.com> 10.1-5.20140305
+- Initial ppc64le enablement (no hardware drivers or vdpau yet)
+
 * Fri Mar 21 2014 Adam Jackson <ajax@redhat.com> 10.1-4.20140305
 - mesa: Don't optimize out glClear if drawbuffer size is 0x0 (fdo #75797)
 
