@@ -7,10 +7,14 @@
 %define with_wayland 1
 %endif
 
+%ifarch ppc64le
+%undefine with_vdpau
+%endif
+
 # S390 doesn't have video cards, but we need swrast for xserver's GLX
 # llvm (and thus llvmpipe) doesn't actually work on ppc32 or s390
 
-%ifnarch s390 ppc
+%ifnarch s390 ppc  ppc64le
 %define with_llvm 1
 %endif
 
@@ -23,9 +27,9 @@
 %define with_freedreno 1
 %endif
 
-%ifarch s390 s390x
+%ifarch s390 s390x ppc64le
 %define with_hardware 0
-%ifarch s390
+%ifarch s390 ppc64le
 %define base_drivers swrast
 %endif
 %else
@@ -36,7 +40,7 @@
 %define with_vmware 1
 %define with_opencl 1
 %endif
-%ifarch ppc
+%ifarch ppc ppc64le
 %define platform_drivers ,swrast
 %endif
 %endif
@@ -45,13 +49,13 @@
 
 %define _default_patch_fuzz 2
 
-%define gitdate 20140312
+%define gitdate 20140305
 #% define snapshot 
 
 Summary: Mesa graphics libraries
 Name: mesa
-Version: 10.0.4
-Release: 1.%{gitdate}%{?dist}
+Version: 10.1
+Release: 5.%{gitdate}%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -73,11 +77,13 @@ Patch12: mesa-8.0.1-fix-16bpp.patch
 Patch15: mesa-9.2-hardware-float.patch
 Patch20: mesa-9.2-evergreen-big-endian.patch
 
-# backport from upstream to allow cogl use copy_sub_buffer
-Patch30: 0001-swrast-gallium-classic-add-MESA_copy_sub_buffer-supp.patch
+# https://bugs.freedesktop.org/show_bug.cgi?id=75797#c1
+Patch21: 0001-mesa-Don-t-optimize-out-glClear-if-drawbuffer-size-i.patch
 
 # https://bugs.freedesktop.org/show_bug.cgi?id=73512
 Patch99: 0001-opencl-use-versioned-.so-in-mesa.icd.patch
+
+Patch100: radeonsi-llvm-version-hack.patch
 
 BuildRequires: pkgconfig autoconf automake libtool
 %if %{with_hardware}
@@ -95,6 +101,7 @@ BuildRequires: libXfixes-devel
 BuildRequires: libXdamage-devel
 BuildRequires: libXi-devel
 BuildRequires: libXmu-devel
+BuildRequires: libxshmfence-devel
 BuildRequires: elfutils
 BuildRequires: python
 BuildRequires: gettext
@@ -102,7 +109,7 @@ BuildRequires: gettext
 %if 0%{?with_private_llvm}
 BuildRequires: mesa-private-llvm-devel
 %else
-BuildRequires: llvm-devel >= 3.0
+BuildRequires: llvm-devel >= 3.4-5
 %if 0%{?with_opencl}
 BuildRequires: clang-devel >= 3.0
 %endif
@@ -327,12 +334,13 @@ grep -q ^/ src/gallium/auxiliary/vl/vl_decoder.c && exit 1
 
 %patch15 -p1 -b .hwfloat
 %patch20 -p1 -b .egbe
-
-%patch30 -p1 -b .copy_sub_buffer
+%patch21 -p1 -b .clear
 
 %if 0%{?with_opencl}
 %patch99 -p1 -b .icd
 %endif
+
+%patch100 -p1 -b .radeonsi
 
 %if 0%{with_private_llvm}
 sed -i 's/llvm-config/mesa-private-llvm-config-%{__isa_bits}/g' configure.ac
@@ -634,8 +642,57 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
-* Wed Mar 12 2014 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 10.0.4-1.20140312
-- 10.0.4 upstream release
+* Wed Mar 26 2014 Adam Jackson <ajax@redhat.com> 10.1-5.20140305
+- Initial ppc64le enablement (no hardware drivers or vdpau yet)
+
+* Fri Mar 21 2014 Adam Jackson <ajax@redhat.com> 10.1-4.20140305
+- mesa: Don't optimize out glClear if drawbuffer size is 0x0 (fdo #75797)
+
+* Wed Mar 19 2014 Dave Airlie <airlied@redhat.com> 10.1-3.20140305
+- rebuild against backported llvm 3.4-5 for radeonsi GL 3.3 support.
+
+* Wed Mar 12 2014 Dave Airlie <airlied@redhat.com> 10.1-2.20140305
+- disable r600 llvm compiler (upstream advice)
+
+* Wed Mar 05 2014 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 10.1-1.20140305
+- mesa: Bump version to 10.1 (final) (Ian Romanick)
+- glx/dri2: fix build failure on HURD (Julien Cristau)
+- i965: Validate (and resolve) all the bound textures. (Chris Forbes)
+- i965: Widen sampler key bitfields for 32 samplers (Chris Forbes)
+
+* Sat Mar 01 2014 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 10.1-0.rc3.20140301
+- 10.1-rc3
+
+* Tue Feb 25 2014 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 10.1-0.rc2.20140225
+- really 10.1-rc2
+
+* Sat Feb 22 2014 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 10.1-0.rc2.20140222
+- 10.1-rc2
+
+* Sat Feb 08 2014 Adel Gadllah <adel.gadllah@gmail.com> - 10.1-0.rc1.20140208
+- 10.1rc1
+- Drop upstreamed patches
+
+* Thu Feb 06 2014 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 10.0.3-1.20140206
+- 10.0.3 upstream release
+
+* Tue Feb 04 2014 Kyle McMartin <kyle@redhat.com> - 10.0.2-6.20140118
+- Fix accidentally inverted logic that meant radeonsi_dri.so went missing
+  on all architectures instead of just ppc and s390. Sorry!
+
+* Sun Feb 02 2014 Kyle McMartin <kyle@redhat.com> - 10.0.2-5.20140118
+- Fix a thinko in previous commit wrt libdrm_nouveau2.
+
+* Sun Feb 02 2014 Kyle McMartin <kyle@redhat.com> - 10.0.2-4.20140118
+- Fix up building drivers on AArch64, enable LLVM there.
+- Eliminate some F17 cruft from the spec, since we don't support it anymore.
+- Conditionalize with_radeonsi on with_llvm instead of ppc,s390 && >F-17.
+- Conditionalize libvdpau_radeonsi.so.1* on with_radeonsi instead of simply
+  with_llvm to fix a build failure on AArch64.
+
+* Sun Jan 19 2014 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 10.0.2-3.20140118
+- Enable OpenCL (RHBZ #887628)
+- Enable r600 llvm compiler (RHBZ #1055098)
 
 * Wed Mar 12 2014 Dave Airlie <airlied@redhat.com> 10.0.3-2.20140206
 - disable r600 llvmcompiler on upstream advice.
