@@ -55,7 +55,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 10.1
-Release: 5.%{gitdate}%{?dist}
+Release: 6.%{gitdate}%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -391,6 +391,9 @@ export CXXFLAGS="$RPM_OPT_FLAGS %{?with_opencl:-frtti -fexceptions} %{!?with_ope
 %else
     --with-gallium-drivers=%{?with_llvm:swrast} \
 %endif
+%if 0%{?fedora} < 21
+    --disable-dri3
+%endif
     %{?dri_drivers}
 
 # this seems to be neccessary for s390
@@ -642,6 +645,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Tue Apr 15 2014 Adam Jackson <ajax@redhat.com> 10.1-6.20140305
+- Disable DRI3 in F20, it requires libxcb bits we haven't backported.
+
 * Wed Mar 26 2014 Adam Jackson <ajax@redhat.com> 10.1-5.20140305
 - Initial ppc64le enablement (no hardware drivers or vdpau yet)
 
