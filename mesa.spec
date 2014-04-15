@@ -694,12 +694,6 @@ rm -rf $RPM_BUILD_ROOT
 - Enable OpenCL (RHBZ #887628)
 - Enable r600 llvm compiler (RHBZ #1055098)
 
-* Wed Mar 12 2014 Dave Airlie <airlied@redhat.com> 10.0.3-2.20140206
-- disable r600 llvmcompiler on upstream advice.
-
-* Thu Feb 06 2014 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 10.0.3-1.20140206
-- 10.0.3 upstream release (merged from rawhide)
-
 * Fri Dec 20 2013 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 9.2.5-1.20131220
 - 9.2.5 upstream release
 
