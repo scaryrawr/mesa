@@ -392,7 +392,7 @@ export CXXFLAGS="$RPM_OPT_FLAGS %{?with_opencl:-frtti -fexceptions} %{!?with_ope
     --with-gallium-drivers=%{?with_llvm:swrast} \
 %endif
 %if 0%{?fedora} < 21
-    --disable-dri3
+    --disable-dri3 \
 %endif
     %{?dri_drivers}
 
