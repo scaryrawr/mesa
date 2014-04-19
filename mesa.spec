@@ -49,13 +49,13 @@
 
 %define _default_patch_fuzz 2
 
-%define gitdate 20140305
+%define gitdate 20140419
 #% define snapshot 
 
 Summary: Mesa graphics libraries
 Name: mesa
-Version: 10.1
-Release: 6.%{gitdate}%{?dist}
+Version: 10.1.1
+Release: 1.%{gitdate}%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -645,6 +645,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Sat Apr 19 2014 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 10.1.1-1.20140419
+- 10.1.1 upstream release
+
 * Tue Apr 15 2014 Adam Jackson <ajax@redhat.com> 10.1-6.20140305
 - Disable DRI3 in F20, it requires libxcb bits we haven't backported.
 
