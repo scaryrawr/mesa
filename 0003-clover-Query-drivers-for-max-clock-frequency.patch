@@ -1,0 +1,70 @@
+From ca848e8bee7683e296e40a7870750d8a156850ca Mon Sep 17 00:00:00 2001
+From: Tom Stellard <thomas.stellard@amd.com>
+Date: Fri, 18 Apr 2014 16:28:41 +0200
+Subject: [PATCH 3/3] clover: Query drivers for max clock frequency
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Igor Gnatenko:
+
+v2: PIPE_COMPUTE_CAP_MAX_CLOCK_FREQUENCY instead of
+    PIPE_COMPUTE_MAX_CLOCK_FREQUENCY
+
+Bruno Jiménez:
+
+  v3: Drivers report clock in Mhz
+
+Signed-off-by: Igor Gnatenko <i.gnatenko.brain@gmail.com>
+Reviewed-by: Francisco Jerez <currojerez@riseup.net>
+---
+ src/gallium/state_trackers/clover/api/device.cpp  | 2 +-
+ src/gallium/state_trackers/clover/core/device.cpp | 6 ++++++
+ src/gallium/state_trackers/clover/core/device.hpp | 1 +
+ 3 files changed, 8 insertions(+), 1 deletion(-)
+
+diff --git a/src/gallium/state_trackers/clover/api/device.cpp b/src/gallium/state_trackers/clover/api/device.cpp
+index b77a50d..1bc2692 100644
+--- a/src/gallium/state_trackers/clover/api/device.cpp
++++ b/src/gallium/state_trackers/clover/api/device.cpp
+@@ -153,7 +153,7 @@ clGetDeviceInfo(cl_device_id d_dev, cl_device_info param,
+       break;
+ 
+    case CL_DEVICE_MAX_CLOCK_FREQUENCY:
+-      buf.as_scalar<cl_uint>() = 0;
++      buf.as_scalar<cl_uint>() = dev.max_clock_frequency();
+       break;
+ 
+    case CL_DEVICE_ADDRESS_BITS:
+diff --git a/src/gallium/state_trackers/clover/core/device.cpp b/src/gallium/state_trackers/clover/core/device.cpp
+index 2c5f9b7..2f84677 100644
+--- a/src/gallium/state_trackers/clover/core/device.cpp
++++ b/src/gallium/state_trackers/clover/core/device.cpp
+@@ -154,6 +154,12 @@ device::max_mem_alloc_size() const {
+                                       PIPE_COMPUTE_CAP_MAX_MEM_ALLOC_SIZE)[0];
+ }
+ 
++cl_uint
++device::max_clock_frequency() const {
++   return get_compute_param<uint32_t>(pipe,
++                                      PIPE_COMPUTE_CAP_MAX_CLOCK_FREQUENCY)[0];
++}
++
+ std::vector<size_t>
+ device::max_block_size() const {
+    auto v = get_compute_param<uint64_t>(pipe, PIPE_COMPUTE_CAP_MAX_BLOCK_SIZE);
+diff --git a/src/gallium/state_trackers/clover/core/device.hpp b/src/gallium/state_trackers/clover/core/device.hpp
+index 433ac81..3662c6b 100644
+--- a/src/gallium/state_trackers/clover/core/device.hpp
++++ b/src/gallium/state_trackers/clover/core/device.hpp
+@@ -61,6 +61,7 @@ namespace clover {
+       cl_uint max_const_buffers() const;
+       size_t max_threads_per_block() const;
+       cl_ulong max_mem_alloc_size() const;
++      cl_uint max_clock_frequency() const;
+ 
+       std::vector<size_t> max_block_size() const;
+       std::string device_name() const;
+-- 
+1.9.0
+

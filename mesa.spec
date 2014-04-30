@@ -49,13 +49,13 @@
 
 %define _default_patch_fuzz 2
 
-%define gitdate 20140419
+%define gitdate 20140430
 #% define snapshot 
 
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 10.1.1
-Release: 2.%{gitdate}%{?dist}
+Release: 3.%{gitdate}%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -84,6 +84,11 @@ Patch21: 0001-mesa-Don-t-optimize-out-glClear-if-drawbuffer-size-i.patch
 Patch99: 0001-opencl-use-versioned-.so-in-mesa.icd.patch
 
 Patch100: radeonsi-llvm-version-hack.patch
+
+# https://bugs.freedesktop.org/show_bug.cgi?id=73511
+Patch101: 0001-gallium-Add-PIPE_COMPUTE_CAP_MAX_CLOCK_FREQUENCY.patch
+Patch102: 0002-radeon-compute-Implement-PIPE_COMPUTE_CAP_MAX_CLOCK_.patch
+Patch103: 0003-clover-Query-drivers-for-max-clock-frequency.patch
 
 BuildRequires: pkgconfig autoconf automake libtool
 %if %{with_hardware}
@@ -338,6 +343,9 @@ grep -q ^/ src/gallium/auxiliary/vl/vl_decoder.c && exit 1
 
 %if 0%{?with_opencl}
 %patch99 -p1 -b .icd
+%patch101 -p1 -b .gallium_max_clk
+%patch102 -p1 -b .radeon_max_clk
+%patch103 -p1 -b .clover_max_clk
 %endif
 
 %patch100 -p1 -b .radeonsi
@@ -645,6 +653,10 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Wed Apr 30 2014 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 10.1.1-3.20140430
+- Update to today snapshot
+- apply as downstream patches for reporting GPU max frequency on r600 (FD.o #73511)
+
 * Sat Apr 19 2014 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 10.1.1-2.20140419
 - fix buildrequires llvm 3.4-5 to 3.4-6, because 3.4-5 is not available for F20
 

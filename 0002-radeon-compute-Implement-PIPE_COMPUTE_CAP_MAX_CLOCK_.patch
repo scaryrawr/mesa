@@ -1,0 +1,73 @@
+From 0a41054b7faa9df4e4b8802f646a7e078389eb89 Mon Sep 17 00:00:00 2001
+From: Tom Stellard <thomas.stellard@amd.com>
+Date: Fri, 18 Apr 2014 16:28:40 +0200
+Subject: [PATCH 2/3] radeon/compute: Implement
+ PIPE_COMPUTE_CAP_MAX_CLOCK_FREQUENCY
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Igor Gnatenko:
+  v2: in define RADEON_INFO_MAX_SCLK use 0x1a instead of 0x19 (upstream changes)
+
+Bruno Jiménez:
+  v3: Convert the frequency to MHz from kHz after getting it in
+  'do_winsys_init'
+
+Signed-off-by: Igor Gnatenko <i.gnatenko.brain@gmail.com>
+Reviewed-by: Tom Stellard <thomas.stellard@amd.com>
+---
+ src/gallium/drivers/radeon/r600_pipe_common.c     | 7 +++++++
+ src/gallium/winsys/radeon/drm/radeon_drm_winsys.c | 5 +++++
+ src/gallium/winsys/radeon/drm/radeon_winsys.h     | 1 +
+ 3 files changed, 13 insertions(+)
+
+diff --git a/src/gallium/drivers/radeon/r600_pipe_common.c b/src/gallium/drivers/radeon/r600_pipe_common.c
+index 7508865..957186a 100644
+--- a/src/gallium/drivers/radeon/r600_pipe_common.c
++++ b/src/gallium/drivers/radeon/r600_pipe_common.c
+@@ -505,6 +505,13 @@ static int r600_get_compute_param(struct pipe_screen *screen,
+ 		}
+ 		return sizeof(uint64_t);
+ 
++	case PIPE_COMPUTE_CAP_MAX_CLOCK_FREQUENCY:
++		if (ret) {
++			uint32_t *max_clock_frequency = ret;
++			*max_clock_frequency = rscreen->info.max_sclk;
++		}
++		return sizeof(uint32_t);
++
+ 	default:
+ 		fprintf(stderr, "unknown PIPE_COMPUTE_CAP %d\n", param);
+ 		return 0;
+diff --git a/src/gallium/winsys/radeon/drm/radeon_drm_winsys.c b/src/gallium/winsys/radeon/drm/radeon_drm_winsys.c
+index b53beba..7618316 100644
+--- a/src/gallium/winsys/radeon/drm/radeon_drm_winsys.c
++++ b/src/gallium/winsys/radeon/drm/radeon_drm_winsys.c
+@@ -317,6 +317,11 @@ static boolean do_winsys_init(struct radeon_drm_winsys *ws)
+     ws->info.gart_size = gem_info.gart_size;
+     ws->info.vram_size = gem_info.vram_size;
+ 
++    /* Get max clock frequency info and convert it to MHz */
++    radeon_get_drm_value(ws->fd, RADEON_INFO_MAX_SCLK, NULL,
++                         &ws->info.max_sclk);
++    ws->info.max_sclk /= 1000;
++
+     ws->num_cpus = sysconf(_SC_NPROCESSORS_ONLN);
+ 
+     /* Generation-specific queries. */
+diff --git a/src/gallium/winsys/radeon/drm/radeon_winsys.h b/src/gallium/winsys/radeon/drm/radeon_winsys.h
+index fe0617b..1cb17bb 100644
+--- a/src/gallium/winsys/radeon/drm/radeon_winsys.h
++++ b/src/gallium/winsys/radeon/drm/radeon_winsys.h
+@@ -196,6 +196,7 @@ struct radeon_info {
+     enum chip_class             chip_class;
+     uint32_t                    gart_size;
+     uint32_t                    vram_size;
++    uint32_t                    max_sclk;
+ 
+     uint32_t                    drm_major; /* version */
+     uint32_t                    drm_minor;
+-- 
+1.9.0
+
