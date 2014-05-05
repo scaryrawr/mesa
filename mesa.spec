@@ -25,6 +25,8 @@
 
 %ifarch %{arm}
 %define with_freedreno 1
+%define with_xa        1
+%define with_omx       1
 %endif
 
 %ifarch s390 s390x ppc64le
@@ -38,7 +40,9 @@
 %ifarch %{ix86} x86_64
 %define platform_drivers ,i915,i965
 %define with_vmware 1
+%define with_xa     1
 %define with_opencl 1
+%define with_omx    1
 %endif
 %ifarch ppc ppc64le
 %define platform_drivers ,swrast
@@ -55,7 +59,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 10.2
-Release: 0.rc1.%{gitdate}%{?dist}
+Release: 0.1.rc1.%{gitdate}%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -128,6 +132,9 @@ BuildRequires: mesa-libGL-devel
 BuildRequires: libvdpau-devel
 %endif
 BuildRequires: zlib-devel
+%if 0%{?with_omx}
+BuildRequires: libomxil-bellagio-devel
+%endif
 %if 0%{?with_opencl}
 BuildRequires: libclc-devel llvm-static opencl-filesystem
 %endif
@@ -173,6 +180,16 @@ Obsoletes: mesa-dri-drivers-dri1 < 7.12
 Obsoletes: mesa-dri-llvmcore <= 7.12
 %description dri-drivers
 Mesa-based DRI drivers.
+
+%if 0%{?with_omx}
+%package omx-drivers
+Summary: Mesa-based OMX drivers
+Group: User Interface/X Hardware Support
+Requires: mesa-filesystem%{?_isa}
+Requires: libomxil-bellagio%{?_isa}
+%description omx-drivers
+Mesa-based OMX drivers.
+%endif
 
 %if 0%{?with_vdpau}
 %package vdpau-drivers
@@ -270,14 +287,14 @@ Mesa libwayland-egl development package
 %endif
 
 
-%if 0%{?with_vmware}
+%if 0%{?with_xa}
 %package libxatracker
-Summary: Mesa XA state tracker for vmware
+Summary: Mesa XA state tracker
 Group: System Environment/Libraries
 Provides: libxatracker
 
 %description libxatracker
-Mesa XA state tracker for vmware
+Mesa XA state tracker
 
 %package libxatracker-devel
 Summary: Mesa XA state tracker development package
@@ -379,6 +396,7 @@ export CXXFLAGS="$RPM_OPT_FLAGS %{?with_opencl:-frtti -fexceptions} %{!?with_ope
     --with-egl-platforms=x11,drm%{?with_wayland:,wayland} \
     --enable-shared-glapi \
     --enable-gbm \
+    %{?with_omx:--enable-omx} \
     %{?with_opencl:--enable-opencl --enable-opencl-icd --with-clang-libdir=%{_prefix}/lib} %{!?with_opencl:--disable-opencl} \
     --enable-glx-tls \
     --enable-texture-float=yes \
@@ -386,7 +404,7 @@ export CXXFLAGS="$RPM_OPT_FLAGS %{?with_opencl:-frtti -fexceptions} %{!?with_ope
     %{?with_llvm:--with-llvm-shared-libs} \
     --enable-dri \
 %if %{with_hardware}
-    %{?with_vmware:--enable-xa} \
+    %{?with_xa:--enable-xa} \
     --with-gallium-drivers=%{?with_vmware:svga,}%{?with_radeonsi:radeonsi,}%{?with_llvm:swrast,r600,}%{?with_freedreno:freedreno,}r300,nouveau \
 %else
     --with-gallium-drivers=%{?with_llvm:swrast} \
@@ -452,7 +470,7 @@ rm -rf $RPM_BUILD_ROOT
 %post libwayland-egl -p /sbin/ldconfig
 %postun libwayland-egl -p /sbin/ldconfig
 %endif
-%if 0%{?with_vmware}
+%if 0%{?with_xa}
 %post libxatracker -p /sbin/ldconfig
 %postun libxatracker -p /sbin/ldconfig
 %endif
@@ -525,6 +543,13 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/dri/swrast_dri.so
 
 %if %{with_hardware}
+%if 0%{?with_omx}
+%files omx-drivers
+%defattr(-,root,root,-)
+%{_libdir}/bellagio/libomx_nouveau.so*
+%{_libdir}/bellagio/libomx_r600.so*
+%{_libdir}/bellagio/libomx_radeonsi.so*
+%endif
 %if 0%{?with_vdpau}
 %files vdpau-drivers
 %defattr(-,root,root,-)
@@ -615,7 +640,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/wayland-egl.pc
 %endif
 
-%if 0%{?with_vmware}
+%if 0%{?with_xa}
 %files libxatracker
 %defattr(-,root,root,-)
 %doc docs/COPYING
@@ -646,6 +671,11 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Mon May 05 2014 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 10.2-0.1.rc1.20140505
+- Enable omx on x86 and arm (RHBZ #1094199) (kwizart)
+- Split _with_xa from _with_vmware (RHBZ #1094199) (kwizart)
+- Add _with_xa when arch is arm and _with_freedreeno (RHBZ #1094199) (kwizart)
+
 * Mon May 05 2014 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 10.2-0.rc1.20140505
 - 10.2-rc1 upstream release
 
