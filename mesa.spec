@@ -59,7 +59,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 10.2
-Release: 0.1.rc1.%{gitdate}%{?dist}
+Release: 0.2.rc1.%{gitdate}%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -390,7 +390,7 @@ export CXXFLAGS="$RPM_OPT_FLAGS %{?with_opencl:-frtti -fexceptions} %{!?with_ope
     --enable-egl \
     --disable-gles1 \
     --enable-gles2 \
-    --disable-gallium-egl \
+    --enable-gallium-egl \
     --disable-xvmc \
     %{?with_vdpau:--enable-vdpau} \
     --with-egl-platforms=x11,drm%{?with_wayland:,wayland} \
@@ -541,6 +541,10 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 %endif
 %{_libdir}/dri/swrast_dri.so
+%ifarch %{arm}
+%dir %{_libdir}/gallium-pipe
+%{_libdir}/gallium-pipe/*.so
+%endif
 
 %if %{with_hardware}
 %if 0%{?with_omx}
@@ -589,6 +593,8 @@ rm -rf $RPM_BUILD_ROOT
 %{_includedir}/KHR/khrplatform.h
 %{_libdir}/pkgconfig/egl.pc
 %{_libdir}/libEGL.so
+%dir %{_libdir}/egl
+%{_libdir}/egl/egl_gallium.so
 
 %files libGLES-devel
 %defattr(-,root,root,-)
@@ -620,6 +626,8 @@ rm -rf $RPM_BUILD_ROOT
 %doc docs/COPYING
 %{_libdir}/libgbm.so.1
 %{_libdir}/libgbm.so.1.*
+%dir %{_libdir}/gbm
+%{_libdir}/gbm/gbm_gallium_drm.so
 
 %files libgbm-devel
 %defattr(-,root,root,-)
@@ -671,6 +679,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Mon May 05 2014 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 10.2-0.2.rc1.20140505
+- Enable gallium-egl (needed by freedreeno) (RHBZ #1094199) (kwizart)
+
 * Mon May 05 2014 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 10.2-0.1.rc1.20140505
 - Enable omx on x86 and arm (RHBZ #1094199) (kwizart)
 - Split _with_xa from _with_vmware (RHBZ #1094199) (kwizart)
