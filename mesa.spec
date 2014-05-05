@@ -49,13 +49,13 @@
 
 %define _default_patch_fuzz 2
 
-%define gitdate 20140430
+%define gitdate 20140505
 #% define snapshot 
 
 Summary: Mesa graphics libraries
 Name: mesa
-Version: 10.1.1
-Release: 3.%{gitdate}%{?dist}
+Version: 10.2
+Release: 0.rc1.%{gitdate}%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -75,7 +75,7 @@ Patch1: mesa-10.0-nv50-fix-build.patch
 Patch9: mesa-8.0-llvmpipe-shmget.patch
 Patch12: mesa-8.0.1-fix-16bpp.patch
 Patch15: mesa-9.2-hardware-float.patch
-Patch20: mesa-9.2-evergreen-big-endian.patch
+Patch20: mesa-10.2-evergreen-big-endian.patch
 
 # https://bugs.freedesktop.org/show_bug.cgi?id=75797#c1
 Patch21: 0001-mesa-Don-t-optimize-out-glClear-if-drawbuffer-size-i.patch
@@ -84,11 +84,6 @@ Patch21: 0001-mesa-Don-t-optimize-out-glClear-if-drawbuffer-size-i.patch
 Patch99: 0001-opencl-use-versioned-.so-in-mesa.icd.patch
 
 Patch100: radeonsi-llvm-version-hack.patch
-
-# https://bugs.freedesktop.org/show_bug.cgi?id=73511
-Patch101: 0001-gallium-Add-PIPE_COMPUTE_CAP_MAX_CLOCK_FREQUENCY.patch
-Patch102: 0002-radeon-compute-Implement-PIPE_COMPUTE_CAP_MAX_CLOCK_.patch
-Patch103: 0003-clover-Query-drivers-for-max-clock-frequency.patch
 
 BuildRequires: pkgconfig autoconf automake libtool
 %if %{with_hardware}
@@ -343,9 +338,6 @@ grep -q ^/ src/gallium/auxiliary/vl/vl_decoder.c && exit 1
 
 %if 0%{?with_opencl}
 %patch99 -p1 -b .icd
-%patch101 -p1 -b .gallium_max_clk
-%patch102 -p1 -b .radeon_max_clk
-%patch103 -p1 -b .clover_max_clk
 %endif
 
 %patch100 -p1 -b .radeonsi
@@ -582,6 +574,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_includedir}/GLES3/gl3platform.h
 %{_includedir}/GLES3/gl3.h
 %{_includedir}/GLES3/gl3ext.h
+%{_includedir}/GLES2/gl31.h
 %{_libdir}/pkgconfig/glesv2.pc
 %{_libdir}/libGLESv2.so
 
@@ -653,6 +646,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Mon May 05 2014 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 10.2-0.rc1.20140505
+- 10.2-rc1 upstream release
+
 * Wed Apr 30 2014 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 10.1.1-3.20140430
 - Update to today snapshot
 - apply as downstream patches for reporting GPU max frequency on r600 (FD.o #73511)

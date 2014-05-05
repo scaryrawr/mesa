@@ -1,7 +1,8 @@
-diff -up mesa-20140305/src/gallium/drivers/radeonsi/si_descriptors.c.radeonsi mesa-20140305/src/gallium/drivers/radeonsi/si_descriptors.c
---- mesa-20140305/src/gallium/drivers/radeonsi/si_descriptors.c.radeonsi	2014-03-18 04:37:30.009681609 +0000
-+++ mesa-20140305/src/gallium/drivers/radeonsi/si_descriptors.c	2014-03-18 04:37:36.751681788 +0000
-@@ -151,7 +151,7 @@ static void si_update_descriptors(struct
+diff --git a/src/gallium/drivers/radeonsi/si_descriptors.c b/src/gallium/drivers/radeonsi/si_descriptors.c
+index 0c58d5f..7922f10 100644
+--- a/src/gallium/drivers/radeonsi/si_descriptors.c
++++ b/src/gallium/drivers/radeonsi/si_descriptors.c
+@@ -152,7 +152,7 @@ static void si_update_descriptors(struct si_context *sctx,
  			7 + /* copy */
  			(4 + desc->element_dw_size) * util_bitcount(desc->dirty_mask) + /* update */
  			4; /* pointer update */
@@ -10,7 +11,7 @@ diff -up mesa-20140305/src/gallium/drivers/radeonsi/si_descriptors.c.radeonsi me
  		if (desc->shader_userdata_reg >= R_00B130_SPI_SHADER_USER_DATA_VS_0 &&
  		    desc->shader_userdata_reg < R_00B230_SPI_SHADER_USER_DATA_GS_0)
  			desc->atom.num_dw += 4; /* second pointer update */
-@@ -176,7 +176,7 @@ static void si_emit_shader_pointer(struc
+@@ -177,7 +177,7 @@ static void si_emit_shader_pointer(struct si_context *sctx,
  	radeon_emit(cs, va);
  	radeon_emit(cs, va >> 32);
  
@@ -19,28 +20,20 @@ diff -up mesa-20140305/src/gallium/drivers/radeonsi/si_descriptors.c.radeonsi me
  	if (desc->shader_userdata_reg >= R_00B130_SPI_SHADER_USER_DATA_VS_0 &&
  	    desc->shader_userdata_reg < R_00B230_SPI_SHADER_USER_DATA_GS_0) {
  		radeon_emit(cs, PKT3(PKT3_SET_SH_REG, 2, 0));
-diff -up mesa-20140305/src/gallium/drivers/radeonsi/si_pipe.c.radeonsi mesa-20140305/src/gallium/drivers/radeonsi/si_pipe.c
---- mesa-20140305/src/gallium/drivers/radeonsi/si_pipe.c.radeonsi	2014-03-05 06:59:46.000000000 +0000
-+++ mesa-20140305/src/gallium/drivers/radeonsi/si_pipe.c	2014-03-18 04:37:10.090681081 +0000
-@@ -269,7 +269,7 @@ static int si_get_param(struct pipe_scre
- 		return 256;
+diff --git a/src/gallium/drivers/radeonsi/si_pipe.c b/src/gallium/drivers/radeonsi/si_pipe.c
+index 873115b..3f23ff1 100644
+--- a/src/gallium/drivers/radeonsi/si_pipe.c
++++ b/src/gallium/drivers/radeonsi/si_pipe.c
+@@ -224,7 +224,7 @@ static int si_get_param(struct pipe_screen* pscreen, enum pipe_cap param)
+ 		return 4;
  
  	case PIPE_CAP_GLSL_FEATURE_LEVEL:
 -		return HAVE_LLVM >= 0x0305 ? 330 : 140;
 +		return HAVE_LLVM >= 0x0304 ? 330 : 140;
  
- 	case PIPE_CAP_TEXTURE_BUFFER_OFFSET_ALIGNMENT:
- 		return 1;
-@@ -313,7 +313,7 @@ static int si_get_param(struct pipe_scre
- 	case PIPE_CAP_MAX_TEXTURE_ARRAY_LAYERS:
- 		return 16384;
- 	case PIPE_CAP_MAX_COMBINED_SAMPLERS:
--		return HAVE_LLVM >= 0x0305 ? 48 : 32;
-+		return HAVE_LLVM >= 0x0304 ? 48 : 32;
- 
- 	/* Render targets. */
- 	case PIPE_CAP_MAX_RENDER_TARGETS:
-@@ -346,7 +346,7 @@ static int si_get_shader_param(struct pi
+ 	case PIPE_CAP_MAX_TEXTURE_BUFFER_SIZE:
+ 		return MIN2(sscreen->b.info.vram_size, 0xFFFFFFFF);
+@@ -308,7 +308,7 @@ static int si_get_shader_param(struct pipe_screen* pscreen, unsigned shader, enu
  	case PIPE_SHADER_VERTEX:
  		break;
  	case PIPE_SHADER_GEOMETRY:
@@ -49,10 +42,11 @@ diff -up mesa-20140305/src/gallium/drivers/radeonsi/si_pipe.c.radeonsi mesa-2014
  		return 0;
  #endif
  		break;
-diff -up mesa-20140305/src/gallium/drivers/radeonsi/si_state.c.radeonsi mesa-20140305/src/gallium/drivers/radeonsi/si_state.c
---- mesa-20140305/src/gallium/drivers/radeonsi/si_state.c.radeonsi	2014-03-05 06:59:46.000000000 +0000
-+++ mesa-20140305/src/gallium/drivers/radeonsi/si_state.c	2014-03-18 04:37:10.092681081 +0000
-@@ -2307,7 +2307,7 @@ static void *si_create_fs_state(struct p
+diff --git a/src/gallium/drivers/radeonsi/si_state.c b/src/gallium/drivers/radeonsi/si_state.c
+index 6d5408b..1434986 100644
+--- a/src/gallium/drivers/radeonsi/si_state.c
++++ b/src/gallium/drivers/radeonsi/si_state.c
+@@ -2173,7 +2173,7 @@ static void *si_create_fs_state(struct pipe_context *ctx,
  	return si_create_shader_state(ctx, state, PIPE_SHADER_FRAGMENT);
  }
  
@@ -61,7 +55,7 @@ diff -up mesa-20140305/src/gallium/drivers/radeonsi/si_state.c.radeonsi mesa-201
  
  static void *si_create_gs_state(struct pipe_context *ctx,
  				const struct pipe_shader_state *state)
-@@ -2337,7 +2337,7 @@ static void si_bind_vs_shader(struct pip
+@@ -2203,7 +2203,7 @@ static void si_bind_vs_shader(struct pipe_context *ctx, void *state)
  	sctx->vs_shader = sel;
  }
  
@@ -70,7 +64,7 @@ diff -up mesa-20140305/src/gallium/drivers/radeonsi/si_state.c.radeonsi mesa-201
  
  static void si_bind_gs_shader(struct pipe_context *ctx, void *state)
  {
-@@ -2396,7 +2396,7 @@ static void si_delete_vs_shader(struct p
+@@ -2271,7 +2271,7 @@ static void si_delete_vs_shader(struct pipe_context *ctx, void *state)
  	si_delete_shader_selector(ctx, sel);
  }
  
@@ -79,7 +73,7 @@ diff -up mesa-20140305/src/gallium/drivers/radeonsi/si_state.c.radeonsi mesa-201
  
  static void si_delete_gs_shader(struct pipe_context *ctx, void *state)
  {
-@@ -2890,7 +2890,7 @@ static void si_bind_vs_sampler_states(st
+@@ -2767,7 +2767,7 @@ static void si_bind_vs_sampler_states(struct pipe_context *ctx, unsigned count,
  	si_set_sampler_states(sctx, pm4, count, states,
  			      &sctx->samplers[PIPE_SHADER_VERTEX],
  			      R_00B130_SPI_SHADER_USER_DATA_VS_0);
@@ -88,7 +82,7 @@ diff -up mesa-20140305/src/gallium/drivers/radeonsi/si_state.c.radeonsi mesa-201
  	si_set_sampler_states(sctx, pm4, count, states,
  			      &sctx->samplers[PIPE_SHADER_VERTEX],
  			      R_00B330_SPI_SHADER_USER_DATA_ES_0);
-@@ -3166,7 +3166,7 @@ void si_init_state_functions(struct si_c
+@@ -2999,7 +2999,7 @@ void si_init_state_functions(struct si_context *sctx)
  	sctx->b.b.bind_fs_state = si_bind_ps_shader;
  	sctx->b.b.delete_vs_state = si_delete_vs_shader;
  	sctx->b.b.delete_fs_state = si_delete_ps_shader;
