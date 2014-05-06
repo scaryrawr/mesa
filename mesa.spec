@@ -490,6 +490,8 @@ rm -rf $RPM_BUILD_ROOT
 %doc docs/COPYING
 %{_libdir}/libEGL.so.1
 %{_libdir}/libEGL.so.1.*
+%dir %{_libdir}/egl
+%{_libdir}/egl/egl_gallium.so
 
 %files libGLES
 %defattr(-,root,root,-)
@@ -591,8 +593,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_includedir}/KHR/khrplatform.h
 %{_libdir}/pkgconfig/egl.pc
 %{_libdir}/libEGL.so
-%dir %{_libdir}/egl
-%{_libdir}/egl/egl_gallium.so
 
 %files libGLES-devel
 %defattr(-,root,root,-)
