@@ -541,10 +541,8 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 %endif
 %{_libdir}/dri/swrast_dri.so
-%ifarch %{arm}
 %dir %{_libdir}/gallium-pipe
 %{_libdir}/gallium-pipe/*.so
-%endif
 
 %if %{with_hardware}
 %if 0%{?with_omx}
@@ -671,7 +669,6 @@ rm -rf $RPM_BUILD_ROOT
 %if 0%{?with_opencl}
 %files libOpenCL
 %{_libdir}/libMesaOpenCL.so.*
-%{_libdir}/gallium-pipe/
 %{_sysconfdir}/OpenCL/vendors/mesa.icd
 
 %files libOpenCL-devel
