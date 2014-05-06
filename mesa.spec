@@ -59,7 +59,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 10.2
-Release: 0.2.rc1.%{gitdate}%{?dist}
+Release: 0.3.rc1.%{gitdate}%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -401,7 +401,7 @@ export CXXFLAGS="$RPM_OPT_FLAGS %{?with_opencl:-frtti -fexceptions} %{!?with_ope
     --enable-glx-tls \
     --enable-texture-float=yes \
     %{?with_llvm:--enable-gallium-llvm} \
-    %{?with_llvm:--with-llvm-shared-libs} \
+    %{?with_llvm:--enable-llvm-shared-libs} \
     --enable-dri \
 %if %{with_hardware}
     %{?with_xa:--enable-xa} \
@@ -490,6 +490,8 @@ rm -rf $RPM_BUILD_ROOT
 %doc docs/COPYING
 %{_libdir}/libEGL.so.1
 %{_libdir}/libEGL.so.1.*
+%dir %{_libdir}/egl
+%{_libdir}/egl/egl_gallium.so
 
 %files libGLES
 %defattr(-,root,root,-)
@@ -541,10 +543,8 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 %endif
 %{_libdir}/dri/swrast_dri.so
-%ifarch %{arm}
 %dir %{_libdir}/gallium-pipe
 %{_libdir}/gallium-pipe/*.so
-%endif
 
 %if %{with_hardware}
 %if 0%{?with_omx}
@@ -593,8 +593,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_includedir}/KHR/khrplatform.h
 %{_libdir}/pkgconfig/egl.pc
 %{_libdir}/libEGL.so
-%dir %{_libdir}/egl
-%{_libdir}/egl/egl_gallium.so
 
 %files libGLES-devel
 %defattr(-,root,root,-)
@@ -671,7 +669,6 @@ rm -rf $RPM_BUILD_ROOT
 %if 0%{?with_opencl}
 %files libOpenCL
 %{_libdir}/libMesaOpenCL.so.*
-%{_libdir}/gallium-pipe/
 %{_sysconfdir}/OpenCL/vendors/mesa.icd
 
 %files libOpenCL-devel
@@ -679,6 +676,11 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Tue May 06 2014 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 10.2-0.3.rc1.20140505
+- Move gallium-pipe to the correct sub-package (RHBZ #1094588) (kwizart)
+- Move egl_gallium.so to the correct location (RHBZ #1094588) (kwizart)
+- Switch from with to enable for llvm shared libs (kwizart)
+
 * Mon May 05 2014 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 10.2-0.2.rc1.20140505
 - Enable gallium-egl (needed by freedreeno) (RHBZ #1094199) (kwizart)
 
