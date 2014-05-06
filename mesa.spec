@@ -401,7 +401,7 @@ export CXXFLAGS="$RPM_OPT_FLAGS %{?with_opencl:-frtti -fexceptions} %{!?with_ope
     --enable-glx-tls \
     --enable-texture-float=yes \
     %{?with_llvm:--enable-gallium-llvm} \
-    %{?with_llvm:--with-llvm-shared-libs} \
+    %{?with_llvm:--enable-llvm-shared-libs} \
     --enable-dri \
 %if %{with_hardware}
     %{?with_xa:--enable-xa} \
