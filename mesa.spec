@@ -87,8 +87,6 @@ Patch21: 0001-mesa-Don-t-optimize-out-glClear-if-drawbuffer-size-i.patch
 # https://bugs.freedesktop.org/show_bug.cgi?id=73512
 Patch99: 0001-opencl-use-versioned-.so-in-mesa.icd.patch
 
-Patch100: radeonsi-llvm-version-hack.patch
-
 BuildRequires: pkgconfig autoconf automake libtool
 %if %{with_hardware}
 BuildRequires: kernel-headers
@@ -356,8 +354,6 @@ grep -q ^/ src/gallium/auxiliary/vl/vl_decoder.c && exit 1
 %if 0%{?with_opencl}
 %patch99 -p1 -b .icd
 %endif
-
-%patch100 -p1 -b .radeonsi
 
 %if 0%{with_private_llvm}
 sed -i 's/llvm-config/mesa-private-llvm-config-%{__isa_bits}/g' configure.ac
@@ -678,6 +674,7 @@ rm -rf $RPM_BUILD_ROOT
 %changelog
 * Sat May 10 2014 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 10.2-0.4.rc2.20140510
 - 10.2-rc2 upstream release
+- drop radeonsi hack for LLVM
 
 * Tue May 06 2014 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 10.2-0.3.rc1.20140505
 - Move gallium-pipe to the correct sub-package (RHBZ #1094588) (kwizart)
