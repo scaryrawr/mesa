@@ -53,13 +53,13 @@
 
 %define _default_patch_fuzz 2
 
-%define gitdate 20140510
+%define gitdate 20140517
 #% define snapshot 
 
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 10.2
-Release: 0.4.rc2.%{gitdate}%{?dist}
+Release: 0.5.rc3.%{gitdate}%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -672,6 +672,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Sat May 17 2014 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 10.2-0.5.rc3.20140517
+- 10.2-rc3 upstream release
+
 * Sat May 10 2014 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 10.2-0.4.rc2.20140510
 - 10.2-rc2 upstream release
 - drop radeonsi hack for LLVM
