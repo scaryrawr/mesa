@@ -53,13 +53,13 @@
 
 %define _default_patch_fuzz 2
 
-%define gitdate 20140517
+%define gitdate 20140524
 #% define snapshot 
 
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 10.2
-Release: 0.5.rc3.%{gitdate}%{?dist}
+Release: 0.6.rc4.%{gitdate}%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -86,6 +86,8 @@ Patch21: 0001-mesa-Don-t-optimize-out-glClear-if-drawbuffer-size-i.patch
 
 # https://bugs.freedesktop.org/show_bug.cgi?id=73512
 Patch99: 0001-opencl-use-versioned-.so-in-mesa.icd.patch
+
+Patch100: radeonsi-llvm-version-hack.patch
 
 BuildRequires: pkgconfig autoconf automake libtool
 %if %{with_hardware}
@@ -354,6 +356,8 @@ grep -q ^/ src/gallium/auxiliary/vl/vl_decoder.c && exit 1
 %if 0%{?with_opencl}
 %patch99 -p1 -b .icd
 %endif
+
+%patch100 -p1 -b .radeonsi_llvm_hack
 
 %if 0%{with_private_llvm}
 sed -i 's/llvm-config/mesa-private-llvm-config-%{__isa_bits}/g' configure.ac
@@ -672,6 +676,10 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Sat May 24 2014 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 10.2-0.6.rc4.20140524
+- 10.2-rc4 upstream release
+- add back updated radeonsi hack for LLVM
+
 * Sat May 17 2014 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 10.2-0.5.rc3.20140517
 - 10.2-rc3 upstream release
 
