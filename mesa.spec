@@ -14,7 +14,7 @@
 # S390 doesn't have video cards, but we need swrast for xserver's GLX
 # llvm (and thus llvmpipe) doesn't actually work on ppc32 or s390
 
-%ifnarch s390 ppc  ppc64le
+%ifnarch s390 ppc
 %define with_llvm 1
 %endif
 
@@ -59,7 +59,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 10.2
-Release: 0.7.rc4.%{gitdate}%{?dist}
+Release: 0.8.rc4.%{gitdate}%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -682,6 +682,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Wed May 28 2014 Brent Baude <baude@us.ibm.com> - 10.2-0.8.rc4.20140524
+- Removing ppc64le arch from with_llvm
+
 * Wed May 28 2014 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 10.2-0.7.rc4.20140524
 - i915: add a missing NULL pointer check (RHBZ #1100967)
 
