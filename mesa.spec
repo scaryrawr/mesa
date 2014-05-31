@@ -53,13 +53,13 @@
 
 %define _default_patch_fuzz 2
 
-%define gitdate 20140524
+%define gitdate 20140531
 #% define snapshot 
 
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 10.2
-Release: 0.8.rc4.%{gitdate}%{?dist}
+Release: 0.9.rc5.%{gitdate}%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -88,10 +88,6 @@ Patch21: 0001-mesa-Don-t-optimize-out-glClear-if-drawbuffer-size-i.patch
 Patch99: 0001-opencl-use-versioned-.so-in-mesa.icd.patch
 
 Patch100: radeonsi-llvm-version-hack.patch
-
-# https://bugzilla.redhat.com/show_bug.cgi?id=1100967
-# http://lists.freedesktop.org/archives/mesa-dev/2014-May/060191.html
-Patch101: 0001-i915-add-a-missing-NULL-pointer-check.patch
 
 BuildRequires: pkgconfig autoconf automake libtool
 %if %{with_hardware}
@@ -362,8 +358,6 @@ grep -q ^/ src/gallium/auxiliary/vl/vl_decoder.c && exit 1
 %endif
 
 %patch100 -p1 -b .radeonsi_llvm_hack
-
-%patch101 -p1 -b .old_intelInitContext
 
 %if 0%{with_private_llvm}
 sed -i 's/llvm-config/mesa-private-llvm-config-%{__isa_bits}/g' configure.ac
@@ -682,6 +676,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Sat May 31 2014 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 10.2-0.9.rc5.20140531
+- 10.2-rc5 upstream release
+
 * Wed May 28 2014 Brent Baude <baude@us.ibm.com> - 10.2-0.8.rc4.20140524
 - Removing ppc64le arch from with_llvm
 
