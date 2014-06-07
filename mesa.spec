@@ -59,7 +59,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 10.2
-Release: 0.10.rc5.%{gitdate}%{?dist}
+Release: 0.11.rc5.%{gitdate}%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -682,6 +682,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Sat Jun 07 2014 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 10.2-0.11.rc5.20140531
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_21_Mass_Rebuild
+
 * Wed Jun 04 2014 Dan Horák <dan[at]danny.cz> - 10.2-0.10.rc5.20140531
 - fix build without hardware drivers
 
