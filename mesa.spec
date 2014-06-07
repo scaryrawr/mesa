@@ -53,13 +53,13 @@
 
 %define _default_patch_fuzz 2
 
-%define gitdate 20140531
+%define gitdate 20140608
 #% define snapshot 
 
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 10.2
-Release: 0.11.rc5.%{gitdate}%{?dist}
+Release: 1.%{gitdate}%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -682,6 +682,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Sun Jun 08 2014 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 10.2-1.20140608
+- 10.2.1 upstream release
+
 * Sat Jun 07 2014 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 10.2-0.11.rc5.20140531
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_21_Mass_Rebuild
 
