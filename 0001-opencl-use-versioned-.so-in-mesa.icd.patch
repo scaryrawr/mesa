@@ -1,4 +1,4 @@
-From 6da9f2a229a1b519e8cd1f794d6c2a63fedfa92e Mon Sep 17 00:00:00 2001
+From 062e79e1cc1e2d22d5d9d7fe5d394b923372fe45 Mon Sep 17 00:00:00 2001
 From: Igor Gnatenko <i.gnatenko.brain@gmail.com>
 Date: Sun, 12 Jan 2014 02:09:16 +0400
 Subject: [PATCH] opencl: use versioned .so in mesa.icd
@@ -19,7 +19,7 @@ Signed-off-by: Igor Gnatenko <i.gnatenko.brain@gmail.com>
  create mode 100644 src/gallium/targets/opencl/mesa.icd.in
 
 diff --git a/configure.ac b/configure.ac
-index e77ed77..e363c03 100644
+index 164b662..fe64a9a 100644
 --- a/configure.ac
 +++ b/configure.ac
 @@ -25,6 +25,8 @@ m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
@@ -31,7 +31,7 @@ index e77ed77..e363c03 100644
  
  dnl Versions for external dependencies
  LIBDRM_REQUIRED=2.4.38
-@@ -2084,6 +2086,7 @@ AC_CONFIG_FILES([Makefile
+@@ -2111,6 +2113,7 @@ AC_CONFIG_FILES([Makefile
  		src/gallium/targets/egl-static/Makefile
  		src/gallium/targets/gbm/Makefile
  		src/gallium/targets/opencl/Makefile
@@ -67,5 +67,5 @@ index 0000000..1b77b4e
 @@ -0,0 +1 @@
 +lib@OPENCL_LIBNAME@.so.@OPENCL_VERSION@
 -- 
-1.9.0
+2.0.0
 
