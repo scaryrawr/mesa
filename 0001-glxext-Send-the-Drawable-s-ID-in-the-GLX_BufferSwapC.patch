@@ -1,0 +1,72 @@
+From b4dcf87f34f68111acd9d364739938721fc692f4 Mon Sep 17 00:00:00 2001
+From: "Jasper St. Pierre" <jstpierre@mecheye.net>
+Date: Tue, 24 Jun 2014 13:43:53 -0400
+Subject: [PATCH] glxext: Send the Drawable's ID in the GLX_BufferSwapComplete
+ event
+
+While the official INTEL_swap_event specification says that the drawable
+field should contain the GLXDrawable, not the Drawable, the existing
+DRI2 code in dri2.c that translates from DRI2_BufferSwapComplete sends out
+GLX_BufferSwapComplete with the Drawable's ID, so existing codebases
+like Clutter/Cogl rely on getting the Drawable.
+
+Match DRI2's error here and stuff the event with the X Drawable, not
+the GLX drawable.
+
+This fixes apps seeing wrong drawables through an indirect GLX context
+or with DRI3, which uses the GLX_BufferSwapComplete event directly on
+the wire instead of translates Present in mesa.
+
+At the same time, also modify the structure for the event to make sure
+that clients don't make the same mistake. This is not an API or ABI
+break, as GLXDrawable and Drawable are both typedefs for XID.
+
+Signed-off-by: Jasper St. Pierre <jstpierre@mecheye.net>
+Reviewed-by: Axel Davy <axel.davy@ens.fr>
+Cc: "10.1 10.2" <mesa-stable@lists.freedesktop.org>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
+---
+ include/GL/glx.h | 2 +-
+ src/glx/glxext.c | 9 +++++----
+ 2 files changed, 6 insertions(+), 5 deletions(-)
+
+diff --git a/include/GL/glx.h b/include/GL/glx.h
+index 234abc0..78f5052 100644
+--- a/include/GL/glx.h
++++ b/include/GL/glx.h
+@@ -518,7 +518,7 @@ typedef struct {
+     unsigned long serial;	/* # of last request processed by server */
+     Bool send_event;		/* true if this came from a SendEvent request */
+     Display *display;		/* Display the event was read from */
+-    GLXDrawable drawable;	/* drawable on which event was requested in event mask */
++    Drawable drawable;	/* drawable on which event was requested in event mask */
+     int event_type;
+     int64_t ust;
+     int64_t msc;
+diff --git a/src/glx/glxext.c b/src/glx/glxext.c
+index 94582f6..68c359e 100644
+--- a/src/glx/glxext.c
++++ b/src/glx/glxext.c
+@@ -134,14 +134,15 @@ __glXWireToEvent(Display *dpy, XEvent *event, xEvent *wire)
+       GLXBufferSwapComplete *aevent = (GLXBufferSwapComplete *)event;
+       xGLXBufferSwapComplete2 *awire = (xGLXBufferSwapComplete2 *)wire;
+       struct glx_drawable *glxDraw = GetGLXDrawable(dpy, awire->drawable);
+-      aevent->event_type = awire->event_type;
+-      aevent->drawable = awire->drawable;
+-      aevent->ust = ((CARD64)awire->ust_hi << 32) | awire->ust_lo;
+-      aevent->msc = ((CARD64)awire->msc_hi << 32) | awire->msc_lo;
+ 
+       if (!glxDraw)
+ 	 return False;
+ 
++      aevent->event_type = awire->event_type;
++      aevent->drawable = glxDraw->xDrawable;
++      aevent->ust = ((CARD64)awire->ust_hi << 32) | awire->ust_lo;
++      aevent->msc = ((CARD64)awire->msc_hi << 32) | awire->msc_lo;
++
+       if (awire->sbc < glxDraw->lastEventSbc)
+ 	 glxDraw->eventSbcWrap += 0x100000000;
+       glxDraw->lastEventSbc = awire->sbc;
+-- 
+2.0.0
+
