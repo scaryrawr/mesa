@@ -1,0 +1,40 @@
+From ea3ade19e2170bd67c3d5448fc38747b8e380d5a Mon Sep 17 00:00:00 2001
+From: Adel Gadllah <adel.gadllah@gmail.com>
+Date: Thu, 3 Jul 2014 22:13:53 +0200
+Subject: [PATCH] i915: Fix up intelInitScreen2 for DRI3
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Commit 442442026eb updated both i915 and i965 for DRI3 support,
+but one check in intelInitScreen2 was missed for i915 causing crashes
+when trying to use i915 with DRI3.
+
+So fix that up.
+
+Reported-by: Igor Gnatenko <i.gnatenko.brain@gmail.com>
+Tested-by: František Zatloukal <Zatloukal.Frantisek@gmail.com>
+Reference: https://bugzilla.redhat.com/show_bug.cgi?id=1115323
+Cc: "10.2" <mesa-stable@lists.freedesktop.org>
+Signed-off-by: Adel Gadllah <adel.gadllah@gmail.com>
+---
+ src/mesa/drivers/dri/i915/intel_screen.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/src/mesa/drivers/dri/i915/intel_screen.c b/src/mesa/drivers/dri/i915/intel_screen.c
+index 9b4e490..4c9726c 100644
+--- a/src/mesa/drivers/dri/i915/intel_screen.c
++++ b/src/mesa/drivers/dri/i915/intel_screen.c
+@@ -1152,7 +1152,8 @@ __DRIconfig **intelInitScreen2(__DRIscreen *psp)
+ {
+    struct intel_screen *intelScreen;
+ 
+-   if (psp->dri2.loader->base.version <= 2 ||
++   if (psp->image.loader) {
++   } else if (psp->dri2.loader->base.version <= 2 ||
+        psp->dri2.loader->getBuffersWithFormat == NULL) {
+       fprintf(stderr,
+ 	      "\nERROR!  DRI2 loader with getBuffersWithFormat() "
+-- 
+2.0.0
+

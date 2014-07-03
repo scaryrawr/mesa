@@ -59,7 +59,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 10.2.2
-Release: 2.%{gitdate}%{?dist}
+Release: 3.%{gitdate}%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -83,6 +83,9 @@ Patch20: mesa-10.2-evergreen-big-endian.patch
 
 # dri3 GLX_INTEL_swap_event fix
 Patch30: 0001-glxext-Send-the-Drawable-s-ID-in-the-GLX_BufferSwapC.patch
+# http://lists.freedesktop.org/archives/mesa-dev/2014-July/062741.html
+# https://bugzilla.redhat.com/show_bug.cgi?id=1115323
+Patch31: 0001-i915-Fix-up-intelInitScreen2-for-DRI3.patch
 
 # https://bugs.freedesktop.org/show_bug.cgi?id=73512
 Patch99: 0001-opencl-use-versioned-.so-in-mesa.icd.patch
@@ -351,6 +354,7 @@ grep -q ^/ src/gallium/auxiliary/vl/vl_decoder.c && exit 1
 %patch20 -p1 -b .egbe
 
 %patch30 -p1 -b .dri3fix
+%patch31 -p1 -b .dri3fix
 
 %if 0%{?with_opencl}
 %patch99 -p1 -b .icd
@@ -679,6 +683,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Fri Jul 04 2014 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 10.2.2-3.20140625
+- Fix up intelInitScreen2 for DRI3 (RHBZ #1115323) (patch from drago01)
+
 * Fri Jun 27 2014 Dave Airlie <airlied@redhat.com> 10.2.2-2.20140625
 - add dri3 gnome-shell startup fix from Jasper.
 
