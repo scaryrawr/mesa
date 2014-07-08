@@ -12,8 +12,7 @@
 %endif
 
 # S390 doesn't have video cards, but we need swrast for xserver's GLX
-# llvm (and thus llvmpipe) doesn't actually work on ppc32 or s390
-
+# llvm (and thus llvmpipe) doesn't actually work on ppc32
 %ifnarch s390 ppc
 %define with_llvm 1
 %endif
@@ -23,18 +22,11 @@
 %define with_radeonsi 1
 %endif
 
-%ifarch %{arm}
-%define with_freedreno 1
-%define with_xa        1
-%define with_omx       1
-%endif
-
-%ifarch s390 s390x ppc64le
+%ifarch s390 s390x ppc64le ppc
 %define with_hardware 0
-%ifarch s390 ppc64le
 %define base_drivers swrast
 %endif
-%else
+%ifnarch s390 s390x ppc64le ppc
 %define with_hardware 1
 %define base_drivers nouveau,radeon,r200
 %ifarch %{ix86} x86_64
@@ -44,8 +36,10 @@
 %define with_opencl 1
 %define with_omx    1
 %endif
-%ifarch ppc ppc64le
-%define platform_drivers ,swrast
+%ifarch %{arm} aarch64
+%define with_freedreno 1
+%define with_xa        1
+%define with_omx       1
 %endif
 %endif
 
@@ -59,7 +53,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 10.2.2
-Release: 3.%{gitdate}%{?dist}
+Release: 4.%{gitdate}%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -683,6 +677,10 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Mon Jul  7 2014 Peter Robinson <pbrobinson@fedoraproject.org> 10.2.2-4.20140625
+- Build aarch64 options the same as ARMv7
+- Fix PPC conditionals
+
 * Fri Jul 04 2014 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 10.2.2-3.20140625
 - Fix up intelInitScreen2 for DRI3 (RHBZ #1115323) (patch from drago01)
 
