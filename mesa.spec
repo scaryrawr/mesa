@@ -54,7 +54,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 10.3
-Release: 0.devel.19.%{git}%{?dist}
+Release: 0.devel.1.%{git}%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -529,10 +529,6 @@ rm -rf $RPM_BUILD_ROOT
 %ifarch %{ix86} x86_64
 %{_libdir}/dri/i915_dri.so
 %{_libdir}/dri/i965_dri.so
-%endif
-%if 0%{?with_freedreno}
-%{_libdir}/dri/kgsl_dri.so
-%{_libdir}/dri/msm_dri.so
 %endif
 %{_libdir}/dri/nouveau_dri.so
 %if 0%{?with_vmware}
