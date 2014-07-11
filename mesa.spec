@@ -47,13 +47,13 @@
 
 %define _default_patch_fuzz 2
 
-%define gitdate 20140625
+%define gitdate 20140711
 #% define snapshot 
 
 Summary: Mesa graphics libraries
 Name: mesa
-Version: 10.2.2
-Release: 4.%{gitdate}%{?dist}
+Version: 10.2.3
+Release: 1.%{gitdate}%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -75,8 +75,6 @@ Patch12: mesa-8.0.1-fix-16bpp.patch
 Patch15: mesa-9.2-hardware-float.patch
 Patch20: mesa-10.2-evergreen-big-endian.patch
 
-# dri3 GLX_INTEL_swap_event fix
-Patch30: 0001-glxext-Send-the-Drawable-s-ID-in-the-GLX_BufferSwapC.patch
 # http://lists.freedesktop.org/archives/mesa-dev/2014-July/062741.html
 # https://bugzilla.redhat.com/show_bug.cgi?id=1115323
 Patch31: 0001-i915-Fix-up-intelInitScreen2-for-DRI3.patch
@@ -347,7 +345,6 @@ grep -q ^/ src/gallium/auxiliary/vl/vl_decoder.c && exit 1
 %patch15 -p1 -b .hwfloat
 %patch20 -p1 -b .egbe
 
-%patch30 -p1 -b .dri3fix
 %patch31 -p1 -b .dri3fix
 
 %if 0%{?with_opencl}
@@ -677,6 +674,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Fri Jul 11 2014 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 10.2.3-1.20140711
+- 10.2.3 upstream release
+
 * Mon Jul  7 2014 Peter Robinson <pbrobinson@fedoraproject.org> 10.2.2-4.20140625
 - Build aarch64 options the same as ARMv7
 - Fix PPC conditionals
