@@ -1,4 +1,4 @@
-From 062e79e1cc1e2d22d5d9d7fe5d394b923372fe45 Mon Sep 17 00:00:00 2001
+From 69b30e8f48b24a28c7d27ba59b02776da10cc5a6 Mon Sep 17 00:00:00 2001
 From: Igor Gnatenko <i.gnatenko.brain@gmail.com>
 Date: Sun, 12 Jan 2014 02:09:16 +0400
 Subject: [PATCH] opencl: use versioned .so in mesa.icd
@@ -19,7 +19,7 @@ Signed-off-by: Igor Gnatenko <i.gnatenko.brain@gmail.com>
  create mode 100644 src/gallium/targets/opencl/mesa.icd.in
 
 diff --git a/configure.ac b/configure.ac
-index 164b662..fe64a9a 100644
+index 4646212..89a4f48 100644
 --- a/configure.ac
 +++ b/configure.ac
 @@ -25,6 +25,8 @@ m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
@@ -31,27 +31,27 @@ index 164b662..fe64a9a 100644
  
  dnl Versions for external dependencies
  LIBDRM_REQUIRED=2.4.38
-@@ -2111,6 +2113,7 @@ AC_CONFIG_FILES([Makefile
- 		src/gallium/targets/egl-static/Makefile
- 		src/gallium/targets/gbm/Makefile
+@@ -2215,6 +2217,7 @@ AC_CONFIG_FILES([Makefile
+ 		src/gallium/targets/libgl-xlib/Makefile
+ 		src/gallium/targets/omx/Makefile
  		src/gallium/targets/opencl/Makefile
 +		src/gallium/targets/opencl/mesa.icd
- 		src/gallium/targets/xa/Makefile
- 		src/gallium/targets/xa/xatracker.pc
- 		src/gallium/targets/omx-nouveau/Makefile
+ 		src/gallium/targets/osmesa/Makefile
+ 		src/gallium/targets/osmesa/osmesa.pc
+ 		src/gallium/targets/pipe-loader/Makefile
 diff --git a/src/gallium/targets/opencl/Makefile.am b/src/gallium/targets/opencl/Makefile.am
-index ba45aee..0a3d134 100644
+index ca047f0..82e29a6 100644
 --- a/src/gallium/targets/opencl/Makefile.am
 +++ b/src/gallium/targets/opencl/Makefile.am
-@@ -5,7 +5,7 @@ lib_LTLIBRARIES = lib@OPENCL_LIBNAME@.la
+@@ -7,7 +7,7 @@ lib_LTLIBRARIES = lib@OPENCL_LIBNAME@.la
  lib@OPENCL_LIBNAME@_la_LDFLAGS = \
  	$(LLVM_LDFLAGS) \
  	-no-undefined \
 -	-version-number 1:0 \
 +	-version-number @OPENCL_VERSION@:0 \
- 	-Wl,--version-script=$(top_srcdir)/src/gallium/targets/opencl/opencl.sym \
  	$(GC_SECTIONS) \
  	$(LD_NO_UNDEFINED)
+ 
 diff --git a/src/gallium/targets/opencl/mesa.icd b/src/gallium/targets/opencl/mesa.icd
 deleted file mode 100644
 index 6a6a870..0000000

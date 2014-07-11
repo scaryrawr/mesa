@@ -11,15 +11,21 @@ else
     XZ=/usr/bin/xz
 fi
 
-DIRNAME=mesa-$( date +%Y%m%d )
+if [ -z "$1" ]; then
+  DIRNAME=mesa-$( date +%Y%m%d )
+  BRANCH=10.2
+else
+  DIRNAME=mesa-$1
+  BRANCH=master
+fi
 
 echo REF ${REF:+--reference $REF}
 echo DIRNAME $DIRNAME
-echo HEAD ${1:-10.2}
+echo HEAD ${1:-$BRANCH}
 
 rm -rf $DIRNAME
 
-git clone --depth 1 ${REF:+--reference $REF} --branch 10.2 \
+git clone --depth 1 ${REF:+--reference $REF} --branch $BRANCH \
 	git://git.freedesktop.org/git/mesa/mesa $DIRNAME
 
 GIT_DIR=$DIRNAME/.git git archive --format=tar --prefix=$DIRNAME/ ${1:-HEAD} \
