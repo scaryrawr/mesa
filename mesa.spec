@@ -530,6 +530,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/dri/i915_dri.so
 %{_libdir}/dri/i965_dri.so
 %endif
+%if 0%{?with_freedreno}
+%{_libdir}/dri/freedreno_dri.so
+%endif
 %{_libdir}/dri/nouveau_dri.so
 %if 0%{?with_vmware}
 %{_libdir}/dri/vmwgfx_dri.so
