@@ -535,6 +535,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/gallium-pipe/*.so
 %endif
 %{_libdir}/dri/swrast_dri.so
+%{_libdir}/dri/kms_swrast_dri.so
 
 %if %{with_hardware}
 %if 0%{?with_omx}
