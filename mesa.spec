@@ -28,7 +28,7 @@
 %endif
 %ifnarch s390 s390x ppc64le ppc
 %define with_hardware 1
-%define base_drivers nouveau,radeon,r200
+%define base_drivers swrast,nouveau,radeon,r200
 %ifarch %{ix86} x86_64
 %define platform_drivers ,i915,i965
 %define with_vmware 1
@@ -54,7 +54,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 10.4
-Release: 0.devel.2.%{git}%{?dist}
+Release: 0.devel.2.1.%{git}%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -672,6 +672,9 @@ rm -rf $RPM_BUILD_ROOT
 # Generate changelog using:
 # git log old_commit_sha..new_commit_sha --format="- %H: %s (%an)"
 %changelog
+* Thu Aug 28 2014 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 10.4-0.devel.2.1.80771e47b6c1e47ab55f17311e1d4e227a9eb3d8
+- add swrast to dri driver list
+
 * Wed Aug 27 2014 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 10.4-0.devel.2.80771e47b6c1e47ab55f17311e1d4e227a9eb3d8
 - 80771e47b6c1e47ab55f17311e1d4e227a9eb3d8 commit
 
