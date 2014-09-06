@@ -7,13 +7,14 @@
 %define with_wayland 1
 %endif
 
-%ifarch ppc64le
+%ifarch %{power64} ppc
 %undefine with_vdpau
 %endif
 
 # S390 doesn't have video cards, but we need swrast for xserver's GLX
 # llvm (and thus llvmpipe) doesn't actually work on ppc32
-%ifnarch s390 ppc  ppc64le
+# llvm support for ppc64le is supposed to come in llvm-3.5
+%ifnarch s390 ppc ppc64le
 %define with_llvm 1
 %endif
 
@@ -22,11 +23,11 @@
 %define with_radeonsi 1
 %endif
 
-%ifarch s390 s390x ppc64le ppc
+%ifarch s390 s390x %{power64} ppc
 %define with_hardware 0
 %define base_drivers swrast
 %endif
-%ifnarch s390 s390x ppc64le ppc
+%ifnarch s390 s390x %{power64} ppc
 %define with_hardware 1
 %define base_drivers swrast,nouveau,radeon,r200
 %ifarch %{ix86} x86_64
@@ -54,7 +55,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 10.4
-Release: 0.devel.3.%{git}%{?dist}
+Release: 0.devel.4.%{git}%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -75,6 +76,7 @@ Patch9: mesa-8.0-llvmpipe-shmget.patch
 Patch12: mesa-8.0.1-fix-16bpp.patch
 Patch15: mesa-9.2-hardware-float.patch
 Patch20: mesa-10.2-evergreen-big-endian.patch
+Patch30: mesa-10.3-bigendian-assert.patch
 
 # https://bugs.freedesktop.org/show_bug.cgi?id=73512
 Patch99: 0001-opencl-use-versioned-.so-in-mesa.icd.patch
@@ -341,6 +343,7 @@ grep -q ^/ src/gallium/auxiliary/vl/vl_decoder.c && exit 1
 
 %patch15 -p1 -b .hwfloat
 %patch20 -p1 -b .egbe
+%patch30 -p1 -b .beassert
 
 %if 0%{?with_opencl}
 %patch99 -p1 -b .icd
@@ -532,11 +535,13 @@ rm -rf $RPM_BUILD_ROOT
 %if 0%{?with_vmware}
 %{_libdir}/dri/vmwgfx_dri.so
 %endif
+%endif
+%if 0%{with_llvm}
 %dir %{_libdir}/gallium-pipe
 %{_libdir}/gallium-pipe/*.so
+%{_libdir}/dri/kms_swrast_dri.so
 %endif
 %{_libdir}/dri/swrast_dri.so
-%{_libdir}/dri/kms_swrast_dri.so
 
 %if %{with_hardware}
 %if 0%{?with_omx}
@@ -672,6 +677,10 @@ rm -rf $RPM_BUILD_ROOT
 # Generate changelog using:
 # git log old_commit_sha..new_commit_sha --format="- %H: %s (%an)"
 %changelog
+* Sat Sep 06 2014 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 10.4-0.devel.4.git1f184bc
+- apply patch for bigendian from karsten
+- fix ppc filelist from karsten
+
 * Sat Sep 06 2014 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 10.4-0.devel.3.git1f184bc
 - 1f184bc114143acbcea373184260da777b6c6be1 commit
 
