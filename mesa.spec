@@ -49,13 +49,13 @@
 %define _default_patch_fuzz 2
 
 #% define gitdate 20140510
-%define githash 1f184bc
+%define githash c3f17bb
 %define git %{?githash:%{githash}}%{!?githash:%{gitdate}}
 
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 10.4
-Release: 0.devel.4.%{git}%{?dist}
+Release: 0.devel.5.%{git}%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -677,6 +677,9 @@ rm -rf $RPM_BUILD_ROOT
 # Generate changelog using:
 # git log old_commit_sha..new_commit_sha --format="- %H: %s (%an)"
 %changelog
+* Sat Sep 27 2014 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 10.4-0.devel.5.gitc3f17bb
+- c3f17bb18f597d7f606805ae94363dae7fd51582
+
 * Sat Sep 06 2014 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 10.4-0.devel.4.git1f184bc
 - apply patch for bigendian from karsten
 - fix ppc filelist from karsten
