@@ -555,6 +555,7 @@ rm -rf $RPM_BUILD_ROOT
 %files vdpau-drivers
 %defattr(-,root,root,-)
 %{_libdir}/vdpau/libvdpau_nouveau.so.1*
+%{_libdir}/vdpau/libvdpau_r300.so.1*
 %if 0%{?with_llvm}
 %{_libdir}/vdpau/libvdpau_r600.so.1*
 %if 0%{?with_radeonsi}
