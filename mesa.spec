@@ -380,9 +380,6 @@ export CXXFLAGS="$RPM_OPT_FLAGS %{?with_opencl:-frtti -fexceptions} %{!?with_ope
     --enable-egl \
     --disable-gles1 \
     --enable-gles2 \
-%if %{with_hardware}
-    --enable-gallium-egl \
-%endif
     --disable-xvmc \
     %{?with_vdpau:--enable-vdpau} \
     --with-egl-platforms=x11,drm%{?with_wayland:,wayland} \
@@ -482,10 +479,6 @@ rm -rf $RPM_BUILD_ROOT
 %doc docs/COPYING
 %{_libdir}/libEGL.so.1
 %{_libdir}/libEGL.so.1.*
-%if %{with_hardware}
-%dir %{_libdir}/egl
-%{_libdir}/egl/egl_gallium.so
-%endif
 
 %files libGLES
 %defattr(-,root,root,-)
