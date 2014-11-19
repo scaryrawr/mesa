@@ -617,10 +617,6 @@ rm -rf $RPM_BUILD_ROOT
 %doc docs/COPYING
 %{_libdir}/libgbm.so.1
 %{_libdir}/libgbm.so.1.*
-%if %{with_hardware}
-%dir %{_libdir}/gbm
-%{_libdir}/gbm/gbm_gallium_drm.so
-%endif
 
 %files libgbm-devel
 %defattr(-,root,root,-)
