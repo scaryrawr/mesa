@@ -23,11 +23,11 @@
 %define with_radeonsi 1
 %endif
 
-%ifarch s390 s390x %{power64} ppc
+%ifarch s390 s390x ppc
 %define with_hardware 0
 %define base_drivers swrast
 %endif
-%ifnarch s390 s390x %{power64} ppc
+%ifnarch s390 s390x ppc
 %define with_hardware 1
 %define base_drivers swrast,nouveau,radeon,r200
 %ifarch %{ix86} x86_64
@@ -55,7 +55,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 10.5.0
-Release: 0.devel.3.%{git}%{?dist}
+Release: 0.devel.4.%{git}%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -669,6 +669,9 @@ rm -rf $RPM_BUILD_ROOT
 # Generate changelog using:
 # git log old_commit_sha..new_commit_sha --format="- %H: %s (%an)"
 %changelog
+* Thu Dec 11 2014 Adam Jackson <ajax@redhat.com> 10.5.0-0.devel.4
+- Restore hardware drivers on ppc64{,le}
+
 * Tue Dec 02 2014 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 10.5.0-0.devel.3.git29c7cf2
 - 29c7cf2
 
