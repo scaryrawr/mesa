@@ -52,13 +52,13 @@
 %define _default_patch_fuzz 2
 
 #% define gitdate 20140510
-%define githash 29c7cf2
+%define githash 0d7f4c8
 %define git %{?githash:%{githash}}%{!?githash:%{gitdate}}
 
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 10.5.0
-Release: 0.devel.5.%{git}%{?dist}
+Release: 0.devel.6.%{git}%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -710,6 +710,9 @@ rm -rf $RPM_BUILD_ROOT
 # Generate changelog using:
 # git log old_commit_sha..new_commit_sha --format="- %H: %s (%an)"
 %changelog
+* Sun Dec 14 2014 Igor Gnatenko 10.5.0-0.devel.6.git0d7f4c8
+- 0d7f4c8
+
 * Sun Dec 14 2014 Igor Gnatenko 10.5.0-0.devel.5.git29c7cf2
 - Enable VA state-tracker
 - Enable Nine state-tracker (Direct3D9 API)
