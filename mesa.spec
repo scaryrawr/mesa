@@ -4,11 +4,13 @@
 %else
 %define with_private_llvm 0
 %define with_vdpau 1
+%define with_vaapi 1
 %define with_wayland 1
 %endif
 
 %ifarch %{power64} ppc
 %undefine with_vdpau
+%undefine with_vaapi
 %endif
 
 # S390 doesn't have video cards, but we need swrast for xserver's GLX
@@ -55,7 +57,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 10.5.0
-Release: 0.devel.4.%{git}%{?dist}
+Release: 0.devel.5.%{git}%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -122,6 +124,9 @@ BuildRequires: pkgconfig(wayland-server) >= %{min_wayland_version}
 BuildRequires: mesa-libGL-devel
 %if 0%{?with_vdpau}
 BuildRequires: libvdpau-devel
+%endif
+%if 0%{?with_vaapi}
+BuildRequires: libva-devel
 %endif
 BuildRequires: zlib-devel
 %if 0%{?with_omx}
@@ -382,6 +387,7 @@ export CXXFLAGS="$RPM_OPT_FLAGS %{?with_opencl:-frtti -fexceptions} %{!?with_ope
     --enable-gles2 \
     --disable-xvmc \
     %{?with_vdpau:--enable-vdpau} \
+    %{?with_vaapi:--enable-va} \
     --with-egl-platforms=x11,drm%{?with_wayland:,wayland} \
     --enable-shared-glapi \
     --enable-gbm \
@@ -537,6 +543,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/dri/kms_swrast_dri.so
 %endif
 %{_libdir}/dri/swrast_dri.so
+%if 0%{?with_vaapi}
+%{_libdir}/dri/gallium_drv_video.so
+%endif
 
 %if %{with_hardware}
 %if 0%{?with_omx}
@@ -669,6 +678,9 @@ rm -rf $RPM_BUILD_ROOT
 # Generate changelog using:
 # git log old_commit_sha..new_commit_sha --format="- %H: %s (%an)"
 %changelog
+* Sun Dec 14 2014 Igor Gnatenko 10.5.0-0.devel.5.git29c7cf2
+- Enable VA state-tracker
+
 * Thu Dec 11 2014 Adam Jackson <ajax@redhat.com> 10.5.0-0.devel.4
 - Restore hardware drivers on ppc64{,le}
 
