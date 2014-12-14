@@ -18,6 +18,7 @@
 # llvm support for ppc64le is supposed to come in llvm-3.5
 %ifnarch s390 ppc ppc64le
 %define with_llvm 1
+%define with_nine 1
 %endif
 
 %define min_wayland_version 1.0
@@ -329,6 +330,21 @@ Requires: mesa-libOpenCL%{?_isa} = %{version}-%{release}
 Mesa OpenCL development package.
 %endif
 
+%if 0%{?with_nine}
+%package libd3d
+Summary: Mesa Direct3D9 state tracker
+
+%description libd3d
+Mesa Direct3D9 state tracker
+
+%package libd3d-devel
+Summary: Mesa Direct3D9 state tracker development package
+Requires: mesa-d3d%{?_isa} = %{version}-%{release}
+
+%description libd3d-devel
+Mesa Direct3D9 state tracker development package
+%endif
+
 %prep
 #setup -q -n Mesa-%{version}%{?snapshot}
 %setup -q -n mesa-%{git}
@@ -400,6 +416,7 @@ export CXXFLAGS="$RPM_OPT_FLAGS %{?with_opencl:-frtti -fexceptions} %{!?with_ope
     --enable-dri \
 %if %{with_hardware}
     %{?with_xa:--enable-xa} \
+    %{?with_nine:--enable-nine} \
     --with-gallium-drivers=%{?with_vmware:svga,}%{?with_radeonsi:radeonsi,}%{?with_llvm:swrast,r600,}%{?with_freedreno:freedreno,}r300,nouveau \
 %else
     --with-gallium-drivers=%{?with_llvm:swrast} \
@@ -472,6 +489,10 @@ rm -rf $RPM_BUILD_ROOT
 %if 0%{?with_opencl}
 %post libOpenCL -p /sbin/ldconfig
 %postun libOpenCL -p /sbin/ldconfig
+%endif
+%if 0%{?with_nine}
+%post libd3d -p /sbin/ldconfig
+%postun libd3d -p /sbin/ldconfig
 %endif
 
 %files libGL
@@ -675,11 +696,24 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libMesaOpenCL.so
 %endif
 
+%if 0%{?with_nine}
+%files libd3d
+%dir %{_libdir}/d3d/
+%{_libdir}/d3d/*.so.*
+%{_sysconfdir}/OpenCL/vendors/mesa.icd
+
+%files libd3d-devel
+%{_libdir}/pkgconfig/d3d.pc
+%{_includedir}/d3dadapter/
+%{_libdir}/d3d/*.so
+%endif
+
 # Generate changelog using:
 # git log old_commit_sha..new_commit_sha --format="- %H: %s (%an)"
 %changelog
 * Sun Dec 14 2014 Igor Gnatenko 10.5.0-0.devel.5.git29c7cf2
 - Enable VA state-tracker
+- Enable Nine state-tracker (Direct3D9 API)
 
 * Thu Dec 11 2014 Adam Jackson <ajax@redhat.com> 10.5.0-0.devel.4
 - Restore hardware drivers on ppc64{,le}
