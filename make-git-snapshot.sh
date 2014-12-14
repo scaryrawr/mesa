@@ -13,7 +13,7 @@ fi
 
 if [ -z "$1" ]; then
   DIRNAME=mesa-$( date +%Y%m%d )
-  BRANCH=10.3
+  BRANCH=10.4
 else
   DIRNAME=mesa-$1
   BRANCH=master
