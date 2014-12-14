@@ -700,7 +700,6 @@ rm -rf $RPM_BUILD_ROOT
 %files libd3d
 %dir %{_libdir}/d3d/
 %{_libdir}/d3d/*.so.*
-%{_sysconfdir}/OpenCL/vendors/mesa.icd
 
 %files libd3d-devel
 %{_libdir}/pkgconfig/d3d.pc
