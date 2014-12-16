@@ -58,7 +58,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 10.5.0
-Release: 0.devel.6.%{git}%{?dist}
+Release: 0.devel.7.%{git}%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -339,7 +339,7 @@ Mesa Direct3D9 state tracker
 
 %package libd3d-devel
 Summary: Mesa Direct3D9 state tracker development package
-Requires: mesa-d3d%{?_isa} = %{version}-%{release}
+Requires: mesa-libd3d%{?_isa} = %{version}-%{release}
 
 %description libd3d-devel
 Mesa Direct3D9 state tracker development package
@@ -710,10 +710,13 @@ rm -rf $RPM_BUILD_ROOT
 # Generate changelog using:
 # git log old_commit_sha..new_commit_sha --format="- %H: %s (%an)"
 %changelog
-* Sun Dec 14 2014 Igor Gnatenko 10.5.0-0.devel.6.git0d7f4c8
+* Wed Dec 17 2014 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 10.5.0-0.devel.7.git0d7f4c8
+- fix requirements for d3d
+
+* Sun Dec 14 2014 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 10.5.0-0.devel.6.git0d7f4c8
 - 0d7f4c8
 
-* Sun Dec 14 2014 Igor Gnatenko 10.5.0-0.devel.5.git29c7cf2
+* Sun Dec 14 2014 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 10.5.0-0.devel.5.git29c7cf2
 - Enable VA state-tracker
 - Enable Nine state-tracker (Direct3D9 API)
 
