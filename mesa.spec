@@ -8,15 +8,10 @@
 %define with_wayland 1
 %endif
 
-%ifarch %{power64} ppc
-%undefine with_vdpau
-%undefine with_vaapi
-%endif
-
 # S390 doesn't have video cards, but we need swrast for xserver's GLX
 # llvm (and thus llvmpipe) doesn't actually work on ppc32
 # llvm support for ppc64le is supposed to come in llvm-3.5
-%ifnarch s390 ppc ppc64le
+%ifnarch s390 ppc
 %define with_llvm 1
 %define with_nine 1
 %endif
@@ -58,7 +53,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 10.5.0
-Release: 0.devel.7.%{git}%{?dist}
+Release: 0.devel.8.%{git}%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -710,6 +705,9 @@ rm -rf $RPM_BUILD_ROOT
 # Generate changelog using:
 # git log old_commit_sha..new_commit_sha --format="- %H: %s (%an)"
 %changelog
+* Thu Dec 18 2014 Adam Jackson <ajax@redhat.com> 10.5.0-0.devel.8
+- Sync ppc build config with F21
+
 * Wed Dec 17 2014 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 10.5.0-0.devel.7.git0d7f4c8
 - fix requirements for d3d
 
