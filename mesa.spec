@@ -3,8 +3,6 @@
 %define with_wayland 0
 %else
 %define with_private_llvm 0
-%define with_vdpau 1
-%define with_vaapi 1
 %define with_wayland 1
 %endif
 
@@ -13,7 +11,6 @@
 # llvm support for ppc64le is supposed to come in llvm-3.5
 %ifnarch s390 ppc
 %define with_llvm 1
-%define with_nine 1
 %endif
 
 %define min_wayland_version 1.0
@@ -27,6 +24,9 @@
 %endif
 %ifnarch s390 s390x ppc
 %define with_hardware 1
+%define with_vdpau 1
+%define with_vaapi 1
+%define with_nine 1
 %define base_drivers swrast,nouveau,radeon,r200
 %ifarch %{ix86} x86_64
 %define platform_drivers ,i915,i965
@@ -53,7 +53,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 10.5.0
-Release: 0.devel.8.%{git}%{?dist}
+Release: 0.devel.9.%{git}%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -705,6 +705,9 @@ rm -rf $RPM_BUILD_ROOT
 # Generate changelog using:
 # git log old_commit_sha..new_commit_sha --format="- %H: %s (%an)"
 %changelog
+* Fri Dec 19 2014 Dan Horák <dan[at]danny.cz> 10.5.0-0.devel.9
+- Sync with_{vaapi,vdpau,nine} settings with F21
+
 * Thu Dec 18 2014 Adam Jackson <ajax@redhat.com> 10.5.0-0.devel.8
 - Sync ppc build config with F21
 
