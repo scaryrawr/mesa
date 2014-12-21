@@ -543,7 +543,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/dri/i915_dri.so
 %{_libdir}/dri/i965_dri.so
 %if 0%{?with_ilo}
-%{_libdir}/dri/ilo_drv.so
+%{_libdir}/dri/ilo_dri.so
 %endif
 %endif
 %if 0%{?with_freedreno}
