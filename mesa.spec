@@ -53,7 +53,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 10.5.0
-Release: 0.devel.9.%{git}%{?dist}
+Release: 0.devel.10.%{git}%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -412,7 +412,7 @@ export CXXFLAGS="$RPM_OPT_FLAGS %{?with_opencl:-frtti -fexceptions} %{!?with_ope
 %if %{with_hardware}
     %{?with_xa:--enable-xa} \
     %{?with_nine:--enable-nine} \
-    --with-gallium-drivers=%{?with_vmware:svga,}%{?with_radeonsi:radeonsi,}%{?with_llvm:swrast,r600,}%{?with_freedreno:freedreno,}r300,nouveau \
+    --with-gallium-drivers=%{?with_vmware:svga,}%{?with_radeonsi:radeonsi,}%{?with_llvm:swrast,r600,}%{?with_freedreno:freedreno,}ilo,r300,nouveau \
 %else
     --with-gallium-drivers=%{?with_llvm:swrast} \
 %endif
@@ -541,6 +541,7 @@ rm -rf $RPM_BUILD_ROOT
 %ifarch %{ix86} x86_64
 %{_libdir}/dri/i915_dri.so
 %{_libdir}/dri/i965_dri.so
+%{_libdir}/dri/ilo_drv.so
 %endif
 %if 0%{?with_freedreno}
 %{_libdir}/dri/kgsl_dri.so
@@ -705,6 +706,9 @@ rm -rf $RPM_BUILD_ROOT
 # Generate changelog using:
 # git log old_commit_sha..new_commit_sha --format="- %H: %s (%an)"
 %changelog
+* Sun Dec 21 2014 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 10.5.0-0.devel.10.git0d7f4c8
+- enable ilo gallium driver
+
 * Fri Dec 19 2014 Dan Horák <dan[at]danny.cz> 10.5.0-0.devel.9
 - Sync with_{vaapi,vdpau,nine} settings with F21
 
