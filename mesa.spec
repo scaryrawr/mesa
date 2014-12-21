@@ -30,6 +30,7 @@
 %define base_drivers swrast,nouveau,radeon,r200
 %ifarch %{ix86} x86_64
 %define platform_drivers ,i915,i965
+%define with_ilo    1
 %define with_vmware 1
 %define with_xa     1
 %define with_opencl 1
@@ -412,7 +413,7 @@ export CXXFLAGS="$RPM_OPT_FLAGS %{?with_opencl:-frtti -fexceptions} %{!?with_ope
 %if %{with_hardware}
     %{?with_xa:--enable-xa} \
     %{?with_nine:--enable-nine} \
-    --with-gallium-drivers=%{?with_vmware:svga,}%{?with_radeonsi:radeonsi,}%{?with_llvm:swrast,r600,}%{?with_freedreno:freedreno,}ilo,r300,nouveau \
+    --with-gallium-drivers=%{?with_vmware:svga,}%{?with_radeonsi:radeonsi,}%{?with_llvm:swrast,r600,}%{?with_freedreno:freedreno,}%{?with_ilo:ilo,}r300,nouveau \
 %else
     --with-gallium-drivers=%{?with_llvm:swrast} \
 %endif
@@ -541,7 +542,9 @@ rm -rf $RPM_BUILD_ROOT
 %ifarch %{ix86} x86_64
 %{_libdir}/dri/i915_dri.so
 %{_libdir}/dri/i965_dri.so
+%if 0%{?with_ilo}
 %{_libdir}/dri/ilo_drv.so
+%endif
 %endif
 %if 0%{?with_freedreno}
 %{_libdir}/dri/kgsl_dri.so
