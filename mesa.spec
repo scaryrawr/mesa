@@ -132,6 +132,7 @@ BuildRequires: libomxil-bellagio-devel
 %if 0%{?with_opencl}
 BuildRequires: libclc-devel llvm-static opencl-filesystem
 %endif
+BuildRequires: python-mako
 
 %description
 Mesa
