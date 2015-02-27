@@ -37,6 +37,7 @@
 %define with_omx    1
 %endif
 %ifarch %{arm} aarch64
+%define with_vc4       1
 %define with_freedreno 1
 %define with_xa        1
 %define with_omx       1
@@ -54,7 +55,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 10.6.0
-Release: 0.devel.1.%{git}%{?dist}
+Release: 0.devel.2.%{git}%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -414,7 +415,7 @@ export CXXFLAGS="$RPM_OPT_FLAGS %{?with_opencl:-frtti -fexceptions} %{!?with_ope
 %if %{with_hardware}
     %{?with_xa:--enable-xa} \
     %{?with_nine:--enable-nine} \
-    --with-gallium-drivers=%{?with_vmware:svga,}%{?with_radeonsi:radeonsi,}%{?with_llvm:swrast,r600,}%{?with_freedreno:freedreno,}%{?with_ilo:ilo,}r300,nouveau \
+    --with-gallium-drivers=%{?with_vmware:svga,}%{?with_radeonsi:radeonsi,}%{?with_llvm:swrast,r600,}%{?with_freedreno:freedreno,}%{?with_vc4:vc4,}%{?with_ilo:ilo,}r300,nouveau \
 %else
     --with-gallium-drivers=%{?with_llvm:swrast} \
 %endif
@@ -546,6 +547,9 @@ rm -rf $RPM_BUILD_ROOT
 %if 0%{?with_ilo}
 %{_libdir}/dri/ilo_dri.so
 %endif
+%endif
+%if 0%{?with_vc4}
+%{_libdir}/dri/vc4_dri.so
 %endif
 %if 0%{?with_freedreno}
 %{_libdir}/dri/kgsl_dri.so
@@ -710,6 +714,9 @@ rm -rf $RPM_BUILD_ROOT
 # Generate changelog using:
 # git log old_commit_sha..new_commit_sha --format="- %H: %s (%an)"
 %changelog
+* Fri Feb 27 2015 Rob Clark <rclark@redhat.com - 10.6.0-0.devel.2.f80af89
+- enable vc4 on arm
+
 * Mon Feb 23 2015 Igor Gnatenko <ignatenkobrain@fedoraproject.org> - 10.6.0-0.devel.1.f80af89
 - f80af89
 
