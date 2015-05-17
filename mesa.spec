@@ -83,6 +83,9 @@ Patch60: mesa-10.6-nir-linker.patch
 # https://bugs.freedesktop.org/show_bug.cgi?id=73512
 Patch99: 0001-opencl-use-versioned-.so-in-mesa.icd.patch
 
+%if %{?githash}
+BuildRequires: git
+%endif
 BuildRequires: pkgconfig autoconf automake libtool
 %if %{with_hardware}
 BuildRequires: kernel-headers
