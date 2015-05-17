@@ -49,22 +49,21 @@
 %define _default_patch_fuzz 2
 
 #% define gitdate 20150218
-%define githash 51e3453
+%define githash 5a55f68
 %define git %{?githash:%{githash}}%{!?githash:%{gitdate}}
 
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 10.6.0
-Release: 0.devel.5.%{git}%{?dist}
+Release: 0.devel.6.%{git}%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
 
-# Source0: MesaLib-%{version}.tar.xz
 Source0: %{name}-%{git}.tar.xz
-Source1: sanitize-tarball.sh
-Source2: make-release-tarball.sh
-Source3: make-git-snapshot.sh
+Source1: Makefile
+Source2: vl_decoder.c
+Source3: vl_mpeg12_decoder.c
 
 # src/gallium/auxiliary/postprocess/pp_mlaa* have an ... interestingly worded license.
 # Source4 contains email correspondence clarifying the license terms.
@@ -716,9 +715,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/d3d/*.so
 %endif
 
-# Generate changelog using:
-# git log old_commit_sha..new_commit_sha --format="- %H: %s (%an)"
 %changelog
+* Sun May 17 2015 Igor Gnatenko <ignatenkobrain@fedoraproject.org> - 10.6.0-0.devel.6.5a55f68
+- 5a55f68
+
 * Thu May 07 2015 Igor Gnatenko <ignatenkobrain@fedoraproject.org> - 10.6.0-0.devel.5.51e3453
 - 51e3453
 
