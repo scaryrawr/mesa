@@ -55,7 +55,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 10.6.0
-Release: 0.devel.6.%{git}%{?dist}
+Release: 0.devel.7.%{git}%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -83,7 +83,9 @@ Patch60: mesa-10.6-nir-linker.patch
 # https://bugs.freedesktop.org/show_bug.cgi?id=73512
 Patch99: 0001-opencl-use-versioned-.so-in-mesa.icd.patch
 
-%{?githash:BuildRequires: git}
+# To have sha info in glxinfo
+BuildRequires: git
+
 BuildRequires: pkgconfig autoconf automake libtool
 %if %{with_hardware}
 BuildRequires: kernel-headers
@@ -717,6 +719,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Mon May 18 2015 Igor Gnatenko <ignatenkobrain@fedoraproject.org> - 10.6.0-0.devel.7.5a55f68
+- add git to BR everywhere
+
 * Sun May 17 2015 Igor Gnatenko <ignatenkobrain@fedoraproject.org> - 10.6.0-0.devel.6.5a55f68
 - 5a55f68
 
