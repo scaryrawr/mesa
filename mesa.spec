@@ -55,7 +55,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 10.6.0
-Release: 0.devel.7.%{git}%{?dist}
+Release: 0.devel.7.%{git}%{?dist}.1
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -719,6 +719,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Wed Jun 17 2015 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 10.6.0-0.devel.7.5a55f68.1
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_23_Mass_Rebuild
+
 * Mon May 18 2015 Igor Gnatenko <ignatenkobrain@fedoraproject.org> - 10.6.0-0.devel.7.5a55f68
 - add git to BR everywhere
 
