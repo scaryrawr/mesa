@@ -4,7 +4,7 @@ SANITIZE ?= 1
 
 ifeq ($(strip $(COMMIT)),)
 	COMMIT = `date +%Y%m%d`
-	BRANCH = 10.5
+	BRANCH = 10.6
 else
 	BRANCH = master
 endif
