@@ -70,9 +70,6 @@ Source3: vl_mpeg12_decoder.c
 # Fedora opts to ignore the optional part of clause 2 and treat that code as 2 clause BSD.
 Source4: Mesa-MLAA-License-Clarification-Email.txt
 
-Patch1: mesa-10.0-nv50-fix-build.patch
-Patch9: mesa-8.0-llvmpipe-shmget.patch
-Patch12: mesa-8.0.1-fix-16bpp.patch
 Patch15: mesa-9.2-hardware-float.patch
 Patch20: mesa-10.2-evergreen-big-endian.patch
 Patch30: mesa-10.3-bigendian-assert.patch
@@ -349,18 +346,6 @@ Mesa Direct3D9 state tracker development package
 #setup -q -n Mesa-%{version}%{?snapshot}
 %setup -q -n mesa-%{git}
 grep -q ^/ src/gallium/auxiliary/vl/vl_decoder.c && exit 1
-%patch1 -p1 -b .nv50rtti
-
-# this fastpath is:
-# - broken with swrast classic
-# - broken on 24bpp
-# - not a huge win anyway
-# - ABI-broken wrt upstream
-# - eventually obsoleted by vgem
-#
-# dear ajax: fix this one way or the other
-#patch9 -p1 -b .shmget
-#patch12 -p1 -b .16bpp
 
 %patch15 -p1 -b .hwfloat
 %patch20 -p1 -b .egbe
