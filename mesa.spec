@@ -55,7 +55,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 10.7.0
-Release: 0.devel.1.%{git}%{?dist}
+Release: 0.devel.2.%{git}%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -426,9 +426,6 @@ export CXXFLAGS="$RPM_OPT_FLAGS %{?with_opencl:-frtti -fexceptions} %{!?with_ope
 %endif
     %{?dri_drivers}
 
-# this seems to be neccessary for s390
-make -C src/mesa/drivers/dri/common/xmlpool/
-
 make %{?_smp_mflags} MKDEP=/bin/true
 
 %install
@@ -714,6 +711,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Tue Jul 07 2015 Igor Gnatenko <ignatenkobrain@fedoraproject.org> - 10.7.0-0.devel.2.8787141
+- Drop unecessary make for s390
+
 * Mon Jun 22 2015 Igor Gnatenko <ignatenkobrain@fedoraproject.org> - 10.7.0-0.devel.1.8787141
 - 8787141
 
