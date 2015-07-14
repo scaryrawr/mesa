@@ -49,13 +49,13 @@
 %define _default_patch_fuzz 2
 
 #% define gitdate 20150218
-%define githash 8787141
+%define githash ea633db
 %define git %{?githash:%{githash}}%{!?githash:%{gitdate}}
 
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 10.7.0
-Release: 0.devel.2.%{git}%{?dist}
+Release: 0.devel.3.%{git}%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -696,6 +696,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Tue Jul 14 2015 Igor Gnatenko <ignatenkobrain@fedoraproject.org> - 10.7.0-0.devel.3.ea633db
+- ea633db
+
 * Tue Jul 07 2015 Igor Gnatenko <ignatenkobrain@fedoraproject.org> - 10.7.0-0.devel.2.8787141
 - Drop unecessary make for s390
 
