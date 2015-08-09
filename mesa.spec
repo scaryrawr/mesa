@@ -49,13 +49,13 @@
 %define _default_patch_fuzz 2
 
 #% define gitdate 20150218
-%define githash 6f2d889
+%define githash 21ccdbd
 %define git %{?githash:%{githash}}%{!?githash:%{gitdate}}
 
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 11.0.0
-Release: 0.devel.1.%{git}%{?dist}
+Release: 0.devel.2.%{git}%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -389,7 +389,7 @@ export CXXFLAGS="$RPM_OPT_FLAGS %{?with_opencl:-frtti -fexceptions} %{!?with_ope
     --disable-xvmc \
     %{?with_vdpau:--enable-vdpau} \
     %{?with_vaapi:--enable-va} \
-    --with-egl-platforms=x11,drm%{?with_wayland:,wayland} \
+    --with-egl-platforms=x11,drm,surfaceless%{?with_wayland:,wayland} \
     --enable-shared-glapi \
     --enable-gbm \
     %{?with_omx:--enable-omx} \
@@ -682,6 +682,10 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Sun Aug 09 2015 Igor Gnatenko <ignatenkobrain@fedoraproject.org> - 11.0.0-0.devel.2.21ccdbd
+- 21ccdbd
+- add surfaceless EGL platform (RHBZ #1251747)
+
 * Sat Aug 01 2015 Igor Gnatenko <ignatenkobrain@fedoraproject.org> - 11.0.0-0.devel.1.6f2d889
 - Update to 11.0.0
 
