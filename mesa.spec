@@ -74,9 +74,6 @@ Patch15: mesa-9.2-hardware-float.patch
 Patch20: mesa-10.2-evergreen-big-endian.patch
 Patch30: mesa-10.3-bigendian-assert.patch
 
-# https://bugs.freedesktop.org/show_bug.cgi?id=73512
-Patch99: 0001-opencl-use-versioned-.so-in-mesa.icd.patch
-
 # To have sha info in glxinfo
 BuildRequires: git
 
@@ -350,10 +347,6 @@ grep -q ^/ src/gallium/auxiliary/vl/vl_decoder.c && exit 1
 %patch15 -p1 -b .hwfloat
 %patch20 -p1 -b .egbe
 %patch30 -p1 -b .beassert
-
-%if 0%{?with_opencl}
-%patch99 -p1 -b .icd
-%endif
 
 %if 0%{with_private_llvm}
 sed -i 's/llvm-config/mesa-private-llvm-config-%{__isa_bits}/g' configure.ac
