@@ -75,7 +75,7 @@ Patch20: mesa-10.2-evergreen-big-endian.patch
 Patch30: mesa-10.3-bigendian-assert.patch
 
 # To have sha info in glxinfo
-BuildRequires: git
+BuildRequires: git-core
 
 BuildRequires: pkgconfig autoconf automake libtool
 %if %{with_hardware}
