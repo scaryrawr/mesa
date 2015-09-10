@@ -55,7 +55,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 11.1.0
-Release: 0.devel.2.%{git}%{?dist}
+Release: 0.devel.3.%{git}%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -69,6 +69,11 @@ Source3: vl_mpeg12_decoder.c
 # Source4 contains email correspondence clarifying the license terms.
 # Fedora opts to ignore the optional part of clause 2 and treat that code as 2 clause BSD.
 Source4: Mesa-MLAA-License-Clarification-Email.txt
+
+# upstream workaround for recent intel crasher regression
+# https://bugzilla.redhat.com/show_bug.cgi?id=1259443
+# http://bugs.freedesktop.org/show_bug.cgi?id=86281
+Patch1: i965_Remove_early_release_of_DRI2_miptree.patch
 
 Patch15: mesa-9.2-hardware-float.patch
 Patch20: mesa-10.2-evergreen-big-endian.patch
@@ -344,6 +349,7 @@ Mesa Direct3D9 state tracker development package
 %setup -q -n mesa-%{git}
 grep -q ^/ src/gallium/auxiliary/vl/vl_decoder.c && exit 1
 
+%patch1 -p1 -b .i965_Remove_early_release_of_DRI2_miptree
 %patch15 -p1 -b .hwfloat
 %patch20 -p1 -b .egbe
 %patch30 -p1 -b .beassert
@@ -675,6 +681,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Thu Sep 10 2015 Rex Dieter <rdieter@fedoraproject.org> - 11.1.0-0.devel.3.60aea30
+- Add brw_meta_fast_clear crash workaround patch (#1259443, fdo#86281)
+
 * Wed Sep 02 2015 Igor Gnatenko <ignatenkobrain@fedoraproject.org> - 11.1.0-0.devel.2.60aea30
 - 60aea30
 
