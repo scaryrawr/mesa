@@ -49,13 +49,13 @@
 %define _default_patch_fuzz 2
 
 #% define gitdate 20150218
-%define githash 60aea30
+%define githash d6fbcf6
 %define git %{?githash:%{githash}}%{!?githash:%{gitdate}}
 
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 11.1.0
-Release: 0.devel.3.%{git}%{?dist}
+Release: 0.devel.4.%{git}%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -681,6 +681,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Sun Sep 13 2015 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 11.1.0-0.devel.4.d6fbcf6
+- d6fbcf6
+
 * Thu Sep 10 2015 Rex Dieter <rdieter@fedoraproject.org> - 11.1.0-0.devel.3.60aea30
 - Add brw_meta_fast_clear crash workaround patch (#1259443, fdo#86281)
 
