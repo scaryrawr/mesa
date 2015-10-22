@@ -17,6 +17,7 @@
 %define min_wayland_version 1.0
 %if 0%{?with_llvm}
 %define with_radeonsi 1
+%define with_swr 1
 %endif
 
 %ifarch s390 s390x ppc
@@ -55,7 +56,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 11.1.0
-Release: 0.devel.8.%{git}%{?dist}
+Release: 0.devel.9.%{git}%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -73,6 +74,10 @@ Source4: Mesa-MLAA-License-Clarification-Email.txt
 Patch15: mesa-9.2-hardware-float.patch
 Patch20: mesa-10.2-evergreen-big-endian.patch
 Patch30: mesa-10.3-bigendian-assert.patch
+
+Patch101: 0001-Initial-public-Mesa-SWR.patch
+Patch102: 0002-swr-484541-Initial-public-SWR.patch
+Patch103: 0003-gallium-swr-add-flags-parameter-to-pipe_screen-conte.patch
 
 # To have sha info in glxinfo
 BuildRequires: git-core
@@ -348,6 +353,10 @@ grep -q ^/ src/gallium/auxiliary/vl/vl_decoder.c && exit 1
 %patch20 -p1 -b .egbe
 %patch30 -p1 -b .beassert
 
+%patch101 -p1
+%patch102 -p1
+%patch103 -p1
+
 %if 0%{with_private_llvm}
 sed -i 's/llvm-config/mesa-private-llvm-config-%{__isa_bits}/g' configure.ac
 sed -i 's/`$LLVM_CONFIG --version`/&-mesa/' configure.ac
@@ -395,7 +404,8 @@ export CXXFLAGS="$RPM_OPT_FLAGS %{?with_opencl:-frtti -fexceptions} %{!?with_ope
 %if %{with_hardware}
     %{?with_xa:--enable-xa} \
     %{?with_nine:--enable-nine} \
-    --with-gallium-drivers=%{?with_vmware:svga,}%{?with_radeonsi:radeonsi,}%{?with_llvm:swrast,r600,}%{?with_freedreno:freedreno,}%{?with_vc4:vc4,}%{?with_ilo:ilo,}r300,nouveau \
+    --with-gallium-drivers=%{?with_vmware:svga,}%{?with_radeonsi:radeonsi,}%{?with_llvm:swrast,r600,}%{?with_freedreno:freedreno,}%{?with_vc4:vc4,}%{?with_ilo:ilo,}%{?with_swr:swr,}r300,nouveau \
+    %{?with_swr:--enable-swr-native} \
 %else
     --with-gallium-drivers=%{?with_llvm:swrast} \
 %endif
@@ -675,6 +685,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Wed Oct 21 2015 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 11.1.0-0.devel.9.4a168ad
+- Enable experimental SWR rasterizer
+
 * Wed Oct 14 2015 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 11.1.0-0.devel.8.4a168ad
 - 4a168ad
 
