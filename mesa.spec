@@ -50,13 +50,13 @@
 %define _default_patch_fuzz 2
 
 #% define gitdate 20150218
-%define githash 4a168ad
+%define githash 7182498
 %define git %{?githash:%{githash}}%{!?githash:%{gitdate}}
 
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 11.1.0
-Release: 0.devel.9.%{git}%{?dist}
+Release: 0.devel.10.%{git}%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -685,6 +685,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Thu Oct 22 2015 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 11.1.0-0.devel.10.7182498
+- 7182498
+
 * Wed Oct 21 2015 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 11.1.0-0.devel.9.4a168ad
 - Enable experimental SWR rasterizer
 
