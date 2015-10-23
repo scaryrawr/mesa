@@ -49,13 +49,13 @@
 %define _default_patch_fuzz 2
 
 #% define gitdate 20150218
-%define githash 7182498
+%define githash 3994ef5
 %define git %{?githash:%{githash}}%{!?githash:%{gitdate}}
 
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 11.1.0
-Release: 0.devel.10.%{git}%{?dist}
+Release: 0.devel.11.%{git}%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -395,9 +395,9 @@ export CXXFLAGS="$RPM_OPT_FLAGS %{?with_opencl:-frtti -fexceptions} %{!?with_ope
 %if %{with_hardware}
     %{?with_xa:--enable-xa} \
     %{?with_nine:--enable-nine} \
-    --with-gallium-drivers=%{?with_vmware:svga,}%{?with_radeonsi:radeonsi,}%{?with_llvm:swrast,r600,}%{?with_freedreno:freedreno,}%{?with_vc4:vc4,}%{?with_ilo:ilo,}r300,nouveau \
+    --with-gallium-drivers=%{?with_vmware:svga,}%{?with_radeonsi:radeonsi,}%{?with_llvm:swrast,r600,}%{?with_freedreno:freedreno,}%{?with_vc4:vc4,}%{?with_ilo:ilo,}virgl,r300,nouveau \
 %else
-    --with-gallium-drivers=%{?with_llvm:swrast} \
+    --with-gallium-drivers=%{?with_llvm:swrast,}virgl \
 %endif
 %if 0%{?fedora} < 21
     --disable-dri3 \
@@ -675,6 +675,10 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Fri Oct 23 2015 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 11.1.0-0.devel.11.3994ef5
+- 3994ef5
+- Enable VirGL driver
+
 * Thu Oct 22 2015 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 11.1.0-0.devel.10.7182498
 - 7182498
 - Disable SWR rasterizer
