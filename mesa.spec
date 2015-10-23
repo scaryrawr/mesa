@@ -545,6 +545,7 @@ rm -rf $RPM_BUILD_ROOT
 %if 0%{?with_vaapi}
 %{_libdir}/dri/gallium_drv_video.so
 %endif
+%{_libdir}/dri/virtio_gpu_dri.so
 
 %if %{with_hardware}
 %if 0%{?with_omx}
