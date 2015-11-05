@@ -55,7 +55,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 11.1.0
-Release: 0.devel.11.%{git}%{?dist}
+Release: 0.devel.12.%{git}%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -130,6 +130,7 @@ BuildRequires: libomxil-bellagio-devel
 BuildRequires: libclc-devel llvm-static opencl-filesystem
 %endif
 BuildRequires: python-mako
+BuildRequires: libstdc++-static
 
 %description
 Mesa
@@ -366,6 +367,7 @@ export CFLAGS="$RPM_OPT_FLAGS"
 # We do say 'catch' in the clover and d3d1x state trackers, but we're not
 # building those yet.
 export CXXFLAGS="$RPM_OPT_FLAGS %{?with_opencl:-frtti -fexceptions} %{!?with_opencl:-fno-rtti -fno-exceptions}"
+export LDFLAGS="%{__global_ldflags} -static-libstdc++"
 %ifarch %{ix86}
 # i do not have words for how much the assembly dispatch code infuriates me
 %define asm_flags --disable-asm
@@ -404,7 +406,10 @@ export CXXFLAGS="$RPM_OPT_FLAGS %{?with_opencl:-frtti -fexceptions} %{!?with_ope
 %endif
     %{?dri_drivers}
 
-make %{?_smp_mflags} MKDEP=/bin/true
+# libtool refuses to pass through things you ask for in LDFLAGS that it doesn't
+# know about, like -static-libstdc++, so...
+sed -i 's/-kthread|/-static-libstdc++|&/' libtool
+make %{?_smp_mflags} MKDEP=/bin/true V=1
 
 %install
 rm -rf $RPM_BUILD_ROOT
@@ -676,6 +681,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Thu Nov 05 2015 Adam Jackson <ajax@redhat.com> 11.1.0-0.devel.12.3994ef5
+- Link with -static-libstdc++ to work around Steam bundling its own copy
+
 * Fri Oct 23 2015 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 11.1.0-0.devel.11.3994ef5
 - 3994ef5
 - Enable VirGL driver
