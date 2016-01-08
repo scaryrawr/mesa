@@ -55,7 +55,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 11.2.0
-Release: 0.devel.3.%{git}%{?dist}
+Release: 0.devel.4.%{git}%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -408,7 +408,11 @@ export LDFLAGS="%{__global_ldflags} -static-libstdc++"
 
 # libtool refuses to pass through things you ask for in LDFLAGS that it doesn't
 # know about, like -static-libstdc++, so...
-sed -i 's/-kthread|/-static-libstdc++|&/' libtool
+sed -i 's/-fuse-linker-plugin|/-static-lib*|&/' libtool
+sed -i 's/-nostdlib//g' libtool
+sed -i 's/^predep_objects=.*$/#&/' libtool
+sed -i 's/^postdep_objects=.*$/#&/' libtool
+sed -i 's/^postdeps=.*$/#&/' libtool
 make %{?_smp_mflags} MKDEP=/bin/true V=1
 
 %install
@@ -439,6 +443,8 @@ pushd $RPM_BUILD_ROOT%{_libdir}
 for i in libOSMesa*.so libGL.so ; do
     eu-findtextrel $i && exit 1
 done
+# check that we really didn't link libstdc++ dynamically
+eu-readelf -d mesa_dri_drivers.so | grep -q libstdc && exit 1
 popd
 
 %clean
@@ -681,6 +687,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Thu Jan 07 2016 Adam Jackson <ajax@redhat.com>
+- Mangle libtool even harder to get -static-libstdc++ to work
+
 * Tue Dec 29 2015 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 11.2.0-0.devel.3.70d8dbc
 - 70d8dbc
 
