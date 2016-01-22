@@ -34,8 +34,10 @@
 %define with_ilo    1
 %define with_vmware 1
 %define with_xa     1
-%define with_opencl 1
 %define with_omx    1
+%endif
+%ifarch aarch64 %{ix86} x86_64
+%define with_opencl 1
 %endif
 %ifarch %{arm} aarch64
 %define with_vc4       1
@@ -55,7 +57,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 11.2.0
-Release: 0.devel.5.%{git}%{?dist}
+Release: 0.devel.6.%{git}%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -546,7 +548,7 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 %endif
 %if 0%{?with_llvm}
-%ifarch %{ix86} x86_64
+%ifarch %{ix86} x86_64 aarch64
 %dir %{_libdir}/gallium-pipe
 %{_libdir}/gallium-pipe/*.so
 %endif
@@ -687,6 +689,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Thu Jan 21 2016 Peter Robinson <pbrobinson@fedoraproject.org> 11.2.0-0.devel.6.5e3edd4
+- OpenCL now supported on aarch64
+
 * Sun Jan 10 2016 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 11.2.0-0.devel.5.5e3edd4
 - 5e3edd4
 
