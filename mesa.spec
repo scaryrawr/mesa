@@ -129,7 +129,7 @@ BuildRequires: zlib-devel
 BuildRequires: libomxil-bellagio-devel
 %endif
 %if 0%{?with_opencl}
-BuildRequires: libclc-devel llvm-static opencl-filesystem
+BuildRequires: libclc-devel opencl-filesystem
 %endif
 BuildRequires: python-mako
 BuildRequires: libstdc++-static
