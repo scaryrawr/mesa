@@ -57,7 +57,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 11.2.0
-Release: 0.devel.8.%{git}%{?dist}
+Release: 0.devel.8.%{git}%{?dist}.1
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -689,6 +689,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Thu Feb 04 2016 Fedora Release Engineering <releng@fedoraproject.org> - 11.2.0-0.devel.8.24ea81a.1
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_24_Mass_Rebuild
+
 * Wed Jan 27 2016 Adam Jackson <ajax@redhat.com> 11.2.0-0.devel.8
 - Rebuild for llvm 3.7.1 library split
 
