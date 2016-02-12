@@ -57,7 +57,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 11.2.0
-Release: 0.devel.9.%{git}%{?dist}
+Release: 0.devel.10.%{git}%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -689,6 +689,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Fri Feb 12 2016 Dave Airlie <airlied@redhat.com> 11.2.0-0.devel.10
+- rebuild against new llvm packages
+
 * Thu Feb 11 2016 Adam Jackson <ajax@redhat.com> 11.2.0-0.devel.9
 - Fix OpenCL-enabled FTBFS by not forcing clang search path to /usr/lib
 
