@@ -1,0 +1,12 @@
+diff -up mesa-24ea81a/configure.ac.hack mesa-24ea81a/configure.ac
+--- mesa-24ea81a/configure.ac.hack	2016-02-13 05:41:25.692812401 -0500
++++ mesa-24ea81a/configure.ac	2016-02-13 05:41:30.760953027 -0500
+@@ -2304,7 +2304,7 @@ if test "x$MESA_LLVM" != x0; then
+     dnl (See https://llvm.org/bugs/show_bug.cgi?id=6823)
+     if test "x$enable_llvm_shared_libs" = xyes; then
+         dnl We can't use $LLVM_VERSION because it has 'svn' stripped out,
+-        LLVM_SO_NAME=LLVM-`$LLVM_CONFIG --version`
++        LLVM_SO_NAME=LLVM
+         AS_IF([test -f "$LLVM_LIBDIR/lib$LLVM_SO_NAME.$IMP_LIB_EXT"], [llvm_have_one_so=yes])
+ 
+         if test "x$llvm_have_one_so" = xyes; then

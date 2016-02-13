@@ -72,6 +72,7 @@ Source3: vl_mpeg12_decoder.c
 # Fedora opts to ignore the optional part of clause 2 and treat that code as 2 clause BSD.
 Source4: Mesa-MLAA-License-Clarification-Email.txt
 
+Patch10: mhack.patch
 Patch15: mesa-9.2-hardware-float.patch
 Patch20: mesa-10.2-evergreen-big-endian.patch
 Patch30: mesa-10.3-bigendian-assert.patch
@@ -347,6 +348,7 @@ Mesa Direct3D9 state tracker development package
 %setup -q -n mesa-%{git}
 grep -q ^/ src/gallium/auxiliary/vl/vl_decoder.c && exit 1
 
+%patch10 -p1 -b .mhack
 %patch15 -p1 -b .hwfloat
 %patch20 -p1 -b .egbe
 %patch30 -p1 -b .beassert
