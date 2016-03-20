@@ -50,14 +50,14 @@
 
 %define _default_patch_fuzz 2
 
-#% define gitdate 20150218
-%define githash 24ea81a
+%define gitdate 20160320
+#% define githash 24ea81a
 %define git %{?githash:%{githash}}%{!?githash:%{gitdate}}
 
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 11.2.0
-Release: 0.devel.11.%{git}%{?dist}
+Release: 0.1.rc3.%{git}%{?dist}
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.mesa3d.org
@@ -691,6 +691,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Sun Mar 20 2016 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 11.2.0-0.1.rc3.20160320
+- Update to 11.2.0-rc3
+
 * Fri Feb 19 2016 Dave Airlie <airlied@redhat.com> 11.2.0-0.devel.11
 - rebuild against llvm 3.8.0
 
