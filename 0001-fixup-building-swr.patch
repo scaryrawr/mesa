@@ -1,0 +1,186 @@
+From c10e9e579cca0a8fcfcb8c407693ffdb5afa2c3b Mon Sep 17 00:00:00 2001
+From: Igor Gnatenko <i.gnatenko.brain@gmail.com>
+Date: Thu, 24 Mar 2016 11:47:08 +0100
+Subject: [PATCH] fixup building swr
+
+Signed-off-by: Igor Gnatenko <i.gnatenko.brain@gmail.com>
+---
+ src/gallium/drivers/swr/avx/Makefile.am  | 41 ++++++++++++++++----------------
+ src/gallium/drivers/swr/avx2/Makefile.am | 41 ++++++++++++++++----------------
+ 2 files changed, 42 insertions(+), 40 deletions(-)
+
+diff --git a/src/gallium/drivers/swr/avx/Makefile.am b/src/gallium/drivers/swr/avx/Makefile.am
+index 384f1a7..2d4906f 100644
+--- a/src/gallium/drivers/swr/avx/Makefile.am
++++ b/src/gallium/drivers/swr/avx/Makefile.am
+@@ -33,18 +33,19 @@ AM_CXXFLAGS = \
+ 	-I$(builddir)/rasterizer/jitter \
+ 	-I$(srcdir)/../rasterizer \
+ 	-I$(srcdir)/../rasterizer/core \
+-	-I$(srcdir)/../rasterizer/jitter
++	-I$(srcdir)/../rasterizer/jitter \
++	-I$(srcdir)/../rasterizer/scripts
+ 
+ lib_LTLIBRARIES = libswrAVX.la
+ 
+ BUILT_SOURCES = \
+-	rasterizer/scripts/gen_knobs.cpp \
+-	rasterizer/scripts/gen_knobs.h \
+-	rasterizer/jitter/state_llvm.h \
+-	rasterizer/jitter/builder_gen.h \
+-	rasterizer/jitter/builder_gen.cpp \
+-	rasterizer/jitter/builder_x86.h \
+-	rasterizer/jitter/builder_x86.cpp
++	$(srcdir)/../rasterizer/scripts/gen_knobs.cpp \
++	$(srcdir)/../rasterizer/scripts/gen_knobs.h \
++	$(srcdir)/../rasterizer/jitter/state_llvm.h \
++	$(srcdir)/../rasterizer/jitter/builder_gen.h \
++	$(srcdir)/../rasterizer/jitter/builder_gen.cpp \
++	$(srcdir)/../rasterizer/jitter/builder_x86.h \
++	$(srcdir)/../rasterizer/jitter/builder_x86.cpp
+ 
+ libswrAVX_la_SOURCES = \
+ 	$(CXX_SOURCES) \
+@@ -54,41 +55,41 @@ libswrAVX_la_SOURCES = \
+ 	$(MEMORY_CXX_SOURCES) \
+ 	$(BUILT_SOURCES)
+ 
+-rasterizer/scripts/gen_knobs.cpp rasterizer/scripts/gen_knobs.h: rasterizer/scripts/gen_knobs.py rasterizer/scripts/knob_defs.py rasterizer/scripts/templates/knobs.template
++$(srcdir)/../rasterizer/scripts/gen_knobs.cpp $(srcdir)/../rasterizer/scripts/gen_knobs.h: $(srcdir)/../rasterizer/scripts/gen_knobs.py $(srcdir)/../rasterizer/scripts/knob_defs.py $(srcdir)/../rasterizer/scripts/templates/knobs.template
+ 	$(PYTHON2) $(PYTHON_FLAGS) \
+ 		$(srcdir)/../rasterizer/scripts/gen_knobs.py \
+-		rasterizer/scripts
++		$(srcdir)/../rasterizer/scripts
+ 
+-rasterizer/jitter/state_llvm.h: rasterizer/jitter/scripts/gen_llvm_types.py rasterizer/core/state.h
++$(srcdir)/../rasterizer/jitter/state_llvm.h: $(srcdir)/../rasterizer/jitter/scripts/gen_llvm_types.py $(srcdir)/../rasterizer/core/state.h
+ 	$(PYTHON2) $(PYTHON_FLAGS) \
+ 		$(srcdir)/../rasterizer/jitter/scripts/gen_llvm_types.py \
+ 		--input $(srcdir)/../rasterizer/core/state.h \
+-		--output rasterizer/jitter/state_llvm.h
++		--output $(srcdir)/../rasterizer/jitter/state_llvm.h
+ 
+-rasterizer/jitter/builder_gen.h: rasterizer/jitter/scripts/gen_llvm_ir_macros.py $(LLVM_INCLUDEDIR)/llvm/IR/IRBuilder.h
++$(srcdir)/../rasterizer/jitter/builder_gen.h: $(srcdir)/../rasterizer/jitter/scripts/gen_llvm_ir_macros.py $(LLVM_INCLUDEDIR)/llvm/IR/IRBuilder.h
+ 	$(PYTHON2) $(PYTHON_FLAGS) \
+ 		$(srcdir)/../rasterizer/jitter/scripts/gen_llvm_ir_macros.py \
+ 		--input $(LLVM_INCLUDEDIR)/llvm/IR/IRBuilder.h \
+-		--output rasterizer/jitter/builder_gen.h \
++		--output $(srcdir)/../rasterizer/jitter/builder_gen.h \
+ 		--gen_h
+ 
+-rasterizer/jitter/builder_gen.cpp: rasterizer/jitter/scripts/gen_llvm_ir_macros.py $(LLVM_INCLUDEDIR)/llvm/IR/IRBuilder.h
++$(srcdir)/../rasterizer/jitter/builder_gen.cpp: $(srcdir)/../rasterizer/jitter/scripts/gen_llvm_ir_macros.py $(LLVM_INCLUDEDIR)/llvm/IR/IRBuilder.h
+ 	$(PYTHON2) $(PYTHON_FLAGS) \
+ 		$(srcdir)/../rasterizer/jitter/scripts/gen_llvm_ir_macros.py \
+ 		--input $(LLVM_INCLUDEDIR)/llvm/IR/IRBuilder.h \
+-		--output rasterizer/jitter/builder_gen.cpp \
++		--output $(srcdir)/../rasterizer/jitter/builder_gen.cpp \
+ 		--gen_cpp
+ 
+-rasterizer/jitter/builder_x86.h: rasterizer/jitter/scripts/gen_llvm_ir_macros.py
++$(srcdir)/../rasterizer/jitter/builder_x86.h: $(srcdir)/../rasterizer/jitter/scripts/gen_llvm_ir_macros.py
+ 	$(PYTHON2) $(PYTHON_FLAGS) \
+ 		$(srcdir)/../rasterizer/jitter/scripts/gen_llvm_ir_macros.py \
+-		--output rasterizer/jitter/builder_x86.h \
++		--output $(srcdir)/../rasterizer/jitter/builder_x86.h \
+ 		--gen_x86_h
+ 
+-rasterizer/jitter/builder_x86.cpp: rasterizer/jitter/scripts/gen_llvm_ir_macros.py
++$(srcdir)/../rasterizer/jitter/builder_x86.cpp: $(srcdir)/../rasterizer/jitter/scripts/gen_llvm_ir_macros.py
+ 	$(PYTHON2) $(PYTHON_FLAGS) \
+ 		$(srcdir)/../rasterizer/jitter/scripts/gen_llvm_ir_macros.py \
+-		--output rasterizer/jitter/builder_x86.cpp \
++		--output $(srcdir)/../rasterizer/jitter/builder_x86.cpp \
+ 		--gen_x86_cpp
+ 
+ 
+diff --git a/src/gallium/drivers/swr/avx2/Makefile.am b/src/gallium/drivers/swr/avx2/Makefile.am
+index a3968ec..da019f4 100644
+--- a/src/gallium/drivers/swr/avx2/Makefile.am
++++ b/src/gallium/drivers/swr/avx2/Makefile.am
+@@ -33,18 +33,19 @@ AM_CXXFLAGS = \
+ 	-I$(builddir)/rasterizer/jitter \
+ 	-I$(srcdir)/../rasterizer \
+ 	-I$(srcdir)/../rasterizer/core \
+-	-I$(srcdir)/../rasterizer/jitter
++	-I$(srcdir)/../rasterizer/jitter \
++	-I$(srcdir)/../rasterizer/scripts
+ 
+ lib_LTLIBRARIES = libswrAVX2.la
+ 
+ BUILT_SOURCES = \
+-	rasterizer/scripts/gen_knobs.cpp \
+-	rasterizer/scripts/gen_knobs.h \
+-	rasterizer/jitter/state_llvm.h \
+-	rasterizer/jitter/builder_gen.h \
+-	rasterizer/jitter/builder_gen.cpp \
+-	rasterizer/jitter/builder_x86.h \
+-	rasterizer/jitter/builder_x86.cpp
++	$(srcdir)/../rasterizer/scripts/gen_knobs.cpp \
++	$(srcdir)/../rasterizer/scripts/gen_knobs.h \
++	$(srcdir)/../rasterizer/jitter/state_llvm.h \
++	$(srcdir)/../rasterizer/jitter/builder_gen.h \
++	$(srcdir)/../rasterizer/jitter/builder_gen.cpp \
++	$(srcdir)/../rasterizer/jitter/builder_x86.h \
++	$(srcdir)/../rasterizer/jitter/builder_x86.cpp
+ 
+ libswrAVX2_la_SOURCES = \
+ 	$(CXX_SOURCES) \
+@@ -54,41 +55,41 @@ libswrAVX2_la_SOURCES = \
+ 	$(MEMORY_CXX_SOURCES) \
+ 	$(BUILT_SOURCES)
+ 
+-rasterizer/scripts/gen_knobs.cpp rasterizer/scripts/gen_knobs.h: rasterizer/scripts/gen_knobs.py rasterizer/scripts/knob_defs.py rasterizer/scripts/templates/knobs.template
++$(srcdir)/../rasterizer/scripts/gen_knobs.cpp $(srcdir)/../rasterizer/scripts/gen_knobs.h: $(srcdir)/../rasterizer/scripts/gen_knobs.py $(srcdir)/../rasterizer/scripts/knob_defs.py $(srcdir)/../rasterizer/scripts/templates/knobs.template
+ 	$(PYTHON2) $(PYTHON_FLAGS) \
+ 		$(srcdir)/../rasterizer/scripts/gen_knobs.py \
+-		rasterizer/scripts
++		$(srcdir)/../rasterizer/scripts
+ 
+-rasterizer/jitter/state_llvm.h: rasterizer/jitter/scripts/gen_llvm_types.py rasterizer/core/state.h
++$(srcdir)/../rasterizer/jitter/state_llvm.h: $(srcdir)/../rasterizer/jitter/scripts/gen_llvm_types.py $(srcdir)/../rasterizer/core/state.h
+ 	$(PYTHON2) $(PYTHON_FLAGS) \
+ 		$(srcdir)/../rasterizer/jitter/scripts/gen_llvm_types.py \
+ 		--input $(srcdir)/../rasterizer/core/state.h \
+-		--output rasterizer/jitter/state_llvm.h
++		--output $(srcdir)/../rasterizer/jitter/state_llvm.h
+ 
+-rasterizer/jitter/builder_gen.h: rasterizer/jitter/scripts/gen_llvm_ir_macros.py $(LLVM_INCLUDEDIR)/llvm/IR/IRBuilder.h
++$(srcdir)/../rasterizer/jitter/builder_gen.h: $(srcdir)/../rasterizer/jitter/scripts/gen_llvm_ir_macros.py $(LLVM_INCLUDEDIR)/llvm/IR/IRBuilder.h
+ 	$(PYTHON2) $(PYTHON_FLAGS) \
+ 		$(srcdir)/../rasterizer/jitter/scripts/gen_llvm_ir_macros.py \
+ 		--input $(LLVM_INCLUDEDIR)/llvm/IR/IRBuilder.h \
+-		--output rasterizer/jitter/builder_gen.h \
++		--output $(srcdir)/../rasterizer/jitter/builder_gen.h \
+ 		--gen_h
+ 
+-rasterizer/jitter/builder_gen.cpp: rasterizer/jitter/scripts/gen_llvm_ir_macros.py $(LLVM_INCLUDEDIR)/llvm/IR/IRBuilder.h
++$(srcdir)/../rasterizer/jitter/builder_gen.cpp: $(srcdir)/../rasterizer/jitter/scripts/gen_llvm_ir_macros.py $(LLVM_INCLUDEDIR)/llvm/IR/IRBuilder.h
+ 	$(PYTHON2) $(PYTHON_FLAGS) \
+ 		$(srcdir)/../rasterizer/jitter/scripts/gen_llvm_ir_macros.py \
+ 		--input $(LLVM_INCLUDEDIR)/llvm/IR/IRBuilder.h \
+-		--output rasterizer/jitter/builder_gen.cpp \
++		--output $(srcdir)/../rasterizer/jitter/builder_gen.cpp \
+ 		--gen_cpp
+ 
+-rasterizer/jitter/builder_x86.h: rasterizer/jitter/scripts/gen_llvm_ir_macros.py
++$(srcdir)/../rasterizer/jitter/builder_x86.h: $(srcdir)/../rasterizer/jitter/scripts/gen_llvm_ir_macros.py
+ 	$(PYTHON2) $(PYTHON_FLAGS) \
+ 		$(srcdir)/../rasterizer/jitter/scripts/gen_llvm_ir_macros.py \
+-		--output rasterizer/jitter/builder_x86.h \
++		--output $(srcdir)/../rasterizer/jitter/builder_x86.h \
+ 		--gen_x86_h
+ 
+-rasterizer/jitter/builder_x86.cpp: rasterizer/jitter/scripts/gen_llvm_ir_macros.py
++$(srcdir)/../rasterizer/jitter/builder_x86.cpp: $(srcdir)/../rasterizer/jitter/scripts/gen_llvm_ir_macros.py
+ 	$(PYTHON2) $(PYTHON_FLAGS) \
+ 		$(srcdir)/../rasterizer/jitter/scripts/gen_llvm_ir_macros.py \
+-		--output rasterizer/jitter/builder_x86.cpp \
++		--output $(srcdir)/../rasterizer/jitter/builder_x86.cpp \
+ 		--gen_x86_cpp
+ 
+ 
+-- 
+2.7.4
+
