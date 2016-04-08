@@ -59,7 +59,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 11.3.0
-Release: 0.1.git%{shortcommit}%{?dist}
+Release: 0.2.git%{shortcommit}%{?dist}
 License: MIT
 URL: http://www.mesa3d.org
 
@@ -325,6 +325,10 @@ Summary: Mesa OpenCL runtime library
 Requires: ocl-icd
 Requires: libclc
 Requires: mesa-libgbm = %{version}-%{release}
+
+# Virtual Provides for ocl-icd (RHBZ #1317602)
+Provides: opencl-icd
+Provides: opencl-icd%{?_isa}
 
 %description libOpenCL
 Mesa OpenCL runtime library.
@@ -686,6 +690,9 @@ popd
 %endif
 
 %changelog
+* Fri Apr 08 2016 Björn Esser <fedora@besser82.io> - 11.3.0-0.2.gitea2bff1
+- add virtual Provides for ocl-icd (RHBZ #1317602)
+
 * Sun Mar 20 2016 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 11.3.0-0.1.gitea2bff1
 - 11.3.0 (gitea2bff1)
 - Add SWR state-tracker (but disable because build is broken)
