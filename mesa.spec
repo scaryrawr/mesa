@@ -481,22 +481,18 @@ popd
 %endif
 
 %files libGL
-%license docs/COPYING
 %{_libdir}/libGL.so.1
 %{_libdir}/libGL.so.1.*
 
 %files libEGL
-%license docs/COPYING
 %{_libdir}/libEGL.so.1
 %{_libdir}/libEGL.so.1.*
 
 %files libGLES
-%license docs/COPYING
 %{_libdir}/libGLESv2.so.2
 %{_libdir}/libGLESv2.so.2.*
 
 %files filesystem
-%license docs/COPYING
 %doc docs/Mesa-MLAA-License-Clarification-Email.txt
 %dir %{_libdir}/dri
 %if %{with_hardware}
@@ -506,7 +502,6 @@ popd
 %endif
 
 %files libglapi
-%license docs/COPYING
 %{_libdir}/libglapi.so.0
 %{_libdir}/libglapi.so.0.*
 
@@ -615,7 +610,6 @@ popd
 %{_libdir}/libGLESv2.so
 
 %files libOSMesa
-%license docs/COPYING
 %{_libdir}/libOSMesa.so.8*
 
 %files libOSMesa-devel
@@ -625,7 +619,6 @@ popd
 %{_libdir}/pkgconfig/osmesa.pc
 
 %files libgbm
-%license docs/COPYING
 %{_libdir}/libgbm.so.1
 %{_libdir}/libgbm.so.1.*
 
@@ -636,7 +629,6 @@ popd
 
 %if 0%{?with_wayland}
 %files libwayland-egl
-%license docs/COPYING
 %{_libdir}/libwayland-egl.so.1
 %{_libdir}/libwayland-egl.so.1.*
 
@@ -647,7 +639,6 @@ popd
 
 %if 0%{?with_xa}
 %files libxatracker
-%license docs/COPYING
 %if %{with_hardware}
 %{_libdir}/libxatracker.so.2
 %{_libdir}/libxatracker.so.2.*
@@ -665,7 +656,6 @@ popd
 
 %if 0%{?with_opencl}
 %files libOpenCL
-%license docs/COPYING
 %{_libdir}/libMesaOpenCL.so.*
 %{_sysconfdir}/OpenCL/vendors/mesa.icd
 
@@ -675,7 +665,6 @@ popd
 
 %if 0%{?with_nine}
 %files libd3d
-%license docs/COPYING
 %dir %{_libdir}/d3d/
 %{_libdir}/d3d/*.so.*
 
