@@ -53,13 +53,13 @@
 
 %global sanitize 1
 
-%global commit ea2bff1d115ef00aaa06797fffd4334f6a50570f
+%global commit 171a570f388b2895d14f6d5418c99573cffd6369
 %global shortcommit %(c=%{commit}; echo ${c:0:7})
 
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 11.3.0
-Release: 0.2.git%{shortcommit}%{?dist}
+Release: 0.3.git%{shortcommit}%{?dist}
 License: MIT
 URL: http://www.mesa3d.org
 
@@ -70,7 +70,7 @@ URL: http://www.mesa3d.org
 # cd mesa-%%{shortcommit}; git reset --hard %%{shortcommit}; cd ..
 #
 # Create archive:
-# tar -cvf mesa-%%{shortcommit}.tar.xz mesa-%%{shortcommit}
+# tar -Jcvf mesa-%%{shortcommit}.tar.xz mesa-%%{shortcommit}
 Source0: %{name}-%{shortcommit}.tar.xz
 Source1: vl_decoder.c
 Source2: vl_mpeg12_decoder.c
@@ -690,6 +690,9 @@ popd
 %endif
 
 %changelog
+* Thu Apr 14 2016 Igor Gnatenko <ignatenko@redhat.com> - 11.3.0-0.2.git171a570
+- 171a570
+
 * Fri Apr 08 2016 Björn Esser <fedora@besser82.io> - 11.3.0-0.2.gitea2bff1
 - add virtual Provides for ocl-icd (RHBZ #1317602)
 
