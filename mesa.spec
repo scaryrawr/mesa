@@ -35,9 +35,6 @@
 %define with_vmware 1
 %define with_xa     1
 %define with_omx    1
-# XXX: broken for now
-# https://lists.freedesktop.org/archives/mesa-dev/2016-March/110446.html
-%global with_swr    1
 %endif
 %ifarch aarch64 %{ix86} x86_64
 %define with_opencl 1
@@ -84,7 +81,6 @@ Patch1:  0001-llvm-SONAME-without-version.patch
 Patch2:  0002-hardware-gloat.patch
 Patch3:  0003-evergreen-big-endian.patch
 Patch4:  0004-bigendian-assert.patch
-Patch5:  0001-fixup-building-swr.patch
 
 # To have sha info in glxinfo
 BuildRequires: git-core
@@ -410,7 +406,7 @@ export LDFLAGS="%{__global_ldflags} -static-libstdc++"
 %if %{with_hardware}
     %{?with_xa:--enable-xa} \
     %{?with_nine:--enable-nine} \
-    --with-gallium-drivers=%{?with_vmware:svga,}%{?with_radeonsi:radeonsi,}%{?with_llvm:swrast,r600,}%{?with_freedreno:freedreno,}%{?with_vc4:vc4,}%{?with_ilo:ilo,}%{?with_swr:swr,}virgl,r300,nouveau \
+    --with-gallium-drivers=%{?with_vmware:svga,}%{?with_radeonsi:radeonsi,}%{?with_llvm:swrast,r600,}%{?with_freedreno:freedreno,}%{?with_vc4:vc4,}%{?with_ilo:ilo,}virgl,r300,nouveau \
 %else
     --with-gallium-drivers=%{?with_llvm:swrast,}virgl \
 %endif
