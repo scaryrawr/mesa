@@ -1,4 +1,4 @@
-From 6f7af73d73cead0bf4e29d4f91ad2885bdf879cb Mon Sep 17 00:00:00 2001
+From 6ccae713acc457d7df6ab15e124a7d77c5093213 Mon Sep 17 00:00:00 2001
 From: Igor Gnatenko <i.gnatenko.brain@gmail.com>
 Date: Sun, 20 Mar 2016 13:28:07 +0100
 Subject: [PATCH 4/4] bigendian assert
@@ -9,10 +9,10 @@ Signed-off-by: Igor Gnatenko <i.gnatenko.brain@gmail.com>
  1 file changed, 3 insertions(+)
 
 diff --git a/src/gallium/auxiliary/util/u_math.h b/src/gallium/auxiliary/util/u_math.h
-index e92f83a..e403d49 100644
+index ecb1d63..90ada14 100644
 --- a/src/gallium/auxiliary/util/u_math.h
 +++ b/src/gallium/auxiliary/util/u_math.h
-@@ -55,6 +55,9 @@
+@@ -59,6 +59,9 @@
  extern "C" {
  #endif
  
