@@ -50,25 +50,16 @@
 
 %global sanitize 1
 
-%global commit cbcd7b60f573d027337a2390e67f6010e9992aaa
-%global shortcommit %(c=%{commit}; echo ${c:0:7})
+%global rctag rc1
 
 Summary: Mesa graphics libraries
 Name: mesa
-Version: 11.3.0
-Release: 0.4.git%{shortcommit}%{?dist}
+Version: 12.0.0
+Release: 0.1%{?rctag:.%{rctag}}%{?dist}
 License: MIT
 URL: http://www.mesa3d.org
 
-# For latest commit:
-# git clone --depth 1 git://anongit.freedesktop.org/mesa/mesa mesa-%%{shortcommit}
-# Otherwise:
-# git clone git://anongit.freedesktop.org/mesa/mesa mesa-%%{shortcommit}
-# cd mesa-%%{shortcommit}; git reset --hard %%{shortcommit}; cd ..
-#
-# Create archive:
-# tar -Jcvf mesa-%%{shortcommit}.tar.xz mesa-%%{shortcommit}
-Source0: %{name}-%{shortcommit}.tar.xz
+Source0: https://mesa.freedesktop.org/archive/%{version}/%{name}-%{version}%{?rctag:-%{rctag}}.tar.xz
 Source1: vl_decoder.c
 Source2: vl_mpeg12_decoder.c
 
@@ -82,10 +73,9 @@ Patch2:  0002-hardware-gloat.patch
 Patch3:  0003-evergreen-big-endian.patch
 Patch4:  0004-bigendian-assert.patch
 
-# To have sha info in glxinfo
-BuildRequires: git-core
-
-BuildRequires: pkgconfig autoconf automake libtool
+BuildRequires: automake
+BuildRequires: autoconf
+BuildRequires: libtool
 %if %{with_hardware}
 BuildRequires: kernel-headers
 BuildRequires: xorg-x11-server-devel
@@ -353,7 +343,7 @@ Mesa Direct3D9 state tracker development package
 %endif
 
 %prep
-%autosetup -n mesa-%{shortcommit} -p1
+%autosetup -n %{name}-%{version}%{?rctag:-%{rctag}} -p1
 %if 0%{sanitize}
   cp -f %{SOURCE1} src/gallium/auxiliary/vl/vl_decoder.c
   cp -f %{SOURCE2} src/gallium/auxiliary/vl/vl_mpeg12_decoder.c
@@ -369,17 +359,16 @@ cp %{SOURCE3} docs/
 %build
 autoreconf -vfi
 
-export CFLAGS="%{optflags}"
 # C++ note: we never say "catch" in the source.  we do say "typeid" once,
 # in an assert, which is patched out above.  LLVM doesn't use RTTI or throw.
 #
 # We do say 'catch' in the clover and d3d1x state trackers, but we're not
 # building those yet.
-export CXXFLAGS="%{optflags} %{?with_opencl:-frtti -fexceptions} %{!?with_opencl:-fno-rtti -fno-exceptions}"
-export LDFLAGS="%{__global_ldflags} -static-libstdc++"
+export CXXFLAGS="%{?with_opencl:-frtti -fexceptions} %{!?with_opencl:-fno-rtti -fno-exceptions}"
+export LDFLAGS="-static-libstdc++"
 %ifarch %{ix86}
 # i do not have words for how much the assembly dispatch code infuriates me
-%define asm_flags --disable-asm
+%global asm_flags --disable-asm
 %endif
 
 %configure \
@@ -676,6 +665,9 @@ popd
 %endif
 
 %changelog
+* Wed Jun 01 2016 Igor Gnatenko <ignatenko@redhat.com> - 12.0.0-0.1.rc1
+- 12.0.0-rc1
+
 * Sun May 01 2016 Igor Gnatenko <ignatenko@redhat.com> - 11.3.0-0.4.gitcbcd7b6
 - cbcd7b6
 
