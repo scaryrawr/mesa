@@ -50,7 +50,7 @@
 
 %global sanitize 1
 
-%global rctag rc1
+%global rctag rc2
 
 Summary: Mesa graphics libraries
 Name: mesa
@@ -665,6 +665,9 @@ popd
 %endif
 
 %changelog
+* Tue Jun 14 2016 Igor Gnatenko <ignatenko@redhat.com> - 12.0.0-0.1.rc2
+- 12.0.0-rc2
+
 * Wed Jun 01 2016 Igor Gnatenko <ignatenko@redhat.com> - 12.0.0-0.1.rc1
 - 12.0.0-rc1
 
