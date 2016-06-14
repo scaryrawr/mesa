@@ -55,7 +55,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 12.0.0
-Release: 0.1%{?rctag:.%{rctag}}%{?dist}
+Release: 0.2%{?rctag:.%{rctag}}%{?dist}
 License: MIT
 URL: http://www.mesa3d.org
 
@@ -311,6 +311,7 @@ Summary: Mesa OpenCL runtime library
 Requires: ocl-icd
 Requires: libclc
 Requires: mesa-libgbm = %{version}-%{release}
+Requires: opencl-filesystem
 
 # Virtual Provides for ocl-icd (RHBZ #1317602)
 Provides: opencl-icd
@@ -665,6 +666,9 @@ popd
 %endif
 
 %changelog
+* Tue Jun 14 2016 Dominik Mierzejewski <rpm@greysector.net> - 12.0.0-0.2.rc2
+- add missing dependency for /etc/OpenCL/vendors ownership (RHBZ #1265948)
+
 * Tue Jun 14 2016 Igor Gnatenko <ignatenko@redhat.com> - 12.0.0-0.1.rc2
 - 12.0.0-rc2
 
