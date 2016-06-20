@@ -536,10 +536,14 @@ popd
 %endif
 %{_libdir}/dri/kms_swrast_dri.so
 %endif
-%{_libdir}/dri/swrast_dri.so
-%if 0%{?with_vaapi}
-%{_libdir}/dri/gallium_drv_video.so
+%{_libdir}/dri/nouveau_drv_video.so
+%if 0%{?with_llvm}
+%{_libdir}/dri/r600_drv_video.so
+%if 0%{?with_radeonsi}
+%{_libdir}/dri/radeonsi_drv_video.so
 %endif
+%endif
+%{_libdir}/dri/swrast_dri.so
 %{_libdir}/dri/virtio_gpu_dri.so
 
 %if %{with_hardware}
