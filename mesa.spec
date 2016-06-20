@@ -55,7 +55,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 12.0.0
-Release: 0.2%{?rctag:.%{rctag}}%{?dist}
+Release: 0.3%{?rctag:.%{rctag}}%{?dist}
 License: MIT
 URL: http://www.mesa3d.org
 
@@ -528,6 +528,13 @@ popd
 %if 0%{?with_vmware}
 %{_libdir}/dri/vmwgfx_dri.so
 %endif
+%{_libdir}/dri/nouveau_drv_video.so
+%if 0%{?with_llvm}
+%{_libdir}/dri/r600_drv_video.so
+%if 0%{?with_radeonsi}
+%{_libdir}/dri/radeonsi_drv_video.so
+%endif
+%endif
 %endif
 %if 0%{?with_llvm}
 %ifarch %{ix86} x86_64 aarch64
@@ -535,13 +542,6 @@ popd
 %{_libdir}/gallium-pipe/*.so
 %endif
 %{_libdir}/dri/kms_swrast_dri.so
-%endif
-%{_libdir}/dri/nouveau_drv_video.so
-%if 0%{?with_llvm}
-%{_libdir}/dri/r600_drv_video.so
-%if 0%{?with_radeonsi}
-%{_libdir}/dri/radeonsi_drv_video.so
-%endif
 %endif
 %{_libdir}/dri/swrast_dri.so
 %{_libdir}/dri/virtio_gpu_dri.so
@@ -670,6 +670,10 @@ popd
 %endif
 
 %changelog
+%changelog
+* Mon Jun 20 2016 Adam Jackson <ajax@redhat.com> - 12.0.0-0.3.rc3
+- Fix packaging error on s390*
+
 * Mon Jun 20 2016 Igor Gnatenko <ignatenko@redhat.com> - 12.0.0-0.2.rc3
 - 12.0.0-rc3
 
