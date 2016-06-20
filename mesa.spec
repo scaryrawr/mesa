@@ -50,7 +50,7 @@
 
 %global sanitize 1
 
-%global rctag rc2
+%global rctag rc3
 
 Summary: Mesa graphics libraries
 Name: mesa
@@ -666,6 +666,9 @@ popd
 %endif
 
 %changelog
+* Mon Jun 20 2016 Igor Gnatenko <ignatenko@redhat.com> - 12.0.0-0.2.rc3
+- 12.0.0-rc3
+
 * Tue Jun 14 2016 Dominik Mierzejewski <rpm@greysector.net> - 12.0.0-0.2.rc2
 - add missing dependency for /etc/OpenCL/vendors ownership (RHBZ #1265948)
 
