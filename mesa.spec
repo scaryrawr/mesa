@@ -50,7 +50,7 @@
 
 %global sanitize 1
 
-%global rctag rc3
+%global rctag rc4
 
 Summary: Mesa graphics libraries
 Name: mesa
@@ -670,7 +670,9 @@ popd
 %endif
 
 %changelog
-%changelog
+* Wed Jun 22 2016 Igor Gnatenko <ignatenko@redhat.com> - 12.0.0-0.3.rc4
+- 12.0.0-rc4
+
 * Mon Jun 20 2016 Adam Jackson <ajax@redhat.com> - 12.0.0-0.3.rc3
 - Fix packaging error on s390*
 
