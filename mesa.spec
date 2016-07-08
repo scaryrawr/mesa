@@ -50,12 +50,12 @@
 
 %global sanitize 1
 
-%global rctag rc4
+#global rctag rc4
 
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 12.0.0
-Release: 0.3%{?rctag:.%{rctag}}%{?dist}
+Release: 1%{?rctag:.%{rctag}}%{?dist}
 License: MIT
 URL: http://www.mesa3d.org
 
@@ -670,6 +670,9 @@ popd
 %endif
 
 %changelog
+* Fri Jul 08 2016 Igor Gnatenko <ignatenko@redhat.com> - 12.0.0-1
+- 12.0.0
+
 * Wed Jun 22 2016 Igor Gnatenko <ignatenko@redhat.com> - 12.0.0-0.3.rc4
 - 12.0.0-rc4
 
