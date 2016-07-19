@@ -55,7 +55,7 @@
 Summary: Mesa graphics libraries
 Name: mesa
 Version: 12.0.1
-Release: 1%{?rctag:.%{rctag}}%{?dist}
+Release: 2%{?rctag:.%{rctag}}%{?dist}
 License: MIT
 URL: http://www.mesa3d.org
 
@@ -194,7 +194,7 @@ Mesa-based VDPAU drivers.
 %package libGL-devel
 Summary: Mesa libGL development package
 Group: Development/Libraries
-Requires: mesa-libGL = %{version}-%{release}
+Requires: mesa-libGL%{?_isa} = %{version}-%{release}
 Requires: gl-manpages
 Provides: libGL-devel
 
@@ -204,7 +204,7 @@ Mesa libGL development package
 %package libEGL-devel
 Summary: Mesa libEGL development package
 Group: Development/Libraries
-Requires: mesa-libEGL = %{version}-%{release}
+Requires: mesa-libEGL%{?_isa} = %{version}-%{release}
 Provides: khrplatform-devel = %{version}-%{release}
 Obsoletes: khrplatform-devel < %{version}-%{release}
 
@@ -214,7 +214,7 @@ Mesa libEGL development package
 %package libGLES-devel
 Summary: Mesa libGLES development package
 Group: Development/Libraries
-Requires: mesa-libGLES = %{version}-%{release}
+Requires: mesa-libGLES%{?_isa} = %{version}-%{release}
 
 %description libGLES-devel
 Mesa libGLES development package
@@ -232,7 +232,7 @@ Mesa offscreen rendering libraries
 %package libOSMesa-devel
 Summary: Mesa offscreen rendering development package
 Group: Development/Libraries
-Requires: mesa-libOSMesa = %{version}-%{release}
+Requires: mesa-libOSMesa%{?_isa} = %{version}-%{release}
 
 %description libOSMesa-devel
 Mesa offscreen rendering development package
@@ -670,6 +670,9 @@ popd
 %endif
 
 %changelog
+* Tue Jul 19 2016 Orion Poplawski <orion@cora.nwra.com> - 12.0.1-2
+- Add missing %%{?_isa} to requires in some devel sub-packages (bug #1138463)
+
 * Sun Jul 10 2016 Igor Gnatenko <ignatenko@redhat.com> - 12.0.1-1
 - 12.0.1
 
