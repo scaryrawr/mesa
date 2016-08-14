@@ -102,7 +102,6 @@ BuildRequires: bison flex
 BuildRequires: pkgconfig(wayland-client)
 BuildRequires: pkgconfig(wayland-server)
 %endif
-BuildRequires: mesa-libGL-devel
 %if 0%{?with_vdpau}
 BuildRequires: libvdpau-devel
 %endif
