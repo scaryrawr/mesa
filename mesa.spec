@@ -1,12 +1,4 @@
-%{!?_licensedir:%global license %%doc}
-
-%if 0%{?rhel}
-%define with_private_llvm 1
-%define with_wayland 0
-%else
-%define with_private_llvm 0
-%define with_wayland 1
-%endif
+%bcond_without wayland
 
 # S390 doesn't have video cards, but we need swrast for xserver's GLX
 # llvm (and thus llvmpipe) doesn't actually work on ppc32
@@ -14,7 +6,6 @@
 %define with_llvm 1
 %endif
 
-%define min_wayland_version 1.0
 %if 0%{?with_llvm}
 %define with_radeonsi 1
 %endif
@@ -52,66 +43,64 @@
 
 #global rctag rc4
 
-Summary: Mesa graphics libraries
-Name: mesa
-Version: 12.0.1
-Release: 2%{?rctag:.%{rctag}}%{?dist}
-License: MIT
-URL: http://www.mesa3d.org
+Name:           mesa
+Summary:        Mesa graphics libraries
+Version:        12.0.1
+Release:        3%{?rctag:.%{rctag}}%{?dist}
 
-Source0: https://mesa.freedesktop.org/archive/%{version}/%{name}-%{version}%{?rctag:-%{rctag}}.tar.xz
-Source1: vl_decoder.c
-Source2: vl_mpeg12_decoder.c
-
+License:        MIT
+URL:            http://www.mesa3d.org
+Source0:        https://mesa.freedesktop.org/archive/%{version}/%{name}-%{version}%{?rctag:-%{rctag}}.tar.xz
+Source1:        vl_decoder.c
+Source2:        vl_mpeg12_decoder.c
 # src/gallium/auxiliary/postprocess/pp_mlaa* have an ... interestingly worded license.
 # Source4 contains email correspondence clarifying the license terms.
 # Fedora opts to ignore the optional part of clause 2 and treat that code as 2 clause BSD.
-Source3: Mesa-MLAA-License-Clarification-Email.txt
+Source3:        Mesa-MLAA-License-Clarification-Email.txt
 
-Patch1:  0001-llvm-SONAME-without-version.patch
-Patch2:  0002-hardware-gloat.patch
-Patch3:  0003-evergreen-big-endian.patch
-Patch4:  0004-bigendian-assert.patch
+Patch1:         0001-llvm-SONAME-without-version.patch
+Patch2:         0002-hardware-gloat.patch
+Patch3:         0003-evergreen-big-endian.patch
+Patch4:         0004-bigendian-assert.patch
 
-BuildRequires: automake
-BuildRequires: autoconf
-BuildRequires: libtool
+BuildRequires:  gcc
+BuildRequires:  gcc-c++
+BuildRequires:  automake
+BuildRequires:  autoconf
+BuildRequires:  libtool
+
 %if %{with_hardware}
-BuildRequires: kernel-headers
-BuildRequires: xorg-x11-server-devel
+BuildRequires:  kernel-headers
+BuildRequires:  xorg-x11-server-devel
 %endif
-BuildRequires: libdrm-devel >= 2.4.42
-BuildRequires: libXxf86vm-devel
-BuildRequires: expat-devel
-BuildRequires: xorg-x11-proto-devel
-BuildRequires: makedepend
-BuildRequires: libselinux-devel
-BuildRequires: libXext-devel
-BuildRequires: libXfixes-devel
-BuildRequires: libXdamage-devel
-BuildRequires: libXi-devel
-BuildRequires: libXmu-devel
-BuildRequires: libxshmfence-devel
-BuildRequires: elfutils
-BuildRequires: python
-BuildRequires: gettext
+BuildRequires:  libdrm-devel >= 2.4.42
+BuildRequires:  libXxf86vm-devel
+BuildRequires:  expat-devel
+BuildRequires:  xorg-x11-proto-devel
+BuildRequires:  makedepend
+BuildRequires:  libselinux-devel
+BuildRequires:  libXext-devel
+BuildRequires:  libXfixes-devel
+BuildRequires:  libXdamage-devel
+BuildRequires:  libXi-devel
+BuildRequires:  libXmu-devel
+BuildRequires:  libxshmfence-devel
+BuildRequires:  elfutils
+BuildRequires:  python
+BuildRequires:  gettext
 %if 0%{?with_llvm}
-%if 0%{?with_private_llvm}
-BuildRequires: mesa-private-llvm-devel
-%else
 BuildRequires: llvm-devel >= 3.4-7
 %if 0%{?with_opencl}
 BuildRequires: clang-devel >= 3.0
-%endif
 %endif
 %endif
 BuildRequires: elfutils-libelf-devel
 BuildRequires: libxml2-python
 BuildRequires: libudev-devel
 BuildRequires: bison flex
-%if 0%{?with_wayland}
-BuildRequires: pkgconfig(wayland-client) >= %{min_wayland_version}
-BuildRequires: pkgconfig(wayland-server) >= %{min_wayland_version}
+%if %{with wayland}
+BuildRequires: pkgconfig(wayland-client)
+BuildRequires: pkgconfig(wayland-server)
 %endif
 BuildRequires: mesa-libGL-devel
 %if 0%{?with_vdpau}
@@ -131,216 +120,205 @@ BuildRequires: python-mako
 BuildRequires: libstdc++-static
 
 %description
-Mesa
-
-%package libGL
-Summary: Mesa libGL runtime libraries and DRI drivers
-Group: System Environment/Libraries
-Provides: libGL
-
-%description libGL
-Mesa libGL runtime library.
-
-%package libEGL
-Summary: Mesa libEGL runtime libraries
-Group: System Environment/Libraries
-
-%description libEGL
-Mesa libEGL runtime libraries
-
-%package libGLES
-Summary: Mesa libGLES runtime libraries
-Group: System Environment/Libraries
-
-%description libGLES
-Mesa GLES runtime libraries
+%{summary}.
 
 %package filesystem
-Summary: Mesa driver filesystem
-Group: User Interface/X Hardware Support
-Provides: mesa-dri-filesystem = %{version}-%{release}
-Obsoletes: mesa-dri-filesystem < %{version}-%{release}
+Summary:        Mesa driver filesystem
+Provides:       mesa-dri-filesystem = %{?epoch:%{epoch}}%{version}-%{release}
+Obsoletes:      mesa-dri-filesystem < %{?epoch:%{epoch}}%{version}-%{release}
+
 %description filesystem
-Mesa driver filesystem
+%{summary}.
+
+%package libGL
+Summary:        Mesa libGL runtime libraries
+Requires:       %{name}-glapi%{?_isa} = %{?epoch:%{epoch}}%{version}-%{release}
+Provides:       libGL
+Provides:       libGL%{?_isa}
+
+%description libGL
+%{summary}.
+
+%package libGL-devel
+Summary:        Mesa libGL development package
+Requires:       %{name}-libGL%{?_isa} = %{?epoch:%{epoch}}%{version}-%{release}
+Provides:       libGL-devel
+Provides:       libGL-devel%{?_isa}
+
+%description libGL-devel
+%{summary}.
+
+%package libEGL
+Summary:        Mesa libEGL runtime libraries
+Provides:       libEGL
+Provides:       libEGL%{?_isa}
+
+%description libEGL
+%{summary}.
+
+%package libEGL-devel
+Summary:        Mesa libEGL development package
+Requires:       %{name}-libEGL%{?_isa} = %{?epoch:%{epoch}}%{version}-%{release}
+Provides:       libEGL-devel
+Provides:       libEGL-devel%{?_isa}
+
+%description libEGL-devel
+%{summary}.
+
+%package libGLES
+Summary:        Mesa libGLES runtime libraries
+Requires:       %{name}-glapi%{?_isa} = %{?epoch:%{epoch}}%{version}-%{release}
+Provides:       libGLES
+Provides:       libGLES%{?_isa}
+
+%description libGLES
+%{summary}.
+
+%package libGLES-devel
+Summary:        Mesa libGLES development package
+Requires:       %{name}-libGLES%{?_isa} = %{?epoch:%{epoch}}%{version}-%{release}
+Provides:       libGLES-devel
+Provides:       libGLES-devel%{?_isa}
+
+%description libGLES-devel
+%{summary}.
 
 %package dri-drivers
-Summary: Mesa-based DRI drivers
-Group: User Interface/X Hardware Support
-Requires: mesa-filesystem%{?_isa}
-Obsoletes: mesa-dri-drivers-dri1 < 7.12
-Obsoletes: mesa-dri-llvmcore <= 7.12
+Summary:        Mesa-based DRI drivers
+Requires:       %{name}-filesystem%{?_isa} = %{?epoch:%{epoch}}%{version}-%{release}
+
 %description dri-drivers
-Mesa-based DRI drivers.
+%{summary}.
 
 %if 0%{?with_omx}
 %package omx-drivers
-Summary: Mesa-based OMX drivers
-Group: User Interface/X Hardware Support
-Requires: mesa-filesystem%{?_isa}
-Requires: libomxil-bellagio%{?_isa}
+Summary:        Mesa-based OMX drivers
+Requires:       %{name}-filesystem%{?_isa} = %{?epoch:%{epoch}}%{version}-%{release}
+
 %description omx-drivers
-Mesa-based OMX drivers.
+%{summary}.
 %endif
 
 %if 0%{?with_vdpau}
-%package vdpau-drivers
-Summary: Mesa-based DRI drivers
-Group: User Interface/X Hardware Support
-Requires: mesa-filesystem%{?_isa}
+%package        vdpau-drivers
+Summary:        Mesa-based VDPAU drivers
+Requires:       %{name}-filesystem%{?_isa} = %{?epoch:%{epoch}}%{version}-%{release}
+
 %description vdpau-drivers
-Mesa-based VDPAU drivers.
+%{summary}.
 %endif
-
-%package libGL-devel
-Summary: Mesa libGL development package
-Group: Development/Libraries
-Requires: mesa-libGL%{?_isa} = %{version}-%{release}
-Requires: gl-manpages
-Provides: libGL-devel
-
-%description libGL-devel
-Mesa libGL development package
-
-%package libEGL-devel
-Summary: Mesa libEGL development package
-Group: Development/Libraries
-Requires: mesa-libEGL%{?_isa} = %{version}-%{release}
-Provides: khrplatform-devel = %{version}-%{release}
-Obsoletes: khrplatform-devel < %{version}-%{release}
-
-%description libEGL-devel
-Mesa libEGL development package
-
-%package libGLES-devel
-Summary: Mesa libGLES development package
-Group: Development/Libraries
-Requires: mesa-libGLES%{?_isa} = %{version}-%{release}
-
-%description libGLES-devel
-Mesa libGLES development package
-
 
 %package libOSMesa
-Summary: Mesa offscreen rendering libraries
-Group: System Environment/Libraries
-Provides: libOSMesa
+Summary:        Mesa offscreen rendering libraries
+Requires:       %{name}-glapi%{?_isa} = %{?epoch:%{epoch}}%{version}-%{release}
+Provides:       libOSMesa
+Provides:       libOSMesa%{?_isa}
 
 %description libOSMesa
-Mesa offscreen rendering libraries
-
+%{summary}.
 
 %package libOSMesa-devel
-Summary: Mesa offscreen rendering development package
-Group: Development/Libraries
-Requires: mesa-libOSMesa%{?_isa} = %{version}-%{release}
+Summary:        Mesa offscreen rendering development package
+Requires:       %{name}-libOSMesa%{?_isa} = %{?epoch:%{epoch}}%{version}-%{release}
 
 %description libOSMesa-devel
-Mesa offscreen rendering development package
-
+%{summary}.
 
 %package libgbm
-Summary: Mesa gbm library
-Group: System Environment/Libraries
-Provides: libgbm
+Summary:        Mesa gbm runtime library
+Provides:       libgbm
+Provides:       libgbm%{?_isa}
 
 %description libgbm
-Mesa gbm runtime library.
-
+%{summary}.
 
 %package libgbm-devel
-Summary: Mesa libgbm development package
-Group: Development/Libraries
-Requires: mesa-libgbm%{?_isa} = %{version}-%{release}
-Provides: libgbm-devel
+Summary:        Mesa libgbm development package
+Requires:       %{name}-libgbm%{?_isa} = %{?epoch:%{epoch}}%{version}-%{release}
+Provides:       libgbm-devel
+Provides:       libgbm-devel%{?_isa}
 
 %description libgbm-devel
-Mesa libgbm development package
+%{summary}.
 
-
-%if 0%{?with_wayland}
+%if %{with wayland}
 %package libwayland-egl
-Summary: Mesa libwayland-egl library
-Group: System Environment/Libraries
-Provides: libwayland-egl
+Summary:        Mesa libwayland-egl runtime library
+Provides:       libwayland-egl
+Provides:       libwayland-egl%{?_isa}
 
 %description libwayland-egl
-Mesa libwayland-egl runtime library.
-
+%{summary}.
 
 %package libwayland-egl-devel
-Summary: Mesa libwayland-egl development package
-Group: Development/Libraries
-Requires: mesa-libwayland-egl%{?_isa} = %{version}-%{release}
-Provides: libwayland-egl-devel
+Summary:        Mesa libwayland-egl development package
+Requires:       %{name}-libwayland-egl%{?_isa} = %{?epoch:%{epoch}:}%{version}-%{release}
+Provides:       libwayland-egl-devel
+Provides:       libwayland-egl-devel%{?_isa}
 
 %description libwayland-egl-devel
-Mesa libwayland-egl development package
+%{summary}.
 %endif
-
 
 %if 0%{?with_xa}
 %package libxatracker
-Summary: Mesa XA state tracker
-Group: System Environment/Libraries
-Provides: libxatracker
+Summary:        Mesa XA state tracker
+Provides:       libxatracker
+Provides:       libxatracker%{?_isa}
 
 %description libxatracker
-Mesa XA state tracker
+%{summary}.
 
 %package libxatracker-devel
-Summary: Mesa XA state tracker development package
-Group: Development/Libraries
-Requires: mesa-libxatracker%{?_isa} = %{version}-%{release}
-Provides: libxatracker-devel
+Summary:        Mesa XA state tracker development package
+Requires:       %{name}-libxatracker%{?_isa} = %{?epoch:%{epoch}:}%{version}-%{release}
+Provides:       libxatracker-devel
+Provides:       libxatracker-devel%{?_isa}
 
 %description libxatracker-devel
-Mesa XA state tracker development package
+%{summary}.
 %endif
 
 %package libglapi
-Summary: Mesa shared glapi
-Group: System Environment/Libraries
+Summary:        Mesa shared glapi
+Provides:       libglapi
+Provides:       libglapi%{?_isa}
 
 %description libglapi
-Mesa shared glapi
-
+%{summary}.
 
 %if 0%{?with_opencl}
 %package libOpenCL
-Summary: Mesa OpenCL runtime library
-Requires: ocl-icd
-Requires: libclc
-Requires: mesa-libgbm = %{version}-%{release}
-Requires: opencl-filesystem
-
-# Virtual Provides for ocl-icd (RHBZ #1317602)
-Provides: opencl-icd
-Provides: opencl-icd%{?_isa}
+Summary:        Mesa OpenCL runtime library
+Requires:       ocl-icd%{?_isa}
+Requires:       libclc%{?_isa}
+Requires:       %{name}-libgbm%{?_isa} = %{?epoch:%{epoch}}%{version}-%{release}
+Requires:       opencl-filesystem%{?_isa} = %{?epoch:%{epoch}}%{version}-%{release}
 
 %description libOpenCL
-Mesa OpenCL runtime library.
+%{summary}.
 
 %package libOpenCL-devel
-Summary: Mesa OpenCL development package
-Requires: mesa-libOpenCL%{?_isa} = %{version}-%{release}
+Summary:        Mesa OpenCL development package
+Requires:       %{name}-libOpenCL%{?_isa} = %{?epoch:%{epoch}}%{version}-%{release}
 
 %description libOpenCL-devel
-Mesa OpenCL development package.
+%{summary}.
 %endif
 
 %if 0%{?with_nine}
 %package libd3d
-Summary: Mesa Direct3D9 state tracker
+Summary:        Mesa Direct3D9 state tracker
 
 %description libd3d
-Mesa Direct3D9 state tracker
+%{summary}.
 
 %package libd3d-devel
-Summary: Mesa Direct3D9 state tracker development package
-Requires: mesa-libd3d%{?_isa} = %{version}-%{release}
+Summary:        Mesa Direct3D9 state tracker development package
+Requires:       %{name}-libd3d%{?_isa} = %{?epoch:%{epoch}}%{version}-%{release}
 
 %description libd3d-devel
-Mesa Direct3D9 state tracker development package
+%{summary}.
 %endif
 
 %prep
@@ -348,11 +326,6 @@ Mesa Direct3D9 state tracker development package
 %if 0%{sanitize}
   cp -f %{SOURCE1} src/gallium/auxiliary/vl/vl_decoder.c
   cp -f %{SOURCE2} src/gallium/auxiliary/vl/vl_mpeg12_decoder.c
-%endif
-
-%if 0%{with_private_llvm}
-sed -i 's/llvm-config/mesa-private-llvm-config-%{__isa_bits}/g' configure.ac
-sed -i 's/`$LLVM_CONFIG --version`/&-mesa/' configure.ac
 %endif
 
 cp %{SOURCE3} docs/
@@ -414,11 +387,6 @@ sed -i 's/^postdeps=.*$/#&/' libtool
 %install
 %make_install
 
-%if 0%{?rhel}
-# remove pre-DX9 drivers
-rm -f %{buildroot}%{_libdir}/dri/{radeon,r200,nouveau_vieux}_dri.*
-%endif
-
 %if !%{with_hardware}
 rm -f %{buildroot}%{_sysconfdir}/drirc
 %endif
@@ -441,47 +409,6 @@ done
 eu-readelf -d mesa_dri_drivers.so | grep -q libstdc && exit 1
 popd
 
-%post libGL -p /sbin/ldconfig
-%postun libGL -p /sbin/ldconfig
-%post libOSMesa -p /sbin/ldconfig
-%postun libOSMesa -p /sbin/ldconfig
-%post libEGL -p /sbin/ldconfig
-%postun libEGL -p /sbin/ldconfig
-%post libGLES -p /sbin/ldconfig
-%postun libGLES -p /sbin/ldconfig
-%post libglapi -p /sbin/ldconfig
-%postun libglapi -p /sbin/ldconfig
-%post libgbm -p /sbin/ldconfig
-%postun libgbm -p /sbin/ldconfig
-%if 0%{?with_wayland}
-%post libwayland-egl -p /sbin/ldconfig
-%postun libwayland-egl -p /sbin/ldconfig
-%endif
-%if 0%{?with_xa}
-%post libxatracker -p /sbin/ldconfig
-%postun libxatracker -p /sbin/ldconfig
-%endif
-%if 0%{?with_opencl}
-%post libOpenCL -p /sbin/ldconfig
-%postun libOpenCL -p /sbin/ldconfig
-%endif
-%if 0%{?with_nine}
-%post libd3d -p /sbin/ldconfig
-%postun libd3d -p /sbin/ldconfig
-%endif
-
-%files libGL
-%{_libdir}/libGL.so.1
-%{_libdir}/libGL.so.1.*
-
-%files libEGL
-%{_libdir}/libEGL.so.1
-%{_libdir}/libEGL.so.1.*
-
-%files libGLES
-%{_libdir}/libGLESv2.so.2
-%{_libdir}/libGLESv2.so.2.*
-
 %files filesystem
 %doc docs/Mesa-MLAA-License-Clarification-Email.txt
 %dir %{_libdir}/dri
@@ -491,18 +418,144 @@ popd
 %endif
 %endif
 
+%post libGL -p /sbin/ldconfig
+%postun libGL -p /sbin/ldconfig
+%files libGL
+%{_libdir}/libGL.so.1
+%{_libdir}/libGL.so.1.*
+%files libGL-devel
+%{_includedir}/GL/gl.h
+%{_includedir}/GL/gl_mangle.h
+%{_includedir}/GL/glext.h
+%{_includedir}/GL/glx.h
+%{_includedir}/GL/glx_mangle.h
+%{_includedir}/GL/glxext.h
+%{_includedir}/GL/glcorearb.h
+%{_includedir}/GL/mesa_glinterop.h
+%dir %{_includedir}/GL/internal
+%{_includedir}/GL/internal/dri_interface.h
+%{_libdir}/pkgconfig/dri.pc
+%{_libdir}/libGL.so
+%{_libdir}/libglapi.so
+%{_libdir}/pkgconfig/gl.pc
+
+%post libEGL -p /sbin/ldconfig
+%postun libEGL -p /sbin/ldconfig
+%files libEGL
+%{_libdir}/libEGL.so.1
+%{_libdir}/libEGL.so.1.*
+%files libEGL-devel
+%dir %{_includedir}/EGL
+%{_includedir}/EGL/eglext.h
+%{_includedir}/EGL/egl.h
+%{_includedir}/EGL/eglmesaext.h
+%{_includedir}/EGL/eglplatform.h
+%{_includedir}/EGL/eglextchromium.h
+%dir %{_includedir}/KHR
+%{_includedir}/KHR/khrplatform.h
+%{_libdir}/pkgconfig/egl.pc
+%{_libdir}/libEGL.so
+
+%post libGLES -p /sbin/ldconfig
+%postun libGLES -p /sbin/ldconfig
+%files libGLES
+%{_libdir}/libGLESv2.so.2
+%{_libdir}/libGLESv2.so.2.*
+%files libGLES-devel
+%dir %{_includedir}/GLES2
+%{_includedir}/GLES2/gl2platform.h
+%{_includedir}/GLES2/gl2.h
+%{_includedir}/GLES2/gl2ext.h
+%{_includedir}/GLES3/gl3platform.h
+%{_includedir}/GLES3/gl3.h
+%{_includedir}/GLES3/gl3ext.h
+%{_includedir}/GLES3/gl31.h
+%{_libdir}/pkgconfig/glesv2.pc
+%{_libdir}/libGLESv2.so
+
+%post libglapi -p /sbin/ldconfig
+%postun libglapi -p /sbin/ldconfig
 %files libglapi
 %{_libdir}/libglapi.so.0
 %{_libdir}/libglapi.so.0.*
 
+%post libOSMesa -p /sbin/ldconfig
+%postun libOSMesa -p /sbin/ldconfig
+%files libOSMesa
+%{_libdir}/libOSMesa.so.8*
+%files libOSMesa-devel
+%dir %{_includedir}/GL
+%{_includedir}/GL/osmesa.h
+%{_libdir}/libOSMesa.so
+%{_libdir}/pkgconfig/osmesa.pc
+
+%post libgbm -p /sbin/ldconfig
+%postun libgbm -p /sbin/ldconfig
+%files libgbm
+%{_libdir}/libgbm.so.1
+%{_libdir}/libgbm.so.1.*
+%files libgbm-devel
+%{_libdir}/libgbm.so
+%{_includedir}/gbm.h
+%{_libdir}/pkgconfig/gbm.pc
+
+%if %{with wayland}
+%post libwayland-egl -p /sbin/ldconfig
+%postun libwayland-egl -p /sbin/ldconfig
+%files libwayland-egl
+%{_libdir}/libwayland-egl.so.1
+%{_libdir}/libwayland-egl.so.1.*
+%files libwayland-egl-devel
+%{_libdir}/libwayland-egl.so
+%{_libdir}/pkgconfig/wayland-egl.pc
+%endif
+
+%if 0%{?with_xa}
+%post libxatracker -p /sbin/ldconfig
+%postun libxatracker -p /sbin/ldconfig
+%files libxatracker
+%if %{with_hardware}
+%{_libdir}/libxatracker.so.2
+%{_libdir}/libxatracker.so.2.*
+%endif
+
+%files libxatracker-devel
+%if %{with_hardware}
+%{_libdir}/libxatracker.so
+%{_includedir}/xa_tracker.h
+%{_includedir}/xa_composite.h
+%{_includedir}/xa_context.h
+%{_libdir}/pkgconfig/xatracker.pc
+%endif
+%endif
+
+%if 0%{?with_opencl}
+%post libOpenCL -p /sbin/ldconfig
+%postun libOpenCL -p /sbin/ldconfig
+%files libOpenCL
+%{_libdir}/libMesaOpenCL.so.*
+%{_sysconfdir}/OpenCL/vendors/mesa.icd
+%files libOpenCL-devel
+%{_libdir}/libMesaOpenCL.so
+%endif
+
+%if 0%{?with_nine}
+%files libd3d
+%dir %{_libdir}/d3d/
+%{_libdir}/d3d/*.so.*
+
+%files libd3d-devel
+%{_libdir}/pkgconfig/d3d.pc
+%{_includedir}/d3dadapter/
+%{_libdir}/d3d/*.so
+%endif
+
 %files dri-drivers
 %if %{with_hardware}
 %config(noreplace) %{_sysconfdir}/drirc
-%if !0%{?rhel}
 %{_libdir}/dri/radeon_dri.so
 %{_libdir}/dri/r200_dri.so
 %{_libdir}/dri/nouveau_vieux_dri.so
-%endif
 %{_libdir}/dri/r300_dri.so
 %if 0%{?with_llvm}
 %{_libdir}/dri/r600_dri.so
@@ -564,112 +617,11 @@ popd
 %endif
 %endif
 
-%files libGL-devel
-%{_includedir}/GL/gl.h
-%{_includedir}/GL/gl_mangle.h
-%{_includedir}/GL/glext.h
-%{_includedir}/GL/glx.h
-%{_includedir}/GL/glx_mangle.h
-%{_includedir}/GL/glxext.h
-%{_includedir}/GL/glcorearb.h
-%{_includedir}/GL/mesa_glinterop.h
-%dir %{_includedir}/GL/internal
-%{_includedir}/GL/internal/dri_interface.h
-%{_libdir}/pkgconfig/dri.pc
-%{_libdir}/libGL.so
-%{_libdir}/libglapi.so
-%{_libdir}/pkgconfig/gl.pc
-
-%files libEGL-devel
-%dir %{_includedir}/EGL
-%{_includedir}/EGL/eglext.h
-%{_includedir}/EGL/egl.h
-%{_includedir}/EGL/eglmesaext.h
-%{_includedir}/EGL/eglplatform.h
-%{_includedir}/EGL/eglextchromium.h
-%dir %{_includedir}/KHR
-%{_includedir}/KHR/khrplatform.h
-%{_libdir}/pkgconfig/egl.pc
-%{_libdir}/libEGL.so
-
-%files libGLES-devel
-%dir %{_includedir}/GLES2
-%{_includedir}/GLES2/gl2platform.h
-%{_includedir}/GLES2/gl2.h
-%{_includedir}/GLES2/gl2ext.h
-%{_includedir}/GLES3/gl3platform.h
-%{_includedir}/GLES3/gl3.h
-%{_includedir}/GLES3/gl3ext.h
-%{_includedir}/GLES3/gl31.h
-%{_libdir}/pkgconfig/glesv2.pc
-%{_libdir}/libGLESv2.so
-
-%files libOSMesa
-%{_libdir}/libOSMesa.so.8*
-
-%files libOSMesa-devel
-%dir %{_includedir}/GL
-%{_includedir}/GL/osmesa.h
-%{_libdir}/libOSMesa.so
-%{_libdir}/pkgconfig/osmesa.pc
-
-%files libgbm
-%{_libdir}/libgbm.so.1
-%{_libdir}/libgbm.so.1.*
-
-%files libgbm-devel
-%{_libdir}/libgbm.so
-%{_includedir}/gbm.h
-%{_libdir}/pkgconfig/gbm.pc
-
-%if 0%{?with_wayland}
-%files libwayland-egl
-%{_libdir}/libwayland-egl.so.1
-%{_libdir}/libwayland-egl.so.1.*
-
-%files libwayland-egl-devel
-%{_libdir}/libwayland-egl.so
-%{_libdir}/pkgconfig/wayland-egl.pc
-%endif
-
-%if 0%{?with_xa}
-%files libxatracker
-%if %{with_hardware}
-%{_libdir}/libxatracker.so.2
-%{_libdir}/libxatracker.so.2.*
-%endif
-
-%files libxatracker-devel
-%if %{with_hardware}
-%{_libdir}/libxatracker.so
-%{_includedir}/xa_tracker.h
-%{_includedir}/xa_composite.h
-%{_includedir}/xa_context.h
-%{_libdir}/pkgconfig/xatracker.pc
-%endif
-%endif
-
-%if 0%{?with_opencl}
-%files libOpenCL
-%{_libdir}/libMesaOpenCL.so.*
-%{_sysconfdir}/OpenCL/vendors/mesa.icd
-
-%files libOpenCL-devel
-%{_libdir}/libMesaOpenCL.so
-%endif
-
-%if 0%{?with_nine}
-%files libd3d
-%dir %{_libdir}/d3d/
-%{_libdir}/d3d/*.so.*
-
-%files libd3d-devel
-%{_libdir}/pkgconfig/d3d.pc
-%{_includedir}/d3dadapter/
-%{_libdir}/d3d/*.so
-%endif
-
 %changelog
+* Sun Aug 14 2016 Igor Gnatenko <ignatenko@redhat.com> - 12.0.1-3
+- Slightly refactor spec
+- Drop virtual provides for OCL
+
 * Tue Jul 19 2016 Orion Poplawski <orion@cora.nwra.com> - 12.0.1-2
 - Add missing %%{?_isa} to requires in some devel sub-packages (bug #1138463)
 
