@@ -46,7 +46,7 @@
 Name:           mesa
 Summary:        Mesa graphics libraries
 Version:        12.0.1
-Release:        3%{?rctag:.%{rctag}}%{?dist}
+Release:        4%{?rctag:.%{rctag}}%{?dist}
 
 License:        MIT
 URL:            http://www.mesa3d.org
@@ -618,6 +618,9 @@ popd
 %endif
 
 %changelog
+* Sun Aug 14 2016 Igor Gnatenko <ignatenko@redhat.com> - 12.0.1-4
+- Fix broken deps
+
 * Sun Aug 14 2016 Igor Gnatenko <ignatenko@redhat.com> - 12.0.1-3
 - Slightly refactor spec
 - Drop virtual provides for OCL
