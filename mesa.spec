@@ -132,7 +132,7 @@ Obsoletes:      mesa-dri-filesystem < %{?epoch:%{epoch}}%{version}-%{release}
 
 %package libGL
 Summary:        Mesa libGL runtime libraries
-Requires:       %{name}-glapi%{?_isa} = %{?epoch:%{epoch}}%{version}-%{release}
+Requires:       %{name}-libglapi%{?_isa} = %{?epoch:%{epoch}}%{version}-%{release}
 Provides:       libGL
 Provides:       libGL%{?_isa}
 
@@ -167,7 +167,7 @@ Provides:       libEGL-devel%{?_isa}
 
 %package libGLES
 Summary:        Mesa libGLES runtime libraries
-Requires:       %{name}-glapi%{?_isa} = %{?epoch:%{epoch}}%{version}-%{release}
+Requires:       %{name}-libglapi%{?_isa} = %{?epoch:%{epoch}}%{version}-%{release}
 Provides:       libGLES
 Provides:       libGLES%{?_isa}
 
@@ -210,7 +210,7 @@ Requires:       %{name}-filesystem%{?_isa} = %{?epoch:%{epoch}}%{version}-%{rele
 
 %package libOSMesa
 Summary:        Mesa offscreen rendering libraries
-Requires:       %{name}-glapi%{?_isa} = %{?epoch:%{epoch}}%{version}-%{release}
+Requires:       %{name}-libglapi%{?_isa} = %{?epoch:%{epoch}}%{version}-%{release}
 Provides:       libOSMesa
 Provides:       libOSMesa%{?_isa}
 
