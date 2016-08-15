@@ -46,7 +46,7 @@
 Name:           mesa
 Summary:        Mesa graphics libraries
 Version:        12.0.1
-Release:        4%{?rctag:.%{rctag}}%{?dist}
+Release:        5%{?rctag:.%{rctag}}%{?dist}
 
 License:        MIT
 URL:            http://www.mesa3d.org
@@ -292,7 +292,7 @@ Summary:        Mesa OpenCL runtime library
 Requires:       ocl-icd%{?_isa}
 Requires:       libclc%{?_isa}
 Requires:       %{name}-libgbm%{?_isa} = %{?epoch:%{epoch}}%{version}-%{release}
-Requires:       opencl-filesystem%{?_isa} = %{?epoch:%{epoch}}%{version}-%{release}
+Requires:       opencl-filesystem
 
 %description libOpenCL
 %{summary}.
@@ -617,6 +617,9 @@ popd
 %endif
 
 %changelog
+* Mon Aug 15 2016 Igor Gnatenko <ignatenko@redhat.com> - 12.0.1-5
+- Fix broken deps with OpenCL
+
 * Sun Aug 14 2016 Igor Gnatenko <ignatenko@redhat.com> - 12.0.1-4
 - Fix broken deps
 
