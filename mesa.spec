@@ -46,7 +46,7 @@
 Name:           mesa
 Summary:        Mesa graphics libraries
 Version:        12.0.1
-Release:        5%{?rctag:.%{rctag}}%{?dist}
+Release:        6%{?rctag:.%{rctag}}%{?dist}
 
 License:        MIT
 URL:            http://www.mesa3d.org
@@ -71,7 +71,6 @@ BuildRequires:  libtool
 
 %if %{with_hardware}
 BuildRequires:  kernel-headers
-BuildRequires:  xorg-x11-server-devel
 %endif
 BuildRequires:  libdrm-devel >= 2.4.42
 BuildRequires:  libXxf86vm-devel
@@ -617,6 +616,9 @@ popd
 %endif
 
 %changelog
+* Tue Aug 23 2016 Adam Jackson <ajax@redhat.com> - 12.0.1-6
+- Remove BuildRequires: xorg-x11-server-devel
+
 * Mon Aug 15 2016 Igor Gnatenko <ignatenko@redhat.com> - 12.0.1-5
 - Fix broken deps with OpenCL
 
