@@ -464,6 +464,7 @@ popd
 %{_includedir}/GLES2/gl2platform.h
 %{_includedir}/GLES2/gl2.h
 %{_includedir}/GLES2/gl2ext.h
+%dir %{_includedir}/GLES3
 %{_includedir}/GLES3/gl3platform.h
 %{_includedir}/GLES3/gl3.h
 %{_includedir}/GLES3/gl3ext.h
