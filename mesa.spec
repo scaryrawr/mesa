@@ -45,8 +45,8 @@
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-Version:        12.0.1
-Release:        7%{?rctag:.%{rctag}}%{?dist}
+Version:        12.0.2
+Release:        1%{?rctag:.%{rctag}}%{?dist}
 
 License:        MIT
 URL:            http://www.mesa3d.org
@@ -620,6 +620,9 @@ popd
 %endif
 
 %changelog
+* Mon Sep  5 2016 Peter Robinson <pbrobinson@fedoraproject.org> 12.0.2-1
+- 12.0.2
+
 * Mon Sep  5 2016 Hans de Goede <hdegoede@redhat.com> - 12.0.1-7
 - Fix PRIME fd leak
 
