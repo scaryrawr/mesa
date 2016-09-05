@@ -1,0 +1,62 @@
+From fdf04a5d9410265353e5deb76240896e54d7317f Mon Sep 17 00:00:00 2001
+From: Hans de Goede <hdegoede@redhat.com>
+Date: Sat, 7 May 2016 14:43:59 +0200
+Subject: [PATCH v2] pipe_loader_sw: Fix fd leak when instantiated via
+ pipe_loader_sw_probe_kms
+
+Make pipe_loader_sw_probe_kms take ownership of the passed in fd,
+like pipe_loader_drm_probe_fd does.
+
+The only caller is dri_kms_init_screen which passes in a dupped fd,
+just like dri2_init_screen passes in a dupped fd to
+pipe_loader_drm_probe_fd.
+
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Reviewed-by: Emil Velikov <emil.velikov@collabora.com>
+(cherry picked from commit 459cc94507071eec18b746f57a4ec82578a38b54)
+---
+ src/gallium/auxiliary/pipe-loader/pipe_loader_sw.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/src/gallium/auxiliary/pipe-loader/pipe_loader_sw.c b/src/gallium/auxiliary/pipe-loader/pipe_loader_sw.c
+index c8e1f13..e7fa974 100644
+--- a/src/gallium/auxiliary/pipe-loader/pipe_loader_sw.c
++++ b/src/gallium/auxiliary/pipe-loader/pipe_loader_sw.c
+@@ -45,6 +45,7 @@ struct pipe_loader_sw_device {
+    struct util_dl_library *lib;
+ #endif
+    struct sw_winsys *ws;
++   int fd;
+ };
+ 
+ #define pipe_loader_sw_device(dev) ((struct pipe_loader_sw_device *)dev)
+@@ -92,6 +93,7 @@ pipe_loader_sw_probe_init_common(struct pipe_loader_sw_device *sdev)
+    sdev->base.type = PIPE_LOADER_DEVICE_SOFTWARE;
+    sdev->base.driver_name = "swrast";
+    sdev->base.ops = &pipe_loader_sw_ops;
++   sdev->fd = -1;
+ 
+ #ifdef GALLIUM_STATIC_TARGETS
+    sdev->dd = &driver_descriptors;
+@@ -169,6 +171,8 @@ pipe_loader_sw_probe_kms(struct pipe_loader_device **devs, int fd)
+    if (!pipe_loader_sw_probe_init_common(sdev))
+       goto fail;
+ 
++   sdev->fd = fd;
++
+    for (i = 0; sdev->dd->winsys[i].name; i++) {
+       if (strcmp(sdev->dd->winsys[i].name, "kms_dri") == 0) {
+          sdev->ws = sdev->dd->winsys[i].create_winsys(fd);
+@@ -273,6 +277,9 @@ pipe_loader_sw_release(struct pipe_loader_device **dev)
+       util_dl_close(sdev->lib);
+ #endif
+ 
++   if (sdev->fd != -1)
++      close(sdev->fd);
++
+    FREE(sdev);
+    *dev = NULL;
+ }
+-- 
+2.9.3
+

@@ -46,7 +46,7 @@
 Name:           mesa
 Summary:        Mesa graphics libraries
 Version:        12.0.1
-Release:        6%{?rctag:.%{rctag}}%{?dist}
+Release:        7%{?rctag:.%{rctag}}%{?dist}
 
 License:        MIT
 URL:            http://www.mesa3d.org
@@ -62,6 +62,9 @@ Patch1:         0001-llvm-SONAME-without-version.patch
 Patch2:         0002-hardware-gloat.patch
 Patch3:         0003-evergreen-big-endian.patch
 Patch4:         0004-bigendian-assert.patch
+
+# Cherry picked from upstream master
+Patch5:         0001-pipe_loader_sw-Fix-fd-leak-when-instantiated-via-pip.patch
 
 BuildRequires:  gcc
 BuildRequires:  gcc-c++
@@ -617,6 +620,9 @@ popd
 %endif
 
 %changelog
+* Mon Sep  5 2016 Hans de Goede <hdegoede@redhat.com> - 12.0.1-7
+- Fix PRIME fd leak
+
 * Tue Aug 23 2016 Adam Jackson <ajax@redhat.com> - 12.0.1-6
 - Remove BuildRequires: xorg-x11-server-devel
 
