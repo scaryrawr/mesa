@@ -46,7 +46,7 @@
 Name:           mesa
 Summary:        Mesa graphics libraries
 Version:        12.0.3
-Release:        1%{?rctag:.%{rctag}}%{?dist}
+Release:        2%{?rctag:.%{rctag}}%{?dist}
 
 License:        MIT
 URL:            http://www.mesa3d.org
@@ -65,6 +65,8 @@ Patch4:         0004-bigendian-assert.patch
 
 # Cherry picked from upstream master
 Patch5:         0001-pipe_loader_sw-Fix-fd-leak-when-instantiated-via-pip.patch
+Patch6:         0001-loader-dri3-add-get_dri_screen-to-the-vtable.patch
+Patch7:         0002-loader-dri3-import-prime-buffers-in-the-currently-bo.patch
 
 BuildRequires:  gcc
 BuildRequires:  gcc-c++
@@ -620,6 +622,9 @@ popd
 %endif
 
 %changelog
+* Tue Oct 11 2016 Hans de Goede <hdegoede@redhat.com> - 12.0.3-2
+- Add 2 patches from upstream to fix DRI3 vaapi crashes (rhbz1309446, fdo71759)
+
 * Sun Sep 18 2016 Peter Robinson <pbrobinson@fedoraproject.org> 12.0.3-1
 - 12.0.3
 
