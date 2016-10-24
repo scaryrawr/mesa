@@ -41,12 +41,12 @@
 
 %global sanitize 1
 
-%global rctag rc1
+%global rctag rc2
 
 Name:           mesa
 Summary:        Mesa graphics libraries
 Version:        13.0.0
-Release:        0.1%{?rctag:.%{rctag}}%{?dist}
+Release:        0.2%{?rctag:.%{rctag}}%{?dist}
 
 License:        MIT
 URL:            http://www.mesa3d.org
@@ -617,6 +617,9 @@ popd
 %endif
 
 %changelog
+* Mon Oct 24 2016 Peter Robinson <pbrobinson@fedoraproject.org> 13.0.0-0.2.rc2
+- 13.0.0-rc2
+
 * Thu Oct 20 2016 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 13.0.0-0.1.rc1
 - 13.0.0-rc1
 

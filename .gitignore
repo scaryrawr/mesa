@@ -3,3 +3,4 @@
 .build*
 /mesa-*.tar.bz2
 /mesa-*.tar.xz
+/mesa-13.0.0-rc2.tar.gz
