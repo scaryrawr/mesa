@@ -386,7 +386,7 @@ export LDFLAGS="-static-libstdc++"
     %{?with_opencl:--enable-opencl --enable-opencl-icd} %{!?with_opencl:--disable-opencl} \
     --enable-glx-tls \
     --enable-texture-float=yes \
-%if %{with_vulkan}
+%if %{?with_vulkan}
     %{?vulkan_drivers} \
     --with-sha1=libcrypto \
 %endif
