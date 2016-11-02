@@ -41,12 +41,12 @@
 
 %global sanitize 1
 
-%global rctag rc2
+#global rctag rc2
 
 Name:           mesa
 Summary:        Mesa graphics libraries
 Version:        13.0.0
-Release:        0.3%{?rctag:.%{rctag}}%{?dist}
+Release:        1%{?rctag:.%{rctag}}%{?dist}
 
 License:        MIT
 URL:            http://www.mesa3d.org
@@ -95,7 +95,6 @@ BuildRequires: clang-devel >= 3.0
 %endif
 BuildRequires: elfutils-libelf-devel
 BuildRequires: libxml2-python
-BuildRequires: libudev-devel
 BuildRequires: bison flex
 %if %{with wayland}
 BuildRequires: pkgconfig(wayland-client)
@@ -617,6 +616,9 @@ popd
 %endif
 
 %changelog
+* Wed Nov  2 2016 Peter Robinson <pbrobinson@fedoraproject.org> 13.0.0-1
+- 13.0.0 GA
+
 * Tue Nov 01 2016 Dave Airlie <airlied@redhat.com> - 13.0.0-0.3.rc2
 - rebuild for llvm 3.9
 
