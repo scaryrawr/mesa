@@ -26,6 +26,7 @@
 %define with_vmware 1
 %define with_xa     1
 %define with_omx    1
+%define with_vulkan 1
 %endif
 %ifarch aarch64 %{ix86} x86_64
 %define with_opencl 1
@@ -39,6 +40,10 @@
 
 %define dri_drivers --with-dri-drivers=%{?base_drivers}%{?platform_drivers}
 
+%if 0%{?with_vulkan}
+%define vulkan_drivers --with-vulkan-drivers=intel,radeon
+%endif
+
 %global sanitize 1
 
 #global rctag rc2
@@ -46,7 +51,7 @@
 Name:           mesa
 Summary:        Mesa graphics libraries
 Version:        13.0.0
-Release:        1%{?rctag:.%{rctag}}%{?dist}
+Release:        2%{?rctag:.%{rctag}}%{?dist}
 
 License:        MIT
 URL:            http://www.mesa3d.org
@@ -112,6 +117,10 @@ BuildRequires: libomxil-bellagio-devel
 %endif
 %if 0%{?with_opencl}
 BuildRequires: libclc-devel opencl-filesystem
+%endif
+%if 0%{?with_vulkan}
+BuildRequires: vulkan-devel
+BuildRequires: openssl-devel
 %endif
 BuildRequires: python-mako
 BuildRequires: libstdc++-static
@@ -318,6 +327,23 @@ Requires:       %{name}-libd3d%{?_isa} = %{?epoch:%{epoch}}%{version}-%{release}
 %{summary}.
 %endif
 
+%if 0%{?with_vulkan}
+%package vulkan-drivers
+Summary:        Mesa Vulkan drivers
+Requires:       vulkan%{_isa}
+
+%description vulkan-drivers
+The drivers with support for the Vulkan API.
+
+%package vulkan-devel
+Summary:        Mesa Vulkan development files
+Requires:       %{name}-vulkan-drivers%{?_isa} = %{?epoch:%{epoch}}%{version}-%{release}
+Requires:       vulkan-devel
+
+%description vulkan-devel
+Headers for development with the Vulkan API.
+%endif
+
 %prep
 %autosetup -n %{name}-%{version}%{?rctag:-%{rctag}} -p1
 %if 0%{sanitize}
@@ -360,6 +386,10 @@ export LDFLAGS="-static-libstdc++"
     %{?with_opencl:--enable-opencl --enable-opencl-icd} %{!?with_opencl:--disable-opencl} \
     --enable-glx-tls \
     --enable-texture-float=yes \
+%if %{with_vulkan}
+    %{?vulkan_drivers} \
+    --with-sha1=libcrypto \
+%endif
     %{?with_llvm:--enable-gallium-llvm} \
     %{?with_llvm:--enable-llvm-shared-libs} \
     --enable-dri \
@@ -615,7 +645,22 @@ popd
 %endif
 %endif
 
+%if 0%{?with_vulkan}
+%files vulkan-drivers
+%{_libdir}/libvulkan_intel.so
+%{_libdir}/libvulkan_radeon.so
+%{_datadir}/vulkan/icd.d/intel_icd.x86_64.json
+%{_datadir}/vulkan/icd.d/radeon_icd.json
+
+%files vulkan-devel
+%{_includedir}/vulkan/
+%endif
+
 %changelog
+* Wed Nov  2 2016 Peter Robinson <pbrobinson@fedoraproject.org> 13.0.0-2
+- Add options for enabling vulkan components
+- Enable intel/radeon vulkan drivers
+
 * Wed Nov  2 2016 Peter Robinson <pbrobinson@fedoraproject.org> 13.0.0-1
 - 13.0.0 GA
 
