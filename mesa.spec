@@ -59,7 +59,7 @@
 Name:           mesa
 Summary:        Mesa graphics libraries
 Version:        13.0.0
-Release:        2%{?rctag:.%{rctag}}%{?dist}
+Release:        3%{?rctag:.%{rctag}}%{?dist}
 
 License:        MIT
 URL:            http://www.mesa3d.org
@@ -432,6 +432,10 @@ rm -f %{buildroot}%{_libdir}/vdpau/*.so
 # strip out useless headers
 rm -f %{buildroot}%{_includedir}/GL/w*.h
 
+# these are shipped already in vulkan-devel
+rm -f %{buildroot}/%{_includedir}/vulkan/vk_platform.h
+rm -f %{buildroot}/%{_includedir}/vulkan/vulkan.h
+
 # remove .la files
 find %{buildroot} -name '*.la' -delete
 
@@ -665,6 +669,9 @@ popd
 %endif
 
 %changelog
+* Wed Nov  2 2016 Peter Robinson <pbrobinson@fedoraproject.org> 13.0.0-3
+- Don't ship duplicate vulkan devel headers
+
 * Wed Nov  2 2016 Peter Robinson <pbrobinson@fedoraproject.org> 13.0.0-2
 - Add options for enabling vulkan components
 - Enable intel/radeon vulkan drivers
