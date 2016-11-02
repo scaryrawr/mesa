@@ -27,6 +27,9 @@
 %define with_vmware 1
 %define with_xa     1
 %define with_omx    1
+%endif
+
+%ifarch x86_64
 %define with_vulkan 1
 %else
 %define with_vulkan 0
