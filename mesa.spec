@@ -20,6 +20,7 @@
 %define with_nine 1
 %define base_drivers swrast,nouveau,radeon,r200
 %endif
+
 %ifarch %{ix86} x86_64
 %define platform_drivers ,i915,i965
 %define with_ilo    1
@@ -27,10 +28,14 @@
 %define with_xa     1
 %define with_omx    1
 %define with_vulkan 1
+%else
+%define with_vulkan 0
 %endif
+
 %ifarch aarch64 %{ix86} x86_64
 %define with_opencl 1
 %endif
+
 %ifarch %{arm} aarch64
 %define with_vc4       1
 %define with_freedreno 1
@@ -386,7 +391,7 @@ export LDFLAGS="-static-libstdc++"
     %{?with_opencl:--enable-opencl --enable-opencl-icd} %{!?with_opencl:--disable-opencl} \
     --enable-glx-tls \
     --enable-texture-float=yes \
-%if %{?with_vulkan}
+%if %{with_vulkan}
     %{?vulkan_drivers} \
     --with-sha1=libcrypto \
 %endif
