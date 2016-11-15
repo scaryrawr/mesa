@@ -58,8 +58,8 @@
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-Version:        13.0.0
-Release:        3%{?rctag:.%{rctag}}%{?dist}
+Version:        13.0.1
+Release:        1%{?rctag:.%{rctag}}%{?dist}
 
 License:        MIT
 URL:            http://www.mesa3d.org
@@ -662,13 +662,16 @@ popd
 %{_libdir}/libvulkan_intel.so
 %{_libdir}/libvulkan_radeon.so
 %{_datadir}/vulkan/icd.d/intel_icd.x86_64.json
-%{_datadir}/vulkan/icd.d/radeon_icd.json
+%{_datadir}/vulkan/icd.d/radeon_icd.x86_64.json
 
 %files vulkan-devel
 %{_includedir}/vulkan/
 %endif
 
 %changelog
+* Tue Nov 15 2016 Peter Robinson <pbrobinson@fedoraproject.org> 13.0.1-1
+- 13.0.1 GA
+
 * Wed Nov  2 2016 Peter Robinson <pbrobinson@fedoraproject.org> 13.0.0-3
 - Don't ship duplicate vulkan devel headers
 
