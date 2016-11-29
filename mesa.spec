@@ -58,7 +58,7 @@
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-Version:        13.0.1
+Version:        13.0.2
 Release:        1%{?rctag:.%{rctag}}%{?dist}
 
 License:        MIT
@@ -669,6 +669,9 @@ popd
 %endif
 
 %changelog
+* Tue Nov 29 2016 Peter Robinson <pbrobinson@fedoraproject.org> 13.0.2-1
+- 13.0.2 GA
+
 * Tue Nov 15 2016 Peter Robinson <pbrobinson@fedoraproject.org> 13.0.1-1
 - 13.0.1 GA
 
