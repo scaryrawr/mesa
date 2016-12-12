@@ -59,7 +59,7 @@
 Name:           mesa
 Summary:        Mesa graphics libraries
 Version:        13.0.2
-Release:        1%{?rctag:.%{rctag}}%{?dist}
+Release:        2%{?rctag:.%{rctag}}%{?dist}
 
 License:        MIT
 URL:            http://www.mesa3d.org
@@ -128,7 +128,7 @@ BuildRequires: libclc-devel opencl-filesystem
 %endif
 %if 0%{?with_vulkan}
 BuildRequires: vulkan-devel
-BuildRequires: openssl-devel
+BuildRequires: nettle-devel
 %endif
 BuildRequires: python-mako
 BuildRequires: libstdc++-static
@@ -396,7 +396,7 @@ export LDFLAGS="-static-libstdc++"
     --enable-texture-float=yes \
 %if %{with_vulkan}
     %{?vulkan_drivers} \
-    --with-sha1=libcrypto \
+    --with-sha1=libnettle \
 %endif
     %{?with_llvm:--enable-gallium-llvm} \
     %{?with_llvm:--enable-llvm-shared-libs} \
@@ -669,6 +669,9 @@ popd
 %endif
 
 %changelog
+* Mon Dec 12 2016 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 13.0.2-2
+- Use nettle for sha1
+
 * Tue Nov 29 2016 Peter Robinson <pbrobinson@fedoraproject.org> 13.0.2-1
 - 13.0.2 GA
 
