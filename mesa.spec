@@ -58,8 +58,8 @@
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-Version:        13.0.2
-Release:        2%{?rctag:.%{rctag}}%{?dist}
+Version:        13.0.3
+Release:        1%{?rctag:.%{rctag}}%{?dist}
 
 License:        MIT
 URL:            http://www.mesa3d.org
@@ -669,6 +669,9 @@ popd
 %endif
 
 %changelog
+* Fri Jan  6 2017 Peter Robinson <pbrobinson@fedoraproject.org> 13.0.3-1
+- 13.0.3 GA
+
 * Mon Dec 12 2016 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 13.0.2-2
 - Use nettle for sha1
 
