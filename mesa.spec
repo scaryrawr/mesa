@@ -59,7 +59,7 @@
 Name:           mesa
 Summary:        Mesa graphics libraries
 Version:        13.0.3
-Release:        1%{?rctag:.%{rctag}}%{?dist}
+Release:        2%{?rctag:.%{rctag}}%{?dist}
 
 License:        MIT
 URL:            http://www.mesa3d.org
@@ -132,6 +132,9 @@ BuildRequires: nettle-devel
 %endif
 BuildRequires: python-mako
 BuildRequires: libstdc++-static
+%ifarch %{valgrind_arches}
+BuildRequires: pkgconfig(valgrind)
+%endif
 
 %description
 %{summary}.
@@ -669,6 +672,9 @@ popd
 %endif
 
 %changelog
+* Thu Jan 12 2017 Igor Gnatenko <ignatenko@redhat.com> - 13.0.3-2
+- Add valgrind BuildRequires to have valgrind support
+
 * Fri Jan  6 2017 Peter Robinson <pbrobinson@fedoraproject.org> 13.0.3-1
 - 13.0.3 GA
 
