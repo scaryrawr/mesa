@@ -59,7 +59,7 @@
 Name:           mesa
 Summary:        Mesa graphics libraries
 Version:        13.0.3
-Release:        2%{?rctag:.%{rctag}}%{?dist}
+Release:        3%{?rctag:.%{rctag}}%{?dist}
 
 License:        MIT
 URL:            http://www.mesa3d.org
@@ -75,6 +75,12 @@ Patch1:         0001-llvm-SONAME-without-version.patch
 Patch2:         0002-hardware-gloat.patch
 Patch3:         0003-evergreen-big-endian.patch
 Patch4:         0004-bigendian-assert.patch
+
+# glvnd support patches
+Patch11:        0001-egl-glvnd-support.patch
+Patch12:        glvnd-fix-gl-dot-pc.patch
+Patch13:        0001-Fix-linkage-against-shared-glapi.patch
+Patch14:        0001-glapi-Link-with-glapi-when-built-shared.patch
 
 BuildRequires:  gcc
 BuildRequires:  gcc-c++
@@ -108,6 +114,7 @@ BuildRequires: clang-devel >= 3.0
 %endif
 BuildRequires: elfutils-libelf-devel
 BuildRequires: libxml2-python
+BuildRequires: libudev-devel
 BuildRequires: bison flex
 %if %{with wayland}
 BuildRequires: pkgconfig(wayland-client)
@@ -135,6 +142,7 @@ BuildRequires: libstdc++-static
 %ifarch %{valgrind_arches}
 BuildRequires: pkgconfig(valgrind)
 %endif
+BuildRequires: libglvnd-core-devel
 
 %description
 %{summary}.
@@ -150,8 +158,7 @@ Obsoletes:      mesa-dri-filesystem < %{?epoch:%{epoch}}%{version}-%{release}
 %package libGL
 Summary:        Mesa libGL runtime libraries
 Requires:       %{name}-libglapi%{?_isa} = %{?epoch:%{epoch}}%{version}-%{release}
-Provides:       libGL
-Provides:       libGL%{?_isa}
+Requires:       libglvnd-glx
 
 %description libGL
 %{summary}.
@@ -159,6 +166,7 @@ Provides:       libGL%{?_isa}
 %package libGL-devel
 Summary:        Mesa libGL development package
 Requires:       %{name}-libGL%{?_isa} = %{?epoch:%{epoch}}%{version}-%{release}
+Requires:       libglvnd-devel
 Provides:       libGL-devel
 Provides:       libGL-devel%{?_isa}
 
@@ -167,8 +175,7 @@ Provides:       libGL-devel%{?_isa}
 
 %package libEGL
 Summary:        Mesa libEGL runtime libraries
-Provides:       libEGL
-Provides:       libEGL%{?_isa}
+Requires:       libglvnd-egl
 
 %description libEGL
 %{summary}.
@@ -176,6 +183,7 @@ Provides:       libEGL%{?_isa}
 %package libEGL-devel
 Summary:        Mesa libEGL development package
 Requires:       %{name}-libEGL%{?_isa} = %{?epoch:%{epoch}}%{version}-%{release}
+Requires:       libglvnd-devel
 Provides:       libEGL-devel
 Provides:       libEGL-devel%{?_isa}
 
@@ -185,8 +193,7 @@ Provides:       libEGL-devel%{?_isa}
 %package libGLES
 Summary:        Mesa libGLES runtime libraries
 Requires:       %{name}-libglapi%{?_isa} = %{?epoch:%{epoch}}%{version}-%{release}
-Provides:       libGLES
-Provides:       libGLES%{?_isa}
+Requires:       libglvnd-gles
 
 %description libGLES
 %{summary}.
@@ -194,6 +201,7 @@ Provides:       libGLES%{?_isa}
 %package libGLES-devel
 Summary:        Mesa libGLES development package
 Requires:       %{name}-libGLES%{?_isa} = %{?epoch:%{epoch}}%{version}-%{release}
+Requires:       libglvnd-devel
 Provides:       libGLES-devel
 Provides:       libGLES-devel%{?_isa}
 
@@ -381,6 +389,7 @@ export LDFLAGS="-static-libstdc++"
 
 %configure \
     %{?asm_flags} \
+    --enable-libglvnd \
     --enable-selinux \
     --enable-gallium-osmesa \
     --with-dri-driverdir=%{_libdir}/dri \
@@ -431,6 +440,11 @@ rm -f %{buildroot}%{_sysconfdir}/drirc
 
 # libvdpau opens the versioned name, don't bother including the unversioned
 rm -f %{buildroot}%{_libdir}/vdpau/*.so
+# likewise glvnd
+rm -f %{buildroot}%{_libdir}/libGLX_mesa.so
+rm -f %{buildroot}%{_libdir}/libEGL_mesa.so
+# XXX can we just not build this
+rm -f %{buildroot}%{_libdir}/libGLES*
 
 # strip out useless headers
 rm -f %{buildroot}%{_includedir}/GL/w*.h
@@ -460,11 +474,8 @@ popd
 %endif
 %endif
 
-%post libGL -p /sbin/ldconfig
-%postun libGL -p /sbin/ldconfig
 %files libGL
-%{_libdir}/libGL.so.1
-%{_libdir}/libGL.so.1.*
+%{_libdir}/libGLX_mesa.so.0*
 %files libGL-devel
 %{_includedir}/GL/gl.h
 %{_includedir}/GL/gl_mangle.h
@@ -476,15 +487,12 @@ popd
 %dir %{_includedir}/GL/internal
 %{_includedir}/GL/internal/dri_interface.h
 %{_libdir}/pkgconfig/dri.pc
-%{_libdir}/libGL.so
 %{_libdir}/libglapi.so
 %{_libdir}/pkgconfig/gl.pc
 
-%post libEGL -p /sbin/ldconfig
-%postun libEGL -p /sbin/ldconfig
 %files libEGL
-%{_libdir}/libEGL.so.1
-%{_libdir}/libEGL.so.1.*
+%{_datadir}/glvnd/egl_vendor.d/50_mesa.json
+%{_libdir}/libEGL_mesa.so.0*
 %files libEGL-devel
 %dir %{_includedir}/EGL
 %{_includedir}/EGL/eglext.h
@@ -495,13 +503,9 @@ popd
 %dir %{_includedir}/KHR
 %{_includedir}/KHR/khrplatform.h
 %{_libdir}/pkgconfig/egl.pc
-%{_libdir}/libEGL.so
 
-%post libGLES -p /sbin/ldconfig
-%postun libGLES -p /sbin/ldconfig
 %files libGLES
-%{_libdir}/libGLESv2.so.2
-%{_libdir}/libGLESv2.so.2.*
+# No files, all provided by libglvnd
 %files libGLES-devel
 %dir %{_includedir}/GLES2
 %{_includedir}/GLES2/gl2platform.h
@@ -514,7 +518,6 @@ popd
 %{_includedir}/GLES3/gl31.h
 %{_includedir}/GLES3/gl32.h
 %{_libdir}/pkgconfig/glesv2.pc
-%{_libdir}/libGLESv2.so
 
 %post libglapi -p /sbin/ldconfig
 %postun libglapi -p /sbin/ldconfig
@@ -672,6 +675,9 @@ popd
 %endif
 
 %changelog
+* Tue Jan 17 2017 Hans de Goede <hdegoede@redhat.com> - 13.0.3-3
+- Enable libglvnd support (rhbz#1413579)
+
 * Thu Jan 12 2017 Igor Gnatenko <ignatenko@redhat.com> - 13.0.3-2
 - Add valgrind BuildRequires to have valgrind support
 
