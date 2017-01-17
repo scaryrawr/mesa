@@ -158,7 +158,7 @@ Obsoletes:      mesa-dri-filesystem < %{?epoch:%{epoch}}%{version}-%{release}
 %package libGL
 Summary:        Mesa libGL runtime libraries
 Requires:       %{name}-libglapi%{?_isa} = %{?epoch:%{epoch}}%{version}-%{release}
-Requires:       libglvnd-glx
+Requires:       libglvnd-glx%{?_isa}
 
 %description libGL
 %{summary}.
@@ -166,7 +166,7 @@ Requires:       libglvnd-glx
 %package libGL-devel
 Summary:        Mesa libGL development package
 Requires:       %{name}-libGL%{?_isa} = %{?epoch:%{epoch}}%{version}-%{release}
-Requires:       libglvnd-devel
+Requires:       libglvnd-devel%{?_isa}
 Provides:       libGL-devel
 Provides:       libGL-devel%{?_isa}
 
@@ -175,7 +175,7 @@ Provides:       libGL-devel%{?_isa}
 
 %package libEGL
 Summary:        Mesa libEGL runtime libraries
-Requires:       libglvnd-egl
+Requires:       libglvnd-egl%{?_isa}
 
 %description libEGL
 %{summary}.
@@ -183,7 +183,7 @@ Requires:       libglvnd-egl
 %package libEGL-devel
 Summary:        Mesa libEGL development package
 Requires:       %{name}-libEGL%{?_isa} = %{?epoch:%{epoch}}%{version}-%{release}
-Requires:       libglvnd-devel
+Requires:       libglvnd-devel%{?_isa}
 Provides:       libEGL-devel
 Provides:       libEGL-devel%{?_isa}
 
@@ -193,7 +193,7 @@ Provides:       libEGL-devel%{?_isa}
 %package libGLES
 Summary:        Mesa libGLES runtime libraries
 Requires:       %{name}-libglapi%{?_isa} = %{?epoch:%{epoch}}%{version}-%{release}
-Requires:       libglvnd-gles
+Requires:       libglvnd-gles%{?_isa}
 
 %description libGLES
 %{summary}.
@@ -201,7 +201,7 @@ Requires:       libglvnd-gles
 %package libGLES-devel
 Summary:        Mesa libGLES development package
 Requires:       %{name}-libGLES%{?_isa} = %{?epoch:%{epoch}}%{version}-%{release}
-Requires:       libglvnd-devel
+Requires:       libglvnd-devel%{?_isa}
 Provides:       libGLES-devel
 Provides:       libGLES-devel%{?_isa}
 
