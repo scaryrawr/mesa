@@ -1,0 +1,30 @@
+From ef71b867ee152d8161a8c7320e89843801236249 Mon Sep 17 00:00:00 2001
+From: Dave Airlie <airlied@redhat.com>
+Date: Thu, 19 Jan 2017 14:39:10 +1000
+Subject: [PATCH] gallivm: use #ifdef not #if for PIPE_ARCH_BIG_ENDIAN
+
+This fixes the build on ppc/s390.
+
+Reviewed-by: Roland Scheidegger <sroland@vmware.com>
+Cc: "17.0" <mesa-stable@lists.freedesktop.org>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
+---
+ src/gallium/auxiliary/gallivm/lp_bld_gather.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/gallium/auxiliary/gallivm/lp_bld_gather.c b/src/gallium/auxiliary/gallivm/lp_bld_gather.c
+index 2d1fb65b15..ccd03765c7 100644
+--- a/src/gallium/auxiliary/gallivm/lp_bld_gather.c
++++ b/src/gallium/auxiliary/gallivm/lp_bld_gather.c
+@@ -527,7 +527,7 @@ lp_build_gather(struct gallivm_state *gallivm,
+       if (vec_zext) {
+          res = LLVMBuildZExt(gallivm->builder, res, res_t, "");
+          if (vector_justify) {
+-#if PIPE_ARCH_BIG_ENDIAN
++#ifdef PIPE_ARCH_BIG_ENDIAN
+             unsigned sv = dst_type.width - src_width;
+             res = LLVMBuildShl(gallivm->builder, res,
+                                lp_build_const_int_vec(gallivm, res_type, sv), "");
+-- 
+2.11.0
+

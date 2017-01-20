@@ -85,6 +85,9 @@ Patch13:        glvnd-fix-gl-dot-pc.patch
 Patch14:        0001-Fix-linkage-against-shared-glapi.patch
 Patch15:        0001-glapi-Link-with-glapi-when-built-shared.patch
 
+# Backported ones
+Patch101:       0001-gallivm-use-ifdef-not-if-for-PIPE_ARCH_BIG_ENDIAN.patch
+
 BuildRequires:  gcc
 BuildRequires:  gcc-c++
 BuildRequires:  automake
