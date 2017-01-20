@@ -54,16 +54,16 @@
 
 %global sanitize 1
 
-#global rctag rc2
+%global rctag rc1
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-Version:        13.0.3
-Release:        3%{?rctag:.%{rctag}}%{?dist}
+Version:        17.0.0
+Release:        0%{?rctag:.%{rctag}}%{?dist}
 
 License:        MIT
 URL:            http://www.mesa3d.org
-Source0:        https://mesa.freedesktop.org/archive/%{version}/%{name}-%{version}%{?rctag:-%{rctag}}.tar.xz
+Source0:        https://mesa.freedesktop.org/archive/%{name}-%{version}%{?rctag:-%{rctag}}.tar.xz
 Source1:        vl_decoder.c
 Source2:        vl_mpeg12_decoder.c
 # src/gallium/auxiliary/postprocess/pp_mlaa* have an ... interestingly worded license.
@@ -77,10 +77,13 @@ Patch3:         0003-evergreen-big-endian.patch
 Patch4:         0004-bigendian-assert.patch
 
 # glvnd support patches
-Patch11:        0001-egl-glvnd-support.patch
-Patch12:        glvnd-fix-gl-dot-pc.patch
-Patch13:        0001-Fix-linkage-against-shared-glapi.patch
-Patch14:        0001-glapi-Link-with-glapi-when-built-shared.patch
+# https://patchwork.freedesktop.org/series/12354/, v3 & v4
+Patch11:        0001-EGL-Implement-the-libglvnd-interface-for-EGL-v2.patch
+Patch12:        0002-fixup-EGL-Implement-the-libglvnd-interface-for-EGL-v.patch
+# non-upstreamed ones
+Patch13:        glvnd-fix-gl-dot-pc.patch
+Patch14:        0001-Fix-linkage-against-shared-glapi.patch
+Patch15:        0001-glapi-Link-with-glapi-when-built-shared.patch
 
 BuildRequires:  gcc
 BuildRequires:  gcc-c++
@@ -675,6 +678,9 @@ popd
 %endif
 
 %changelog
+* Fri Jan 20 2017 Igor Gnatenko <ignatenko@redhat.com> - 17.0.0-0.rc1
+- Update to 17.0.0-rc1
+
 * Tue Jan 17 2017 Hans de Goede <hdegoede@redhat.com> - 13.0.3-3
 - Enable libglvnd support (rhbz#1413579)
 
