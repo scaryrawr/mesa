@@ -40,10 +40,11 @@
 %endif
 
 %ifarch %{arm} aarch64
-%define with_vc4       1
+%define with_etnaviv   1
 %define with_freedreno 1
-%define with_xa        1
 %define with_omx       1
+%define with_vc4       1
+%define with_xa        1
 %endif
 
 %define dri_drivers --with-dri-drivers=%{?base_drivers}%{?platform_drivers}
@@ -59,7 +60,7 @@
 Name:           mesa
 Summary:        Mesa graphics libraries
 Version:        17.0.0
-Release:        0%{?rctag:.%{rctag}}%{?dist}
+Release:        0.2%{?rctag:.%{rctag}}%{?dist}
 
 License:        MIT
 URL:            http://www.mesa3d.org
@@ -422,7 +423,7 @@ export LDFLAGS="-static-libstdc++"
 %if %{with_hardware}
     %{?with_xa:--enable-xa} \
     %{?with_nine:--enable-nine} \
-    --with-gallium-drivers=%{?with_vmware:svga,}%{?with_radeonsi:radeonsi,}%{?with_llvm:swrast,r600,}%{?with_freedreno:freedreno,}%{?with_vc4:vc4,}%{?with_ilo:ilo,}virgl,r300,nouveau \
+    --with-gallium-drivers=%{?with_vmware:svga,}%{?with_radeonsi:radeonsi,}%{?with_llvm:swrast,r600,}%{?with_freedreno:freedreno,}%{?with_etnaviv:etnaviv,}%{?with_vc4:vc4,}%{?with_ilo:ilo,}virgl,r300,nouveau \
 %else
     --with-gallium-drivers=%{?with_llvm:swrast,}virgl \
 %endif
@@ -629,6 +630,9 @@ popd
 %{_libdir}/dri/kgsl_dri.so
 %{_libdir}/dri/msm_dri.so
 %endif
+%if 0%{?with_etnaviv}
+%{_libdir}/dri/etnaviv_dri.so
+%endif
 %{_libdir}/dri/nouveau_dri.so
 %if 0%{?with_vmware}
 %{_libdir}/dri/vmwgfx_dri.so
@@ -681,6 +685,9 @@ popd
 %endif
 
 %changelog
+* Sat Jan 21 2017 Peter Robinson <pbrobinson@fedoraproject.org> 17.0.0-0.2.rc1
+- Enable etnaviv gallium driver
+
 * Fri Jan 20 2017 Igor Gnatenko <ignatenko@redhat.com> - 17.0.0-0.rc1
 - Update to 17.0.0-rc1
 
