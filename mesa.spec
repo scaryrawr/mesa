@@ -55,12 +55,12 @@
 
 %global sanitize 1
 
-%global rctag rc1
+%global rctag rc2
 
 Name:           mesa
 Summary:        Mesa graphics libraries
 Version:        17.0.0
-Release:        0.2%{?rctag:.%{rctag}}%{?dist}
+Release:        0.3%{?rctag:.%{rctag}}%{?dist}
 
 License:        MIT
 URL:            http://www.mesa3d.org
@@ -685,6 +685,9 @@ popd
 %endif
 
 %changelog
+* Sat Jan 28 2017 Peter Robinson <pbrobinson@fedoraproject.org> 17.0.0-0.3.rc2
+- Update to 17.0.0-rc2
+
 * Sat Jan 21 2017 Peter Robinson <pbrobinson@fedoraproject.org> 17.0.0-0.2.rc1
 - Enable etnaviv gallium driver
 
