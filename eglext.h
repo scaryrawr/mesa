@@ -40,6 +40,13 @@ extern "C" {
 
 #define EGL_EGLEXT_VERSION 20161230
 
+/* C++ / C typecast macros for special EGL handle values */
+#if defined(__cplusplus)
+#define EGL_CAST(type, value) (static_cast<type>(value))
+#else
+#define EGL_CAST(type, value) ((type) (value))
+#endif
+
 /* Generated C header for:
  * API: egl
  * Versions considered: .*
