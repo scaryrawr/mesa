@@ -60,7 +60,7 @@
 Name:           mesa
 Summary:        Mesa graphics libraries
 Version:        17.0.0
-Release:        0.3%{?rctag:.%{rctag}}%{?dist}
+Release:        0.4%{?rctag:.%{rctag}}%{?dist}
 
 License:        MIT
 URL:            http://www.mesa3d.org
@@ -71,6 +71,9 @@ Source2:        vl_mpeg12_decoder.c
 # Source4 contains email correspondence clarifying the license terms.
 # Fedora opts to ignore the optional part of clause 2 and treat that code as 2 clause BSD.
 Source3:        Mesa-MLAA-License-Clarification-Email.txt
+# Update eglext.h to 20161230 version, drop this once upstream has this version
+# or newer
+Source4:        eglext.h
 
 Patch1:         0001-llvm-SONAME-without-version.patch
 Patch2:         0002-hardware-gloat.patch
@@ -375,6 +378,7 @@ Headers for development with the Vulkan API.
 %endif
 
 cp %{SOURCE3} docs/
+cp %{SOURCE4} include/EGL
 
 %build
 autoreconf -vfi
@@ -682,6 +686,10 @@ popd
 %endif
 
 %changelog
+* Thu Feb  2 2017 Hans de Goede <hdegoede@redhat.com> - 17.0.0-0.4.rc2
+- Update eglext.h to 20161230 version this brings in some new defines needed
+  by some apps / libraries
+
 * Sat Jan 28 2017 Peter Robinson <pbrobinson@fedoraproject.org> 17.0.0-0.3.rc2
 - Update to 17.0.0-rc2
 
