@@ -144,7 +144,6 @@ BuildRequires: libclc-devel opencl-filesystem
 %endif
 %if 0%{?with_vulkan}
 BuildRequires: vulkan-devel
-BuildRequires: nettle-devel
 %endif
 BuildRequires: python-mako
 BuildRequires: libstdc++-static
@@ -418,7 +417,6 @@ export LDFLAGS="-static-libstdc++"
     --enable-texture-float=yes \
 %if %{with_vulkan}
     %{?vulkan_drivers} \
-    --with-sha1=libnettle \
 %endif
     %{?with_llvm:--enable-gallium-llvm} \
     %{?with_llvm:--enable-llvm-shared-libs} \
