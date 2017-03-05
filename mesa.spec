@@ -88,8 +88,6 @@ Patch12:        0002-fixup-EGL-Implement-the-libglvnd-interface-for-EGL-v.patch
 Patch13:        glvnd-fix-gl-dot-pc.patch
 Patch14:        0001-Fix-linkage-against-shared-glapi.patch
 Patch15:        0001-glapi-Link-with-glapi-when-built-shared.patch
-# submitted upstream
-Patch16:        0001-glx-glvnd-Fix-GLXdispatchIndex-sorting.patch
 
 BuildRequires:  gcc
 BuildRequires:  gcc-c++
