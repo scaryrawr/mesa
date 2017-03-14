@@ -60,7 +60,7 @@
 Name:           mesa
 Summary:        Mesa graphics libraries
 Version:        17.0.1
-Release:        1%{?rctag:.%{rctag}}%{?dist}
+Release:        2%{?rctag:.%{rctag}}%{?dist}
 
 License:        MIT
 URL:            http://www.mesa3d.org
@@ -684,6 +684,9 @@ popd
 %endif
 
 %changelog
+* Tue Mar 14 2017 Peter Robinson <pbrobinson@fedoraproject.org> 17.0.1-2
+- Rebuild for aarch64 llvmpipe fix (rhbz 1429050)
+
 * Sun Mar 05 2017 Igor Gnatenko <ignatenkobrain@fedoraproject.org> - 17.0.1-1
 - Update to 17.0.1
 
