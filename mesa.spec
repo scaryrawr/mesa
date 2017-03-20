@@ -60,7 +60,7 @@
 Name:           mesa
 Summary:        Mesa graphics libraries
 Version:        17.0.1
-Release:        2%{?rctag:.%{rctag}}%{?dist}
+Release:        3%{?rctag:.%{rctag}}%{?dist}
 
 License:        MIT
 URL:            http://www.mesa3d.org
@@ -88,6 +88,8 @@ Patch12:        0002-fixup-EGL-Implement-the-libglvnd-interface-for-EGL-v.patch
 Patch13:        glvnd-fix-gl-dot-pc.patch
 Patch14:        0001-Fix-linkage-against-shared-glapi.patch
 Patch15:        0001-glapi-Link-with-glapi-when-built-shared.patch
+# submitted upstream
+Patch16:        0001-glxglvnddispatch-Add-missing-dispatch-for-GetDriverC.patch
 
 BuildRequires:  gcc
 BuildRequires:  gcc-c++
@@ -452,6 +454,10 @@ rm -f %{buildroot}%{_libdir}/libEGL_mesa.so
 # XXX can we just not build this
 rm -f %{buildroot}%{_libdir}/libGLES*
 
+# glvnd needs a default provider for indirect rendering where it cannot
+# determine the vendor
+ln -s %{_libdir}/libGLX_mesa.so.0 %{buildroot}%{_libdir}/libGLX_indirect.so.0
+
 # strip out useless headers
 rm -f %{buildroot}%{_includedir}/GL/w*.h
 
@@ -482,6 +488,7 @@ popd
 
 %files libGL
 %{_libdir}/libGLX_mesa.so.0*
+%{_libdir}/libGLX_indirect.so.0*
 %files libGL-devel
 %{_includedir}/GL/gl.h
 %{_includedir}/GL/gl_mangle.h
@@ -684,6 +691,10 @@ popd
 %endif
 
 %changelog
+* Mon Mar 20 2017 Hans de Goede <hdegoede@redhat.com> - 17.0.1-3
+- Fix glXGetDriverConfig not working with glvnd (rhbz#1429894)
+- Fix indirect rendering, add libGLX_indirect.so.0 symlink (rhbz#1427174)
+
 * Tue Mar 14 2017 Peter Robinson <pbrobinson@fedoraproject.org> 17.0.1-2
 - Rebuild for aarch64 llvmpipe fix (rhbz 1429050)
 
