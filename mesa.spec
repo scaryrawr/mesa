@@ -59,8 +59,8 @@
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-Version:        17.0.1
-Release:        3%{?rctag:.%{rctag}}%{?dist}
+Version:        17.0.2
+Release:        1%{?rctag:.%{rctag}}%{?dist}
 
 License:        MIT
 URL:            http://www.mesa3d.org
@@ -691,6 +691,9 @@ popd
 %endif
 
 %changelog
+* Mon Mar 20 2017 Peter Robinson <pbrobinson@fedoraproject.org> 17.0.2-1
+- Update to 17.0.2
+
 * Mon Mar 20 2017 Hans de Goede <hdegoede@redhat.com> - 17.0.1-3
 - Fix glXGetDriverConfig not working with glvnd (rhbz#1429894)
 - Fix indirect rendering, add libGLX_indirect.so.0 symlink (rhbz#1427174)
