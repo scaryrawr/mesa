@@ -55,12 +55,12 @@
 
 %global sanitize 1
 
-#global rctag rc3
+%global rctag rc1
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-Version:        17.0.3
-Release:        1%{?rctag:.%{rctag}}%{?dist}
+Version:        17.1.0
+Release:        0.1%{?rctag:.%{rctag}}%{?dist}
 
 License:        MIT
 URL:            http://www.mesa3d.org
@@ -135,7 +135,7 @@ BuildRequires: libvdpau-devel
 %if 0%{?with_vaapi}
 BuildRequires: libva-devel
 %endif
-BuildRequires: zlib-devel
+BuildRequires: pkgconfig(zlib)
 %if 0%{?with_omx}
 BuildRequires: libomxil-bellagio-devel
 %endif
@@ -150,7 +150,7 @@ BuildRequires: libstdc++-static
 %ifarch %{valgrind_arches}
 BuildRequires: pkgconfig(valgrind)
 %endif
-BuildRequires: libglvnd-core-devel
+BuildRequires: pkgconfig(libglvnd) >= 0.2.0
 
 %description
 %{summary}.
@@ -408,7 +408,7 @@ export LDFLAGS="-static-libstdc++"
     --disable-xvmc \
     %{?with_vdpau:--enable-vdpau} \
     %{?with_vaapi:--enable-va} \
-    --with-egl-platforms=x11,drm,surfaceless%{?with_wayland:,wayland} \
+    --with-platforms=x11,drm,surfaceless%{?with_wayland:,wayland} \
     --enable-shared-glapi \
     --enable-gbm \
     %{?with_omx:--enable-omx} \
@@ -418,7 +418,7 @@ export LDFLAGS="-static-libstdc++"
 %if %{with_vulkan}
     %{?vulkan_drivers} \
 %endif
-    %{?with_llvm:--enable-gallium-llvm} \
+    %{?with_llvm:--enable-llvm} \
     %{?with_llvm:--enable-llvm-shared-libs} \
     --enable-dri \
 %if %{with_hardware}
@@ -691,6 +691,9 @@ popd
 %endif
 
 %changelog
+* Tue Apr 18 2017 Igor Gnatenko <ignatenko@redhat.com> - 17.1.0-0.1.rc1
+- Update to 17.1.0-rc1
+
 * Sun Apr 02 2017 Igor Gnatenko <ignatenko@redhat.com> - 17.0.3-1
 - Update to 17.0.3
 
