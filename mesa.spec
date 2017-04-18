@@ -81,9 +81,6 @@ Patch3:         0003-evergreen-big-endian.patch
 Patch4:         0004-bigendian-assert.patch
 
 # glvnd support patches
-# https://patchwork.freedesktop.org/series/12354/, v3 & v4
-Patch11:        0001-EGL-Implement-the-libglvnd-interface-for-EGL-v2.patch
-Patch12:        0002-fixup-EGL-Implement-the-libglvnd-interface-for-EGL-v.patch
 # non-upstreamed ones
 Patch13:        glvnd-fix-gl-dot-pc.patch
 Patch14:        0001-Fix-linkage-against-shared-glapi.patch
