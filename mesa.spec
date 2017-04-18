@@ -23,7 +23,6 @@
 
 %ifarch %{ix86} x86_64
 %define platform_drivers ,i915,i965
-%define with_ilo    1
 %define with_vmware 1
 %define with_xa     1
 %define with_omx    1
@@ -421,7 +420,7 @@ export LDFLAGS="-static-libstdc++"
 %if %{with_hardware}
     %{?with_xa:--enable-xa} \
     %{?with_nine:--enable-nine} \
-    --with-gallium-drivers=%{?with_vmware:svga,}%{?with_radeonsi:radeonsi,}%{?with_llvm:swrast,r600,}%{?with_freedreno:freedreno,}%{?with_etnaviv:etnaviv,}%{?with_vc4:vc4,}%{?with_ilo:ilo,}virgl,r300,nouveau \
+    --with-gallium-drivers=%{?with_vmware:svga,}%{?with_radeonsi:radeonsi,}%{?with_llvm:swrast,r600,}%{?with_freedreno:freedreno,}%{?with_etnaviv:etnaviv,}%{?with_vc4:vc4,}virgl,r300,nouveau \
 %else
     --with-gallium-drivers=%{?with_llvm:swrast,}virgl \
 %endif
@@ -622,9 +621,6 @@ popd
 %ifarch %{ix86} x86_64
 %{_libdir}/dri/i915_dri.so
 %{_libdir}/dri/i965_dri.so
-%if 0%{?with_ilo}
-%{_libdir}/dri/ilo_dri.so
-%endif
 %endif
 %if 0%{?with_vc4}
 %{_libdir}/dri/vc4_dri.so
