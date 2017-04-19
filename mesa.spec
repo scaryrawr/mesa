@@ -78,6 +78,7 @@ Patch1:         0001-llvm-SONAME-without-version.patch
 Patch2:         0002-hardware-gloat.patch
 Patch3:         0003-evergreen-big-endian.patch
 Patch4:         0004-bigendian-assert.patch
+Patch5:         vc4-Only-build-the-NEON-code-on-arm32.patch
 
 # glvnd support patches
 # non-upstreamed ones
