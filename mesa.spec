@@ -54,12 +54,12 @@
 
 %global sanitize 1
 
-%global rctag rc1
+%global rctag rc2
 
 Name:           mesa
 Summary:        Mesa graphics libraries
 Version:        17.1.0
-Release:        0.1%{?rctag:.%{rctag}}%{?dist}
+Release:        0.2%{?rctag:.%{rctag}}%{?dist}
 
 License:        MIT
 URL:            http://www.mesa3d.org
@@ -78,7 +78,7 @@ Patch1:         0001-llvm-SONAME-without-version.patch
 Patch2:         0002-hardware-gloat.patch
 Patch3:         0003-evergreen-big-endian.patch
 Patch4:         0004-bigendian-assert.patch
-Patch5:         vc4-Only-build-the-NEON-code-on-arm32.patch
+Patch5:         arm-vc4-neon.patch
 
 # glvnd support patches
 # non-upstreamed ones
@@ -685,6 +685,9 @@ popd
 %endif
 
 %changelog
+* Mon Apr 24 2017 Peter Robinson <pbrobinson@fedoraproject.org> 17.1.0-0.2.rc2
+- Update to 17.1.0-rc2
+
 * Tue Apr 18 2017 Igor Gnatenko <ignatenko@redhat.com> - 17.1.0-0.1.rc1
 - Update to 17.1.0-rc1
 

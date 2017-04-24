@@ -1,0 +1,361 @@
+From patchwork Mon Apr 24 21:59:48 2017
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+Subject: [Mesa-dev,1/4] vc4: Only build the NEON code on arm32.
+From: Eric Anholt <eric@anholt.net>
+X-Patchwork-Id: 152503
+Message-Id: <20170424215951.21544-1-eric@anholt.net>
+To: mesa-dev@lists.freedesktop.org
+Cc: mesa-stable@lists.freedesktop.org
+Date: Mon, 24 Apr 2017 14:59:48 -0700
+
+NEON is sufficiently different on arm64 that we can't just reuse this
+code.  Disable it on arm64 for now.
+
+v2: Use PIPE_ARCH_ARM instead, as __ARM_ARCH may be 8 for a 32-bit build
+    for a v8 CPU.
+
+Signed-off-by: Eric Anholt <eric@anholt.net>
+Cc: <mesa-stable@lists.freedesktop.org>
+---
+ src/gallium/drivers/vc4/vc4_tiling_lt.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/src/gallium/drivers/vc4/vc4_tiling_lt.c b/src/gallium/drivers/vc4/vc4_tiling_lt.c
+index c9cbc65e2dbc..f37a92e9390e 100644
+--- a/src/gallium/drivers/vc4/vc4_tiling_lt.c
++++ b/src/gallium/drivers/vc4/vc4_tiling_lt.c
+@@ -61,7 +61,7 @@ static void
+ vc4_load_utile(void *cpu, void *gpu, uint32_t cpu_stride, uint32_t cpp)
+ {
+         uint32_t gpu_stride = vc4_utile_stride(cpp);
+-#if defined(VC4_BUILD_NEON) && defined(__ARM_ARCH)
++#if defined(VC4_BUILD_NEON) && defined(PIPE_ARCH_ARM)
+         if (gpu_stride == 8) {
+                 __asm__ volatile (
+                         /* Load from the GPU in one shot, no interleave, to
+@@ -118,7 +118,7 @@ vc4_store_utile(void *gpu, void *cpu, uint32_t cpu_stride, uint32_t cpp)
+ {
+         uint32_t gpu_stride = vc4_utile_stride(cpp);
+ 
+-#if defined(VC4_BUILD_NEON) && defined(__ARM_ARCH)
++#if defined(VC4_BUILD_NEON) && defined(PIPE_ARCH_ARM)
+         if (gpu_stride == 8) {
+                 __asm__ volatile (
+                         /* Load each 8-byte line from cpu-side source,
+From patchwork Mon Apr 24 21:59:49 2017
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+Subject: [Mesa-dev,2/4] gallium: Enable ARM NEON CPU detection.
+From: Eric Anholt <eric@anholt.net>
+X-Patchwork-Id: 152500
+Message-Id: <20170424215951.21544-2-eric@anholt.net>
+To: mesa-dev@lists.freedesktop.org
+Date: Mon, 24 Apr 2017 14:59:49 -0700
+
+I wrote this code with reference to pixman, though I've only decided to
+cover Linux (what I'm testing) and Android (seems obvious enough).  Linux
+has getauxval() as a cleaner interface to the /proc entry, but it's more
+glibc-specific and I didn't want to add detection for that.
+
+This will be used to enable NEON at runtime on ARMv6 builds of vc4.
+
+v2: Actually initialize the temp vars in the Android path (noticed by
+    daniels)
+v3: Actually pull in the cpufeatures library (change by robher).
+    Use O_CLOEXEC.  Break out of the loop when we find our feature.
+v4: Drop VFP code, which was confused about what it was detecting and not
+    actually used yet.
+---
+ src/gallium/auxiliary/util/u_cpu_detect.c | 43 +++++++++++++++++++++++++++++++
+ src/gallium/auxiliary/util/u_cpu_detect.h |  1 +
+ 3 files changed, 46 insertions(+)
+
+diff --git a/src/gallium/auxiliary/util/u_cpu_detect.c b/src/gallium/auxiliary/util/u_cpu_detect.c
+index 845fc6b34d5c..76115bf8d55d 100644
+--- a/src/gallium/auxiliary/util/u_cpu_detect.c
++++ b/src/gallium/auxiliary/util/u_cpu_detect.c
+@@ -59,12 +59,18 @@
+ 
+ #if defined(PIPE_OS_LINUX)
+ #include <signal.h>
++#include <fcntl.h>
++#include <elf.h>
+ #endif
+ 
+ #ifdef PIPE_OS_UNIX
+ #include <unistd.h>
+ #endif
+ 
++#if defined(PIPE_OS_ANDROID)
++#include <cpu-features.h>
++#endif
++
+ #if defined(PIPE_OS_WINDOWS)
+ #include <windows.h>
+ #if defined(PIPE_CC_MSVC)
+@@ -294,6 +300,38 @@ PIPE_ALIGN_STACK static inline boolean sse2_has_daz(void)
+ 
+ #endif /* X86 or X86_64 */
+ 
++#if defined(PIPE_ARCH_ARM)
++static void
++check_os_arm_support(void)
++{
++#if defined(PIPE_OS_ANDROID)
++   AndroidCpuFamily cpu_family = android_getCpuFamily();
++   uint64_t cpu_features = android_getCpuFeatures();
++
++   if (cpu_family == ANDROID_CPU_FAMILY_ARM) {
++      if (cpu_features & ANDROID_CPU_ARM_FEATURE_NEON)
++         util_cpu_caps.has_neon = 1;
++   }
++#elif defined(PIPE_OS_LINUX)
++    Elf32_auxv_t aux;
++    int fd;
++
++    fd = open("/proc/self/auxv", O_RDONLY | O_CLOEXEC);
++    if (fd >= 0) {
++       while (read(fd, &aux, sizeof(Elf32_auxv_t)) == sizeof(Elf32_auxv_t)) {
++          if (aux.a_type == AT_HWCAP) {
++             uint32_t hwcap = aux.a_un.a_val;
++
++             util_cpu_caps.has_neon = (hwcap >> 12) & 1;
++             break;
++          }
++       }
++       close (fd);
++    }
++#endif /* PIPE_OS_LINUX */
++}
++#endif /* PIPE_ARCH_ARM */
++
+ void
+ util_cpu_detect(void)
+ {
+@@ -443,6 +481,10 @@ util_cpu_detect(void)
+    }
+ #endif /* PIPE_ARCH_X86 || PIPE_ARCH_X86_64 */
+ 
++#if defined(PIPE_ARCH_ARM)
++   check_os_arm_support();
++#endif
++
+ #if defined(PIPE_ARCH_PPC)
+    check_os_altivec_support();
+ #endif /* PIPE_ARCH_PPC */
+@@ -471,6 +513,7 @@ util_cpu_detect(void)
+       debug_printf("util_cpu_caps.has_3dnow_ext = %u\n", util_cpu_caps.has_3dnow_ext);
+       debug_printf("util_cpu_caps.has_xop = %u\n", util_cpu_caps.has_xop);
+       debug_printf("util_cpu_caps.has_altivec = %u\n", util_cpu_caps.has_altivec);
++      debug_printf("util_cpu_caps.has_neon = %u\n", util_cpu_caps.has_neon);
+       debug_printf("util_cpu_caps.has_daz = %u\n", util_cpu_caps.has_daz);
+       debug_printf("util_cpu_caps.has_avx512f = %u\n", util_cpu_caps.has_avx512f);
+       debug_printf("util_cpu_caps.has_avx512dq = %u\n", util_cpu_caps.has_avx512dq);
+diff --git a/src/gallium/auxiliary/util/u_cpu_detect.h b/src/gallium/auxiliary/util/u_cpu_detect.h
+index 3bd7294f0759..4a34ac4d9a63 100644
+--- a/src/gallium/auxiliary/util/u_cpu_detect.h
++++ b/src/gallium/auxiliary/util/u_cpu_detect.h
+@@ -72,6 +72,7 @@ struct util_cpu_caps {
+    unsigned has_xop:1;
+    unsigned has_altivec:1;
+    unsigned has_daz:1;
++   unsigned has_neon:1;
+ 
+    unsigned has_avx512f:1;
+    unsigned has_avx512dq:1;
+From patchwork Mon Apr 24 21:59:50 2017
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Subject: [Mesa-dev,
+ 3/4] vc4: Use a wrapper file to set VC4_BUILD_NEON instead of CFLAGS.
+From: Eric Anholt <eric@anholt.net>
+X-Patchwork-Id: 152502
+Message-Id: <20170424215951.21544-3-eric@anholt.net>
+To: mesa-dev@lists.freedesktop.org
+Date: Mon, 24 Apr 2017 14:59:50 -0700
+
+Android.mk was setting the flag across the entire driver, so we didn't
+have non-NEON versions getting built.  This was going to be a problem with
+the next commit, when I start auto-detecting NEON support and use the
+non-NEON version when appropriate.
+---
+
+Rob: I'm happy to just drop this patch if you'd rather go the other
+route for the Android build.  I do think this makes for a slightly
+faster and simpler build, due to not having the intermediate lib.
+
+ src/gallium/drivers/vc4/Makefile.am          |  6 ------
+ src/gallium/drivers/vc4/Makefile.sources     |  1 +
+ src/gallium/drivers/vc4/vc4_tiling_lt_neon.c | 30 ++++++++++++++++++++++++++++
+ 4 files changed, 31 insertions(+), 8 deletions(-)
+ create mode 100644 src/gallium/drivers/vc4/vc4_tiling_lt_neon.c
+
+diff --git a/src/gallium/drivers/vc4/Makefile.am b/src/gallium/drivers/vc4/Makefile.am
+index b361a0c588a8..0ed49b128b2d 100644
+--- a/src/gallium/drivers/vc4/Makefile.am
++++ b/src/gallium/drivers/vc4/Makefile.am
+@@ -41,10 +41,4 @@ libvc4_la_SOURCES = $(C_SOURCES)
+ libvc4_la_LIBADD = $(SIM_LIB) $(VC4_LIBS)
+ libvc4_la_LDFLAGS = $(SIM_LDFLAGS)
+ 
+-noinst_LTLIBRARIES += libvc4_neon.la
+-libvc4_la_LIBADD += libvc4_neon.la
+-
+-libvc4_neon_la_SOURCES = vc4_tiling_lt.c
+-libvc4_neon_la_CFLAGS = $(AM_CFLAGS) -DVC4_BUILD_NEON
+-
+ EXTRA_DIST = kernel/README
+diff --git a/src/gallium/drivers/vc4/Makefile.sources b/src/gallium/drivers/vc4/Makefile.sources
+index 10de34361260..442d7a561782 100644
+--- a/src/gallium/drivers/vc4/Makefile.sources
++++ b/src/gallium/drivers/vc4/Makefile.sources
+@@ -56,6 +56,7 @@ C_SOURCES := \
+ 	vc4_state.c \
+ 	vc4_tiling.c \
+ 	vc4_tiling_lt.c \
++	vc4_tiling_lt_neon.c \
+ 	vc4_tiling.h \
+ 	vc4_uniforms.c \
+ 	$()
+diff --git a/src/gallium/drivers/vc4/vc4_tiling_lt_neon.c b/src/gallium/drivers/vc4/vc4_tiling_lt_neon.c
+new file mode 100644
+index 000000000000..7ba66ae4cdf4
+--- /dev/null
++++ b/src/gallium/drivers/vc4/vc4_tiling_lt_neon.c
+@@ -0,0 +1,30 @@
++/*
++ * Copyright © 2017 Broadcom
++ *
++ * Permission is hereby granted, free of charge, to any person obtaining a
++ * copy of this software and associated documentation files (the "Software"),
++ * to deal in the Software without restriction, including without limitation
++ * the rights to use, copy, modify, merge, publish, distribute, sublicense,
++ * and/or sell copies of the Software, and to permit persons to whom the
++ * Software is furnished to do so, subject to the following conditions:
++ *
++ * The above copyright notice and this permission notice (including the next
++ * paragraph) shall be included in all copies or substantial portions of the
++ * Software.
++ *
++ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
++ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
++ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
++ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
++ * IN THE SOFTWARE.
++ */
++
++/* Wrapper file for building vc4_tiling_lt.c with the "build NEON assembly if
++ * possible" flag set, since Android.mk doesn't have a way to set CFLAGS for a
++ * single file.
++ */
++
++#define VC4_BUILD_NEON
++#include "vc4_tiling_lt.c"
+From patchwork Mon Apr 24 21:59:51 2017
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+Subject: [Mesa-dev,
+ 4/4] vc4: Use runtime CPU detection for whether NEON is available.
+From: Eric Anholt <eric@anholt.net>
+X-Patchwork-Id: 152501
+Message-Id: <20170424215951.21544-4-eric@anholt.net>
+To: mesa-dev@lists.freedesktop.org
+Date: Mon, 24 Apr 2017 14:59:51 -0700
+
+This will allow Raspbian's ARMv6 builds to take advantage of the new NEON
+code, and could prevent problems if vc4 ends up getting used on a v7 CPU
+without NEON.
+
+v2: Drop dead NEON_SUFFIX (noted by Erik Faye-Lund)
+---
+ src/gallium/drivers/vc4/vc4_screen.c |  3 +++
+ src/gallium/drivers/vc4/vc4_tiling.h | 27 +++++++++++++--------------
+ 2 files changed, 16 insertions(+), 14 deletions(-)
+
+diff --git a/src/gallium/drivers/vc4/vc4_screen.c b/src/gallium/drivers/vc4/vc4_screen.c
+index b5b1ced49fd5..ce6a9dbaa6cc 100644
+--- a/src/gallium/drivers/vc4/vc4_screen.c
++++ b/src/gallium/drivers/vc4/vc4_screen.c
+@@ -27,6 +27,7 @@
+ #include "pipe/p_screen.h"
+ #include "pipe/p_state.h"
+ 
++#include "util/u_cpu_detect.h"
+ #include "util/u_debug.h"
+ #include "util/u_memory.h"
+ #include "util/u_format.h"
+@@ -628,6 +629,8 @@ vc4_screen_create(int fd)
+         if (!vc4_get_chip_info(screen))
+                 goto fail;
+ 
++        util_cpu_detect();
++
+         slab_create_parent(&screen->transfer_pool, sizeof(struct vc4_transfer), 16);
+ 
+         vc4_fence_init(screen);
+diff --git a/src/gallium/drivers/vc4/vc4_tiling.h b/src/gallium/drivers/vc4/vc4_tiling.h
+index ba1ad6fb3f7d..3168ec20a606 100644
+--- a/src/gallium/drivers/vc4/vc4_tiling.h
++++ b/src/gallium/drivers/vc4/vc4_tiling.h
+@@ -27,6 +27,7 @@
+ #include <stdbool.h>
+ #include <stdint.h>
+ #include "util/macros.h"
++#include "util/u_cpu_detect.h"
+ 
+ /** Return the width in pixels of a 64-byte microtile. */
+ static inline uint32_t
+@@ -83,23 +84,18 @@ void vc4_store_tiled_image(void *dst, uint32_t dst_stride,
+                            uint8_t tiling_format, int cpp,
+                            const struct pipe_box *box);
+ 
+-/* If we're building for ARMv7 (Pi 2+), assume it has NEON.  For Raspbian we
+- * should extend this to have some runtime detection of being built for ARMv6
+- * on a Pi 2+.
+- */
+-#if defined(__ARM_ARCH) && __ARM_ARCH == 7
+-#define NEON_SUFFIX(x) x ## _neon
+-#else
+-#define NEON_SUFFIX(x) x ## _base
+-#endif
+-
+ static inline void
+ vc4_load_lt_image(void *dst, uint32_t dst_stride,
+                   void *src, uint32_t src_stride,
+                   int cpp, const struct pipe_box *box)
+ {
+-        NEON_SUFFIX(vc4_load_lt_image)(dst, dst_stride, src, src_stride,
++        if (util_cpu_caps.has_neon) {
++                vc4_load_lt_image_neon(dst, dst_stride, src, src_stride,
+                                        cpp, box);
++        } else {
++                vc4_load_lt_image_base(dst, dst_stride, src, src_stride,
++                                       cpp, box);
++        }
+ }
+ 
+ static inline void
+@@ -107,10 +103,13 @@ vc4_store_lt_image(void *dst, uint32_t dst_stride,
+                    void *src, uint32_t src_stride,
+                    int cpp, const struct pipe_box *box)
+ {
+-        NEON_SUFFIX(vc4_store_lt_image)(dst, dst_stride, src, src_stride,
++        if (util_cpu_caps.has_neon) {
++                vc4_store_lt_image_neon(dst, dst_stride, src, src_stride,
+                                         cpp, box);
++        } else {
++                vc4_store_lt_image_base(dst, dst_stride, src, src_stride,
++                                        cpp, box);
++        }
+ }
+ 
+-#undef NEON_SUFFIX
+-
+ #endif /* VC4_TILING_H */
