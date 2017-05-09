@@ -54,12 +54,12 @@
 
 %global sanitize 1
 
-%global rctag rc2
+%global rctag rc4
 
 Name:           mesa
 Summary:        Mesa graphics libraries
 Version:        17.1.0
-Release:        0.3%{?rctag:.%{rctag}}%{?dist}
+Release:        0.4%{?rctag:.%{rctag}}%{?dist}
 
 License:        MIT
 URL:            http://www.mesa3d.org
@@ -78,13 +78,11 @@ Patch1:         0001-llvm-SONAME-without-version.patch
 Patch2:         0002-hardware-gloat.patch
 Patch3:         0003-evergreen-big-endian.patch
 Patch4:         0004-bigendian-assert.patch
-Patch5:         arm-vc4-neon.patch
 
 # glvnd support patches
 # non-upstreamed ones
 Patch13:        glvnd-fix-gl-dot-pc.patch
 Patch14:        0001-Fix-linkage-against-shared-glapi.patch
-Patch15:        0001-glapi-Link-with-glapi-when-built-shared.patch
 # submitted upstream
 Patch16:        0001-glxglvnddispatch-Add-missing-dispatch-for-GetDriverC.patch
 
@@ -686,6 +684,9 @@ popd
 %endif
 
 %changelog
+* Tue May  9 2017 Peter Robinson <pbrobinson@fedoraproject.org> 17.1.0-0.4.rc4
+- Update to 17.1.0-rc4
+
 * Fri Apr 28 2017 Peter Robinson <pbrobinson@fedoraproject.org> 17.1.0-0.3.rc2
 - Enable renderonly support for i.MX SoC (rhbz #1424714)
 
