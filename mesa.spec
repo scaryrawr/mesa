@@ -54,7 +54,7 @@
 
 %global sanitize 1
 
-%global rctag rc4
+#global rctag rc4
 
 Name:           mesa
 Summary:        Mesa graphics libraries
