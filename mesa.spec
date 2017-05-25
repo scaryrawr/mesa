@@ -58,7 +58,7 @@
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-Version:        17.1.0
+Version:        17.1.1
 Release:        1%{?rctag:.%{rctag}}%{?dist}
 
 License:        MIT
@@ -83,8 +83,6 @@ Patch4:         0004-bigendian-assert.patch
 # non-upstreamed ones
 Patch13:        glvnd-fix-gl-dot-pc.patch
 Patch14:        0001-Fix-linkage-against-shared-glapi.patch
-# submitted upstream
-Patch16:        0001-glxglvnddispatch-Add-missing-dispatch-for-GetDriverC.patch
 
 BuildRequires:  gcc
 BuildRequires:  gcc-c++
@@ -684,6 +682,9 @@ popd
 %endif
 
 %changelog
+* Thu May 25 2017 Peter Robinson <pbrobinson@fedoraproject.org> 17.1.1-1
+- Update to 17.1.1
+
 * Thu May 11 2017 Dave Airlie <airlied@redhat.com> - 17.1.0-1
 - Update to 17.1.0
 
