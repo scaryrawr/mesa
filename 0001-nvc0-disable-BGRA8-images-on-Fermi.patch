@@ -1,0 +1,51 @@
+From 245912b684b862d47cde10052b137d76a55d0bd3 Mon Sep 17 00:00:00 2001
+From: Lyude <lyude@redhat.com>
+Date: Fri, 2 Jun 2017 20:45:36 -0400
+Subject: [PATCH] nvc0: disable BGRA8 images on Fermi
+
+BGRA8 image stores on Fermi don't work, which results in breaking
+PBO downloads, such that they always return 0x0. Discovered this
+through a glamor bug, and confirmed it does indeed break a good number
+of piglit tests such as spec/arb_pixel_buffer_object/pbo-read-argb8888
+
+Fixes: 8e7893eb53213 ("nvc0: add support for BGRA8 images")
+Signed-off-by: Lyude <lyude@redhat.com>
+Reviewed-by: Ilia Mirkin <imirkin@alum.mit.edu>
+Cc: mesa-stable@lists.freedesktop.org
+---
+ src/gallium/drivers/nouveau/nvc0/nvc0_screen.c | 19 ++++++++++++++-----
+ 1 file changed, 14 insertions(+), 5 deletions(-)
+
+diff --git a/src/gallium/drivers/nouveau/nvc0/nvc0_screen.c b/src/gallium/drivers/nouveau/nvc0/nvc0_screen.c
+index c636926994..f6c5c72797 100644
+--- a/src/gallium/drivers/nouveau/nvc0/nvc0_screen.c
++++ b/src/gallium/drivers/nouveau/nvc0/nvc0_screen.c
+@@ -87,11 +87,20 @@ nvc0_screen_is_format_supported(struct pipe_screen *pscreen,
+    bindings &= ~(PIPE_BIND_LINEAR |
+                  PIPE_BIND_SHARED);
+ 
+-   if (bindings & PIPE_BIND_SHADER_IMAGE && sample_count > 1 &&
+-       nouveau_screen(pscreen)->class_3d >= GM107_3D_CLASS) {
+-      /* MS images are currently unsupported on Maxwell because they have to
+-       * be handled explicitly. */
+-      return false;
++   if (bindings & PIPE_BIND_SHADER_IMAGE) {
++      if (sample_count > 1 &&
++          nouveau_screen(pscreen)->class_3d >= GM107_3D_CLASS) {
++         /* MS images are currently unsupported on Maxwell because they have to
++          * be handled explicitly. */
++         return false;
++      }
++
++      if (format == PIPE_FORMAT_B8G8R8A8_UNORM &&
++          nouveau_screen(pscreen)->class_3d < NVE4_3D_CLASS) {
++         /* This should work on Fermi, but for currently unknown reasons it
++          * does not and results in breaking reads from pbos. */
++         return false;
++      }
+    }
+ 
+    return (( nvc0_format_table[format].usage |
+-- 
+2.13.0
+

@@ -59,7 +59,7 @@
 Name:           mesa
 Summary:        Mesa graphics libraries
 Version:        17.1.1
-Release:        1%{?rctag:.%{rctag}}%{?dist}
+Release:        2%{?rctag:.%{rctag}}%{?dist}
 
 License:        MIT
 URL:            http://www.mesa3d.org
@@ -83,6 +83,9 @@ Patch4:         0004-bigendian-assert.patch
 # non-upstreamed ones
 Patch13:        glvnd-fix-gl-dot-pc.patch
 Patch14:        0001-Fix-linkage-against-shared-glapi.patch
+
+# backport from upstream
+Patch50:	0001-nvc0-disable-BGRA8-images-on-Fermi.patch
 
 BuildRequires:  gcc
 BuildRequires:  gcc-c++
@@ -682,6 +685,9 @@ popd
 %endif
 
 %changelog
+* Mon Jun 05 2017 Adam Jackson <ajax@redhat.com> - 17.1.1-2
+- Disable BGRA8 images on Fermi
+
 * Thu May 25 2017 Peter Robinson <pbrobinson@fedoraproject.org> 17.1.1-1
 - Update to 17.1.1
 
