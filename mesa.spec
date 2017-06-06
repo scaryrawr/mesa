@@ -58,8 +58,8 @@
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-Version:        17.1.1
-Release:        2%{?rctag:.%{rctag}}%{?dist}
+Version:        17.1.2
+Release:        1%{?rctag:.%{rctag}}%{?dist}
 
 License:        MIT
 URL:            http://www.mesa3d.org
@@ -685,6 +685,9 @@ popd
 %endif
 
 %changelog
+* Mon Jun  5 2017 Peter Robinson <pbrobinson@fedoraproject.org> 7.1.2-1
+- Update to 17.1.2
+
 * Mon Jun 05 2017 Adam Jackson <ajax@redhat.com> - 17.1.1-2
 - Disable BGRA8 images on Fermi
 
