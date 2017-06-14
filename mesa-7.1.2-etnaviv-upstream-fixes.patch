@@ -1,0 +1,700 @@
+From f8a39914586de004759ea9cbda1335bdf0790cdc Mon Sep 17 00:00:00 2001
+From: Lucas Stach <l.stach@pengutronix.de>
+Date: Wed, 10 May 2017 18:01:06 +0200
+Subject: [PATCH 0479/1430] etnaviv: apply feature overrides in one central
+ location
+
+This way we can just test the feature bits and don't need to spread
+the debug overrides to all locations touching a feature.
+
+Signed-off-by: Lucas Stach <l.stach@pengutronix.de>
+Reviewed-By: Wladimir J. van der Laan <laanwj@gmail.com>
+Reviewed-by: Christian Gmeiner <christian.gmeiner@gmail.com>
+---
+ src/gallium/drivers/etnaviv/etnaviv_clear_blit.c |  6 ++----
+ src/gallium/drivers/etnaviv/etnaviv_resource.c   |  2 +-
+ src/gallium/drivers/etnaviv/etnaviv_screen.c     | 10 ++++++++++
+ src/gallium/drivers/etnaviv/etnaviv_surface.c    |  2 +-
+ src/gallium/drivers/etnaviv/etnaviv_zsa.c        |  9 +++++----
+ 5 files changed, 19 insertions(+), 10 deletions(-)
+
+diff --git a/src/gallium/drivers/etnaviv/etnaviv_clear_blit.c b/src/gallium/drivers/etnaviv/etnaviv_clear_blit.c
+index 528b57389d..ae1c586288 100644
+--- a/src/gallium/drivers/etnaviv/etnaviv_clear_blit.c
++++ b/src/gallium/drivers/etnaviv/etnaviv_clear_blit.c
+@@ -111,8 +111,7 @@ etna_blit_clear_color(struct pipe_context *pctx, struct pipe_surface *dst,
+    if (surf->surf.ts_size) { /* TS: use precompiled clear command */
+       ctx->framebuffer.TS_COLOR_CLEAR_VALUE = new_clear_value;
+ 
+-      if (!DBG_ENABLED(ETNA_DBG_NO_AUTODISABLE) &&
+-          VIV_FEATURE(ctx->screen, chipMinorFeatures1, AUTO_DISABLE)) {
++      if (VIV_FEATURE(ctx->screen, chipMinorFeatures1, AUTO_DISABLE)) {
+          /* Set number of color tiles to be filled */
+          etna_set_state(ctx->stream, VIVS_TS_COLOR_AUTO_DISABLE_COUNT,
+                         surf->surf.padded_width * surf->surf.padded_height / 16);
+@@ -171,8 +170,7 @@ etna_blit_clear_zs(struct pipe_context *pctx, struct pipe_surface *dst,
+    if (surf->surf.ts_size) { /* TS: use precompiled clear command */
+       /* Set new clear depth value */
+       ctx->framebuffer.TS_DEPTH_CLEAR_VALUE = new_clear_value;
+-      if (!DBG_ENABLED(ETNA_DBG_NO_AUTODISABLE) &&
+-          VIV_FEATURE(ctx->screen, chipMinorFeatures1, AUTO_DISABLE)) {
++      if (VIV_FEATURE(ctx->screen, chipMinorFeatures1, AUTO_DISABLE)) {
+          /* Set number of depth tiles to be filled */
+          etna_set_state(ctx->stream, VIVS_TS_DEPTH_AUTO_DISABLE_COUNT,
+                         surf->surf.padded_width * surf->surf.padded_height / 16);
+diff --git a/src/gallium/drivers/etnaviv/etnaviv_resource.c b/src/gallium/drivers/etnaviv/etnaviv_resource.c
+index 26f2ed7334..103b53c1c3 100644
+--- a/src/gallium/drivers/etnaviv/etnaviv_resource.c
++++ b/src/gallium/drivers/etnaviv/etnaviv_resource.c
+@@ -247,7 +247,7 @@ etna_resource_create(struct pipe_screen *pscreen,
+          layout = ETNA_LAYOUT_LINEAR;
+    } else if (templat->target != PIPE_BUFFER) {
+       bool want_multitiled = false;
+-      bool want_supertiled = screen->specs.can_supertile && !DBG_ENABLED(ETNA_DBG_NO_SUPERTILE);
++      bool want_supertiled = screen->specs.can_supertile;
+ 
+       /* When this GPU supports single-buffer rendering, don't ever enable
+        * multi-tiling. This replicates the blob behavior on GC3000.
+diff --git a/src/gallium/drivers/etnaviv/etnaviv_screen.c b/src/gallium/drivers/etnaviv/etnaviv_screen.c
+index d8a970b910..9f1b44922a 100644
+--- a/src/gallium/drivers/etnaviv/etnaviv_screen.c
++++ b/src/gallium/drivers/etnaviv/etnaviv_screen.c
+@@ -831,6 +831,16 @@ etna_screen_create(struct etna_device *dev, struct etna_gpu *gpu,
+    if (!etna_get_specs(screen))
+       goto fail;
+ 
++   /* apply debug options that disable individual features */
++   if (DBG_ENABLED(ETNA_DBG_NO_EARLY_Z))
++      screen->features[viv_chipFeatures] |= chipFeatures_NO_EARLY_Z;
++   if (DBG_ENABLED(ETNA_DBG_NO_TS))
++         screen->features[viv_chipFeatures] &= ~chipFeatures_FAST_CLEAR;
++   if (DBG_ENABLED(ETNA_DBG_NO_AUTODISABLE))
++      screen->features[viv_chipMinorFeatures1] &= ~chipMinorFeatures1_AUTO_DISABLE;
++   if (DBG_ENABLED(ETNA_DBG_NO_SUPERTILE))
++      screen->specs.can_supertile = 0;
++
+    pscreen->destroy = etna_screen_destroy;
+    pscreen->get_param = etna_screen_get_param;
+    pscreen->get_paramf = etna_screen_get_paramf;
+diff --git a/src/gallium/drivers/etnaviv/etnaviv_surface.c b/src/gallium/drivers/etnaviv/etnaviv_surface.c
+index 1db9b40a51..4b95f6575a 100644
+--- a/src/gallium/drivers/etnaviv/etnaviv_surface.c
++++ b/src/gallium/drivers/etnaviv/etnaviv_surface.c
+@@ -66,7 +66,7 @@ etna_create_surface(struct pipe_context *pctx, struct pipe_resource *prsc,
+ 
+    if (VIV_FEATURE(ctx->screen, chipFeatures, FAST_CLEAR) &&
+        VIV_FEATURE(ctx->screen, chipMinorFeatures0, MC20) &&
+-       !DBG_ENABLED(ETNA_DBG_NO_TS) && !rsc->ts_bo &&
++       !rsc->ts_bo &&
+        (rsc->levels[level].padded_width & ETNA_RS_WIDTH_MASK) == 0 &&
+        (rsc->levels[level].padded_height & ETNA_RS_HEIGHT_MASK) == 0) {
+       etna_screen_resource_alloc_ts(pctx->screen, rsc);
+diff --git a/src/gallium/drivers/etnaviv/etnaviv_zsa.c b/src/gallium/drivers/etnaviv/etnaviv_zsa.c
+index 7caba279b3..22c2020fe5 100644
+--- a/src/gallium/drivers/etnaviv/etnaviv_zsa.c
++++ b/src/gallium/drivers/etnaviv/etnaviv_zsa.c
+@@ -27,13 +27,17 @@
+ #include "etnaviv_zsa.h"
+ 
+ #include "etnaviv_context.h"
++#include "etnaviv_screen.h"
+ #include "etnaviv_translate.h"
+ #include "util/u_memory.h"
+ 
++#include "hw/common.xml.h"
++
+ void *
+ etna_zsa_state_create(struct pipe_context *pctx,
+                       const struct pipe_depth_stencil_alpha_state *so)
+ {
++   struct etna_context *ctx = etna_context(pctx);
+    struct etna_zsa_state *cs = CALLOC_STRUCT(etna_zsa_state);
+ 
+    if (!cs)
+@@ -42,7 +46,7 @@ etna_zsa_state_create(struct pipe_context *pctx,
+    cs->base = *so;
+ 
+    /* XXX does stencil[0] / stencil[1] order depend on rs->front_ccw? */
+-   bool early_z = true;
++   bool early_z = !VIV_FEATURE(ctx->screen, chipFeatures, NO_EARLY_Z);
+    bool disable_zs =
+       (!so->depth.enabled || so->depth.func == PIPE_FUNC_ALWAYS) &&
+       !so->depth.writemask;
+@@ -88,9 +92,6 @@ etna_zsa_state_create(struct pipe_context *pctx,
+    if (so->depth.enabled == false || so->depth.func == PIPE_FUNC_ALWAYS)
+       early_z = false;
+ 
+-   if (DBG_ENABLED(ETNA_DBG_NO_EARLY_Z))
+-      early_z = false;
+-
+    /* compare funcs have 1 to 1 mapping */
+    cs->PE_DEPTH_CONFIG =
+       VIVS_PE_DEPTH_CONFIG_DEPTH_FUNC(so->depth.enabled ? so->depth.func
+-- 
+2.13.0
+
+From ba0b7de7e36a5032c709ce1f9b36706bdbba5097 Mon Sep 17 00:00:00 2001
+From: Lucas Stach <l.stach@pengutronix.de>
+Date: Wed, 10 May 2017 18:01:07 +0200
+Subject: [PATCH 0480/1430] etnaviv: clean up sampler view reference counting
+
+Use the proper pipe_resource_reference function instead of
+rolling our own.
+
+Signed-off-by: Lucas Stach <l.stach@pengutronix.de>
+Reviewed-by: Christian Gmeiner <christian.gmeiner@gmail.com>
+---
+ src/gallium/drivers/etnaviv/etnaviv_texture.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/src/gallium/drivers/etnaviv/etnaviv_texture.c b/src/gallium/drivers/etnaviv/etnaviv_texture.c
+index 3a842381ac..6f77af286f 100644
+--- a/src/gallium/drivers/etnaviv/etnaviv_texture.c
++++ b/src/gallium/drivers/etnaviv/etnaviv_texture.c
+@@ -182,9 +182,9 @@ etna_create_sampler_view(struct pipe_context *pctx, struct pipe_resource *prsc,
+    }
+ 
+    sv->base = *so;
+-   pipe_reference(NULL, &prsc->reference);
+-   sv->base.texture = prsc;
+-   sv->base.reference.count = 1;
++   pipe_reference_init(&sv->base.reference, 1);
++   sv->base.texture = NULL;
++   pipe_resource_reference(&sv->base.texture, prsc);
+    sv->base.context = pctx;
+ 
+    /* merged with sampler state */
+-- 
+2.13.0
+
+From cb16d9103480687c414519bed5256217c9e7aaad Mon Sep 17 00:00:00 2001
+From: Philipp Zabel <p.zabel@pengutronix.de>
+Date: Wed, 10 May 2017 18:01:08 +0200
+Subject: [PATCH 0481/1430] etnaviv: increment the resource seqno in
+ resource_changed
+
+Just increment the resource seqno instead of setting the texture
+seqno to be lower by one than the resource seqno.
+
+Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
+Signed-off-by: Lucas Stach <l.stach@pengutronix.de>
+Reviewed-By: Wladimir J. van der Laan <laanwj@gmail.com>
+Reviewed-by: Christian Gmeiner <christian.gmeiner@gmail.com>
+---
+ src/gallium/drivers/etnaviv/etnaviv_resource.c | 6 +-----
+ 1 file changed, 1 insertion(+), 5 deletions(-)
+
+diff --git a/src/gallium/drivers/etnaviv/etnaviv_resource.c b/src/gallium/drivers/etnaviv/etnaviv_resource.c
+index 103b53c1c3..1341e1ea23 100644
+--- a/src/gallium/drivers/etnaviv/etnaviv_resource.c
++++ b/src/gallium/drivers/etnaviv/etnaviv_resource.c
+@@ -286,11 +286,7 @@ etna_resource_changed(struct pipe_screen *pscreen, struct pipe_resource *prsc)
+ {
+    struct etna_resource *res = etna_resource(prsc);
+ 
+-   /* Make sure texture is older than the imported renderable buffer,
+-    * so etna_update_sampler_source will copy the pixel data again.
+-    */
+-   if (res->texture)
+-      etna_resource(res->texture)->seqno = res->seqno - 1;
++   res->seqno++;
+ }
+ 
+ static void
+-- 
+2.13.0
+
+From cab5996c2637c31a78a0196e42ec6de9eb61f270 Mon Sep 17 00:00:00 2001
+From: Lucas Stach <l.stach@pengutronix.de>
+Date: Thu, 18 May 2017 15:39:58 +0200
+Subject: [PATCH 0941/1430] etnaviv: always do cpu_fini in transfer_unmap
+
+The cpu_fini() call pushes the buffer back into the GPU domain, which needs
+to be done for all buffers, not just the ones with CPU written content. The
+etnaviv kernel driver currently doesn't validate this, but may start to do
+so at a later point in time. If there is a temporary resource the fini needs
+to happen before the RS uses this one as the source for the upload.
+
+Also remove an invalid comment about flushing CPU caches, cpu_fini takes
+care of everything involved in this.
+
+Fixes: c9e8b49b885 ("etnaviv: gallium driver for Vivante GPUs")
+Cc: mesa-stable@lists.freedesktop.org
+Signed-off-by: Lucas Stach <l.stach@pengutronix.de>
+Reviewed-by: Philipp Zabel <p.zabel@pengutronix.de>
+Reviewed-By: Wladimir J. van der Laan <laanwj@gmail.com>
+---
+ src/gallium/drivers/etnaviv/etnaviv_transfer.c | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
+
+diff --git a/src/gallium/drivers/etnaviv/etnaviv_transfer.c b/src/gallium/drivers/etnaviv/etnaviv_transfer.c
+index 1a5aa7fc04..4809b04ff9 100644
+--- a/src/gallium/drivers/etnaviv/etnaviv_transfer.c
++++ b/src/gallium/drivers/etnaviv/etnaviv_transfer.c
+@@ -70,6 +70,9 @@ etna_transfer_unmap(struct pipe_context *pctx, struct pipe_transfer *ptrans)
+    if (rsc->texture && !etna_resource_newer(rsc, etna_resource(rsc->texture)))
+       rsc = etna_resource(rsc->texture); /* switch to using the texture resource */
+ 
++   if (trans->rsc)
++      etna_bo_cpu_fini(etna_resource(trans->rsc)->bo);
++
+    if (ptrans->usage & PIPE_TRANSFER_WRITE) {
+       if (trans->rsc) {
+          /* We have a temporary resource due to either tile status or
+@@ -105,15 +108,15 @@ etna_transfer_unmap(struct pipe_context *pctx, struct pipe_transfer *ptrans)
+       }
+ 
+       rsc->seqno++;
+-      etna_bo_cpu_fini(rsc->bo);
+ 
+       if (rsc->base.bind & PIPE_BIND_SAMPLER_VIEW) {
+-         /* XXX do we need to flush the CPU cache too or start a write barrier
+-          * to make sure the GPU sees it? */
+          ctx->dirty |= ETNA_DIRTY_TEXTURE_CACHES;
+       }
+    }
+ 
++   if (!trans->rsc)
++      etna_bo_cpu_fini(rsc->bo);
++
+    pipe_resource_reference(&trans->rsc, NULL);
+    pipe_resource_reference(&ptrans->resource, NULL);
+    slab_free(&ctx->transfer_pool, trans);
+-- 
+2.13.0
+
+From a276c32a08bd41ceb8fd9b604ba9ac8229d59b64 Mon Sep 17 00:00:00 2001
+From: Lucas Stach <l.stach@pengutronix.de>
+Date: Thu, 18 May 2017 15:37:02 +0200
+Subject: [PATCH 1243/1430] etnaviv: slim down resource waiting
+
+cpu_prep() already does all the required waiting, so the only thing that
+needs to be done is flushing the commandstream, if a GPU write is pending.
+
+Signed-off-by: Lucas Stach <l.stach@pengutronix.de>
+Reviewed-by: Wladimir J. van der Laan <laanwj@gmail.com>
+---
+ src/gallium/drivers/etnaviv/etnaviv_clear_blit.c |  5 +++--
+ src/gallium/drivers/etnaviv/etnaviv_resource.c   | 16 ----------------
+ src/gallium/drivers/etnaviv/etnaviv_resource.h   |  3 ---
+ src/gallium/drivers/etnaviv/etnaviv_transfer.c   |  5 +++--
+ 4 files changed, 6 insertions(+), 23 deletions(-)
+
+diff --git a/src/gallium/drivers/etnaviv/etnaviv_clear_blit.c b/src/gallium/drivers/etnaviv/etnaviv_clear_blit.c
+index ae1c586288..ea416bf192 100644
+--- a/src/gallium/drivers/etnaviv/etnaviv_clear_blit.c
++++ b/src/gallium/drivers/etnaviv/etnaviv_clear_blit.c
+@@ -528,8 +528,9 @@ etna_try_rs_blit(struct pipe_context *pctx,
+ 
+ manual:
+    if (src->layout == ETNA_LAYOUT_TILED && dst->layout == ETNA_LAYOUT_TILED) {
+-      etna_resource_wait(pctx, dst);
+-      etna_resource_wait(pctx, src);
++      if ((src->status & ETNA_PENDING_WRITE) ||
++          (dst->status & ETNA_PENDING_WRITE))
++         pctx->flush(pctx, NULL, 0);
+       return etna_manual_blit(dst, dst_lev, dst_offset, src, src_lev, src_offset, blit_info);
+    }
+ 
+diff --git a/src/gallium/drivers/etnaviv/etnaviv_resource.c b/src/gallium/drivers/etnaviv/etnaviv_resource.c
+index 1341e1ea23..9aa1aa617a 100644
+--- a/src/gallium/drivers/etnaviv/etnaviv_resource.c
++++ b/src/gallium/drivers/etnaviv/etnaviv_resource.c
+@@ -429,22 +429,6 @@ etna_resource_used(struct etna_context *ctx, struct pipe_resource *prsc,
+ }
+ 
+ void
+-etna_resource_wait(struct pipe_context *pctx, struct etna_resource *rsc)
+-{
+-   if (rsc->status & ETNA_PENDING_WRITE) {
+-      struct pipe_fence_handle *fence;
+-      struct pipe_screen *pscreen = pctx->screen;
+-
+-      pctx->flush(pctx, &fence, 0);
+-
+-      if (!pscreen->fence_finish(pscreen, pctx, fence, 5000000000ULL))
+-         BUG("fence timed out (hung GPU?)");
+-
+-      pscreen->fence_reference(pscreen, &fence, NULL);
+-   }
+-}
+-
+-void
+ etna_resource_screen_init(struct pipe_screen *pscreen)
+ {
+    pscreen->can_create_resource = etna_screen_can_create_resource;
+diff --git a/src/gallium/drivers/etnaviv/etnaviv_resource.h b/src/gallium/drivers/etnaviv/etnaviv_resource.h
+index a8d42ee1a0..913316f193 100644
+--- a/src/gallium/drivers/etnaviv/etnaviv_resource.h
++++ b/src/gallium/drivers/etnaviv/etnaviv_resource.h
+@@ -124,9 +124,6 @@ void
+ etna_resource_used(struct etna_context *ctx, struct pipe_resource *prsc,
+                    enum etna_resource_status status);
+ 
+-void
+-etna_resource_wait(struct pipe_context *ctx, struct etna_resource *rsc);
+-
+ static inline void
+ resource_read(struct etna_context *ctx, struct pipe_resource *prsc)
+ {
+diff --git a/src/gallium/drivers/etnaviv/etnaviv_transfer.c b/src/gallium/drivers/etnaviv/etnaviv_transfer.c
+index 4809b04ff9..269bd498f8 100644
+--- a/src/gallium/drivers/etnaviv/etnaviv_transfer.c
++++ b/src/gallium/drivers/etnaviv/etnaviv_transfer.c
+@@ -199,8 +199,9 @@ etna_transfer_map(struct pipe_context *pctx, struct pipe_resource *prsc,
+    /* Always sync if we have the temporary resource.  The PIPE_TRANSFER_READ
+     * case could be optimised if we knew whether the resource has outstanding
+     * rendering. */
+-   if (usage & PIPE_TRANSFER_READ || trans->rsc)
+-      etna_resource_wait(pctx, rsc);
++   if ((usage & PIPE_TRANSFER_READ || trans->rsc) &&
++       rsc->status & ETNA_PENDING_WRITE)
++      pctx->flush(pctx, NULL, 0);
+ 
+    /* XXX we don't handle PIPE_TRANSFER_FLUSH_EXPLICIT; this flag can be ignored
+     * when mapping in-place,
+-- 
+2.13.0
+
+From c3b2c7a75f1ef6306d0218d92564319d22cfc8fe Mon Sep 17 00:00:00 2001
+From: Lucas Stach <l.stach@pengutronix.de>
+Date: Thu, 18 May 2017 18:20:12 +0200
+Subject: [PATCH 1244/1430] etnaviv: honor PIPE_TRANSFER_UNSYNCHRONIZED flag
+
+This gets rid of quite a bit of CPU/GPU sync on frequent vertex buffer
+uploads and I haven't seen any of the issues mentioned in the comment,
+so this one seems stale.
+
+Ignore the flag if there exists a temporary resource, as those ones are
+never busy.
+
+Signed-off-by: Lucas Stach <l.stach@pengutronix.de>
+Reviewed-by: Wladimir J. van der Laan <laanwj@gmail.com>
+---
+ src/gallium/drivers/etnaviv/etnaviv_transfer.c | 35 +++++++++++++++++---------
+ 1 file changed, 23 insertions(+), 12 deletions(-)
+
+diff --git a/src/gallium/drivers/etnaviv/etnaviv_transfer.c b/src/gallium/drivers/etnaviv/etnaviv_transfer.c
+index 269bd498f8..4ead6dff7f 100644
+--- a/src/gallium/drivers/etnaviv/etnaviv_transfer.c
++++ b/src/gallium/drivers/etnaviv/etnaviv_transfer.c
+@@ -70,6 +70,10 @@ etna_transfer_unmap(struct pipe_context *pctx, struct pipe_transfer *ptrans)
+    if (rsc->texture && !etna_resource_newer(rsc, etna_resource(rsc->texture)))
+       rsc = etna_resource(rsc->texture); /* switch to using the texture resource */
+ 
++   /*
++    * Temporary resources are always pulled into the CPU domain, must push them
++    * back into GPU domain before the RS execs the blit to the base resource.
++    */
+    if (trans->rsc)
+       etna_bo_cpu_fini(etna_resource(trans->rsc)->bo);
+ 
+@@ -114,7 +118,12 @@ etna_transfer_unmap(struct pipe_context *pctx, struct pipe_transfer *ptrans)
+       }
+    }
+ 
+-   if (!trans->rsc)
++   /*
++    * Transfers without a temporary are only pulled into the CPU domain if they
++    * are not mapped unsynchronized. If they are, must push them back into GPU
++    * domain after CPU access is finished.
++    */
++   if (!trans->rsc && !(ptrans->usage & PIPE_TRANSFER_UNSYNCHRONIZED))
+       etna_bo_cpu_fini(rsc->bo);
+ 
+    pipe_resource_reference(&trans->rsc, NULL);
+@@ -260,19 +269,21 @@ etna_transfer_map(struct pipe_context *pctx, struct pipe_resource *prsc,
+                    (rsc->layout == ETNA_LAYOUT_TILED &&
+                     util_format_is_compressed(prsc->format));
+ 
+-   /* Ignore PIPE_TRANSFER_UNSYNCHRONIZED and PIPE_TRANSFER_DONTBLOCK here.
+-    * It appears that Gallium operates the index/vertex buffers in a
+-    * circular fashion, and the CPU can catch up with the GPU and starts
+-    * overwriting yet-to-be-processed entries, causing rendering corruption. */
+-   uint32_t prep_flags = 0;
++   /*
++    * Pull resources into the CPU domain. Only skipped for unsynchronized
++    * transfers without a temporary resource.
++    */
++   if (trans->rsc || !(usage & PIPE_TRANSFER_UNSYNCHRONIZED)) {
++      uint32_t prep_flags = 0;
+ 
+-   if (usage & PIPE_TRANSFER_READ)
+-      prep_flags |= DRM_ETNA_PREP_READ;
+-   if (usage & PIPE_TRANSFER_WRITE)
+-      prep_flags |= DRM_ETNA_PREP_WRITE;
++      if (usage & PIPE_TRANSFER_READ)
++         prep_flags |= DRM_ETNA_PREP_READ;
++      if (usage & PIPE_TRANSFER_WRITE)
++         prep_flags |= DRM_ETNA_PREP_WRITE;
+ 
+-   if (etna_bo_cpu_prep(rsc->bo, prep_flags))
+-      goto fail_prep;
++      if (etna_bo_cpu_prep(rsc->bo, prep_flags))
++         goto fail_prep;
++   }
+ 
+    /* map buffer object */
+    void *mapped = etna_bo_map(rsc->bo);
+-- 
+2.13.0
+
+From 6e628ee3f3cd250d58f1b49fc0b53db58cd8eeea Mon Sep 17 00:00:00 2001
+From: Lucas Stach <l.stach@pengutronix.de>
+Date: Thu, 18 May 2017 16:30:02 +0200
+Subject: [PATCH 1245/1430] etnaviv: don't read back resource if transfer
+ discards contents
+
+Reduces bandwidth usage of transfers which discard the buffer contents,
+as well as skipping unnecessary command stream flushes and CPU/GPU
+synchronization.
+
+Signed-off-by: Lucas Stach <l.stach@pengutronix.de>
+Reviewed-by: Wladimir J. van der Laan <laanwj@gmail.com>
+---
+ src/gallium/drivers/etnaviv/etnaviv_transfer.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/src/gallium/drivers/etnaviv/etnaviv_transfer.c b/src/gallium/drivers/etnaviv/etnaviv_transfer.c
+index 4ead6dff7f..707029865a 100644
+--- a/src/gallium/drivers/etnaviv/etnaviv_transfer.c
++++ b/src/gallium/drivers/etnaviv/etnaviv_transfer.c
+@@ -197,7 +197,9 @@ etna_transfer_map(struct pipe_context *pctx, struct pipe_resource *prsc,
+          return NULL;
+       }
+ 
+-      etna_copy_resource(pctx, trans->rsc, prsc, level, trans->rsc->last_level);
++      if (!(usage & PIPE_TRANSFER_DISCARD_WHOLE_RESOURCE))
++         etna_copy_resource(pctx, trans->rsc, prsc, level,
++                            trans->rsc->last_level);
+ 
+       /* Switch to using the temporary resource instead */
+       rsc = etna_resource(trans->rsc);
+-- 
+2.13.0
+
+From d4e6de9e385579d49cd5f51e643d0141c81b5604 Mon Sep 17 00:00:00 2001
+From: Lucas Stach <l.stach@pengutronix.de>
+Date: Thu, 18 May 2017 16:44:18 +0200
+Subject: [PATCH 1246/1430] etnaviv: simplify transfer tiling handling
+
+There is no need to special case compressed resources, as they are already
+marked as linear on allocation. With that out of the way, there is room to
+cut down on the number of if clauses used.
+
+Signed-off-by: Lucas Stach <l.stach@pengutronix.de>
+Reviewed-by: Wladimir J. van der Laan <laanwj@gmail.com>
+---
+ src/gallium/drivers/etnaviv/etnaviv_transfer.c | 70 +++++++++++---------------
+ 1 file changed, 29 insertions(+), 41 deletions(-)
+
+diff --git a/src/gallium/drivers/etnaviv/etnaviv_transfer.c b/src/gallium/drivers/etnaviv/etnaviv_transfer.c
+index 707029865a..8a18dbb8fc 100644
+--- a/src/gallium/drivers/etnaviv/etnaviv_transfer.c
++++ b/src/gallium/drivers/etnaviv/etnaviv_transfer.c
+@@ -89,21 +89,19 @@ etna_transfer_unmap(struct pipe_context *pctx, struct pipe_transfer *ptrans)
+          struct etna_resource_level *res_level = &rsc->levels[ptrans->level];
+          void *mapped = etna_bo_map(rsc->bo) + res_level->offset;
+ 
+-         if (rsc->layout == ETNA_LAYOUT_LINEAR || rsc->layout == ETNA_LAYOUT_TILED) {
+-            if (rsc->layout == ETNA_LAYOUT_TILED && !util_format_is_compressed(rsc->base.format)) {
+-               etna_texture_tile(
+-                  mapped + ptrans->box.z * res_level->layer_stride,
+-                  trans->staging, ptrans->box.x, ptrans->box.y,
+-                  res_level->stride, ptrans->box.width, ptrans->box.height,
+-                  ptrans->stride, util_format_get_blocksize(rsc->base.format));
+-            } else { /* non-tiled or compressed format */
+-               util_copy_box(mapped, rsc->base.format, res_level->stride,
+-                             res_level->layer_stride, ptrans->box.x,
+-                             ptrans->box.y, ptrans->box.z, ptrans->box.width,
+-                             ptrans->box.height, ptrans->box.depth,
+-                             trans->staging, ptrans->stride,
+-                             ptrans->layer_stride, 0, 0, 0 /* src x,y,z */);
+-            }
++         if (rsc->layout == ETNA_LAYOUT_TILED) {
++            etna_texture_tile(
++               mapped + ptrans->box.z * res_level->layer_stride,
++               trans->staging, ptrans->box.x, ptrans->box.y,
++               res_level->stride, ptrans->box.width, ptrans->box.height,
++               ptrans->stride, util_format_get_blocksize(rsc->base.format));
++         } else if (rsc->layout == ETNA_LAYOUT_LINEAR) {
++            util_copy_box(mapped, rsc->base.format, res_level->stride,
++                          res_level->layer_stride, ptrans->box.x,
++                          ptrans->box.y, ptrans->box.z, ptrans->box.width,
++                          ptrans->box.height, ptrans->box.depth,
++                          trans->staging, ptrans->stride,
++                          ptrans->layer_stride, 0, 0, 0 /* src x,y,z */);
+          } else {
+             BUG("unsupported tiling %i", rsc->layout);
+          }
+@@ -264,13 +262,6 @@ etna_transfer_map(struct pipe_context *pctx, struct pipe_resource *prsc,
+       PIPE_TRANSFER_DISCARD_WHOLE_RESOURCE is set.
+     */
+ 
+-   /* No need to allocate a buffer for copying if the resource is not in use,
+-    * and no tiling is needed, can just return a direct pointer.
+-    */
+-   bool in_place = rsc->layout == ETNA_LAYOUT_LINEAR ||
+-                   (rsc->layout == ETNA_LAYOUT_TILED &&
+-                    util_format_is_compressed(prsc->format));
+-
+    /*
+     * Pull resources into the CPU domain. Only skipped for unsynchronized
+     * transfers without a temporary resource.
+@@ -294,7 +285,7 @@ etna_transfer_map(struct pipe_context *pctx, struct pipe_resource *prsc,
+ 
+    *out_transfer = ptrans;
+ 
+-   if (in_place) {
++   if (rsc->layout == ETNA_LAYOUT_LINEAR) {
+       ptrans->stride = res_level->stride;
+       ptrans->layer_stride = res_level->layer_stride;
+ 
+@@ -321,24 +312,21 @@ etna_transfer_map(struct pipe_context *pctx, struct pipe_resource *prsc,
+          goto fail;
+ 
+       if (usage & PIPE_TRANSFER_READ) {
+-         /* untile or copy resource for reading */
+-         if (rsc->layout == ETNA_LAYOUT_LINEAR || rsc->layout == ETNA_LAYOUT_TILED) {
+-            if (rsc->layout == ETNA_LAYOUT_TILED && !util_format_is_compressed(rsc->base.format)) {
+-               etna_texture_untile(trans->staging,
+-                                   mapped + ptrans->box.z * res_level->layer_stride,
+-                                   ptrans->box.x, ptrans->box.y, res_level->stride,
+-                                   ptrans->box.width, ptrans->box.height, ptrans->stride,
+-                                   util_format_get_blocksize(rsc->base.format));
+-            } else { /* non-tiled or compressed format */
+-               util_copy_box(trans->staging, rsc->base.format, ptrans->stride,
+-                             ptrans->layer_stride, 0, 0, 0, /* dst x,y,z */
+-                             ptrans->box.width, ptrans->box.height,
+-                             ptrans->box.depth, mapped, res_level->stride,
+-                             res_level->layer_stride, ptrans->box.x,
+-                             ptrans->box.y, ptrans->box.z);
+-            }
+-         } else /* TODO supertiling */
+-         {
++         if (rsc->layout == ETNA_LAYOUT_TILED) {
++            etna_texture_untile(trans->staging,
++                                mapped + ptrans->box.z * res_level->layer_stride,
++                                ptrans->box.x, ptrans->box.y, res_level->stride,
++                                ptrans->box.width, ptrans->box.height, ptrans->stride,
++                                util_format_get_blocksize(rsc->base.format));
++         } else if (rsc->layout == ETNA_LAYOUT_LINEAR) {
++            util_copy_box(trans->staging, rsc->base.format, ptrans->stride,
++                          ptrans->layer_stride, 0, 0, 0, /* dst x,y,z */
++                          ptrans->box.width, ptrans->box.height,
++                          ptrans->box.depth, mapped, res_level->stride,
++                          res_level->layer_stride, ptrans->box.x,
++                          ptrans->box.y, ptrans->box.z);
++         } else {
++            /* TODO supertiling */
+             BUG("unsupported tiling %i for reading", rsc->layout);
+          }
+       }
+-- 
+2.13.0
+
+From 0f888ad4be32d1c66e2749feacb8b88def03fac9 Mon Sep 17 00:00:00 2001
+From: Lucas Stach <l.stach@pengutronix.de>
+Date: Thu, 18 May 2017 17:05:02 +0200
+Subject: [PATCH 1247/1430] etnaviv: upgrade DISCARD_RANGE to
+ DISCARD_WHOLE_RESOURCE if possible
+
+Stolen from VC4. As we don't do any fancy reallocation tricks yet, it's
+possible to upgrade also coherent mappings and shared resources.
+
+Signed-off-by: Lucas Stach <l.stach@pengutronix.de>
+Reviewed-by: Wladimir J. van der Laan <laanwj@gmail.com>
+---
+ src/gallium/drivers/etnaviv/etnaviv_transfer.c | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
+
+diff --git a/src/gallium/drivers/etnaviv/etnaviv_transfer.c b/src/gallium/drivers/etnaviv/etnaviv_transfer.c
+index 8a18dbb8fc..27e1be1957 100644
+--- a/src/gallium/drivers/etnaviv/etnaviv_transfer.c
++++ b/src/gallium/drivers/etnaviv/etnaviv_transfer.c
+@@ -157,6 +157,20 @@ etna_transfer_map(struct pipe_context *pctx, struct pipe_resource *prsc,
+ 
+    assert(level <= prsc->last_level);
+ 
++   /* Upgrade DISCARD_RANGE to WHOLE_RESOURCE if the whole resource is
++    * being mapped. If we add buffer reallocation to avoid CPU/GPU sync this
++    * check needs to be extended to coherent mappings and shared resources.
++    */
++   if ((usage & PIPE_TRANSFER_DISCARD_RANGE) &&
++       !(usage & PIPE_TRANSFER_UNSYNCHRONIZED) &&
++       prsc->last_level == 0 &&
++       prsc->width0 == box->width &&
++       prsc->height0 == box->height &&
++       prsc->depth0 == box->depth &&
++       prsc->array_size == 1) {
++      usage |= PIPE_TRANSFER_DISCARD_WHOLE_RESOURCE;
++   }
++
+    if (rsc->texture && !etna_resource_newer(rsc, etna_resource(rsc->texture))) {
+       /* We have a texture resource which is the same age or newer than the
+        * render resource. Use the texture resource, which avoids bouncing
+-- 
+2.13.0
+
+From f25390afa49f51fadaafed70a890093f96e7a02d Mon Sep 17 00:00:00 2001
+From: Lucas Stach <dev@lynxeye.de>
+Date: Sun, 4 Jun 2017 06:24:20 +0200
+Subject: [PATCH 1248/1430] etnaviv: don't flush resource to self without TS
+
+A resolve to self is only necessary if the resource is fast cleared, so
+there is never a need to do so if there is no TS allocated.
+
+Signed-off-by: Lucas Stach <dev@lynxeye.de>
+Reviewed-by: Wladimir J. van der Laan <laanwj@gmail.com>
+---
+ src/gallium/drivers/etnaviv/etnaviv_resource.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/gallium/drivers/etnaviv/etnaviv_resource.h b/src/gallium/drivers/etnaviv/etnaviv_resource.h
+index 913316f193..3507e5ccec 100644
+--- a/src/gallium/drivers/etnaviv/etnaviv_resource.h
++++ b/src/gallium/drivers/etnaviv/etnaviv_resource.h
+@@ -102,7 +102,7 @@ etna_resource_older(struct etna_resource *a, struct etna_resource *b)
+ static inline bool
+ etna_resource_needs_flush(struct etna_resource *res)
+ {
+-   return (int)(res->seqno - res->flush_seqno) > 0;
++   return res->ts_bo && ((int)(res->seqno - res->flush_seqno) > 0);
+ }
+ 
+ /* is the resource only used on the sampler? */
+-- 
+2.13.0
+
+From 978e6876f1cd8ccc8850a5665e9619a3e29b731e Mon Sep 17 00:00:00 2001
+From: Lucas Stach <l.stach@pengutronix.de>
+Date: Mon, 15 May 2017 17:06:41 +0200
+Subject: [PATCH 1249/1430] etnaviv: flush resource when binding as sampler
+ view
+
+As TS is also allowed on sampler resources, we need to make sure to resolve
+to self when binding the resource as a texture, to avoid stale content
+being sampled.
+
+Signed-off-by: Lucas Stach <l.stach@pengutronix.de>
+---
+ src/gallium/drivers/etnaviv/etnaviv_texture.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/src/gallium/drivers/etnaviv/etnaviv_texture.c b/src/gallium/drivers/etnaviv/etnaviv_texture.c
+index 6f77af286f..df77829078 100644
+--- a/src/gallium/drivers/etnaviv/etnaviv_texture.c
++++ b/src/gallium/drivers/etnaviv/etnaviv_texture.c
+@@ -120,6 +120,9 @@ etna_update_sampler_source(struct pipe_sampler_view *view)
+       etna_copy_resource(view->context, res->texture, view->texture, 0,
+                          view->texture->last_level);
+       etna_resource(res->texture)->seqno = res->seqno;
++   } else if (etna_resource_needs_flush(res)) {
++      etna_copy_resource(view->context, view->texture, view->texture, 0, 0);
++      res->flush_seqno = res->seqno;
+    }
+ }
+ 
+-- 
+2.13.0
+

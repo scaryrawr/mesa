@@ -59,7 +59,7 @@
 Name:           mesa
 Summary:        Mesa graphics libraries
 Version:        17.1.2
-Release:        1%{?rctag:.%{rctag}}%{?dist}
+Release:        2%{?rctag:.%{rctag}}%{?dist}
 
 License:        MIT
 URL:            http://www.mesa3d.org
@@ -86,6 +86,8 @@ Patch14:        0001-Fix-linkage-against-shared-glapi.patch
 
 # backport from upstream
 Patch50:	0001-nvc0-disable-BGRA8-images-on-Fermi.patch
+Patch51:	mesa-7.1.2-etnaviv-upstream-fixes.patch
+Patch52:	mesa-7.1.2-etnaviv-fixes.patch
 
 BuildRequires:  gcc
 BuildRequires:  gcc-c++
@@ -685,6 +687,9 @@ popd
 %endif
 
 %changelog
+* Wed Jun 14 2017 Peter Robinson <pbrobinson@fedoraproject.org> 7.1.2-2
+- Some etnaviv fixes
+
 * Mon Jun  5 2017 Peter Robinson <pbrobinson@fedoraproject.org> 7.1.2-1
 - Update to 17.1.2
 
