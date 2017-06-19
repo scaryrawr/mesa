@@ -59,7 +59,7 @@
 Name:           mesa
 Summary:        Mesa graphics libraries
 Version:        17.1.3
-Release:        1%{?rctag:.%{rctag}}%{?dist}
+Release:        2%{?rctag:.%{rctag}}%{?dist}
 
 License:        MIT
 URL:            http://www.mesa3d.org
@@ -87,6 +87,7 @@ Patch14:        0001-Fix-linkage-against-shared-glapi.patch
 # backport from upstream
 Patch51:	mesa-7.1.2-etnaviv-upstream-fixes.patch
 Patch52:	mesa-7.1.2-etnaviv-fixes.patch
+Patch53:	mesa-7.1-vc4-fixes.patch
 
 BuildRequires:  gcc
 BuildRequires:  gcc-c++
@@ -686,6 +687,9 @@ popd
 %endif
 
 %changelog
+* Mon Jun 19 2017 Peter Robinson <pbrobinson@fedoraproject.org> 7.1.3-2
+- Fixes and perf improvements for vc4
+
 * Mon Jun 19 2017 Peter Robinson <pbrobinson@fedoraproject.org> 7.1.3-1
 - Update to 17.1.3
 

@@ -1,0 +1,1063 @@
+From f050751c9ca1ceb5089fc2337b2dd2eeda1557b7 Mon Sep 17 00:00:00 2001
+From: Eric Anholt <eric@anholt.net>
+Date: Thu, 15 Jun 2017 16:52:22 -0700
+Subject: [PATCH] vc4: Switch back to using a local copy of vc4_drm.h.
+
+Needing to get our uapi header from libdrm has only complicated things.
+Follow intel's lead and drop our requirement for it.
+
+Generated from 056f4f02abb7e9e4a0cf0cda0211586df5e43842 of drm-misc-next
+
+(cherry picked from commit 8ffd5a0458bf6852afd0ac1e03b881e39e63f629)
+---
+ configure.ac                             |   2 -
+ src/gallium/drivers/vc4/Makefile.am      |   3 +-
+ src/gallium/drivers/vc4/Makefile.sources |   1 +
+ src/gallium/drivers/vc4/vc4_drm.h        | 318 +++++++++++++++++++++++++++++++
+ 4 files changed, 320 insertions(+), 4 deletions(-)
+ create mode 100644 src/gallium/drivers/vc4/vc4_drm.h
+
+diff --git a/configure.ac b/configure.ac
+index 60ce75a58b..6fcda01e36 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -79,7 +79,6 @@ LIBDRM_INTEL_REQUIRED=2.4.75
+ LIBDRM_NVVIEUX_REQUIRED=2.4.66
+ LIBDRM_NOUVEAU_REQUIRED=2.4.66
+ LIBDRM_FREEDRENO_REQUIRED=2.4.74
+-LIBDRM_VC4_REQUIRED=2.4.69
+ LIBDRM_ETNAVIV_REQUIRED=2.4.80
+ 
+ dnl Versions for external dependencies
+@@ -2495,7 +2494,6 @@ if test -n "$with_gallium_drivers"; then
+             ;;
+         xvc4)
+             HAVE_GALLIUM_VC4=yes
+-            PKG_CHECK_MODULES([VC4], [libdrm >= $LIBDRM_VC4_REQUIRED libdrm_vc4 >= $LIBDRM_VC4_REQUIRED])
+             require_libdrm "vc4"
+ 
+             PKG_CHECK_MODULES([SIMPENROSE], [simpenrose],
+diff --git a/src/gallium/drivers/vc4/Makefile.am b/src/gallium/drivers/vc4/Makefile.am
+index b361a0c588..f6b87b2261 100644
+--- a/src/gallium/drivers/vc4/Makefile.am
++++ b/src/gallium/drivers/vc4/Makefile.am
+@@ -29,7 +29,6 @@ endif
+ AM_CFLAGS = \
+ 	-I$(top_builddir)/src/compiler/nir \
+ 	$(LIBDRM_CFLAGS) \
+-	$(VC4_CFLAGS) \
+ 	$(GALLIUM_DRIVER_CFLAGS) \
+ 	$(SIM_CFLAGS) \
+ 	$(VALGRIND_CFLAGS) \
+@@ -38,7 +37,7 @@ AM_CFLAGS = \
+ noinst_LTLIBRARIES = libvc4.la
+ 
+ libvc4_la_SOURCES = $(C_SOURCES)
+-libvc4_la_LIBADD = $(SIM_LIB) $(VC4_LIBS)
++libvc4_la_LIBADD = $(SIM_LIB)
+ libvc4_la_LDFLAGS = $(SIM_LDFLAGS)
+ 
+ noinst_LTLIBRARIES += libvc4_neon.la
+diff --git a/src/gallium/drivers/vc4/Makefile.sources b/src/gallium/drivers/vc4/Makefile.sources
+index 10de343612..cb04cc9c0a 100644
+--- a/src/gallium/drivers/vc4/Makefile.sources
++++ b/src/gallium/drivers/vc4/Makefile.sources
+@@ -14,6 +14,7 @@ C_SOURCES := \
+ 	vc4_context.c \
+ 	vc4_context.h \
+ 	vc4_draw.c \
++	vc4_drm.h \
+ 	vc4_emit.c \
+ 	vc4_fence.c \
+ 	vc4_formats.c \
+diff --git a/src/gallium/drivers/vc4/vc4_drm.h b/src/gallium/drivers/vc4/vc4_drm.h
+new file mode 100644
+index 0000000000..0caeaf3a1f
+--- /dev/null
++++ b/src/gallium/drivers/vc4/vc4_drm.h
+@@ -0,0 +1,318 @@
++/*
++ * Copyright © 2014-2015 Broadcom
++ *
++ * Permission is hereby granted, free of charge, to any person obtaining a
++ * copy of this software and associated documentation files (the "Software"),
++ * to deal in the Software without restriction, including without limitation
++ * the rights to use, copy, modify, merge, publish, distribute, sublicense,
++ * and/or sell copies of the Software, and to permit persons to whom the
++ * Software is furnished to do so, subject to the following conditions:
++ *
++ * The above copyright notice and this permission notice (including the next
++ * paragraph) shall be included in all copies or substantial portions of the
++ * Software.
++ *
++ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
++ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
++ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
++ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
++ * IN THE SOFTWARE.
++ */
++
++#ifndef _VC4_DRM_H_
++#define _VC4_DRM_H_
++
++#include "drm.h"
++
++#if defined(__cplusplus)
++extern "C" {
++#endif
++
++#define DRM_VC4_SUBMIT_CL                         0x00
++#define DRM_VC4_WAIT_SEQNO                        0x01
++#define DRM_VC4_WAIT_BO                           0x02
++#define DRM_VC4_CREATE_BO                         0x03
++#define DRM_VC4_MMAP_BO                           0x04
++#define DRM_VC4_CREATE_SHADER_BO                  0x05
++#define DRM_VC4_GET_HANG_STATE                    0x06
++#define DRM_VC4_GET_PARAM                         0x07
++#define DRM_VC4_SET_TILING                        0x08
++#define DRM_VC4_GET_TILING                        0x09
++
++#define DRM_IOCTL_VC4_SUBMIT_CL           DRM_IOWR(DRM_COMMAND_BASE + DRM_VC4_SUBMIT_CL, struct drm_vc4_submit_cl)
++#define DRM_IOCTL_VC4_WAIT_SEQNO          DRM_IOWR(DRM_COMMAND_BASE + DRM_VC4_WAIT_SEQNO, struct drm_vc4_wait_seqno)
++#define DRM_IOCTL_VC4_WAIT_BO             DRM_IOWR(DRM_COMMAND_BASE + DRM_VC4_WAIT_BO, struct drm_vc4_wait_bo)
++#define DRM_IOCTL_VC4_CREATE_BO           DRM_IOWR(DRM_COMMAND_BASE + DRM_VC4_CREATE_BO, struct drm_vc4_create_bo)
++#define DRM_IOCTL_VC4_MMAP_BO             DRM_IOWR(DRM_COMMAND_BASE + DRM_VC4_MMAP_BO, struct drm_vc4_mmap_bo)
++#define DRM_IOCTL_VC4_CREATE_SHADER_BO    DRM_IOWR(DRM_COMMAND_BASE + DRM_VC4_CREATE_SHADER_BO, struct drm_vc4_create_shader_bo)
++#define DRM_IOCTL_VC4_GET_HANG_STATE      DRM_IOWR(DRM_COMMAND_BASE + DRM_VC4_GET_HANG_STATE, struct drm_vc4_get_hang_state)
++#define DRM_IOCTL_VC4_GET_PARAM           DRM_IOWR(DRM_COMMAND_BASE + DRM_VC4_GET_PARAM, struct drm_vc4_get_param)
++#define DRM_IOCTL_VC4_SET_TILING          DRM_IOWR(DRM_COMMAND_BASE + DRM_VC4_SET_TILING, struct drm_vc4_set_tiling)
++#define DRM_IOCTL_VC4_GET_TILING          DRM_IOWR(DRM_COMMAND_BASE + DRM_VC4_GET_TILING, struct drm_vc4_get_tiling)
++
++struct drm_vc4_submit_rcl_surface {
++	__u32 hindex; /* Handle index, or ~0 if not present. */
++	__u32 offset; /* Offset to start of buffer. */
++	/*
++	 * Bits for either render config (color_write) or load/store packet.
++	 * Bits should all be 0 for MSAA load/stores.
++	 */
++	__u16 bits;
++
++#define VC4_SUBMIT_RCL_SURFACE_READ_IS_FULL_RES		(1 << 0)
++	__u16 flags;
++};
++
++/**
++ * struct drm_vc4_submit_cl - ioctl argument for submitting commands to the 3D
++ * engine.
++ *
++ * Drivers typically use GPU BOs to store batchbuffers / command lists and
++ * their associated state.  However, because the VC4 lacks an MMU, we have to
++ * do validation of memory accesses by the GPU commands.  If we were to store
++ * our commands in BOs, we'd need to do uncached readback from them to do the
++ * validation process, which is too expensive.  Instead, userspace accumulates
++ * commands and associated state in plain memory, then the kernel copies the
++ * data to its own address space, and then validates and stores it in a GPU
++ * BO.
++ */
++struct drm_vc4_submit_cl {
++	/* Pointer to the binner command list.
++	 *
++	 * This is the first set of commands executed, which runs the
++	 * coordinate shader to determine where primitives land on the screen,
++	 * then writes out the state updates and draw calls necessary per tile
++	 * to the tile allocation BO.
++	 */
++	__u64 bin_cl;
++
++	/* Pointer to the shader records.
++	 *
++	 * Shader records are the structures read by the hardware that contain
++	 * pointers to uniforms, shaders, and vertex attributes.  The
++	 * reference to the shader record has enough information to determine
++	 * how many pointers are necessary (fixed number for shaders/uniforms,
++	 * and an attribute count), so those BO indices into bo_handles are
++	 * just stored as __u32s before each shader record passed in.
++	 */
++	__u64 shader_rec;
++
++	/* Pointer to uniform data and texture handles for the textures
++	 * referenced by the shader.
++	 *
++	 * For each shader state record, there is a set of uniform data in the
++	 * order referenced by the record (FS, VS, then CS).  Each set of
++	 * uniform data has a __u32 index into bo_handles per texture
++	 * sample operation, in the order the QPU_W_TMUn_S writes appear in
++	 * the program.  Following the texture BO handle indices is the actual
++	 * uniform data.
++	 *
++	 * The individual uniform state blocks don't have sizes passed in,
++	 * because the kernel has to determine the sizes anyway during shader
++	 * code validation.
++	 */
++	__u64 uniforms;
++	__u64 bo_handles;
++
++	/* Size in bytes of the binner command list. */
++	__u32 bin_cl_size;
++	/* Size in bytes of the set of shader records. */
++	__u32 shader_rec_size;
++	/* Number of shader records.
++	 *
++	 * This could just be computed from the contents of shader_records and
++	 * the address bits of references to them from the bin CL, but it
++	 * keeps the kernel from having to resize some allocations it makes.
++	 */
++	__u32 shader_rec_count;
++	/* Size in bytes of the uniform state. */
++	__u32 uniforms_size;
++
++	/* Number of BO handles passed in (size is that times 4). */
++	__u32 bo_handle_count;
++
++	/* RCL setup: */
++	__u16 width;
++	__u16 height;
++	__u8 min_x_tile;
++	__u8 min_y_tile;
++	__u8 max_x_tile;
++	__u8 max_y_tile;
++	struct drm_vc4_submit_rcl_surface color_read;
++	struct drm_vc4_submit_rcl_surface color_write;
++	struct drm_vc4_submit_rcl_surface zs_read;
++	struct drm_vc4_submit_rcl_surface zs_write;
++	struct drm_vc4_submit_rcl_surface msaa_color_write;
++	struct drm_vc4_submit_rcl_surface msaa_zs_write;
++	__u32 clear_color[2];
++	__u32 clear_z;
++	__u8 clear_s;
++
++	__u32 pad:24;
++
++#define VC4_SUBMIT_CL_USE_CLEAR_COLOR			(1 << 0)
++	__u32 flags;
++
++	/* Returned value of the seqno of this render job (for the
++	 * wait ioctl).
++	 */
++	__u64 seqno;
++};
++
++/**
++ * struct drm_vc4_wait_seqno - ioctl argument for waiting for
++ * DRM_VC4_SUBMIT_CL completion using its returned seqno.
++ *
++ * timeout_ns is the timeout in nanoseconds, where "0" means "don't
++ * block, just return the status."
++ */
++struct drm_vc4_wait_seqno {
++	__u64 seqno;
++	__u64 timeout_ns;
++};
++
++/**
++ * struct drm_vc4_wait_bo - ioctl argument for waiting for
++ * completion of the last DRM_VC4_SUBMIT_CL on a BO.
++ *
++ * This is useful for cases where multiple processes might be
++ * rendering to a BO and you want to wait for all rendering to be
++ * completed.
++ */
++struct drm_vc4_wait_bo {
++	__u32 handle;
++	__u32 pad;
++	__u64 timeout_ns;
++};
++
++/**
++ * struct drm_vc4_create_bo - ioctl argument for creating VC4 BOs.
++ *
++ * There are currently no values for the flags argument, but it may be
++ * used in a future extension.
++ */
++struct drm_vc4_create_bo {
++	__u32 size;
++	__u32 flags;
++	/** Returned GEM handle for the BO. */
++	__u32 handle;
++	__u32 pad;
++};
++
++/**
++ * struct drm_vc4_mmap_bo - ioctl argument for mapping VC4 BOs.
++ *
++ * This doesn't actually perform an mmap.  Instead, it returns the
++ * offset you need to use in an mmap on the DRM device node.  This
++ * means that tools like valgrind end up knowing about the mapped
++ * memory.
++ *
++ * There are currently no values for the flags argument, but it may be
++ * used in a future extension.
++ */
++struct drm_vc4_mmap_bo {
++	/** Handle for the object being mapped. */
++	__u32 handle;
++	__u32 flags;
++	/** offset into the drm node to use for subsequent mmap call. */
++	__u64 offset;
++};
++
++/**
++ * struct drm_vc4_create_shader_bo - ioctl argument for creating VC4
++ * shader BOs.
++ *
++ * Since allowing a shader to be overwritten while it's also being
++ * executed from would allow privlege escalation, shaders must be
++ * created using this ioctl, and they can't be mmapped later.
++ */
++struct drm_vc4_create_shader_bo {
++	/* Size of the data argument. */
++	__u32 size;
++	/* Flags, currently must be 0. */
++	__u32 flags;
++
++	/* Pointer to the data. */
++	__u64 data;
++
++	/** Returned GEM handle for the BO. */
++	__u32 handle;
++	/* Pad, must be 0. */
++	__u32 pad;
++};
++
++struct drm_vc4_get_hang_state_bo {
++	__u32 handle;
++	__u32 paddr;
++	__u32 size;
++	__u32 pad;
++};
++
++/**
++ * struct drm_vc4_hang_state - ioctl argument for collecting state
++ * from a GPU hang for analysis.
++*/
++struct drm_vc4_get_hang_state {
++	/** Pointer to array of struct drm_vc4_get_hang_state_bo. */
++	__u64 bo;
++	/**
++	 * On input, the size of the bo array.  Output is the number
++	 * of bos to be returned.
++	 */
++	__u32 bo_count;
++
++	__u32 start_bin, start_render;
++
++	__u32 ct0ca, ct0ea;
++	__u32 ct1ca, ct1ea;
++	__u32 ct0cs, ct1cs;
++	__u32 ct0ra0, ct1ra0;
++
++	__u32 bpca, bpcs;
++	__u32 bpoa, bpos;
++
++	__u32 vpmbase;
++
++	__u32 dbge;
++	__u32 fdbgo;
++	__u32 fdbgb;
++	__u32 fdbgr;
++	__u32 fdbgs;
++	__u32 errstat;
++
++	/* Pad that we may save more registers into in the future. */
++	__u32 pad[16];
++};
++
++#define DRM_VC4_PARAM_V3D_IDENT0		0
++#define DRM_VC4_PARAM_V3D_IDENT1		1
++#define DRM_VC4_PARAM_V3D_IDENT2		2
++#define DRM_VC4_PARAM_SUPPORTS_BRANCHES		3
++#define DRM_VC4_PARAM_SUPPORTS_ETC1		4
++#define DRM_VC4_PARAM_SUPPORTS_THREADED_FS	5
++
++struct drm_vc4_get_param {
++	__u32 param;
++	__u32 pad;
++	__u64 value;
++};
++
++struct drm_vc4_get_tiling {
++	__u32 handle;
++	__u32 flags;
++	__u64 modifier;
++};
++
++struct drm_vc4_set_tiling {
++	__u32 handle;
++	__u32 flags;
++	__u64 modifier;
++};
++
++#if defined(__cplusplus)
++}
++#endif
++
++#endif /* _VC4_DRM_H_ */
+From fbf7afbe460fced78885ee7b1a1ac59ca12c3274 Mon Sep 17 00:00:00 2001
+From: Eric Anholt <eric@anholt.net>
+Date: Mon, 8 May 2017 16:43:06 -0700
+Subject: [PATCH] vc4: Drop the u_resource_vtbl no-op layer.
+
+We only ever attached one vtbl, so it was a waste of space and
+indirections.
+
+(cherry picked from commit 76e4ab57158de8a568572f1acb1d679ce8abb288)
+---
+ src/gallium/drivers/vc4/vc4_resource.c  | 50 +++++++++++++++------------------
+ src/gallium/drivers/vc4/vc4_resource.h  |  2 +-
+ src/gallium/drivers/vc4/vc4_simulator.c |  4 +--
+ src/gallium/drivers/vc4/vc4_state.c     |  4 +--
+ 4 files changed, 27 insertions(+), 33 deletions(-)
+
+diff --git a/src/gallium/drivers/vc4/vc4_resource.c b/src/gallium/drivers/vc4/vc4_resource.c
+index 596f73dfbf..3b326adbdc 100644
+--- a/src/gallium/drivers/vc4/vc4_resource.c
++++ b/src/gallium/drivers/vc4/vc4_resource.c
+@@ -39,7 +39,7 @@ static bool miptree_debug = false;
+ static bool
+ vc4_resource_bo_alloc(struct vc4_resource *rsc)
+ {
+-        struct pipe_resource *prsc = &rsc->base.b;
++        struct pipe_resource *prsc = &rsc->base;
+         struct pipe_screen *pscreen = prsc->screen;
+         struct vc4_bo *bo;
+ 
+@@ -379,8 +379,10 @@ vc4_resource_destroy(struct pipe_screen *pscreen,
+ 
+ static boolean
+ vc4_resource_get_handle(struct pipe_screen *pscreen,
++                        struct pipe_context *pctx,
+                         struct pipe_resource *prsc,
+-                        struct winsys_handle *handle)
++                        struct winsys_handle *handle,
++                        unsigned usage)
+ {
+         struct vc4_resource *rsc = vc4_resource(prsc);
+ 
+@@ -388,18 +390,10 @@ vc4_resource_get_handle(struct pipe_screen *pscreen,
+                                         handle);
+ }
+ 
+-static const struct u_resource_vtbl vc4_resource_vtbl = {
+-        .resource_get_handle      = vc4_resource_get_handle,
+-        .resource_destroy         = vc4_resource_destroy,
+-        .transfer_map             = vc4_resource_transfer_map,
+-        .transfer_flush_region    = u_default_transfer_flush_region,
+-        .transfer_unmap           = vc4_resource_transfer_unmap,
+-};
+-
+ static void
+ vc4_setup_slices(struct vc4_resource *rsc)
+ {
+-        struct pipe_resource *prsc = &rsc->base.b;
++        struct pipe_resource *prsc = &rsc->base;
+         uint32_t width = prsc->width0;
+         uint32_t height = prsc->height0;
+         if (prsc->format == PIPE_FORMAT_ETC1_RGB8) {
+@@ -502,14 +496,13 @@ vc4_resource_setup(struct pipe_screen *pscreen,
+         struct vc4_resource *rsc = CALLOC_STRUCT(vc4_resource);
+         if (!rsc)
+                 return NULL;
+-        struct pipe_resource *prsc = &rsc->base.b;
++        struct pipe_resource *prsc = &rsc->base;
+ 
+         *prsc = *tmpl;
+ 
+         pipe_reference_init(&prsc->reference, 1);
+         prsc->screen = pscreen;
+ 
+-        rsc->base.vtbl = &vc4_resource_vtbl;
+         if (prsc->nr_samples <= 1)
+                 rsc->cpp = util_format_get_blocksize(tmpl->format);
+         else
+@@ -543,7 +536,7 @@ vc4_resource_create(struct pipe_screen *pscreen,
+                     const struct pipe_resource *tmpl)
+ {
+         struct vc4_resource *rsc = vc4_resource_setup(pscreen, tmpl);
+-        struct pipe_resource *prsc = &rsc->base.b;
++        struct pipe_resource *prsc = &rsc->base;
+ 
+         /* We have to make shared be untiled, since we don't have any way to
+          * communicate metadata about tiling currently.
+@@ -579,7 +572,7 @@ vc4_resource_from_handle(struct pipe_screen *pscreen,
+                          unsigned usage)
+ {
+         struct vc4_resource *rsc = vc4_resource_setup(pscreen, tmpl);
+-        struct pipe_resource *prsc = &rsc->base.b;
++        struct pipe_resource *prsc = &rsc->base;
+         struct vc4_resource_slice *slice = &rsc->slices[0];
+         uint32_t expected_stride =
+             align(prsc->width0, vc4_utile_width(rsc->cpp)) * rsc->cpp;
+@@ -925,16 +918,16 @@ vc4_update_shadow_baselevel_texture(struct pipe_context *pctx,
+                 return;
+ 
+         perf_debug("Updating %dx%d@%d shadow texture due to %s\n",
+-                   orig->base.b.width0, orig->base.b.height0,
++                   orig->base.width0, orig->base.height0,
+                    view->u.tex.first_level,
+                    view->u.tex.first_level ? "base level" : "raster layout");
+ 
+-        for (int i = 0; i <= shadow->base.b.last_level; i++) {
+-                unsigned width = u_minify(shadow->base.b.width0, i);
+-                unsigned height = u_minify(shadow->base.b.height0, i);
++        for (int i = 0; i <= shadow->base.last_level; i++) {
++                unsigned width = u_minify(shadow->base.width0, i);
++                unsigned height = u_minify(shadow->base.height0, i);
+                 struct pipe_blit_info info = {
+                         .dst = {
+-                                .resource = &shadow->base.b,
++                                .resource = &shadow->base,
+                                 .level = i,
+                                 .box = {
+                                         .x = 0,
+@@ -944,10 +937,10 @@ vc4_update_shadow_baselevel_texture(struct pipe_context *pctx,
+                                         .height = height,
+                                         .depth = 1,
+                                 },
+-                                .format = shadow->base.b.format,
++                                .format = shadow->base.format,
+                         },
+                         .src = {
+-                                .resource = &orig->base.b,
++                                .resource = &orig->base,
+                                 .level = view->u.tex.first_level + i,
+                                 .box = {
+                                         .x = 0,
+@@ -957,7 +950,7 @@ vc4_update_shadow_baselevel_texture(struct pipe_context *pctx,
+                                         .height = height,
+                                         .depth = 1,
+                                 },
+-                                .format = orig->base.b.format,
++                                .format = orig->base.format,
+                         },
+                         .mask = ~0,
+                 };
+@@ -999,7 +992,7 @@ vc4_get_shadow_index_buffer(struct pipe_context *pctx,
+         if (ib->user_buffer) {
+                 src = ib->user_buffer;
+         } else {
+-                src = pipe_buffer_map_range(pctx, &orig->base.b,
++                src = pipe_buffer_map_range(pctx, &orig->base,
+                                             ib->offset,
+                                             count * 4,
+                                             PIPE_TRANSFER_READ, &src_transfer);
+@@ -1022,16 +1015,17 @@ vc4_resource_screen_init(struct pipe_screen *pscreen)
+ {
+         pscreen->resource_create = vc4_resource_create;
+         pscreen->resource_from_handle = vc4_resource_from_handle;
+-        pscreen->resource_get_handle = u_resource_get_handle_vtbl;
+         pscreen->resource_destroy = u_resource_destroy_vtbl;
++        pscreen->resource_get_handle = vc4_resource_get_handle;
++        pscreen->resource_destroy = vc4_resource_destroy;
+ }
+ 
+ void
+ vc4_resource_context_init(struct pipe_context *pctx)
+ {
+-        pctx->transfer_map = u_transfer_map_vtbl;
+-        pctx->transfer_flush_region = u_transfer_flush_region_vtbl;
+-        pctx->transfer_unmap = u_transfer_unmap_vtbl;
++        pctx->transfer_map = vc4_resource_transfer_map;
++        pctx->transfer_flush_region = u_default_transfer_flush_region;
++        pctx->transfer_unmap = vc4_resource_transfer_unmap;
+         pctx->buffer_subdata = u_default_buffer_subdata;
+         pctx->texture_subdata = u_default_texture_subdata;
+         pctx->create_surface = vc4_create_surface;
+diff --git a/src/gallium/drivers/vc4/vc4_resource.h b/src/gallium/drivers/vc4/vc4_resource.h
+index 27aa4e8728..1a771ff299 100644
+--- a/src/gallium/drivers/vc4/vc4_resource.h
++++ b/src/gallium/drivers/vc4/vc4_resource.h
+@@ -52,7 +52,7 @@ struct vc4_surface {
+ };
+ 
+ struct vc4_resource {
+-        struct u_resource base;
++        struct pipe_resource base;
+         struct vc4_bo *bo;
+         struct vc4_resource_slice slices[VC4_MAX_MIP_LEVELS];
+         uint32_t cube_map_stride;
+diff --git a/src/gallium/drivers/vc4/vc4_simulator.c b/src/gallium/drivers/vc4/vc4_simulator.c
+index 9565c49efb..ab701ab560 100644
+--- a/src/gallium/drivers/vc4/vc4_simulator.c
++++ b/src/gallium/drivers/vc4/vc4_simulator.c
+@@ -387,7 +387,7 @@ vc4_simulator_flush(struct vc4_context *vc4,
+                         ctex->bo->size);
+ #endif
+ 
+-                for (int y = 0; y < ctex->base.b.height0; y++) {
++                for (int y = 0; y < ctex->base.height0; y++) {
+                         memcpy(ctex->bo->map + y * sim_stride,
+                                csim_bo->winsys_map + y * winsys_stride,
+                                row_len);
+@@ -448,7 +448,7 @@ vc4_simulator_flush(struct vc4_context *vc4,
+         }
+ 
+         if (ctex && csim_bo->winsys_map) {
+-                for (int y = 0; y < ctex->base.b.height0; y++) {
++                for (int y = 0; y < ctex->base.height0; y++) {
+                         memcpy(csim_bo->winsys_map + y * winsys_stride,
+                                ctex->bo->map + y * sim_stride,
+                                row_len);
+diff --git a/src/gallium/drivers/vc4/vc4_state.c b/src/gallium/drivers/vc4/vc4_state.c
+index 2e00104e45..31ec19bcbe 100644
+--- a/src/gallium/drivers/vc4/vc4_state.c
++++ b/src/gallium/drivers/vc4/vc4_state.c
+@@ -575,7 +575,7 @@ vc4_create_sampler_view(struct pipe_context *pctx, struct pipe_resource *prsc,
+              (cso->u.tex.first_level != cso->u.tex.last_level)) ||
+             rsc->vc4_format == VC4_TEXTURE_TYPE_RGBA32R) {
+                 struct vc4_resource *shadow_parent = vc4_resource(prsc);
+-                struct pipe_resource tmpl = shadow_parent->base.b;
++                struct pipe_resource tmpl = shadow_parent->base;
+                 struct vc4_resource *clone;
+ 
+                 tmpl.bind = PIPE_BIND_SAMPLER_VIEW | PIPE_BIND_RENDER_TARGET;
+@@ -590,7 +590,7 @@ vc4_create_sampler_view(struct pipe_context *pctx, struct pipe_resource *prsc,
+                 }
+                 rsc = vc4_resource(prsc);
+                 clone = vc4_resource(prsc);
+-                clone->shadow_parent = &shadow_parent->base.b;
++                clone->shadow_parent = &shadow_parent->base;
+                 /* Flag it as needing update of the contents from the parent. */
+                 clone->writes = shadow_parent->writes - 1;
+ 
+From 732dfc93d34f655d9ff2da4091219ca3187bb0af Mon Sep 17 00:00:00 2001
+From: Eric Anholt <eric@anholt.net>
+Date: Mon, 8 May 2017 16:46:59 -0700
+Subject: [PATCH] vc4: Drop pointless indirections around BO import/export.
+
+I've since found them to be more confusing by adding indirections than
+clarifying by screening off resources from the handle/fd import/export
+process.
+
+(cherry picked from commit 50e78cd04f6b40c4cf02774861380d843b00ebb9)
+---
+ src/gallium/drivers/vc4/vc4_resource.c | 57 +++++++++++++++++++++++++++++-----
+ src/gallium/drivers/vc4/vc4_screen.c   | 54 --------------------------------
+ src/gallium/drivers/vc4/vc4_screen.h   |  7 -----
+ 3 files changed, 49 insertions(+), 69 deletions(-)
+
+diff --git a/src/gallium/drivers/vc4/vc4_resource.c b/src/gallium/drivers/vc4/vc4_resource.c
+index 3b326adbdc..7c868b39ec 100644
+--- a/src/gallium/drivers/vc4/vc4_resource.c
++++ b/src/gallium/drivers/vc4/vc4_resource.c
+@@ -381,13 +381,31 @@ static boolean
+ vc4_resource_get_handle(struct pipe_screen *pscreen,
+                         struct pipe_context *pctx,
+                         struct pipe_resource *prsc,
+-                        struct winsys_handle *handle,
++                        struct winsys_handle *whandle,
+                         unsigned usage)
+ {
+         struct vc4_resource *rsc = vc4_resource(prsc);
+ 
+-        return vc4_screen_bo_get_handle(pscreen, rsc->bo, rsc->slices[0].stride,
+-                                        handle);
++        whandle->stride = rsc->slices[0].stride;
++
++        /* If we're passing some reference to our BO out to some other part of
++         * the system, then we can't do any optimizations about only us being
++         * the ones seeing it (like BO caching or shadow update avoidance).
++         */
++        rsc->bo->private = false;
++
++        switch (whandle->type) {
++        case DRM_API_HANDLE_TYPE_SHARED:
++                return vc4_bo_flink(rsc->bo, &whandle->handle);
++        case DRM_API_HANDLE_TYPE_KMS:
++                whandle->handle = rsc->bo->handle;
++                return TRUE;
++        case DRM_API_HANDLE_TYPE_FD:
++                whandle->handle = vc4_bo_get_dmabuf(rsc->bo);
++                return whandle->handle != -1;
++        }
++
++        return FALSE;
+ }
+ 
+ static void
+@@ -568,9 +586,10 @@ vc4_resource_create(struct pipe_screen *pscreen,
+ static struct pipe_resource *
+ vc4_resource_from_handle(struct pipe_screen *pscreen,
+                          const struct pipe_resource *tmpl,
+-                         struct winsys_handle *handle,
++                         struct winsys_handle *whandle,
+                          unsigned usage)
+ {
++        struct vc4_screen *screen = vc4_screen(pscreen);
+         struct vc4_resource *rsc = vc4_resource_setup(pscreen, tmpl);
+         struct pipe_resource *prsc = &rsc->base;
+         struct vc4_resource_slice *slice = &rsc->slices[0];
+@@ -580,7 +599,7 @@ vc4_resource_from_handle(struct pipe_screen *pscreen,
+         if (!rsc)
+                 return NULL;
+ 
+-        if (handle->stride != expected_stride) {
++        if (whandle->stride != expected_stride) {
+                 static bool warned = false;
+                 if (!warned) {
+                         warned = true;
+@@ -589,18 +608,40 @@ vc4_resource_from_handle(struct pipe_screen *pscreen,
+                                 "unsupported stride %d instead of %d\n",
+                                 prsc->width0, prsc->height0,
+                                 util_format_short_name(prsc->format),
+-                                handle->stride,
++                                whandle->stride,
+                                 expected_stride);
+                 }
+                 goto fail;
+         }
+ 
+         rsc->tiled = false;
+-        rsc->bo = vc4_screen_bo_from_handle(pscreen, handle);
++
++        if (whandle->offset != 0) {
++                fprintf(stderr,
++                        "Attempt to import unsupported winsys offset %u\n",
++                        whandle->offset);
++                return NULL;
++        }
++
++        switch (whandle->type) {
++        case DRM_API_HANDLE_TYPE_SHARED:
++                rsc->bo = vc4_bo_open_name(screen,
++                                           whandle->handle, whandle->stride);
++                break;
++        case DRM_API_HANDLE_TYPE_FD:
++                rsc->bo = vc4_bo_open_dmabuf(screen,
++                                             whandle->handle, whandle->stride);
++                break;
++        default:
++                fprintf(stderr,
++                        "Attempt to import unsupported handle type %d\n",
++                        whandle->type);
++        }
++
+         if (!rsc->bo)
+                 goto fail;
+ 
+-        slice->stride = handle->stride;
++        slice->stride = whandle->stride;
+         slice->tiling = VC4_TILING_FORMAT_LINEAR;
+ 
+         rsc->vc4_format = get_resource_texture_format(prsc);
+diff --git a/src/gallium/drivers/vc4/vc4_screen.c b/src/gallium/drivers/vc4/vc4_screen.c
+index 27d23dc964..405a13f16e 100644
+--- a/src/gallium/drivers/vc4/vc4_screen.c
++++ b/src/gallium/drivers/vc4/vc4_screen.c
+@@ -654,57 +654,3 @@ vc4_screen_create(int fd)
+         ralloc_free(pscreen);
+         return NULL;
+ }
+-
+-boolean
+-vc4_screen_bo_get_handle(struct pipe_screen *pscreen,
+-                         struct vc4_bo *bo,
+-                         unsigned stride,
+-                         struct winsys_handle *whandle)
+-{
+-        whandle->stride = stride;
+-
+-        /* If we're passing some reference to our BO out to some other part of
+-         * the system, then we can't do any optimizations about only us being
+-         * the ones seeing it (like BO caching or shadow update avoidance).
+-         */
+-        bo->private = false;
+-
+-        switch (whandle->type) {
+-        case DRM_API_HANDLE_TYPE_SHARED:
+-                return vc4_bo_flink(bo, &whandle->handle);
+-        case DRM_API_HANDLE_TYPE_KMS:
+-                whandle->handle = bo->handle;
+-                return TRUE;
+-        case DRM_API_HANDLE_TYPE_FD:
+-                whandle->handle = vc4_bo_get_dmabuf(bo);
+-                return whandle->handle != -1;
+-        }
+-
+-        return FALSE;
+-}
+-
+-struct vc4_bo *
+-vc4_screen_bo_from_handle(struct pipe_screen *pscreen,
+-                          struct winsys_handle *whandle)
+-{
+-        struct vc4_screen *screen = vc4_screen(pscreen);
+-
+-        if (whandle->offset != 0) {
+-                fprintf(stderr,
+-                        "Attempt to import unsupported winsys offset %u\n",
+-                        whandle->offset);
+-                return NULL;
+-        }
+-
+-        switch (whandle->type) {
+-        case DRM_API_HANDLE_TYPE_SHARED:
+-                return vc4_bo_open_name(screen, whandle->handle, whandle->stride);
+-        case DRM_API_HANDLE_TYPE_FD:
+-                return vc4_bo_open_dmabuf(screen, whandle->handle, whandle->stride);
+-        default:
+-                fprintf(stderr,
+-                        "Attempt to import unsupported handle type %d\n",
+-                        whandle->type);
+-                return NULL;
+-        }
+-}
+diff --git a/src/gallium/drivers/vc4/vc4_screen.h b/src/gallium/drivers/vc4/vc4_screen.h
+index 34d15381ae..0f80ffb346 100644
+--- a/src/gallium/drivers/vc4/vc4_screen.h
++++ b/src/gallium/drivers/vc4/vc4_screen.h
+@@ -102,13 +102,6 @@ vc4_screen(struct pipe_screen *screen)
+ }
+ 
+ struct pipe_screen *vc4_screen_create(int fd);
+-boolean vc4_screen_bo_get_handle(struct pipe_screen *pscreen,
+-                                 struct vc4_bo *bo,
+-                                 unsigned stride,
+-                                 struct winsys_handle *whandle);
+-struct vc4_bo *
+-vc4_screen_bo_from_handle(struct pipe_screen *pscreen,
+-                          struct winsys_handle *whandle);
+ 
+ const void *
+ vc4_screen_get_compiler_options(struct pipe_screen *pscreen,
+From 1e842ccb60d9c07c28148d9b7ddf9347aabdaac8 Mon Sep 17 00:00:00 2001
+From: Eric Anholt <eric@anholt.net>
+Date: Mon, 5 Jun 2017 14:50:26 -0700
+Subject: [PATCH] vc4: Set shareable BOs as T tiled if possible.
+
+X11 and GL compositor performance on VC4 has been terrible because of our
+SHARED-usage buffers all being forced to linear.  This swaps SHARED &&
+!LINEAR buffers over to being tiled.
+
+This is an expected win for all GL compositors during rendering (a full
+copy of each shared texture per draw call), allows X11 to be used with
+decent performance without a GL compositor, and improves X11 windowed
+swapbuffers performance as well.  It also halves the memory usage of
+shared buffers that get textured from.  The only cost should be idle
+systems with a scanout-only buffer that isn't flagged as LINEAR, in which
+case the memory bandwidth cost of scanout goes up ~25%.
+
+(cherry picked from commit ba654a2fc194f38262a290c378f581fbf280efe2)
+---
+ src/gallium/drivers/vc4/vc4_bufmgr.c    |   7 +++
+ src/gallium/drivers/vc4/vc4_resource.c  | 108 ++++++++++++++++++++++----------
+ src/gallium/drivers/vc4/vc4_simulator.c |   8 +++
+ 3 files changed, 90 insertions(+), 33 deletions(-)
+
+diff --git a/src/gallium/drivers/vc4/vc4_bufmgr.c b/src/gallium/drivers/vc4/vc4_bufmgr.c
+index 12af7f8a9e..25e95ff3c5 100644
+--- a/src/gallium/drivers/vc4/vc4_bufmgr.c
++++ b/src/gallium/drivers/vc4/vc4_bufmgr.c
+@@ -27,6 +27,7 @@
+ #include <fcntl.h>
+ #include <xf86drm.h>
+ #include <xf86drmMode.h>
++#include <drm_fourcc.h>
+ 
+ #include "util/u_hash_table.h"
+ #include "util/u_memory.h"
+@@ -282,6 +283,12 @@ vc4_bo_last_unreference_locked_timed(struct vc4_bo *bo, time_t time)
+                 return;
+         }
+ 
++        struct drm_vc4_set_tiling set_tiling = {
++                .handle = bo->handle,
++                .modifier = DRM_FORMAT_MOD_NONE,
++        };
++        (void)vc4_ioctl(screen->fd, DRM_IOCTL_VC4_SET_TILING, &set_tiling);
++
+         if (cache->size_list_size <= page_index) {
+                 struct list_head *new_list =
+                         ralloc_array(screen, struct list_head, page_index + 1);
+diff --git a/src/gallium/drivers/vc4/vc4_resource.c b/src/gallium/drivers/vc4/vc4_resource.c
+index 7c868b39ec..eb462707a7 100644
+--- a/src/gallium/drivers/vc4/vc4_resource.c
++++ b/src/gallium/drivers/vc4/vc4_resource.c
+@@ -29,10 +29,12 @@
+ #include "util/u_surface.h"
+ #include "util/u_upload_mgr.h"
+ 
++#include "vc4_drm.h"
+ #include "vc4_screen.h"
+ #include "vc4_context.h"
+ #include "vc4_resource.h"
+ #include "vc4_tiling.h"
++#include "drm_fourcc.h"
+ 
+ static bool miptree_debug = false;
+ 
+@@ -553,30 +555,67 @@ struct pipe_resource *
+ vc4_resource_create(struct pipe_screen *pscreen,
+                     const struct pipe_resource *tmpl)
+ {
++        struct vc4_screen *screen = vc4_screen(pscreen);
+         struct vc4_resource *rsc = vc4_resource_setup(pscreen, tmpl);
+         struct pipe_resource *prsc = &rsc->base;
+ 
+-        /* We have to make shared be untiled, since we don't have any way to
+-         * communicate metadata about tiling currently.
++        /* Use a tiled layout if we can, for better 3D performance. */
++        rsc->tiled = true;
++
++        /* VBOs/PBOs are untiled (and 1 height). */
++        if (tmpl->target == PIPE_BUFFER)
++                rsc->tiled = false;
++
++        /* MSAA buffers are linear. */
++        if (tmpl->nr_samples > 1)
++                rsc->tiled = false;
++
++        /* Cursors are always linear, and the user can request linear as
++         * well.
+          */
+-        if (tmpl->target == PIPE_BUFFER ||
+-            tmpl->nr_samples > 1 ||
+-            (tmpl->bind & (PIPE_BIND_SCANOUT |
+-                           PIPE_BIND_LINEAR |
+-                           PIPE_BIND_SHARED |
+-                           PIPE_BIND_CURSOR))) {
++        if (tmpl->bind & (PIPE_BIND_LINEAR |
++                          PIPE_BIND_CURSOR)) {
+                 rsc->tiled = false;
+-        } else {
+-                rsc->tiled = true;
+         }
+ 
+-        if (tmpl->target != PIPE_BUFFER)
+-                rsc->vc4_format = get_resource_texture_format(prsc);
++        /* No shared objects with LT format -- the kernel only has T-format
++         * metadata.  LT objects are small enough it's not worth the trouble
++         * to give them metadata to tile.
++         */
++        if ((tmpl->bind & PIPE_BIND_SHARED) &&
++            vc4_size_is_lt(prsc->width0, prsc->height0, rsc->cpp)) {
++                rsc->tiled = false;
++        }
+ 
+         vc4_setup_slices(rsc);
+         if (!vc4_resource_bo_alloc(rsc))
+                 goto fail;
+ 
++        if (tmpl->bind & PIPE_BIND_SHARED) {
++                assert(rsc->slices[0].tiling == VC4_TILING_FORMAT_T);
++
++                struct drm_vc4_set_tiling set_tiling = {
++                        .handle = rsc->bo->handle,
++                        .modifier = DRM_FORMAT_MOD_BROADCOM_VC4_T_TILED,
++                };
++                int ret = vc4_ioctl(screen->fd,
++                                    DRM_IOCTL_VC4_SET_TILING,
++                                    &set_tiling);
++
++                /* If we hit this, we're probably on an old kernel.  Fall back
++                 * to linear.
++                 */
++                if (ret != 0) {
++                        rsc->tiled = false;
++                        vc4_setup_slices(rsc);
++                        if (!vc4_resource_bo_alloc(rsc))
++                                goto fail;
++                }
++        }
++
++        if (tmpl->target != PIPE_BUFFER)
++                rsc->vc4_format = get_resource_texture_format(prsc);
++
+         return prsc;
+ fail:
+         vc4_resource_destroy(pscreen, prsc);
+@@ -593,29 +632,10 @@ vc4_resource_from_handle(struct pipe_screen *pscreen,
+         struct vc4_resource *rsc = vc4_resource_setup(pscreen, tmpl);
+         struct pipe_resource *prsc = &rsc->base;
+         struct vc4_resource_slice *slice = &rsc->slices[0];
+-        uint32_t expected_stride =
+-            align(prsc->width0, vc4_utile_width(rsc->cpp)) * rsc->cpp;
+ 
+         if (!rsc)
+                 return NULL;
+ 
+-        if (whandle->stride != expected_stride) {
+-                static bool warned = false;
+-                if (!warned) {
+-                        warned = true;
+-                        fprintf(stderr,
+-                                "Attempting to import %dx%d %s with "
+-                                "unsupported stride %d instead of %d\n",
+-                                prsc->width0, prsc->height0,
+-                                util_format_short_name(prsc->format),
+-                                whandle->stride,
+-                                expected_stride);
+-                }
+-                goto fail;
+-        }
+-
+-        rsc->tiled = false;
+-
+         if (whandle->offset != 0) {
+                 fprintf(stderr,
+                         "Attempt to import unsupported winsys offset %u\n",
+@@ -641,10 +661,17 @@ vc4_resource_from_handle(struct pipe_screen *pscreen,
+         if (!rsc->bo)
+                 goto fail;
+ 
+-        slice->stride = whandle->stride;
+-        slice->tiling = VC4_TILING_FORMAT_LINEAR;
++        struct drm_vc4_get_tiling get_tiling = {
++                .handle = rsc->bo->handle,
++        };
++        int ret = vc4_ioctl(screen->fd, DRM_IOCTL_VC4_GET_TILING, &get_tiling);
++        if (ret == 0 &&
++            get_tiling.modifier == DRM_FORMAT_MOD_BROADCOM_VC4_T_TILED) {
++                rsc->tiled = true;
++        }
+ 
+         rsc->vc4_format = get_resource_texture_format(prsc);
++        vc4_setup_slices(rsc);
+ 
+         if (miptree_debug) {
+                 fprintf(stderr,
+@@ -655,6 +682,21 @@ vc4_resource_from_handle(struct pipe_screen *pscreen,
+                         slice->stride, slice->offset);
+         }
+ 
++        if (whandle->stride != rsc->slices[0].stride) {
++                static bool warned = false;
++                if (!warned) {
++                        warned = true;
++                        fprintf(stderr,
++                                "Attempting to import %dx%d %s with "
++                                "unsupported stride %d instead of %d\n",
++                                prsc->width0, prsc->height0,
++                                util_format_short_name(prsc->format),
++                                whandle->stride,
++                                rsc->slices[0].stride);
++                }
++                goto fail;
++        }
++
+         return prsc;
+ 
+ fail:
+diff --git a/src/gallium/drivers/vc4/vc4_simulator.c b/src/gallium/drivers/vc4/vc4_simulator.c
+index ab701ab560..bd063a8432 100644
+--- a/src/gallium/drivers/vc4/vc4_simulator.c
++++ b/src/gallium/drivers/vc4/vc4_simulator.c
+@@ -658,9 +658,17 @@ vc4_simulator_ioctl(int fd, unsigned long request, void *args)
+         case DRM_IOCTL_GEM_CLOSE:
+                 return vc4_simulator_gem_close_ioctl(fd, args);
+ 
++        case DRM_IOCTL_VC4_GET_TILING:
++        case DRM_IOCTL_VC4_SET_TILING:
++                /* Disable these for now, since the sharing with i965 requires
++                 * linear buffers.
++                 */
++                return -1;
++
+         case DRM_IOCTL_GEM_OPEN:
+         case DRM_IOCTL_GEM_FLINK:
+                 return drmIoctl(fd, request, args);
++
+         default:
+                 fprintf(stderr, "Unknown ioctl 0x%08x\n", (int)request);
+                 abort();
