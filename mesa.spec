@@ -70,9 +70,6 @@ Source2:        vl_mpeg12_decoder.c
 # Source4 contains email correspondence clarifying the license terms.
 # Fedora opts to ignore the optional part of clause 2 and treat that code as 2 clause BSD.
 Source3:        Mesa-MLAA-License-Clarification-Email.txt
-# Update eglext.h to 20161230 version, drop this once upstream has this version
-# or newer
-Source4:        eglext.h
 
 Patch1:         0001-llvm-SONAME-without-version.patch
 Patch2:         0002-hardware-gloat.patch
@@ -377,7 +374,6 @@ Headers for development with the Vulkan API.
 %endif
 
 cp %{SOURCE3} docs/
-cp %{SOURCE4} include/EGL
 
 %build
 autoreconf -vfi
@@ -687,6 +683,9 @@ popd
 %endif
 
 %changelog
+* Thu Jul 13 2017 Adam Jackson <ajax@redhat.com>
+- Stop replacing eglext.h, we're up to date again
+
 * Sat Jul  1 2017 Peter Robinson <pbrobinson@fedoraproject.org> 7.1.4-1
 - Update to 17.1.4
 
