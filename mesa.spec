@@ -58,7 +58,7 @@
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-Version:        17.1.4
+Version:        17.1.5
 Release:        1%{?rctag:.%{rctag}}%{?dist}
 
 License:        MIT
@@ -683,6 +683,9 @@ popd
 %endif
 
 %changelog
+* Mon Jul 17 2017 Peter Robinson <pbrobinson@fedoraproject.org> 7.1.5-1
+- Update to 17.1.5
+
 * Thu Jul 13 2017 Adam Jackson <ajax@redhat.com>
 - Stop replacing eglext.h, we're up to date again
 
