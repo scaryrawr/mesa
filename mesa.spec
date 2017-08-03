@@ -59,7 +59,7 @@
 Name:           mesa
 Summary:        Mesa graphics libraries
 Version:        17.1.5
-Release:        1%{?rctag:.%{rctag}}%{?dist}.1
+Release:        1%{?rctag:.%{rctag}}%{?dist}.2
 
 License:        MIT
 URL:            http://www.mesa3d.org
@@ -683,6 +683,9 @@ popd
 %endif
 
 %changelog
+* Thu Aug 03 2017 Fedora Release Engineering <releng@fedoraproject.org> - 17.1.5-1.2
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_27_Binutils_Mass_Rebuild
+
 * Wed Jul 26 2017 Fedora Release Engineering <releng@fedoraproject.org> - 17.1.5-1.1
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_27_Mass_Rebuild
 
