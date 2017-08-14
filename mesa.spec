@@ -54,12 +54,12 @@
 
 %global sanitize 1
 
-#global rctag rc4
+%global rctag rc4
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-Version:        17.1.5
-Release:        1%{?rctag:.%{rctag}}%{?dist}.2
+Version:        17.2.0
+Release:        0.1%{?rctag:.%{rctag}}%{?dist}
 
 License:        MIT
 URL:            http://www.mesa3d.org
@@ -78,13 +78,10 @@ Patch4:         0004-bigendian-assert.patch
 
 # glvnd support patches
 # non-upstreamed ones
-Patch13:        glvnd-fix-gl-dot-pc.patch
-Patch14:        0001-Fix-linkage-against-shared-glapi.patch
+Patch10:        glvnd-fix-gl-dot-pc.patch
+Patch11:        0001-Fix-linkage-against-shared-glapi.patch
 
 # backport from upstream
-Patch51:	mesa-7.1.2-etnaviv-upstream-fixes.patch
-Patch52:	mesa-7.1.2-etnaviv-fixes.patch
-Patch53:	mesa-7.1-vc4-fixes.patch
 
 BuildRequires:  gcc
 BuildRequires:  gcc-c++
@@ -123,6 +120,7 @@ BuildRequires: bison flex
 %if %{with wayland}
 BuildRequires: pkgconfig(wayland-client)
 BuildRequires: pkgconfig(wayland-server)
+BuildRequires: pkgconfig(wayland-protocols)
 %endif
 %if 0%{?with_vdpau}
 BuildRequires: libvdpau-devel
@@ -683,6 +681,9 @@ popd
 %endif
 
 %changelog
+* Sun Aug 13 2017 Peter Robinson <pbrobinson@fedoraproject.org> 17.2.0-0.1.rc4
+- Update to 17.2.0-rc4
+
 * Thu Aug 03 2017 Fedora Release Engineering <releng@fedoraproject.org> - 17.1.5-1.2
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_27_Binutils_Mass_Rebuild
 

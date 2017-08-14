@@ -20,7 +20,7 @@ index 5d39486..04add87 100644
 +	$(top_builddir)/src/mapi/shared-glapi/libglapi.la \
  	$(SHARED_GLAPI_LIB) \
  	$(OSMESA_LIB_DEPS) \
- 	$(CLOCK_LIB)
+ 	$(CLOCK_LIB) \
 -- 
 2.9.3
 
