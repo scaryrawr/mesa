@@ -54,12 +54,12 @@
 
 %global sanitize 1
 
-%global rctag rc4
+%global rctag rc5
 
 Name:           mesa
 Summary:        Mesa graphics libraries
 Version:        17.2.0
-Release:        0.1%{?rctag:.%{rctag}}%{?dist}
+Release:        0.2%{?rctag:.%{rctag}}%{?dist}
 
 License:        MIT
 URL:            http://www.mesa3d.org
@@ -681,6 +681,9 @@ popd
 %endif
 
 %changelog
+* Tue Aug 22 2017 Peter Robinson <pbrobinson@fedoraproject.org> 17.2.0-0.2.rc5
+- Update to 17.2.0-rc5
+
 * Sun Aug 13 2017 Peter Robinson <pbrobinson@fedoraproject.org> 17.2.0-0.1.rc4
 - Update to 17.2.0-rc4
 
