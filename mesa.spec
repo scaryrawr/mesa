@@ -54,12 +54,12 @@
 
 %global sanitize 1
 
-%global rctag rc6
+#global rctag rc6
 
 Name:           mesa
 Summary:        Mesa graphics libraries
 Version:        17.2.0
-Release:        0.3%{?rctag:.%{rctag}}%{?dist}
+Release:        1%{?rctag:.%{rctag}}%{?dist}
 
 License:        MIT
 URL:            http://www.mesa3d.org
@@ -681,6 +681,9 @@ popd
 %endif
 
 %changelog
+* Tue Sep  5 2017 Peter Robinson <pbrobinson@fedoraproject.org> 17.2.0-1
+- Update to 17.2.0 GA
+
 * Thu Aug 31 2017 Peter Robinson <pbrobinson@fedoraproject.org> 17.2.0-0.3.rc6
 - Update to 17.2.0-rc6
 
