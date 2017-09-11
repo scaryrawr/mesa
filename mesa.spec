@@ -59,7 +59,7 @@
 Name:           mesa
 Summary:        Mesa graphics libraries
 Version:        17.2.0
-Release:        1%{?rctag:.%{rctag}}%{?dist}
+Release:        2%{?rctag:.%{rctag}}%{?dist}
 
 License:        MIT
 URL:            http://www.mesa3d.org
@@ -82,6 +82,7 @@ Patch10:        glvnd-fix-gl-dot-pc.patch
 Patch11:        0001-Fix-linkage-against-shared-glapi.patch
 
 # backport from upstream
+Patch20:	0001-util-improve-compiler-guard.patch
 
 BuildRequires:  gcc
 BuildRequires:  gcc-c++
@@ -681,6 +682,9 @@ popd
 %endif
 
 %changelog
+* Mon Sep 11 2017 Peter Robinson <pbrobinson@fedoraproject.org> 17.2.0-2
+- Add upstream patch for glibc xlocale.h change (fdo bz 102454)
+
 * Tue Sep  5 2017 Peter Robinson <pbrobinson@fedoraproject.org> 17.2.0-1
 - Update to 17.2.0 GA
 
