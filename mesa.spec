@@ -71,6 +71,9 @@ Source2:        vl_mpeg12_decoder.c
 # Fedora opts to ignore the optional part of clause 2 and treat that code as 2 clause BSD.
 Source3:        Mesa-MLAA-License-Clarification-Email.txt
 
+# https://cgit.freedesktop.org/~ajax/mesa/log/?h=mesa-17.2-s3tc
+Patch0:		0001-mesa-Squash-merge-of-S3TC-support.patch
+
 Patch1:         0001-llvm-SONAME-without-version.patch
 Patch2:         0002-hardware-gloat.patch
 Patch3:         0003-evergreen-big-endian.patch
@@ -372,6 +375,10 @@ Headers for development with the Vulkan API.
 %endif
 
 cp %{SOURCE3} docs/
+
+# this is a hack for S3TC support. r200_screen.c is symlinked to
+# radeon_screen.c in git, but is its own file in the tarball.
+cp -f src/mesa/drivers/dri/{radeon,r200}/radeon_screen.c
 
 %build
 autoreconf -vfi
@@ -681,6 +688,9 @@ popd
 %endif
 
 %changelog
+* Tue Oct 03 2017 Adam Jackson <ajax@redhat.com> - 17.2.2-2
+- Backport S3TC support from master
+
 * Tue Oct  3 2017 Peter Robinson <pbrobinson@fedoraproject.org> 17.2.2-1
 - Update to 17.2.2 GA
 
