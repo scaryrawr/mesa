@@ -28,7 +28,7 @@
 %define with_omx    1
 %endif
 
-%ifarch x86_64
+%ifarch %{ix86} x86_64
 %define with_vulkan 1
 %else
 %define with_vulkan 0
@@ -59,7 +59,7 @@
 Name:           mesa
 Summary:        Mesa graphics libraries
 Version:        17.2.2
-Release:        2%{?rctag:.%{rctag}}%{?dist}
+Release:        3%{?rctag:.%{rctag}}%{?dist}
 
 License:        MIT
 URL:            http://www.mesa3d.org
@@ -688,6 +688,9 @@ popd
 %endif
 
 %changelog
+* Mon Oct 09 2017 Dave Airlie <airlied@redhat.com> - 17.2.2-3
+- enable vulkan on 32-bit x86
+
 * Tue Oct 03 2017 Adam Jackson <ajax@redhat.com> - 17.2.2-2
 - Backport S3TC support from master
 
