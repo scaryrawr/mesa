@@ -680,8 +680,13 @@ popd
 %files vulkan-drivers
 %{_libdir}/libvulkan_intel.so
 %{_libdir}/libvulkan_radeon.so
+%ifarch x86_64
 %{_datadir}/vulkan/icd.d/intel_icd.x86_64.json
 %{_datadir}/vulkan/icd.d/radeon_icd.x86_64.json
+%else
+%{_datadir}/vulkan/icd.d/intel_icd.i686.json
+%{_datadir}/vulkan/icd.d/radeon_icd.i686.json
+%endif
 
 %files vulkan-devel
 %{_includedir}/vulkan/
