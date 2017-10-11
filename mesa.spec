@@ -59,7 +59,7 @@
 Name:           mesa
 Summary:        Mesa graphics libraries
 Version:        17.2.2
-Release:        3%{?rctag:.%{rctag}}%{?dist}
+Release:        4%{?rctag:.%{rctag}}%{?dist}
 
 License:        MIT
 URL:            http://www.mesa3d.org
@@ -78,6 +78,7 @@ Patch1:         0001-llvm-SONAME-without-version.patch
 Patch2:         0002-hardware-gloat.patch
 Patch3:         0003-evergreen-big-endian.patch
 Patch4:         0004-bigendian-assert.patch
+Patch5:         vc4-Don-t-advertise-tiled-dmabuf-modifiers-if-we-can-t-use-them.patch
 
 # glvnd support patches
 # non-upstreamed ones
@@ -693,6 +694,9 @@ popd
 %endif
 
 %changelog
+* Wed Oct 11 2017 Peter Robinson <pbrobinson@fedoraproject.org> 17.2.2-4
+- Fix for vc4/Raspberry Pi
+
 * Mon Oct 09 2017 Dave Airlie <airlied@redhat.com> - 17.2.2-3
 - enable vulkan on 32-bit x86
 
