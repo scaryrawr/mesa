@@ -59,7 +59,7 @@
 Name:           mesa
 Summary:        Mesa graphics libraries
 Version:        17.2.3
-Release:        1%{?rctag:.%{rctag}}%{?dist}
+Release:        2%{?rctag:.%{rctag}}%{?dist}
 
 License:        MIT
 URL:            http://www.mesa3d.org
@@ -694,6 +694,9 @@ popd
 %endif
 
 %changelog
+* Mon Oct 23 2017 Tom Stellard <tstellar@redhat.com> - 17.2.3-2
+- Rebuild for LLVM 5.0.0
+
 * Thu Oct 19 2017 Gwyn Ciesla <limburgher@gmail.com> - 17.2.3-1
 - 17.2.3, bugfix release.
 
