@@ -54,12 +54,12 @@
 
 %global sanitize 1
 
-#global rctag rc6
+%global rctag rc2
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-Version:        17.2.4
-Release:        1%{?rctag:.%{rctag}}%{?dist}
+Version:        17.3.0
+Release:        0.2%{?rctag:.%{rctag}}%{?dist}
 
 License:        MIT
 URL:            http://www.mesa3d.org
@@ -71,14 +71,10 @@ Source2:        vl_mpeg12_decoder.c
 # Fedora opts to ignore the optional part of clause 2 and treat that code as 2 clause BSD.
 Source3:        Mesa-MLAA-License-Clarification-Email.txt
 
-# https://cgit.freedesktop.org/~ajax/mesa/log/?h=mesa-17.2-s3tc
-Patch0:		0001-mesa-Squash-merge-of-S3TC-support.patch
-
 Patch1:         0001-llvm-SONAME-without-version.patch
 Patch2:         0002-hardware-gloat.patch
 Patch3:         0003-evergreen-big-endian.patch
 Patch4:         0004-bigendian-assert.patch
-Patch5:         vc4-Don-t-advertise-tiled-dmabuf-modifiers-if-we-can-t-use-them.patch
 
 # glvnd support patches
 # non-upstreamed ones
@@ -694,6 +690,9 @@ popd
 %endif
 
 %changelog
+* Tue Oct 31 2017 Peter Robinson <pbrobinson@fedoraproject.org> 17.3.0-0.1.rc2
+- Update to 17.3.0-rc2
+
 * Tue Oct 31 2017 Peter Robinson <pbrobinson@fedoraproject.org> 17.2.4-1
 - Update to 17.2.4 GA
 
