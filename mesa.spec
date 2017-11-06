@@ -407,7 +407,7 @@ export LDFLAGS="-static-libstdc++"
     --with-platforms=x11,drm,surfaceless%{?with_wayland:,wayland} \
     --enable-shared-glapi \
     --enable-gbm \
-    %{?with_omx:--enable-omx} \
+    %{?with_omx:--enable-omx-bellagio} \
     %{?with_opencl:--enable-opencl --enable-opencl-icd} %{!?with_opencl:--disable-opencl} \
     --enable-glx-tls \
     --enable-texture-float=yes \
