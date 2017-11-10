@@ -59,17 +59,19 @@
 Name:           mesa
 Summary:        Mesa graphics libraries
 Version:        17.3.0
-Release:        0.3%{?rctag:.%{rctag}}%{?dist}
+Release:        0.4%{?rctag:.%{rctag}}%{?dist}
 
 License:        MIT
 URL:            http://www.mesa3d.org
-Source0:        https://mesa.freedesktop.org/archive/%{name}-%{version}%{?rctag:-%{rctag}}.tar.xz
+#Source0:        https://mesa.freedesktop.org/archive/%{name}-%{version}%{?rctag:-%{rctag}}.tar.xz
+Source0:        %{name}-%{version}%{?rctag:-%{rctag}}.tar.xz
 Source1:        vl_decoder.c
 Source2:        vl_mpeg12_decoder.c
+Source3:        Makefile
 # src/gallium/auxiliary/postprocess/pp_mlaa* have an ... interestingly worded license.
 # Source4 contains email correspondence clarifying the license terms.
 # Fedora opts to ignore the optional part of clause 2 and treat that code as 2 clause BSD.
-Source3:        Mesa-MLAA-License-Clarification-Email.txt
+Source4:        Mesa-MLAA-License-Clarification-Email.txt
 
 Patch1:         0001-llvm-SONAME-without-version.patch
 Patch2:         0002-hardware-gloat.patch
@@ -371,7 +373,7 @@ Headers for development with the Vulkan API.
   cp -f %{SOURCE2} src/gallium/auxiliary/vl/vl_mpeg12_decoder.c
 %endif
 
-cp %{SOURCE3} docs/
+cp %{SOURCE4} docs/
 
 # this is a hack for S3TC support. r200_screen.c is symlinked to
 # radeon_screen.c in git, but is its own file in the tarball.
@@ -690,6 +692,9 @@ popd
 %endif
 
 %changelog
+* Fri Nov 10 2017 Igor Gnatenko <ignatenkobrain@fedoraproject.org> - 17.3.0-0.4.rc3
+- Sanitize tarball
+
 * Wed Nov  8 2017 Peter Robinson <pbrobinson@fedoraproject.org> 17.3.0-0.3.rc3
 - Update to 17.3.0-rc3
 
