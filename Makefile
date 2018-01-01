@@ -1,4 +1,4 @@
-VERSION ?= 17.2.4
+VERSION ?= 17.3.1
 SANITIZE ?= 1
 
 DIRNAME = mesa-${VERSION}
@@ -20,4 +20,4 @@ ifdef SANITIZE
 endif
 
 archive: clone sanitize
-	tar cf ${DIRNAME}.tar.xz ${DIRNAME}
+	tar caf ${DIRNAME}.tar.xz ${DIRNAME}

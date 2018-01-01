@@ -54,12 +54,12 @@
 
 %global sanitize 1
 
-#global rctag rc6
+#global rctag rc3
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-Version:        17.2.4
-Release:        3%{?rctag:.%{rctag}}%{?dist}
+Version:        17.3.1
+Release:        1%{?rctag:.%{rctag}}%{?dist}
 
 License:        MIT
 URL:            http://www.mesa3d.org
@@ -73,14 +73,10 @@ Source3:        Makefile
 # Fedora opts to ignore the optional part of clause 2 and treat that code as 2 clause BSD.
 Source4:        Mesa-MLAA-License-Clarification-Email.txt
 
-# https://cgit.freedesktop.org/~ajax/mesa/log/?h=mesa-17.2-s3tc
-Patch0:         0001-mesa-Squash-merge-of-S3TC-support.patch
-
 Patch1:         0001-llvm-SONAME-without-version.patch
 Patch2:         0002-hardware-gloat.patch
 Patch3:         0003-evergreen-big-endian.patch
 Patch4:         0004-bigendian-assert.patch
-Patch5:         vc4-Don-t-advertise-tiled-dmabuf-modifiers-if-we-can-t-use-them.patch
 
 # glvnd support patches
 # non-upstreamed ones
@@ -413,7 +409,7 @@ export LDFLAGS="-static-libstdc++"
     --with-platforms=x11,drm,surfaceless%{?with_wayland:,wayland} \
     --enable-shared-glapi \
     --enable-gbm \
-    %{?with_omx:--enable-omx} \
+    %{?with_omx:--enable-omx-bellagio} \
     %{?with_opencl:--enable-opencl --enable-opencl-icd} %{!?with_opencl:--disable-opencl} \
     --enable-glx-tls \
     --enable-texture-float=yes \
@@ -696,11 +692,17 @@ popd
 %endif
 
 %changelog
-* Wed Dec 13 2017 Tom Stellard <tstellar@redhat.com> - 17.2.4-3
-- Rebuild for LLVM 5.0
+* Mon Jan 01 2018 Igor Gnatenko <ignatenkobrain@fedoraproject.org> - 17.3.1-1
+- Update to 17.3.1
 
-* Fri Nov 10 2017 Igor Gnatenko <ignatenkobrain@fedoraproject.org> - 17.2.4-2
+* Fri Nov 10 2017 Igor Gnatenko <ignatenkobrain@fedoraproject.org> - 17.3.0-0.4.rc3
 - Sanitize tarball
+
+* Wed Nov  8 2017 Peter Robinson <pbrobinson@fedoraproject.org> 17.3.0-0.3.rc3
+- Update to 17.3.0-rc3
+
+* Tue Oct 31 2017 Peter Robinson <pbrobinson@fedoraproject.org> 17.3.0-0.1.rc2
+- Update to 17.3.0-rc2
 
 * Tue Oct 31 2017 Peter Robinson <pbrobinson@fedoraproject.org> 17.2.4-1
 - Update to 17.2.4 GA
