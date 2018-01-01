@@ -20,4 +20,4 @@ ifdef SANITIZE
 endif
 
 archive: clone sanitize
-	tar cf ${DIRNAME}.tar.xz ${DIRNAME}
+	tar caf ${DIRNAME}.tar.xz ${DIRNAME}
