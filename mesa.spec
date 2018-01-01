@@ -54,12 +54,12 @@
 
 %global sanitize 1
 
-%global rctag rc3
+#global rctag rc3
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-Version:        17.3.0
-Release:        0.4%{?rctag:.%{rctag}}%{?dist}
+Version:        17.3.1
+Release:        1%{?rctag:.%{rctag}}%{?dist}
 
 License:        MIT
 URL:            http://www.mesa3d.org
@@ -692,6 +692,9 @@ popd
 %endif
 
 %changelog
+* Mon Jan 01 2018 Igor Gnatenko <ignatenkobrain@fedoraproject.org> - 17.3.1-1
+- Update to 17.3.1
+
 * Fri Nov 10 2017 Igor Gnatenko <ignatenkobrain@fedoraproject.org> - 17.3.0-0.4.rc3
 - Sanitize tarball
 
