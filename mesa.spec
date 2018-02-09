@@ -54,12 +54,12 @@
 
 %global sanitize 1
 
-#global rctag rc3
+%global rctag rc3
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-Version:        17.3.3
-Release:        1%{?rctag:.%{rctag}}%{?dist}.1
+Version:        18.0.0
+Release:        0.1%{?rctag:.%{rctag}}%{?dist}
 
 License:        MIT
 URL:            http://www.mesa3d.org
@@ -82,7 +82,6 @@ Patch4:         0004-bigendian-assert.patch
 # non-upstreamed ones
 Patch10:        glvnd-fix-gl-dot-pc.patch
 Patch11:        0001-Fix-linkage-against-shared-glapi.patch
-Patch12:        0001-link-mesautil-with-pthreads.patch
 
 # backport from upstream
 
@@ -108,7 +107,7 @@ BuildRequires:  libXi-devel
 BuildRequires:  libXmu-devel
 BuildRequires:  libxshmfence-devel
 BuildRequires:  elfutils
-BuildRequires:  python
+BuildRequires:  python2
 BuildRequires:  gettext
 %if 0%{?with_llvm}
 BuildRequires: llvm-devel >= 3.4-7
@@ -117,7 +116,7 @@ BuildRequires: clang-devel >= 3.0
 %endif
 %endif
 BuildRequires: elfutils-libelf-devel
-BuildRequires: libxml2-python
+BuildRequires: python2-libxml2
 BuildRequires: libudev-devel
 BuildRequires: bison flex
 %if %{with wayland}
@@ -693,6 +692,9 @@ popd
 %endif
 
 %changelog
+* Thu Feb 08 2018 Igor Gnatenko <ignatenkobrain@fedoraproject.org> - 18.0.0-0.1.rc3
+- Update to 18.0.0~rc3
+
 * Thu Feb 08 2018 Fedora Release Engineering <releng@fedoraproject.org> - 17.3.3-1.1
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_28_Mass_Rebuild
 
