@@ -54,7 +54,7 @@
 
 %global sanitize 1
 
-%global rctag rc3
+%global rctag rc4
 
 Name:           mesa
 Summary:        Mesa graphics libraries
@@ -692,6 +692,9 @@ popd
 %endif
 
 %changelog
+* Mon Feb 19 2018 Igor Gnatenko <ignatenkobrain@fedoraproject.org> - 18.0.0-0.1.rc4
+- Update to 18.0.0~rc4
+
 * Thu Feb 08 2018 Igor Gnatenko <ignatenkobrain@fedoraproject.org> - 18.0.0-0.1.rc3
 - Update to 18.0.0~rc3
 
