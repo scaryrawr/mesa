@@ -1,5 +1,8 @@
 %bcond_without wayland
 
+# https://bugzilla.redhat.com/show_bug.cgi?id=1546714
+%undefine _annotated_build
+
 # S390 doesn't have video cards, but we need swrast for xserver's GLX
 # llvm (and thus llvmpipe) doesn't actually work on ppc32
 %ifnarch s390 ppc
