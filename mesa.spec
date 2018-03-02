@@ -62,7 +62,7 @@
 Name:           mesa
 Summary:        Mesa graphics libraries
 Version:        18.0.0
-Release:        0.2%{?rctag:.%{rctag}}%{?dist}
+Release:        0.3%{?rctag:.%{rctag}}%{?dist}
 
 License:        MIT
 URL:            http://www.mesa3d.org
@@ -391,8 +391,8 @@ autoreconf -vfi
 #
 # We do say 'catch' in the clover and d3d1x state trackers, but we're not
 # building those yet.
-export CXXFLAGS="%{?with_opencl:-frtti -fexceptions} %{!?with_opencl:-fno-rtti -fno-exceptions}"
-export LDFLAGS="-static-libstdc++"
+export CXXFLAGS="%{build_cxxflags} %{?with_opencl:-frtti -fexceptions} %{!?with_opencl:-fno-rtti -fno-exceptions}"
+export LDFLAGS="%{build_ldflags} -static-libstdc++"
 %ifarch %{ix86}
 # i do not have words for how much the assembly dispatch code infuriates me
 %global asm_flags --disable-asm
@@ -696,6 +696,9 @@ popd
 %endif
 
 %changelog
+* Fri Mar 02 2018 Igor Gnatenko <ignatenkobrain@fedoraproject.org> - 18.0.0-0.3.rc4
+- Honor CXXFLAGS / LDFLAGS
+
 * Mon Feb 26 2018 Igor Gnatenko <ignatenkobrain@fedoraproject.org> - 18.0.0-0.2.rc4
 - Backport patch to fix video corruption
 
