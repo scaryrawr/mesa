@@ -62,7 +62,7 @@
 Name:           mesa
 Summary:        Mesa graphics libraries
 Version:        18.0.0
-Release:        0.3%{?rctag:.%{rctag}}%{?dist}
+Release:        0.4%{?rctag:.%{rctag}}%{?dist}
 
 License:        MIT
 URL:            http://www.mesa3d.org
@@ -111,7 +111,7 @@ BuildRequires:  libXi-devel
 BuildRequires:  libXmu-devel
 BuildRequires:  libxshmfence-devel
 BuildRequires:  elfutils
-BuildRequires:  python2
+BuildRequires:  python3
 BuildRequires:  gettext
 %if 0%{?with_llvm}
 BuildRequires: llvm-devel >= 3.4-7
@@ -120,7 +120,7 @@ BuildRequires: clang-devel >= 3.0
 %endif
 %endif
 BuildRequires: elfutils-libelf-devel
-BuildRequires: python2-libxml2
+BuildRequires: python3-libxml2
 BuildRequires: libudev-devel
 BuildRequires: bison flex
 %if %{with wayland}
@@ -144,7 +144,7 @@ BuildRequires: libclc-devel opencl-filesystem
 %if 0%{?with_vulkan}
 BuildRequires: vulkan-devel
 %endif
-BuildRequires: python-mako
+BuildRequires: python3-mako
 BuildRequires: libstdc++-static
 %ifarch %{valgrind_arches}
 BuildRequires: pkgconfig(valgrind)
@@ -696,6 +696,9 @@ popd
 %endif
 
 %changelog
+* Mon Mar 19 2018 Adam Jackson <ajax@redhat.com> - 18.0.0-0.4.rc4
+- Build with python3
+
 * Fri Mar 02 2018 Igor Gnatenko <ignatenkobrain@fedoraproject.org> - 18.0.0-0.3.rc4
 - Honor CXXFLAGS / LDFLAGS
 
