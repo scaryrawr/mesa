@@ -57,12 +57,12 @@
 
 %global sanitize 1
 
-%global rctag rc4
+%global rctag rc5
 
 Name:           mesa
 Summary:        Mesa graphics libraries
 Version:        18.0.0
-Release:        0.4%{?rctag:.%{rctag}}%{?dist}
+Release:        0.5%{?rctag:.%{rctag}}%{?dist}
 
 License:        MIT
 URL:            http://www.mesa3d.org
@@ -85,9 +85,6 @@ Patch4:         0004-bigendian-assert.patch
 # non-upstreamed ones
 Patch10:        glvnd-fix-gl-dot-pc.patch
 Patch11:        0001-Fix-linkage-against-shared-glapi.patch
-
-# backport from upstream
-Patch1001:      0001-loader_dri3-glx-egl-Reinstate-the-loader_dri3_vtable.patch
 
 BuildRequires:  gcc
 BuildRequires:  gcc-c++
@@ -696,6 +693,9 @@ popd
 %endif
 
 %changelog
+* Mon Mar 26 2018 Peter Robinson <pbrobinson@fedoraproject.org> 18.0.0-0.5.rc5
+- Update to 18.0.0 rc5
+
 * Mon Mar 19 2018 Adam Jackson <ajax@redhat.com> - 18.0.0-0.4.rc4
 - Build with python3
 
