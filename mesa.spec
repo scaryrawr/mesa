@@ -7,6 +7,8 @@
 # llvm (and thus llvmpipe) doesn't actually work on ppc32
 %ifnarch s390 ppc
 %define with_llvm 1
+%else
+%define with_opencl 1
 %endif
 
 %if 0%{?with_llvm}
@@ -21,6 +23,7 @@
 %define with_vdpau 1
 %define with_vaapi 1
 %define with_nine 1
+%define with_omx 1
 %define base_drivers swrast,nouveau,radeon,r200
 %endif
 
@@ -28,23 +31,15 @@
 %define platform_drivers ,i915,i965
 %define with_vmware 1
 %define with_xa     1
-%define with_omx    1
 %endif
 
 %ifarch %{ix86} x86_64
 %define with_vulkan 1
-%else
-%define with_vulkan 0
-%endif
-
-%ifarch aarch64 %{ix86} x86_64
-%define with_opencl 1
 %endif
 
 %ifarch %{arm} aarch64
 %define with_etnaviv   1
 %define with_freedreno 1
-%define with_omx       1
 %define with_vc4       1
 %define with_xa        1
 %endif
@@ -62,7 +57,7 @@
 Name:           mesa
 Summary:        Mesa graphics libraries
 Version:        18.0.0
-Release:        1%{?rctag:.%{rctag}}%{?dist}
+Release:        2%{?rctag:.%{rctag}}%{?dist}
 
 License:        MIT
 URL:            http://www.mesa3d.org
@@ -142,7 +137,6 @@ BuildRequires: libclc-devel opencl-filesystem
 BuildRequires: vulkan-devel
 %endif
 BuildRequires: python3-mako
-BuildRequires: libstdc++-static
 %ifarch %{valgrind_arches}
 BuildRequires: pkgconfig(valgrind)
 %endif
@@ -376,20 +370,9 @@ Headers for development with the Vulkan API.
 
 cp %{SOURCE4} docs/
 
-# this is a hack for S3TC support. r200_screen.c is symlinked to
-# radeon_screen.c in git, but is its own file in the tarball.
-cp -f src/mesa/drivers/dri/{radeon,r200}/radeon_screen.c
-
 %build
 autoreconf -vfi
 
-# C++ note: we never say "catch" in the source.  we do say "typeid" once,
-# in an assert, which is patched out above.  LLVM doesn't use RTTI or throw.
-#
-# We do say 'catch' in the clover and d3d1x state trackers, but we're not
-# building those yet.
-export CXXFLAGS="%{build_cxxflags} %{?with_opencl:-frtti -fexceptions} %{!?with_opencl:-fno-rtti -fno-exceptions}"
-export LDFLAGS="%{build_ldflags} -static-libstdc++"
 %ifarch %{ix86}
 # i do not have words for how much the assembly dispatch code infuriates me
 %global asm_flags --disable-asm
@@ -414,7 +397,7 @@ export LDFLAGS="%{build_ldflags} -static-libstdc++"
     %{?with_opencl:--enable-opencl --enable-opencl-icd} %{!?with_opencl:--disable-opencl} \
     --enable-glx-tls \
     --enable-texture-float=yes \
-%if %{with_vulkan}
+%if 0%{?with_vulkan}
     %{?vulkan_drivers} \
 %endif
     %{?with_llvm:--enable-llvm} \
@@ -429,13 +412,6 @@ export LDFLAGS="%{build_ldflags} -static-libstdc++"
 %endif
     %{?dri_drivers}
 
-# libtool refuses to pass through things you ask for in LDFLAGS that it doesn't
-# know about, like -static-libstdc++, so...
-sed -i 's/-fuse-linker-plugin|/-static-lib*|&/' libtool
-sed -i 's/-nostdlib//g' libtool
-sed -i 's/^predep_objects=.*$/#&/' libtool
-sed -i 's/^postdep_objects=.*$/#&/' libtool
-sed -i 's/^postdeps=.*$/#&/' libtool
 %make_build MKDEP=/bin/true V=1
 
 %install
@@ -472,8 +448,6 @@ pushd %{buildroot}%{_libdir}
 for i in libOSMesa*.so libGL.so ; do
     eu-findtextrel $i && exit 1
 done
-# check that we really didn't link libstdc++ dynamically
-eu-readelf -d mesa_dri_drivers.so | grep -q libstdc && exit 1
 popd
 
 %files filesystem
@@ -649,10 +623,8 @@ popd
 %endif
 %endif
 %if 0%{?with_llvm}
-%ifarch %{ix86} x86_64 aarch64
 %dir %{_libdir}/gallium-pipe
 %{_libdir}/gallium-pipe/*.so
-%endif
 %{_libdir}/dri/kms_swrast_dri.so
 %endif
 %{_libdir}/dri/swrast_dri.so
@@ -693,6 +665,12 @@ popd
 %endif
 
 %changelog
+* Wed Mar 28 2018 Adam Jackson <ajax@redhat.com> - 18.0.0-2
+- Unifarch OpenCL and OpenMAX (except ppc32 and s390 because llvm)
+- Simplify C/LDFLAGS setup to match
+- Drop -static-libstdc++ and related hacks
+- Drop S3TC build hack
+
 * Wed Mar 28 2018 Igor Gnatenko <ignatenkobrain@fedoraproject.org> - 18.0.0-1
 - Update to 18.0.0
 
