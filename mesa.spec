@@ -7,8 +7,6 @@
 # llvm (and thus llvmpipe) doesn't actually work on ppc32
 %ifnarch s390 ppc
 %define with_llvm 1
-%else
-%define with_opencl 1
 %endif
 
 %if 0%{?with_llvm}
@@ -24,6 +22,7 @@
 %define with_vaapi 1
 %define with_nine 1
 %define with_omx 1
+%define with_opencl 1
 %define base_drivers swrast,nouveau,radeon,r200
 %endif
 
@@ -31,9 +30,6 @@
 %define platform_drivers ,i915,i965
 %define with_vmware 1
 %define with_xa     1
-%endif
-
-%ifarch %{ix86} x86_64
 %define with_vulkan 1
 %endif
 
@@ -622,11 +618,11 @@ popd
 %endif
 %endif
 %endif
-%if 0%{?with_llvm}
+%if 0%{?with_hardware}
 %dir %{_libdir}/gallium-pipe
 %{_libdir}/gallium-pipe/*.so
-%{_libdir}/dri/kms_swrast_dri.so
 %endif
+%{_libdir}/dri/kms_swrast_dri.so
 %{_libdir}/dri/swrast_dri.so
 %{_libdir}/dri/virtio_gpu_dri.so
 
