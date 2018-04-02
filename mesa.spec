@@ -53,7 +53,7 @@
 Name:           mesa
 Summary:        Mesa graphics libraries
 Version:        18.0.0
-Release:        2%{?rctag:.%{rctag}}%{?dist}
+Release:        2%{?rctag:.%{rctag}}%{?dist}.1
 
 License:        MIT
 URL:            http://www.mesa3d.org
@@ -661,6 +661,9 @@ popd
 %endif
 
 %changelog
+* Mon Apr 02 2018 Tom Stellard <tstellar@redhat.com> - 18.0.0-2.1
+- Rebuild against libLLVM.so with symbol versioning enabled
+
 * Wed Mar 28 2018 Adam Jackson <ajax@redhat.com> - 18.0.0-2
 - Unifarch OpenCL and OpenMAX (except ppc32 and s390 because llvm)
 - Simplify C/LDFLAGS setup to match
