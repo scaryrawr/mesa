@@ -1,4 +1,4 @@
-%bcond_without wayland
+%bcond_with wayland
 
 # https://bugzilla.redhat.com/show_bug.cgi?id=1546714
 %undefine _annotated_build
@@ -53,7 +53,7 @@
 Name:           mesa
 Summary:        Mesa graphics libraries
 Version:        18.0.0
-Release:        2%{?rctag:.%{rctag}}%{?dist}.1
+Release:        3%{?rctag:.%{rctag}}%{?dist}
 
 License:        MIT
 URL:            http://www.mesa3d.org
@@ -661,6 +661,9 @@ popd
 %endif
 
 %changelog
+* Tue Apr 03 2018 Tom Stellard <tstellar@redhat.com> - 18.0.0-3
+- Disable build of wayland packages.  These have been obseleted by wayland-devel.
+
 * Mon Apr 02 2018 Tom Stellard <tstellar@redhat.com> - 18.0.0-2.1
 - Rebuild against libLLVM.so with symbol versioning enabled
 
