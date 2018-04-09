@@ -1,5 +1,3 @@
-%bcond_with wayland
-
 # https://bugzilla.redhat.com/show_bug.cgi?id=1546714
 %undefine _annotated_build
 
@@ -40,6 +38,12 @@
 %define with_xa        1
 %endif
 
+%if 0%{?fedora} < 28
+%define with_wayland_egl 1
+%else
+%define with_wayland_egl 0
+%endif
+
 %define dri_drivers --with-dri-drivers=%{?base_drivers}%{?platform_drivers}
 
 %if 0%{?with_vulkan}
@@ -53,7 +57,7 @@
 Name:           mesa
 Summary:        Mesa graphics libraries
 Version:        18.0.0
-Release:        3%{?rctag:.%{rctag}}%{?dist}
+Release:        4%{?rctag:.%{rctag}}%{?dist}
 
 License:        MIT
 URL:            http://www.mesa3d.org
@@ -111,11 +115,9 @@ BuildRequires: elfutils-libelf-devel
 BuildRequires: python3-libxml2
 BuildRequires: libudev-devel
 BuildRequires: bison flex
-%if %{with wayland}
 BuildRequires: pkgconfig(wayland-client)
 BuildRequires: pkgconfig(wayland-server)
 BuildRequires: pkgconfig(wayland-protocols)
-%endif
 %if 0%{?with_vdpau}
 BuildRequires: libvdpau-devel
 %endif
@@ -260,7 +262,7 @@ Provides:       libgbm-devel%{?_isa}
 %description libgbm-devel
 %{summary}.
 
-%if %{with wayland}
+%if %{?with_wayland_egl}
 %package libwayland-egl
 Summary:        Mesa libwayland-egl runtime library
 Provides:       libwayland-egl
@@ -386,7 +388,7 @@ autoreconf -vfi
     --disable-xvmc \
     %{?with_vdpau:--enable-vdpau} \
     %{?with_vaapi:--enable-va} \
-    --with-platforms=x11,drm,surfaceless%{?with_wayland:,wayland} \
+    --with-platforms=x11,drm,surfaceless,wayland \
     --enable-shared-glapi \
     --enable-gbm \
     %{?with_omx:--enable-omx-bellagio} \
@@ -424,6 +426,12 @@ rm -f %{buildroot}%{_libdir}/libGLX_mesa.so
 rm -f %{buildroot}%{_libdir}/libEGL_mesa.so
 # XXX can we just not build this
 rm -f %{buildroot}%{_libdir}/libGLES*
+
+# remove libwayland-egl on F28+ where it's built as part of wayland source package
+%if !%{?with_wayland_egl}
+rm -f %{buildroot}%{_libdir}/libwayland-egl.so*
+rm -f %{buildroot}%{_libdir}/pkgconfig/wayland-egl.pc
+%endif
 
 # glvnd needs a default provider for indirect rendering where it cannot
 # determine the vendor
@@ -527,7 +535,7 @@ popd
 %{_includedir}/gbm.h
 %{_libdir}/pkgconfig/gbm.pc
 
-%if %{with wayland}
+%if %{?with_wayland_egl}
 %post libwayland-egl -p /sbin/ldconfig
 %postun libwayland-egl -p /sbin/ldconfig
 %files libwayland-egl
@@ -661,6 +669,10 @@ popd
 %endif
 
 %changelog
+* Mon Apr 09 2018 Kalev Lember <klember@redhat.com> - 18.0.0-4
+- Re-enable wayland support, conditionally drop mesa-wayland-egl subpackage
+  only in F28+ (#1564210)
+
 * Tue Apr 03 2018 Tom Stellard <tstellar@redhat.com> - 18.0.0-3
 - Disable build of wayland packages.  These have been obseleted by wayland-devel.
 
