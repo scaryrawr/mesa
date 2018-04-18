@@ -50,14 +50,14 @@
 %define vulkan_drivers --with-vulkan-drivers=intel,radeon
 %endif
 
-%global sanitize 1
+%global sanitize 0
 
 #global rctag rc5
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-Version:        18.0.0
-Release:        4%{?rctag:.%{rctag}}%{?dist}
+Version:        18.0.1
+Release:        1%{?rctag:.%{rctag}}%{?dist}
 
 License:        MIT
 URL:            http://www.mesa3d.org
@@ -364,6 +364,9 @@ Headers for development with the Vulkan API.
 %if 0%{sanitize}
   cp -f %{SOURCE1} src/gallium/auxiliary/vl/vl_decoder.c
   cp -f %{SOURCE2} src/gallium/auxiliary/vl/vl_mpeg12_decoder.c
+%else
+  cmp %{SOURCE1} src/gallium/auxiliary/vl/vl_decoder.c
+  cmp %{SOURCE2} src/gallium/auxiliary/vl/vl_mpeg12_decoder.c
 %endif
 
 cp %{SOURCE4} docs/
@@ -669,6 +672,9 @@ popd
 %endif
 
 %changelog
+* Wed Apr 18 2018 Adam Jackson <ajax@redhat.com> - 18.0.1-1
+- Mesa 18.0.1
+
 * Mon Apr 09 2018 Kalev Lember <klember@redhat.com> - 18.0.0-4
 - Re-enable wayland support, conditionally drop mesa-wayland-egl subpackage
   only in F28+ (#1564210)
