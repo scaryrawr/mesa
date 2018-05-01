@@ -56,8 +56,8 @@
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-Version:        18.0.1
-Release:        2%{?rctag:.%{rctag}}%{?dist}
+Version:        18.0.2
+Release:        1%{?rctag:.%{rctag}}%{?dist}
 
 License:        MIT
 URL:            http://www.mesa3d.org
@@ -681,6 +681,9 @@ popd
 %endif
 
 %changelog
+* Tue May  1 2018 Peter Robinson <pbrobinson@fedoraproject.org> 18.0.2-1
+- Mesa 18.0.2
+
 * Tue Apr 24 2018 Jonas Ådahl <jadahl@redhat.com> - 18.0.1-2
 - Disable rgb10 configs by default (rhbz 1560481)
 
