@@ -50,14 +50,14 @@
 %define vulkan_drivers --with-vulkan-drivers=intel,radeon
 %endif
 
-%global sanitize 0
+%global sanitize 1
 
-#global rctag rc5
+%global rctag rc2
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-Version:        18.0.2
-Release:        1%{?rctag:.%{rctag}}%{?dist}
+Version:        18.1.0
+Release:        0.1%{?rctag:.%{rctag}}%{?dist}
 
 License:        MIT
 URL:            http://www.mesa3d.org
@@ -85,7 +85,6 @@ Patch7:         0001-gallium-Disable-rgb10-configs-by-default.patch
 # glvnd support patches
 # non-upstreamed ones
 Patch10:        glvnd-fix-gl-dot-pc.patch
-Patch11:        0001-Fix-linkage-against-shared-glapi.patch
 
 BuildRequires:  gcc
 BuildRequires:  gcc-c++
@@ -130,7 +129,7 @@ BuildRequires: pkgconfig(wayland-protocols)
 BuildRequires: libvdpau-devel
 %endif
 %if 0%{?with_vaapi}
-BuildRequires: libva-devel
+BuildRequires: libva-devel >= 0.39.0
 %endif
 BuildRequires: pkgconfig(zlib)
 %if 0%{?with_omx}
@@ -681,6 +680,9 @@ popd
 %endif
 
 %changelog
+* Wed May 02 2018 Igor Gnatenko <ignatenkobraiN@fedoraproject.org> - 18.1.0-0.1.rc2
+- Update ot 18.1.0~rc2
+
 * Tue May  1 2018 Peter Robinson <pbrobinson@fedoraproject.org> 18.0.2-1
 - Mesa 18.0.2
 
