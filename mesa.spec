@@ -52,12 +52,12 @@
 
 %global sanitize 1
 
-%global rctag rc2
+%global rctag rc3
 
 Name:           mesa
 Summary:        Mesa graphics libraries
 Version:        18.1.0
-Release:        0.1%{?rctag:.%{rctag}}%{?dist}
+Release:        0.2%{?rctag:.%{rctag}}%{?dist}
 
 License:        MIT
 URL:            http://www.mesa3d.org
@@ -680,8 +680,11 @@ popd
 %endif
 
 %changelog
+* Sat May  5 2018 Peter Robinson <pbrobinson@fedoraproject.org> 18.1.0-0.2.rc3
+- Update to 18.1.0~rc3
+
 * Wed May 02 2018 Igor Gnatenko <ignatenkobraiN@fedoraproject.org> - 18.1.0-0.1.rc2
-- Update ot 18.1.0~rc2
+- Update to 18.1.0~rc2
 
 * Tue May  1 2018 Peter Robinson <pbrobinson@fedoraproject.org> 18.0.2-1
 - Mesa 18.0.2
