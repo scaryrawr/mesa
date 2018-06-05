@@ -597,7 +597,7 @@ popd
 %{_libdir}/dri/nouveau_vieux_dri.so
 %{_libdir}/dri/r300_dri.so
 %{_libdir}/dri/r600_dri.so
-%if %{with_radeonsi}
+%if 0%{?with_radeonsi}
 %{_libdir}/dri/radeonsi_dri.so
 %endif
 %ifarch %{ix86} x86_64
@@ -621,7 +621,7 @@ popd
 %endif
 %{_libdir}/dri/nouveau_drv_video.so
 %{_libdir}/dri/r600_drv_video.so
-%if %{with_radeonsi}
+%if 0%{?with_radeonsi}
 %{_libdir}/dri/radeonsi_drv_video.so
 %endif
 %endif
@@ -643,7 +643,7 @@ popd
 %{_libdir}/vdpau/libvdpau_nouveau.so.1*
 %{_libdir}/vdpau/libvdpau_r300.so.1*
 %{_libdir}/vdpau/libvdpau_r600.so.1*
-%if %{with_radeonsi}
+%if 0%{?with_radeonsi}
 %{_libdir}/vdpau/libvdpau_radeonsi.so.1*
 %endif
 %endif
