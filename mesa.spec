@@ -28,6 +28,10 @@
 %define with_xa        1
 %endif
 
+%ifnarch %{arm} s390x
+%define with_radeonsi 1
+%endif
+
 %if 0%{?fedora} < 28
 %define with_wayland_egl 1
 %else
@@ -403,7 +407,7 @@ autoreconf -vfi
 %if %{with_hardware}
     %{?with_xa:--enable-xa} \
     %{?with_nine:--enable-nine} \
-    --with-gallium-drivers=%{?with_vmware:svga,}radeonsi,swrast,r600,%{?with_freedreno:freedreno,}%{?with_etnaviv:etnaviv,imx,}%{?with_vc4:vc4,}virgl,r300,nouveau \
+    --with-gallium-drivers=%{?with_vmware:svga,}%{?with_radeonsi:radeonsi},swrast,r600,%{?with_freedreno:freedreno,}%{?with_etnaviv:etnaviv,imx,}%{?with_vc4:vc4,}virgl,r300,nouveau \
 %else
     --with-gallium-drivers=swrast,virgl \
 %endif
@@ -593,7 +597,9 @@ popd
 %{_libdir}/dri/nouveau_vieux_dri.so
 %{_libdir}/dri/r300_dri.so
 %{_libdir}/dri/r600_dri.so
+%if %{with_radeonsi}
 %{_libdir}/dri/radeonsi_dri.so
+%endif
 %ifarch %{ix86} x86_64
 %{_libdir}/dri/i915_dri.so
 %{_libdir}/dri/i965_dri.so
@@ -615,7 +621,9 @@ popd
 %endif
 %{_libdir}/dri/nouveau_drv_video.so
 %{_libdir}/dri/r600_drv_video.so
+%if %{with_radeonsi}
 %{_libdir}/dri/radeonsi_drv_video.so
+%endif
 %endif
 %if 0%{?with_hardware}
 %dir %{_libdir}/gallium-pipe
@@ -635,7 +643,9 @@ popd
 %{_libdir}/vdpau/libvdpau_nouveau.so.1*
 %{_libdir}/vdpau/libvdpau_r300.so.1*
 %{_libdir}/vdpau/libvdpau_r600.so.1*
+%if %{with_radeonsi}
 %{_libdir}/vdpau/libvdpau_radeonsi.so.1*
+%endif
 %endif
 %endif
 
@@ -658,7 +668,9 @@ popd
 %changelog
 * Tue Jun 05 2018 Adam Jackson <ajax@redhat.com> - 18.1.1-2
 - Stop mentioning ppc and s390, we don't build for them anymore
-- remove with_llvm and with_radeonsi as they're now always true
+- Remove with_llvm, now always true
+- Switch with_radeonsi to be an exclude pattern, apparently not available
+  for armv7hl.
 
 * Sun Jun  3 2018 Peter Robinson <pbrobinson@fedoraproject.org> 18.1.1-1
 - Mesa 18.1.1
