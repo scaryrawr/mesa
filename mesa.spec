@@ -1,17 +1,7 @@
 # https://bugzilla.redhat.com/show_bug.cgi?id=1546714
 %undefine _annotated_build
 
-# S390 doesn't have video cards, but we need swrast for xserver's GLX
-# llvm (and thus llvmpipe) doesn't actually work on ppc32
-%ifnarch s390 ppc
-%define with_llvm 1
-%endif
-
-%if 0%{?with_llvm}
-%define with_radeonsi 1
-%endif
-
-%ifarch s390 s390x ppc
+%ifarch s390x
 %define with_hardware 0
 %define base_drivers swrast
 %else
@@ -57,7 +47,7 @@
 Name:           mesa
 Summary:        Mesa graphics libraries
 Version:        18.1.1
-Release:        1%{?rctag:.%{rctag}}%{?dist}
+Release:        2%{?rctag:.%{rctag}}%{?dist}
 
 License:        MIT
 URL:            http://www.mesa3d.org
@@ -111,11 +101,9 @@ BuildRequires:  elfutils
 BuildRequires:  python3
 BuildRequires:  python2
 BuildRequires:  gettext
-%if 0%{?with_llvm}
 BuildRequires: llvm-devel >= 3.4-7
 %if 0%{?with_opencl}
 BuildRequires: clang-devel >= 3.0
-%endif
 %endif
 BuildRequires: elfutils-libelf-devel
 BuildRequires: python3-libxml2
@@ -409,15 +397,15 @@ autoreconf -vfi
 %if 0%{?with_vulkan}
     %{?vulkan_drivers} \
 %endif
-    %{?with_llvm:--enable-llvm} \
-    %{?with_llvm:--enable-llvm-shared-libs} \
+    --enable-llvm \
+    --enable-llvm-shared-libs \
     --enable-dri \
 %if %{with_hardware}
     %{?with_xa:--enable-xa} \
     %{?with_nine:--enable-nine} \
-    --with-gallium-drivers=%{?with_vmware:svga,}%{?with_radeonsi:radeonsi,}%{?with_llvm:swrast,r600,}%{?with_freedreno:freedreno,}%{?with_etnaviv:etnaviv,imx,}%{?with_vc4:vc4,}virgl,r300,nouveau \
+    --with-gallium-drivers=%{?with_vmware:svga,}radeonsi,swrast,r600,%{?with_freedreno:freedreno,}%{?with_etnaviv:etnaviv,imx,}%{?with_vc4:vc4,}virgl,r300,nouveau \
 %else
-    --with-gallium-drivers=%{?with_llvm:swrast,}virgl \
+    --with-gallium-drivers=swrast,virgl \
 %endif
     %{?dri_drivers}
 
@@ -604,12 +592,8 @@ popd
 %{_libdir}/dri/r200_dri.so
 %{_libdir}/dri/nouveau_vieux_dri.so
 %{_libdir}/dri/r300_dri.so
-%if 0%{?with_llvm}
 %{_libdir}/dri/r600_dri.so
-%if 0%{?with_radeonsi}
 %{_libdir}/dri/radeonsi_dri.so
-%endif
-%endif
 %ifarch %{ix86} x86_64
 %{_libdir}/dri/i915_dri.so
 %{_libdir}/dri/i965_dri.so
@@ -630,12 +614,8 @@ popd
 %{_libdir}/dri/vmwgfx_dri.so
 %endif
 %{_libdir}/dri/nouveau_drv_video.so
-%if 0%{?with_llvm}
 %{_libdir}/dri/r600_drv_video.so
-%if 0%{?with_radeonsi}
 %{_libdir}/dri/radeonsi_drv_video.so
-%endif
-%endif
 %endif
 %if 0%{?with_hardware}
 %dir %{_libdir}/gallium-pipe
@@ -654,12 +634,8 @@ popd
 %files vdpau-drivers
 %{_libdir}/vdpau/libvdpau_nouveau.so.1*
 %{_libdir}/vdpau/libvdpau_r300.so.1*
-%if 0%{?with_llvm}
 %{_libdir}/vdpau/libvdpau_r600.so.1*
-%if 0%{?with_radeonsi}
 %{_libdir}/vdpau/libvdpau_radeonsi.so.1*
-%endif
-%endif
 %endif
 %endif
 
@@ -680,6 +656,10 @@ popd
 %endif
 
 %changelog
+* Tue Jun 05 2018 Adam Jackson <ajax@redhat.com> - 18.1.1-2
+- Stop mentioning ppc and s390, we don't build for them anymore
+- remove with_llvm and with_radeonsi as they're now always true
+
 * Sun Jun  3 2018 Peter Robinson <pbrobinson@fedoraproject.org> 18.1.1-1
 - Mesa 18.1.1
 
