@@ -407,7 +407,7 @@ autoreconf -vfi
 %if %{with_hardware}
     %{?with_xa:--enable-xa} \
     %{?with_nine:--enable-nine} \
-    --with-gallium-drivers=%{?with_vmware:svga,}%{?with_radeonsi:radeonsi,}swrast,r600,%{?with_freedreno:freedreno,}%{?with_etnaviv:etnaviv,imx,}%{?with_vc4:vc4,}virgl,r300,nouveau \
+    --with-gallium-drivers=%{?with_vmware:svga,}%{?with_radeonsi:radeonsi,r600,}swrast,%{?with_freedreno:freedreno,}%{?with_etnaviv:etnaviv,imx,}%{?with_vc4:vc4,}virgl,r300,nouveau \
 %else
     --with-gallium-drivers=swrast,virgl \
 %endif
@@ -596,8 +596,8 @@ popd
 %{_libdir}/dri/r200_dri.so
 %{_libdir}/dri/nouveau_vieux_dri.so
 %{_libdir}/dri/r300_dri.so
-%{_libdir}/dri/r600_dri.so
 %if 0%{?with_radeonsi}
+%{_libdir}/dri/r600_dri.so
 %{_libdir}/dri/radeonsi_dri.so
 %endif
 %ifarch %{ix86} x86_64
@@ -620,8 +620,8 @@ popd
 %{_libdir}/dri/vmwgfx_dri.so
 %endif
 %{_libdir}/dri/nouveau_drv_video.so
-%{_libdir}/dri/r600_drv_video.so
 %if 0%{?with_radeonsi}
+%{_libdir}/dri/r600_drv_video.so
 %{_libdir}/dri/radeonsi_drv_video.so
 %endif
 %endif
@@ -642,8 +642,8 @@ popd
 %files vdpau-drivers
 %{_libdir}/vdpau/libvdpau_nouveau.so.1*
 %{_libdir}/vdpau/libvdpau_r300.so.1*
-%{_libdir}/vdpau/libvdpau_r600.so.1*
 %if 0%{?with_radeonsi}
+%{_libdir}/vdpau/libvdpau_r600.so.1*
 %{_libdir}/vdpau/libvdpau_radeonsi.so.1*
 %endif
 %endif
