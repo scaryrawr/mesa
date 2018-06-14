@@ -154,7 +154,7 @@ Obsoletes:      mesa-dri-filesystem < %{?epoch:%{epoch}}%{version}-%{release}
 %package libGL
 Summary:        Mesa libGL runtime libraries
 Requires:       %{name}-libglapi%{?_isa} = %{?epoch:%{epoch}}%{version}-%{release}
-Requires:       libglvnd-glx%{?_isa} >= 1.0.1-0.7
+Requires:       libglvnd-glx%{?_isa} >= 1:1.0.1-0.7
 
 %description libGL
 %{summary}.
