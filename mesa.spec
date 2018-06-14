@@ -51,7 +51,7 @@
 Name:           mesa
 Summary:        Mesa graphics libraries
 Version:        18.1.1
-Release:        2%{?rctag:.%{rctag}}%{?dist}
+Release:        3%{?rctag:.%{rctag}}%{?dist}
 
 License:        MIT
 URL:            http://www.mesa3d.org
@@ -154,7 +154,7 @@ Obsoletes:      mesa-dri-filesystem < %{?epoch:%{epoch}}%{version}-%{release}
 %package libGL
 Summary:        Mesa libGL runtime libraries
 Requires:       %{name}-libglapi%{?_isa} = %{?epoch:%{epoch}}%{version}-%{release}
-Requires:       libglvnd-glx%{?_isa}
+Requires:       libglvnd-glx%{?_isa} >= 1.0.1-0.7
 
 %description libGL
 %{summary}.
@@ -438,7 +438,7 @@ rm -f %{buildroot}%{_libdir}/pkgconfig/wayland-egl.pc
 
 # glvnd needs a default provider for indirect rendering where it cannot
 # determine the vendor
-ln -s %{_libdir}/libGLX_mesa.so.0 %{buildroot}%{_libdir}/libGLX_indirect.so.0
+ln -s %{_libdir}/libGLX_mesa.so.0 %{buildroot}%{_libdir}/libGLX_fedora.so.0
 
 # strip out useless headers
 rm -f %{buildroot}%{_includedir}/GL/w*.h
@@ -468,7 +468,7 @@ popd
 
 %files libGL
 %{_libdir}/libGLX_mesa.so.0*
-%{_libdir}/libGLX_indirect.so.0*
+%{_libdir}/libGLX_fedora.so.0*
 %files libGL-devel
 %{_includedir}/GL/gl.h
 %{_includedir}/GL/gl_mangle.h
@@ -666,6 +666,9 @@ popd
 %endif
 
 %changelog
+* Thu Jun 14 2018 Adam Jackson <ajax@redhat.com> - 18.1.1-3
+- Change the name of the fallback GLX library
+
 * Tue Jun 05 2018 Adam Jackson <ajax@redhat.com> - 18.1.1-2
 - Stop mentioning ppc and s390, we don't build for them anymore
 - Remove with_llvm, now always true
