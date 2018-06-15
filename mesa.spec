@@ -24,6 +24,7 @@
 %ifarch %{arm} aarch64
 %define with_etnaviv   1
 %define with_freedreno 1
+%define with_tegra     1
 %define with_vc4       1
 %define with_xa        1
 %endif
@@ -51,7 +52,7 @@
 Name:           mesa
 Summary:        Mesa graphics libraries
 Version:        18.1.1
-Release:        3%{?rctag:.%{rctag}}%{?dist}
+Release:        4%{?rctag:.%{rctag}}%{?dist}
 
 License:        MIT
 URL:            http://www.mesa3d.org
@@ -407,7 +408,7 @@ autoreconf -vfi
 %if %{with_hardware}
     %{?with_xa:--enable-xa} \
     %{?with_nine:--enable-nine} \
-    --with-gallium-drivers=%{?with_vmware:svga,}%{?with_radeonsi:radeonsi,r600,}swrast,%{?with_freedreno:freedreno,}%{?with_etnaviv:etnaviv,imx,}%{?with_vc4:vc4,}virgl,r300,nouveau \
+    --with-gallium-drivers=%{?with_vmware:svga,}%{?with_radeonsi:radeonsi,r600,}swrast,%{?with_freedreno:freedreno,}%{?with_etnaviv:etnaviv,imx,}%{?with_tegra:tegra,}%{?with_vc4:vc4,}virgl,r300,nouveau \
 %else
     --with-gallium-drivers=swrast,virgl \
 %endif
@@ -615,6 +616,9 @@ popd
 %{_libdir}/dri/etnaviv_dri.so
 %{_libdir}/dri/imx-drm_dri.so
 %endif
+%if 0%{?with_tegra}
+%{_libdir}/dri/tegra_dri.so
+%endif
 %{_libdir}/dri/nouveau_dri.so
 %if 0%{?with_vmware}
 %{_libdir}/dri/vmwgfx_dri.so
@@ -646,6 +650,9 @@ popd
 %{_libdir}/vdpau/libvdpau_r600.so.1*
 %{_libdir}/vdpau/libvdpau_radeonsi.so.1*
 %endif
+%if 0%{?with_tegra}
+%{_libdir}/vdpau/libvdpau_tegra.so.1*
+%endif
 %endif
 %endif
 
@@ -666,6 +673,9 @@ popd
 %endif
 
 %changelog
+* Fri Jun 15 2018 Adam Jackson <ajax@redhat.com> - 18.1.1-4
+- Build tegra too
+
 * Thu Jun 14 2018 Adam Jackson <ajax@redhat.com> - 18.1.1-3
 - Change the name of the fallback GLX library
 
