@@ -51,11 +51,11 @@
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-Version:        18.1.1
-Release:        4%{?rctag:.%{rctag}}%{?dist}
-
+Version:        18.1.2
+Release:        1%{?rctag:.%{rctag}}%{?dist}
 License:        MIT
 URL:            http://www.mesa3d.org
+
 #Source0:        https://mesa.freedesktop.org/archive/%{name}-%{version}%{?rctag:-%{rctag}}.tar.xz
 Source0:        %{name}-%{version}%{?rctag:-%{rctag}}.tar.xz
 Source1:        vl_decoder.c
@@ -71,11 +71,9 @@ Patch2:         0002-hardware-gloat.patch
 Patch3:         0003-evergreen-big-endian.patch
 Patch4:         0004-bigendian-assert.patch
 
-
 # Disable rgb10 configs by default:
 # https://bugzilla.redhat.com/show_bug.cgi?id=1560481
 Patch7:         0001-gallium-Disable-rgb10-configs-by-default.patch
-
 
 # glvnd support patches
 # non-upstreamed ones
@@ -673,6 +671,9 @@ popd
 %endif
 
 %changelog
+* Sat Jun 16 2018 Peter Robinson <pbrobinson@fedoraproject.org> 18.1.2-1
+- Mesa 18.1.2
+
 * Fri Jun 15 2018 Adam Jackson <ajax@redhat.com> - 18.1.1-4
 - Build tegra too
 
