@@ -439,6 +439,7 @@ ln -s %{_libdir}/libGLX_mesa.so.0 %{buildroot}%{_libdir}/libGLX_fedora.so.0
 rm -f %{buildroot}%{_includedir}/GL/w*.h
 
 # these are shipped already in vulkan-devel
+mkdir -p %{buildroot}/%{_includedir}/vulkan/
 rm -f %{buildroot}/%{_includedir}/vulkan/vk_platform.h
 rm -f %{buildroot}/%{_includedir}/vulkan/vulkan.h
 
