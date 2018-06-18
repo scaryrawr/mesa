@@ -393,7 +393,9 @@ autoreconf -vfi
     %{?with_opencl:--enable-opencl --enable-opencl-icd} %{!?with_opencl:--disable-opencl} \
     --enable-glx-tls \
     --enable-texture-float=yes \
+%if 0%{?with_hardware}
     %{?vulkan_drivers} \
+%endif
     --enable-llvm \
     --enable-llvm-shared-libs \
     --enable-dri \
