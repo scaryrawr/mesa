@@ -50,7 +50,7 @@
 Name:           mesa
 Summary:        Mesa graphics libraries
 Version:        18.1.2
-Release:        2%{?rctag:.%{rctag}}%{?dist}
+Release:        3%{?rctag:.%{rctag}}%{?dist}
 License:        MIT
 URL:            http://www.mesa3d.org
 
@@ -508,14 +508,14 @@ popd
 %{_includedir}/GLES3/gl32.h
 %{_libdir}/pkgconfig/glesv2.pc
 
-%post libglapi -p /sbin/ldconfig
-%postun libglapi -p /sbin/ldconfig
+%ldconfig_post libglapi
+%ldconfig_postun libglapi
 %files libglapi
 %{_libdir}/libglapi.so.0
 %{_libdir}/libglapi.so.0.*
 
-%post libOSMesa -p /sbin/ldconfig
-%postun libOSMesa -p /sbin/ldconfig
+%ldconfig_post libOSMesa
+%ldconfig_postun libOSMesa
 %files libOSMesa
 %{_libdir}/libOSMesa.so.8*
 %files libOSMesa-devel
@@ -524,8 +524,8 @@ popd
 %{_libdir}/libOSMesa.so
 %{_libdir}/pkgconfig/osmesa.pc
 
-%post libgbm -p /sbin/ldconfig
-%postun libgbm -p /sbin/ldconfig
+%ldconfig_post libgbm
+%ldconfig_postun libgbm
 %files libgbm
 %{_libdir}/libgbm.so.1
 %{_libdir}/libgbm.so.1.*
@@ -535,8 +535,8 @@ popd
 %{_libdir}/pkgconfig/gbm.pc
 
 %if %{?with_wayland_egl}
-%post libwayland-egl -p /sbin/ldconfig
-%postun libwayland-egl -p /sbin/ldconfig
+%ldconfig_post libwayland-egl
+%ldconfig_postun libwayland-egl
 %files libwayland-egl
 %{_libdir}/libwayland-egl.so.1
 %{_libdir}/libwayland-egl.so.1.*
@@ -546,8 +546,8 @@ popd
 %endif
 
 %if 0%{?with_xa}
-%post libxatracker -p /sbin/ldconfig
-%postun libxatracker -p /sbin/ldconfig
+%ldconfig_post libxatracker
+%ldconfig_postun libxatracker
 %files libxatracker
 %if %{with_hardware}
 %{_libdir}/libxatracker.so.2
@@ -565,8 +565,8 @@ popd
 %endif
 
 %if 0%{?with_opencl}
-%post libOpenCL -p /sbin/ldconfig
-%postun libOpenCL -p /sbin/ldconfig
+%ldconfig_post libOpenCL
+%ldconfig_postun libOpenCL
 %files libOpenCL
 %{_libdir}/libMesaOpenCL.so.*
 %{_sysconfdir}/OpenCL/vendors/mesa.icd
@@ -665,6 +665,9 @@ popd
 %{_includedir}/vulkan/
 
 %changelog
+* Fri Jun 29 2018 Adam Jackson <ajax@redhat.com> - 18.1.2-3
+- Use ldconfig scriptlet macros
+
 * Mon Jun 18 2018 Adam Jackson <ajax@redhat.com> - 18.1.2-2
 - Build mesa-vulkan-drivers everywhere
 - Build actual vulkan drivers on all but s390x
