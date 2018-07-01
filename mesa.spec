@@ -49,8 +49,8 @@
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-Version:        18.1.2
-Release:        3%{?rctag:.%{rctag}}%{?dist}
+Version:        18.1.3
+Release:        1%{?rctag:.%{rctag}}%{?dist}
 License:        MIT
 URL:            http://www.mesa3d.org
 
@@ -665,6 +665,9 @@ popd
 %{_includedir}/vulkan/
 
 %changelog
+* Sun Jul  1 2018 Peter Robinson <pbrobinson@fedoraproject.org> 18.0.3-1
+- Mesa 18.1.3
+
 * Fri Jun 29 2018 Adam Jackson <ajax@redhat.com> - 18.1.2-3
 - Use ldconfig scriptlet macros
 
