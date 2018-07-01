@@ -508,14 +508,12 @@ popd
 %{_includedir}/GLES3/gl32.h
 %{_libdir}/pkgconfig/glesv2.pc
 
-%ldconfig_post libglapi
-%ldconfig_postun libglapi
+%ldconfig_scriptlets libglapi
 %files libglapi
 %{_libdir}/libglapi.so.0
 %{_libdir}/libglapi.so.0.*
 
-%ldconfig_post libOSMesa
-%ldconfig_postun libOSMesa
+%ldconfig_scriptlets libOSMesa
 %files libOSMesa
 %{_libdir}/libOSMesa.so.8*
 %files libOSMesa-devel
@@ -524,8 +522,7 @@ popd
 %{_libdir}/libOSMesa.so
 %{_libdir}/pkgconfig/osmesa.pc
 
-%ldconfig_post libgbm
-%ldconfig_postun libgbm
+%ldconfig_scriptlets libgbm
 %files libgbm
 %{_libdir}/libgbm.so.1
 %{_libdir}/libgbm.so.1.*
@@ -535,8 +532,7 @@ popd
 %{_libdir}/pkgconfig/gbm.pc
 
 %if %{?with_wayland_egl}
-%ldconfig_post libwayland-egl
-%ldconfig_postun libwayland-egl
+%ldconfig_scriptlets libwayland-egl
 %files libwayland-egl
 %{_libdir}/libwayland-egl.so.1
 %{_libdir}/libwayland-egl.so.1.*
@@ -546,8 +542,7 @@ popd
 %endif
 
 %if 0%{?with_xa}
-%ldconfig_post libxatracker
-%ldconfig_postun libxatracker
+%ldconfig_scriptlets libxatracker
 %files libxatracker
 %if %{with_hardware}
 %{_libdir}/libxatracker.so.2
@@ -565,8 +560,7 @@ popd
 %endif
 
 %if 0%{?with_opencl}
-%ldconfig_post libOpenCL
-%ldconfig_postun libOpenCL
+%ldconfig_scriptlets libOpenCL
 %files libOpenCL
 %{_libdir}/libMesaOpenCL.so.*
 %{_sysconfdir}/OpenCL/vendors/mesa.icd
