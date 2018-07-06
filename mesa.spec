@@ -43,14 +43,14 @@
 
 %define dri_drivers --with-dri-drivers=%{?base_drivers}%{?platform_drivers}
 
-%global sanitize 1
+%global sanitize 0
 
 #global rctag rc4
 
 Name:           mesa
 Summary:        Mesa graphics libraries
 Version:        18.1.3
-Release:        1%{?rctag:.%{rctag}}%{?dist}
+Release:        2%{?rctag:.%{rctag}}%{?dist}
 License:        MIT
 URL:            http://www.mesa3d.org
 
@@ -65,7 +65,6 @@ Source3:        Makefile
 Source4:        Mesa-MLAA-License-Clarification-Email.txt
 
 Patch1:         0001-llvm-SONAME-without-version.patch
-Patch2:         0002-hardware-gloat.patch
 Patch3:         0003-evergreen-big-endian.patch
 Patch4:         0004-bigendian-assert.patch
 
@@ -355,11 +354,13 @@ Requires:       vulkan-devel
 Headers for development with the Vulkan API.
 
 %prep
-%autosetup -n %{name}-%{version}%{?rctag:-%{rctag}} -p1
 %if 0%{sanitize}
+%setup -q -n %{name}-%{version}%{?rctag:-%{rctag}}
   cp -f %{SOURCE1} src/gallium/auxiliary/vl/vl_decoder.c
   cp -f %{SOURCE2} src/gallium/auxiliary/vl/vl_mpeg12_decoder.c
+  exit 0
 %else
+%autosetup -n %{name}-%{version}%{?rctag:-%{rctag}} -p1
   cmp %{SOURCE1} src/gallium/auxiliary/vl/vl_decoder.c
   cmp %{SOURCE2} src/gallium/auxiliary/vl/vl_mpeg12_decoder.c
 %endif
@@ -367,6 +368,10 @@ Headers for development with the Vulkan API.
 cp %{SOURCE4} docs/
 
 %build
+%if !0%{sanitize}
+  cmp %{SOURCE1} src/gallium/auxiliary/vl/vl_decoder.c
+  cmp %{SOURCE2} src/gallium/auxiliary/vl/vl_mpeg12_decoder.c
+%endif
 autoreconf -vfi
 
 %ifarch %{ix86}
@@ -659,7 +664,10 @@ popd
 %{_includedir}/vulkan/
 
 %changelog
-* Sun Jul  1 2018 Peter Robinson <pbrobinson@fedoraproject.org> 18.0.3-1
+* Fri Jul 06 2018 Adam Jackson <ajax@redhat.com> - 18.1.3-2
+- Drop texture float patch
+
+* Sun Jul  1 2018 Peter Robinson <pbrobinson@fedoraproject.org> 18.1.3-1
 - Mesa 18.1.3
 
 * Fri Jun 29 2018 Adam Jackson <ajax@redhat.com> - 18.1.2-3
