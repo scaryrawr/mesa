@@ -49,8 +49,8 @@
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-Version:        18.1.3
-Release:        2%{?rctag:.%{rctag}}%{?dist}.1
+Version:        18.1.4
+Release:        1%{?rctag:.%{rctag}}%{?dist}.1
 License:        MIT
 URL:            http://www.mesa3d.org
 
@@ -664,6 +664,9 @@ popd
 %{_includedir}/vulkan/
 
 %changelog
+* Tue Jul 17 2018 Peter Robinson <pbrobinson@fedoraproject.org> 8.1.4-1
+- Mesa 18.1.4
+
 * Fri Jul 13 2018 Fedora Release Engineering <releng@fedoraproject.org> - 18.1.3-2.1
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_29_Mass_Rebuild
 
