@@ -50,7 +50,7 @@
 Name:           mesa
 Summary:        Mesa graphics libraries
 Version:        18.1.4
-Release:        1%{?rctag:.%{rctag}}%{?dist}.1
+Release:        2%{?rctag:.%{rctag}}%{?dist}
 License:        MIT
 URL:            http://www.mesa3d.org
 
@@ -438,7 +438,7 @@ rm -f %{buildroot}%{_libdir}/pkgconfig/wayland-egl.pc
 
 # glvnd needs a default provider for indirect rendering where it cannot
 # determine the vendor
-ln -s %{_libdir}/libGLX_mesa.so.0 %{buildroot}%{_libdir}/libGLX_fedora.so.0
+ln -s %{_libdir}/libGLX_mesa.so.0 %{buildroot}%{_libdir}/libGLX_system.so.0
 
 # strip out useless headers
 rm -f %{buildroot}%{_includedir}/GL/w*.h
@@ -469,7 +469,7 @@ popd
 
 %files libGL
 %{_libdir}/libGLX_mesa.so.0*
-%{_libdir}/libGLX_fedora.so.0*
+%{_libdir}/libGLX_system.so.0*
 %files libGL-devel
 %{_includedir}/GL/gl.h
 %{_includedir}/GL/gl_mangle.h
@@ -664,7 +664,10 @@ popd
 %{_includedir}/vulkan/
 
 %changelog
-* Tue Jul 17 2018 Peter Robinson <pbrobinson@fedoraproject.org> 8.1.4-1
+* Tue Jul 24 2018 Dave Airlie <airlied@redhat.com> - 18.1.4-2
+- fix fallback path for glvnd
+
+* Tue Jul 17 2018 Peter Robinson <pbrobinson@fedoraproject.org> 18.1.4-1
 - Mesa 18.1.4
 
 * Fri Jul 13 2018 Fedora Release Engineering <releng@fedoraproject.org> - 18.1.3-2.1
