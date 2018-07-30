@@ -49,8 +49,8 @@
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-Version:        18.1.4
-Release:        2%{?rctag:.%{rctag}}%{?dist}
+Version:        18.1.5
+Release:        1%{?rctag:.%{rctag}}%{?dist}
 License:        MIT
 URL:            http://www.mesa3d.org
 
@@ -664,6 +664,9 @@ popd
 %{_includedir}/vulkan/
 
 %changelog
+* Mon Jul 30 2018 Peter Robinson <pbrobinson@fedoraproject.org> 18.1.5-1
+- Mesa 18.1.5
+
 * Tue Jul 24 2018 Dave Airlie <airlied@redhat.com> - 18.1.4-2
 - fix fallback path for glvnd
 
