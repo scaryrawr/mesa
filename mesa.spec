@@ -35,27 +35,20 @@
 %define with_radeonsi 1
 %endif
 
-%if 0%{?fedora} < 28
-%define with_wayland_egl 1
-%else
-%define with_wayland_egl 0
-%endif
-
 %define dri_drivers --with-dri-drivers=%{?base_drivers}%{?platform_drivers}
 
 %global sanitize 0
 
-#global rctag rc4
-
 Name:           mesa
 Summary:        Mesa graphics libraries
-Version:        18.1.5
-Release:        1%{?rctag:.%{rctag}}%{?dist}
+%global ver 18.2.0-rc2
+Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
+Release:        1%{?dist}
 License:        MIT
 URL:            http://www.mesa3d.org
 
-#Source0:        https://mesa.freedesktop.org/archive/%{name}-%{version}%{?rctag:-%{rctag}}.tar.xz
-Source0:        %{name}-%{version}%{?rctag:-%{rctag}}.tar.xz
+#Source0:        https://mesa.freedesktop.org/archive/%{name}-%{ver}.tar.xz
+Source0:        %{name}-%{ver}.tar.xz
 Source1:        vl_decoder.c
 Source2:        vl_mpeg12_decoder.c
 Source3:        Makefile
@@ -141,15 +134,15 @@ BuildRequires: pkgconfig(libglvnd) >= 0.2.0
 
 %package filesystem
 Summary:        Mesa driver filesystem
-Provides:       mesa-dri-filesystem = %{?epoch:%{epoch}}%{version}-%{release}
-Obsoletes:      mesa-dri-filesystem < %{?epoch:%{epoch}}%{version}-%{release}
+Provides:       mesa-dri-filesystem = %{?epoch:%{epoch}:}%{version}-%{release}
+Obsoletes:      mesa-dri-filesystem < %{?epoch:%{epoch}:}%{version}-%{release}
 
 %description filesystem
 %{summary}.
 
 %package libGL
 Summary:        Mesa libGL runtime libraries
-Requires:       %{name}-libglapi%{?_isa} = %{?epoch:%{epoch}}%{version}-%{release}
+Requires:       %{name}-libglapi%{?_isa} = %{?epoch:%{epoch}:}%{version}-%{release}
 Requires:       libglvnd-glx%{?_isa} >= 1:1.0.1-0.9
 
 %description libGL
@@ -157,7 +150,7 @@ Requires:       libglvnd-glx%{?_isa} >= 1:1.0.1-0.9
 
 %package libGL-devel
 Summary:        Mesa libGL development package
-Requires:       %{name}-libGL%{?_isa} = %{?epoch:%{epoch}}%{version}-%{release}
+Requires:       %{name}-libGL%{?_isa} = %{?epoch:%{epoch}:}%{version}-%{release}
 Requires:       libglvnd-devel%{?_isa}
 Provides:       libGL-devel
 Provides:       libGL-devel%{?_isa}
@@ -174,7 +167,7 @@ Requires:       libglvnd-egl%{?_isa}
 
 %package libEGL-devel
 Summary:        Mesa libEGL development package
-Requires:       %{name}-libEGL%{?_isa} = %{?epoch:%{epoch}}%{version}-%{release}
+Requires:       %{name}-libEGL%{?_isa} = %{?epoch:%{epoch}:}%{version}-%{release}
 Requires:       libglvnd-devel%{?_isa}
 Provides:       libEGL-devel
 Provides:       libEGL-devel%{?_isa}
@@ -184,7 +177,7 @@ Provides:       libEGL-devel%{?_isa}
 
 %package libGLES
 Summary:        Mesa libGLES runtime libraries
-Requires:       %{name}-libglapi%{?_isa} = %{?epoch:%{epoch}}%{version}-%{release}
+Requires:       %{name}-libglapi%{?_isa} = %{?epoch:%{epoch}:}%{version}-%{release}
 Requires:       libglvnd-gles%{?_isa}
 
 %description libGLES
@@ -192,7 +185,7 @@ Requires:       libglvnd-gles%{?_isa}
 
 %package libGLES-devel
 Summary:        Mesa libGLES development package
-Requires:       %{name}-libGLES%{?_isa} = %{?epoch:%{epoch}}%{version}-%{release}
+Requires:       %{name}-libGLES%{?_isa} = %{?epoch:%{epoch}:}%{version}-%{release}
 Requires:       libglvnd-devel%{?_isa}
 Provides:       libGLES-devel
 Provides:       libGLES-devel%{?_isa}
@@ -202,7 +195,7 @@ Provides:       libGLES-devel%{?_isa}
 
 %package dri-drivers
 Summary:        Mesa-based DRI drivers
-Requires:       %{name}-filesystem%{?_isa} = %{?epoch:%{epoch}}%{version}-%{release}
+Requires:       %{name}-filesystem%{?_isa} = %{?epoch:%{epoch}:}%{version}-%{release}
 
 %description dri-drivers
 %{summary}.
@@ -210,7 +203,7 @@ Requires:       %{name}-filesystem%{?_isa} = %{?epoch:%{epoch}}%{version}-%{rele
 %if 0%{?with_omx}
 %package omx-drivers
 Summary:        Mesa-based OMX drivers
-Requires:       %{name}-filesystem%{?_isa} = %{?epoch:%{epoch}}%{version}-%{release}
+Requires:       %{name}-filesystem%{?_isa} = %{?epoch:%{epoch}:}%{version}-%{release}
 
 %description omx-drivers
 %{summary}.
@@ -219,7 +212,7 @@ Requires:       %{name}-filesystem%{?_isa} = %{?epoch:%{epoch}}%{version}-%{rele
 %if 0%{?with_vdpau}
 %package        vdpau-drivers
 Summary:        Mesa-based VDPAU drivers
-Requires:       %{name}-filesystem%{?_isa} = %{?epoch:%{epoch}}%{version}-%{release}
+Requires:       %{name}-filesystem%{?_isa} = %{?epoch:%{epoch}:}%{version}-%{release}
 
 %description vdpau-drivers
 %{summary}.
@@ -227,7 +220,7 @@ Requires:       %{name}-filesystem%{?_isa} = %{?epoch:%{epoch}}%{version}-%{rele
 
 %package libOSMesa
 Summary:        Mesa offscreen rendering libraries
-Requires:       %{name}-libglapi%{?_isa} = %{?epoch:%{epoch}}%{version}-%{release}
+Requires:       %{name}-libglapi%{?_isa} = %{?epoch:%{epoch}:}%{version}-%{release}
 Provides:       libOSMesa
 Provides:       libOSMesa%{?_isa}
 
@@ -236,7 +229,7 @@ Provides:       libOSMesa%{?_isa}
 
 %package libOSMesa-devel
 Summary:        Mesa offscreen rendering development package
-Requires:       %{name}-libOSMesa%{?_isa} = %{?epoch:%{epoch}}%{version}-%{release}
+Requires:       %{name}-libOSMesa%{?_isa} = %{?epoch:%{epoch}:}%{version}-%{release}
 
 %description libOSMesa-devel
 %{summary}.
@@ -251,31 +244,12 @@ Provides:       libgbm%{?_isa}
 
 %package libgbm-devel
 Summary:        Mesa libgbm development package
-Requires:       %{name}-libgbm%{?_isa} = %{?epoch:%{epoch}}%{version}-%{release}
+Requires:       %{name}-libgbm%{?_isa} = %{?epoch:%{epoch}:}%{version}-%{release}
 Provides:       libgbm-devel
 Provides:       libgbm-devel%{?_isa}
 
 %description libgbm-devel
 %{summary}.
-
-%if %{?with_wayland_egl}
-%package libwayland-egl
-Summary:        Mesa libwayland-egl runtime library
-Provides:       libwayland-egl
-Provides:       libwayland-egl%{?_isa}
-
-%description libwayland-egl
-%{summary}.
-
-%package libwayland-egl-devel
-Summary:        Mesa libwayland-egl development package
-Requires:       %{name}-libwayland-egl%{?_isa} = %{?epoch:%{epoch}:}%{version}-%{release}
-Provides:       libwayland-egl-devel
-Provides:       libwayland-egl-devel%{?_isa}
-
-%description libwayland-egl-devel
-%{summary}.
-%endif
 
 %if 0%{?with_xa}
 %package libxatracker
@@ -309,7 +283,7 @@ Provides:       libglapi%{?_isa}
 Summary:        Mesa OpenCL runtime library
 Requires:       ocl-icd%{?_isa}
 Requires:       libclc%{?_isa}
-Requires:       %{name}-libgbm%{?_isa} = %{?epoch:%{epoch}}%{version}-%{release}
+Requires:       %{name}-libgbm%{?_isa} = %{?epoch:%{epoch}:}%{version}-%{release}
 Requires:       opencl-filesystem
 
 %description libOpenCL
@@ -317,7 +291,7 @@ Requires:       opencl-filesystem
 
 %package libOpenCL-devel
 Summary:        Mesa OpenCL development package
-Requires:       %{name}-libOpenCL%{?_isa} = %{?epoch:%{epoch}}%{version}-%{release}
+Requires:       %{name}-libOpenCL%{?_isa} = %{?epoch:%{epoch}:}%{version}-%{release}
 
 %description libOpenCL-devel
 %{summary}.
@@ -332,7 +306,7 @@ Summary:        Mesa Direct3D9 state tracker
 
 %package libd3d-devel
 Summary:        Mesa Direct3D9 state tracker development package
-Requires:       %{name}-libd3d%{?_isa} = %{?epoch:%{epoch}}%{version}-%{release}
+Requires:       %{name}-libd3d%{?_isa} = %{?epoch:%{epoch}:}%{version}-%{release}
 
 %description libd3d-devel
 %{summary}.
@@ -347,20 +321,19 @@ The drivers with support for the Vulkan API.
 
 %package vulkan-devel
 Summary:        Mesa Vulkan development files
-Requires:       %{name}-vulkan-drivers%{?_isa} = %{?epoch:%{epoch}}%{version}-%{release}
+Requires:       %{name}-vulkan-drivers%{?_isa} = %{?epoch:%{epoch}:}%{version}-%{release}
 Requires:       vulkan-devel
 
 %description vulkan-devel
 Headers for development with the Vulkan API.
 
 %prep
+%autosetup -n %{name}-%{ver} -p1
 %if 0%{sanitize}
-%setup -q -n %{name}-%{version}%{?rctag:-%{rctag}}
   cp -f %{SOURCE1} src/gallium/auxiliary/vl/vl_decoder.c
   cp -f %{SOURCE2} src/gallium/auxiliary/vl/vl_mpeg12_decoder.c
   exit 0
 %else
-%autosetup -n %{name}-%{version}%{?rctag:-%{rctag}} -p1
   cmp %{SOURCE1} src/gallium/auxiliary/vl/vl_decoder.c
   cmp %{SOURCE2} src/gallium/auxiliary/vl/vl_mpeg12_decoder.c
 %endif
@@ -429,12 +402,6 @@ rm -f %{buildroot}%{_libdir}/libGLX_mesa.so
 rm -f %{buildroot}%{_libdir}/libEGL_mesa.so
 # XXX can we just not build this
 rm -f %{buildroot}%{_libdir}/libGLES*
-
-# remove libwayland-egl on F28+ where it's built as part of wayland source package
-%if !%{?with_wayland_egl}
-rm -f %{buildroot}%{_libdir}/libwayland-egl.so*
-rm -f %{buildroot}%{_libdir}/pkgconfig/wayland-egl.pc
-%endif
 
 # glvnd needs a default provider for indirect rendering where it cannot
 # determine the vendor
@@ -535,16 +502,6 @@ popd
 %{_libdir}/libgbm.so
 %{_includedir}/gbm.h
 %{_libdir}/pkgconfig/gbm.pc
-
-%if %{?with_wayland_egl}
-%ldconfig_scriptlets libwayland-egl
-%files libwayland-egl
-%{_libdir}/libwayland-egl.so.1
-%{_libdir}/libwayland-egl.so.1.*
-%files libwayland-egl-devel
-%{_libdir}/libwayland-egl.so
-%{_libdir}/pkgconfig/wayland-egl.pc
-%endif
 
 %if 0%{?with_xa}
 %ldconfig_scriptlets libxatracker
@@ -664,6 +621,9 @@ popd
 %{_includedir}/vulkan/
 
 %changelog
+* Sat Aug 11 2018 Igor Gnatenko <ignatenkobrain@fedoraproject.org> - 18.2.0~rc2-1
+- Update to 18.2.0~rc2
+
 * Mon Jul 30 2018 Peter Robinson <pbrobinson@fedoraproject.org> 18.1.5-1
 - Mesa 18.1.5
 
