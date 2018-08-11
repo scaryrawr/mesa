@@ -84,6 +84,7 @@ BuildRequires:  expat-devel
 BuildRequires:  xorg-x11-proto-devel
 BuildRequires:  makedepend
 BuildRequires:  libselinux-devel
+BuildRequires:  pkgconfig(xrandr)
 BuildRequires:  libXext-devel
 BuildRequires:  libXfixes-devel
 BuildRequires:  libXdamage-devel
