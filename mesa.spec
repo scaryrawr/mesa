@@ -616,8 +616,10 @@ popd
 %{_libdir}/libvulkan_intel.so
 %{_datadir}/vulkan/icd.d/intel_icd.*.json
 %endif
+%ifnarch %{arm}
 %{_libdir}/libvulkan_radeon.so
 %{_datadir}/vulkan/icd.d/radeon_icd.*.json
+%endif
 %endif
 
 %files vulkan-devel
