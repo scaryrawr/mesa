@@ -20,7 +20,9 @@
 %define with_xa     1
 %define vulkan_drivers --with-vulkan-drivers=intel,radeon
 %else
+%ifnarch %{arm}
 %define vulkan_drivers --with-vulkan-drivers=radeon
+%endif
 %endif
 
 %ifarch %{arm} aarch64
