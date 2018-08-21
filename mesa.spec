@@ -43,9 +43,9 @@
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-%global ver 18.2.0-rc2
+%global ver 18.2.0-rc3
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
-Release:        1%{?dist}
+Release:        0.3%{?dist}
 License:        MIT
 URL:            http://www.mesa3d.org
 
@@ -66,10 +66,6 @@ Patch4:         0004-bigendian-assert.patch
 # Disable rgb10 configs by default:
 # https://bugzilla.redhat.com/show_bug.cgi?id=1560481
 Patch7:         0001-gallium-Disable-rgb10-configs-by-default.patch
-
-# glvnd support patches
-# non-upstreamed ones
-Patch10:        glvnd-fix-gl-dot-pc.patch
 
 BuildRequires:  gcc
 BuildRequires:  gcc-c++
@@ -626,6 +622,9 @@ popd
 %{_includedir}/vulkan/
 
 %changelog
+* Mon Aug 20 2018 Peter Robinson <pbrobinson@fedoraproject.org> 18.2.0~rc3-0.3
+- Update to 18.2.0~rc3
+
 * Sat Aug 11 2018 Igor Gnatenko <ignatenkobrain@fedoraproject.org> - 18.2.0~rc2-1
 - Update to 18.2.0~rc2
 
