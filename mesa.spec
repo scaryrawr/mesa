@@ -20,9 +20,7 @@
 %define with_xa     1
 %define vulkan_drivers --with-vulkan-drivers=intel,radeon
 %else
-%ifnarch %{arm}
 %define vulkan_drivers --with-vulkan-drivers=radeon
-%endif
 %endif
 
 %ifarch %{arm} aarch64
@@ -45,7 +43,7 @@ Name:           mesa
 Summary:        Mesa graphics libraries
 %global ver 18.2.0-rc3
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
-Release:        0.3%{?dist}
+Release:        1%{?dist}
 License:        MIT
 URL:            http://www.mesa3d.org
 
@@ -612,17 +610,15 @@ popd
 %{_libdir}/libvulkan_intel.so
 %{_datadir}/vulkan/icd.d/intel_icd.*.json
 %endif
-%ifnarch %{arm}
 %{_libdir}/libvulkan_radeon.so
 %{_datadir}/vulkan/icd.d/radeon_icd.*.json
-%endif
 %endif
 
 %files vulkan-devel
 %{_includedir}/vulkan/
 
 %changelog
-* Mon Aug 20 2018 Peter Robinson <pbrobinson@fedoraproject.org> 18.2.0~rc3-0.3
+* Mon Aug 20 2018 Peter Robinson <pbrobinson@fedoraproject.org> 18.2.0~rc3-1
 - Update to 18.2.0~rc3
 
 * Sat Aug 11 2018 Igor Gnatenko <ignatenkobrain@fedoraproject.org> - 18.2.0~rc2-1
