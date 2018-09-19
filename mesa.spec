@@ -43,7 +43,7 @@ Name:           mesa
 Summary:        Mesa graphics libraries
 %global ver 18.2.0
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
-Release:        1%{?dist}
+Release:        2%{?dist}
 License:        MIT
 URL:            http://www.mesa3d.org
 
@@ -64,6 +64,10 @@ Patch4:         0004-bigendian-assert.patch
 # Disable rgb10 configs by default:
 # https://bugzilla.redhat.com/show_bug.cgi?id=1560481
 Patch7:         0001-gallium-Disable-rgb10-configs-by-default.patch
+
+# https://bugs.freedesktop.org/show_bug.cgi?id=104926
+# https://patchwork.freedesktop.org/patch/210872
+Patch8:         st-dri-don-t-set-queryDmaBufFormats-queryDmaBufModifiers-if-the-driver-does-not-implement-it-1.patch
 
 BuildRequires:  gcc
 BuildRequires:  gcc-c++
@@ -618,6 +622,9 @@ popd
 %{_includedir}/vulkan/
 
 %changelog
+* Wed Sep 19 2018 Adam Williamson <awilliam@redhat.com> - 18.2.0-2
+- Fix "HW cursor for format" error message flood with swrast (FDO #104926)
+
 * Sat Sep  8 2018 Peter Robinson <pbrobinson@fedoraproject.org> 18.2.0-1
 - Update to 18.2.0
 
