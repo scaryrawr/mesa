@@ -41,9 +41,9 @@
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-%global ver 18.2.0
+%global ver 18.2.1
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
-Release:        2%{?dist}
+Release:        1%{?dist}
 License:        MIT
 URL:            http://www.mesa3d.org
 
@@ -622,6 +622,9 @@ popd
 %{_includedir}/vulkan/
 
 %changelog
+* Fri Sep 21 2018 Peter Robinson <pbrobinson@fedoraproject.org> 18.2.1-1
+- Update to 18.2.1
+
 * Wed Sep 19 2018 Adam Williamson <awilliam@redhat.com> - 18.2.0-2
 - Fix "HW cursor for format" error message flood with swrast (FDO #104926)
 
