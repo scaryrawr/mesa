@@ -41,7 +41,7 @@
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-%global ver 18.2.3
+%global ver 18.2.4
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
 Release:        1%{?dist}
 License:        MIT
@@ -325,12 +325,13 @@ Requires:       vulkan-devel
 Headers for development with the Vulkan API.
 
 %prep
-%autosetup -n %{name}-%{ver} -p1
 %if 0%{sanitize}
+%setup -q -n %{name}-%{ver}
   cp -f %{SOURCE1} src/gallium/auxiliary/vl/vl_decoder.c
   cp -f %{SOURCE2} src/gallium/auxiliary/vl/vl_mpeg12_decoder.c
   exit 0
 %else
+%autosetup -n %{name}-%{ver} -p1
   cmp %{SOURCE1} src/gallium/auxiliary/vl/vl_decoder.c
   cmp %{SOURCE2} src/gallium/auxiliary/vl/vl_mpeg12_decoder.c
 %endif
@@ -345,7 +346,6 @@ cp %{SOURCE4} docs/
 autoreconf -vfi
 
 %ifarch %{ix86}
-# i do not have words for how much the assembly dispatch code infuriates me
 %global asm_flags --disable-asm
 %endif
 
@@ -618,6 +618,9 @@ popd
 %{_includedir}/vulkan/
 
 %changelog
+* Thu Nov 01 2018 Adam Jackson <ajax@redhat.com> 18.2.4-1
+- Update to 18.2.4
+
 * Wed Oct 31 2018 Igor Gnatenko <ignatenkobrain@fedoraproject.org> - 18.2.3-1
 - Update to 18.2.3
 
