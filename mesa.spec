@@ -43,7 +43,7 @@ Name:           mesa
 Summary:        Mesa graphics libraries
 %global ver 18.2.4
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
-Release:        1%{?dist}
+Release:        2%{?dist}
 License:        MIT
 URL:            http://www.mesa3d.org
 
@@ -349,6 +349,9 @@ autoreconf -vfi
 %global asm_flags --disable-asm
 %endif
 
+#workaround store merging bug in gcc 8.2.1-4 (#1645400)
+export CFLAGS="%{optflags} -fno-store-merging"
+export CXXFLAGS="%{optflags} -fno-store-merging"
 %configure \
     %{?asm_flags} \
     --enable-libglvnd \
@@ -618,6 +621,9 @@ popd
 %{_includedir}/vulkan/
 
 %changelog
+* Tue Nov 06 2018 Dave Airlie <airlied@redhat.com> - 18.2.4-2
+- workaround bug with gcc 8.2.1-4
+
 * Thu Nov 01 2018 Adam Jackson <ajax@redhat.com> 18.2.4-1
 - Update to 18.2.4
 
