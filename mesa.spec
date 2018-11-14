@@ -41,9 +41,9 @@
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-%global ver 18.2.4
+%global ver 18.3.0-rc2
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
-Release:        3%{?dist}
+Release:        1%{?dist}
 License:        MIT
 URL:            http://www.mesa3d.org
 
@@ -59,11 +59,10 @@ Source4:        Mesa-MLAA-License-Clarification-Email.txt
 
 Patch1:         0001-llvm-SONAME-without-version.patch
 Patch3:         0003-evergreen-big-endian.patch
-Patch4:         0004-bigendian-assert.patch
 
 # Disable rgb10 configs by default:
 # https://bugzilla.redhat.com/show_bug.cgi?id=1560481
-Patch7:         0001-gallium-Disable-rgb10-configs-by-default.patch
+#Patch7:         0001-gallium-Disable-rgb10-configs-by-default.patch
 
 BuildRequires:  gcc
 BuildRequires:  gcc-c++
@@ -388,10 +387,6 @@ autoreconf -vfi
 %install
 %make_install
 
-%if !%{with_hardware}
-rm -f %{buildroot}%{_sysconfdir}/drirc
-%endif
-
 # libvdpau opens the versioned name, don't bother including the unversioned
 rm -f %{buildroot}%{_libdir}/vdpau/*.so
 # likewise glvnd
@@ -539,8 +534,9 @@ popd
 %endif
 
 %files dri-drivers
+%dir %{_datadir}/drirc.d
+%{_datadir}/drirc.d/00-mesa-defaults.conf
 %if %{with_hardware}
-%config(noreplace) %{_sysconfdir}/drirc
 %{_libdir}/dri/radeon_dri.so
 %{_libdir}/dri/r200_dri.so
 %{_libdir}/dri/nouveau_vieux_dri.so
@@ -618,6 +614,11 @@ popd
 %{_includedir}/vulkan/
 
 %changelog
+* Wed Nov 14 2018 Adam Jackson <ajax@redhat.com> 18.3.0~rc2.1
+- Update to 18.3.0 RC2
+- Re-enable 10bpc fbconfigs, clutter apps seem to work now
+- Drop now-unnecessary big-endian compilation fix
+
 * Tue Nov 06 2018 Igor Gnatenko <ignatenkobrain@fedoraproject.org> - 18.2.4-3
 - Remove workaround
 
