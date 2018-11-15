@@ -43,7 +43,7 @@ Name:           mesa
 Summary:        Mesa graphics libraries
 %global ver 18.3.0-rc2
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
-Release:        1%{?dist}
+Release:        2%{?dist}
 License:        MIT
 URL:            http://www.mesa3d.org
 
@@ -136,6 +136,12 @@ Obsoletes:      mesa-dri-filesystem < %{?epoch:%{epoch}:}%{version}-%{release}
 %description filesystem
 %{summary}.
 
+%package khr-devel
+Summary:        Mesa Khronos development headers
+
+%description khr-devel
+%{summary}.
+
 %package libGL
 Summary:        Mesa libGL runtime libraries
 Requires:       %{name}-libglapi%{?_isa} = %{?epoch:%{epoch}:}%{version}-%{release}
@@ -148,6 +154,7 @@ Requires:       libglvnd-glx%{?_isa} >= 1:1.0.1-0.9
 Summary:        Mesa libGL development package
 Requires:       %{name}-libGL%{?_isa} = %{?epoch:%{epoch}:}%{version}-%{release}
 Requires:       libglvnd-devel%{?_isa}
+Requires:       %{name}-khr-devel%{?_isa} = %{?epoch:%{epoch}:}%{version}-%{release}
 Provides:       libGL-devel
 Provides:       libGL-devel%{?_isa}
 
@@ -165,6 +172,7 @@ Requires:       libglvnd-egl%{?_isa}
 Summary:        Mesa libEGL development package
 Requires:       %{name}-libEGL%{?_isa} = %{?epoch:%{epoch}:}%{version}-%{release}
 Requires:       libglvnd-devel%{?_isa}
+Requires:       %{name}-khr-devel%{?_isa} = %{?epoch:%{epoch}:}%{version}-%{release}
 Provides:       libEGL-devel
 Provides:       libEGL-devel%{?_isa}
 
@@ -183,6 +191,7 @@ Requires:       libglvnd-gles%{?_isa}
 Summary:        Mesa libGLES development package
 Requires:       %{name}-libGLES%{?_isa} = %{?epoch:%{epoch}:}%{version}-%{release}
 Requires:       libglvnd-devel%{?_isa}
+Requires:       %{name}-khr-devel%{?_isa} = %{?epoch:%{epoch}:}%{version}-%{release}
 Provides:       libGLES-devel
 Provides:       libGLES-devel%{?_isa}
 
@@ -426,6 +435,10 @@ popd
 %endif
 %endif
 
+%files khr-devel
+%dir %{_includedir}/KHR
+%{_includedir}/KHR/khrplatform.h
+
 %files libGL
 %{_libdir}/libGLX_mesa.so.0*
 %{_libdir}/libGLX_system.so.0*
@@ -453,8 +466,6 @@ popd
 %{_includedir}/EGL/eglmesaext.h
 %{_includedir}/EGL/eglplatform.h
 %{_includedir}/EGL/eglextchromium.h
-%dir %{_includedir}/KHR
-%{_includedir}/KHR/khrplatform.h
 %{_libdir}/pkgconfig/egl.pc
 
 %files libGLES
@@ -614,7 +625,11 @@ popd
 %{_includedir}/vulkan/
 
 %changelog
-* Wed Nov 14 2018 Adam Jackson <ajax@redhat.com> 18.3.0~rc2.1
+* Thu Nov 15 2018 Adam Jackson <ajax@redhat.com> 18.3.0~rc2-2
+- Add mesa-khr-devel subpackage to hold <KHR/khrplatform.h>, and make
+  mesa-lib{GL,GLES,EGL}-devel Require it.
+
+* Wed Nov 14 2018 Adam Jackson <ajax@redhat.com> 18.3.0~rc2-1
 - Update to 18.3.0 RC2
 - Re-enable 10bpc fbconfigs, clutter apps seem to work now
 - Drop now-unnecessary big-endian compilation fix
