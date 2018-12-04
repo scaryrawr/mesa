@@ -43,7 +43,7 @@ Name:           mesa
 Summary:        Mesa graphics libraries
 %global ver 18.3.0-rc5
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
-Release:        1%{?dist}
+Release:        2%{?dist}
 License:        MIT
 URL:            http://www.mesa3d.org
 
@@ -63,6 +63,10 @@ Patch3:         0003-evergreen-big-endian.patch
 # Disable rgb10 configs by default:
 # https://bugzilla.redhat.com/show_bug.cgi?id=1560481
 #Patch7:         0001-gallium-Disable-rgb10-configs-by-default.patch
+
+# https://lists.freedesktop.org/archives/mesa-dev/2018-November/210797.html
+# https://bugzilla.redhat.com/show_bug.cgi?id=1650929
+Patch10:        0001-wayland-egl-Ensure-EGL-surface-is-resized-on-DRI-upd.patch
 
 BuildRequires:  gcc
 BuildRequires:  gcc-c++
@@ -625,6 +629,9 @@ popd
 %{_includedir}/vulkan/
 
 %changelog
+* Tue Dec 04 2018 Igor Gnatenko <ignatenkobrain@fedoraproject.org> - 18.3.0~rc5-2
+- Backport patch to fix totem
+
 * Tue Dec  4 2018 Peter Robinson <pbrobinson@fedoraproject.org> 18.3.0~rc5-1
 - Update to 18.3.0~rc5
 
