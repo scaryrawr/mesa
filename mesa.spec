@@ -41,7 +41,7 @@
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-%global ver 18.3.0-rc4
+%global ver 18.3.0-rc5
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
 Release:        1%{?dist}
 License:        MIT
@@ -625,6 +625,9 @@ popd
 %{_includedir}/vulkan/
 
 %changelog
+* Tue Dec  4 2018 Peter Robinson <pbrobinson@fedoraproject.org> 18.3.0~rc5-1
+- Update to 18.3.0~rc5
+
 * Tue Nov 27 2018 Igor Gnatenko <ignatenkobrain@fedoraproject.org> - 18.3.0~rc4-1
 - Update to 18.3.0~rc4
 
