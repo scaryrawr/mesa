@@ -41,9 +41,9 @@
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-%global ver 18.3.0-rc5
+%global ver 18.3.0
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
-Release:        2%{?dist}
+Release:        1%{?dist}
 License:        MIT
 URL:            http://www.mesa3d.org
 
@@ -629,6 +629,9 @@ popd
 %{_includedir}/vulkan/
 
 %changelog
+* Fri Dec 07 2018 Igor Gnatenko <ignatenkobrain@fedoraproject.org> - 18.3.0-1
+- Update to 18.3.0
+
 * Tue Dec 04 2018 Igor Gnatenko <ignatenkobrain@fedoraproject.org> - 18.3.0~rc5-2
 - Backport patch to fix totem
 
