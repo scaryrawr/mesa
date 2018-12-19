@@ -1,6 +1,3 @@
-# https://bugzilla.redhat.com/show_bug.cgi?id=1546714
-%undefine _annotated_build
-
 %ifnarch s390x
 %global with_hardware 1
 %global with_vdpau 1
@@ -52,7 +49,7 @@ Name:           mesa
 Summary:        Mesa graphics libraries
 %global ver 18.3.1
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
-Release:        2%{?dist}
+Release:        3%{?dist}
 License:        MIT
 URL:            http://www.mesa3d.org
 
@@ -631,6 +628,9 @@ popd
 %endif
 
 %changelog
+* Wed Dec 19 2018 Igor Gnatenko <ignatenkobrain@fedoraproject.org> - 18.3.1-3
+- Enable annotated build
+
 * Wed Dec 19 2018 Igor Gnatenko <ignatenkobrain@fedoraproject.org> - 18.3.1-2
 - Switch to meson buildsystem
 
