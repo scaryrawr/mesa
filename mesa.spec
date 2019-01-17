@@ -47,9 +47,9 @@
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-%global ver 18.3.1
+%global ver 18.3.2
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
-Release:        3%{?dist}
+Release:        1%{?dist}
 License:        MIT
 URL:            http://www.mesa3d.org
 
@@ -628,6 +628,9 @@ popd
 %endif
 
 %changelog
+* Thu Jan 17 2019 Adam Jackson <ajax@redhat.com> - 18.3.2-1
+- Update to 18.3.2
+
 * Wed Dec 19 2018 Igor Gnatenko <ignatenkobrain@fedoraproject.org> - 18.3.1-3
 - Enable annotated build
 
