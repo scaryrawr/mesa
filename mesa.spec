@@ -22,6 +22,7 @@
 %ifarch %{arm} aarch64
 %global with_etnaviv   1
 %global with_freedreno 1
+%global with_kmsro     1
 %global with_tegra     1
 %global with_vc4       1
 %global with_xa        1
@@ -62,6 +63,8 @@ Source3:        Makefile
 # Source4 contains email correspondence clarifying the license terms.
 # Fedora opts to ignore the optional part of clause 2 and treat that code as 2 clause BSD.
 Source4:        Mesa-MLAA-License-Clarification-Email.txt
+Source5:        freedreno-meson.build
+Source6:        ir3_cmdline.c
 
 Patch3:         0003-evergreen-big-endian.patch
 
@@ -364,6 +367,9 @@ Headers for development with the Vulkan API.
 %endif
 
 cp %{SOURCE4} docs/
+# Nasty hack to fix build, reported to upstream freedreno maintainer for upstream make dist fix
+cp %{SOURCE5} src/freedreno/meson.build
+cp %{SOURCE6} src/gallium/drivers/freedreno/ir3/ir3_cmdline.c
 
 %build
 %if !0%{sanitize}
@@ -376,7 +382,7 @@ cp %{SOURCE4} docs/
   -Ddri3=true \
   -Ddri-drivers=%{?dri_drivers} \
 %if 0%{?with_hardware}
-  -Dgallium-drivers=swrast,virgl,r300,nouveau%{?with_vmware:,svga}%{?with_radeonsi:,radeonsi,r600}%{?with_freedreno:,freedreno}%{?with_etnaviv:,etnaviv,kmsro}%{?with_tegra:,tegra}%{?with_vc4:,vc4,kmsro} \
+  -Dgallium-drivers=swrast,virgl,r300,nouveau%{?with_vmware:,svga}%{?with_radeonsi:,radeonsi,r600}%{?with_freedreno:,freedreno}%{?with_etnaviv:,etnaviv}%{?with_tegra:,tegra}%{?with_vc4:,vc4}%{?with_kmsro:,kmsro} \
 %else
   -Dgallium-drivers=swrast,virgl \
 %endif
@@ -589,6 +595,10 @@ popd
 %if 0%{?with_hardware}
 %dir %{_libdir}/gallium-pipe
 %{_libdir}/gallium-pipe/*.so
+%endif
+%if 0%{?with_kmsro}
+%{_libdir}/dri/hx8357d_dri.so
+%{_libdir}/dri/pl111_dri.so
 %endif
 %{_libdir}/dri/kms_swrast_dri.so
 %{_libdir}/dri/swrast_dri.so
