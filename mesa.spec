@@ -47,7 +47,7 @@
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-%global ver 18.3.2
+%global ver 19.0.0-rc1
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
 Release:        1%{?dist}
 License:        MIT
@@ -81,7 +81,7 @@ BuildRequires:  kernel-headers
 BuildRequires:  pkgconfig(libdrm_intel) >= 2.4.75
 %endif
 %if 0%{?with_radeonsi}
-BuildRequires:  pkgconfig(libdrm_amdgpu) >= 2.4.95
+BuildRequires:  pkgconfig(libdrm_amdgpu) >= 2.4.97
 %endif
 BuildRequires:  pkgconfig(libdrm_radeon) >= 2.4.71
 BuildRequires:  pkgconfig(libdrm_nouveau) >= 2.4.66
@@ -130,7 +130,7 @@ BuildRequires:  pkgconfig(libomxil-bellagio)
 %endif
 BuildRequires:  pkgconfig(libelf)
 BuildRequires:  pkgconfig(libglvnd) >= 0.2.0
-BuildRequires:  llvm-devel >= 6.0.0
+BuildRequires:  llvm-devel >= 7.0.0
 %if 0%{?with_opencl}
 BuildRequires:  clang-devel
 BuildRequires:  pkgconfig(libclc)
@@ -628,6 +628,9 @@ popd
 %endif
 
 %changelog
+* Thu Jan 31 2019 Igor Gnatenko <ignatenkobrain@fedoraproject.org> - 19.0.0~rc1-1
+- Update to 19.0.0~rc1
+
 * Thu Jan 17 2019 Adam Jackson <ajax@redhat.com> - 18.3.2-1
 - Update to 18.3.2
 
