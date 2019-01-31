@@ -376,7 +376,7 @@ cp %{SOURCE4} docs/
   -Ddri3=true \
   -Ddri-drivers=%{?dri_drivers} \
 %if 0%{?with_hardware}
-  -Dgallium-drivers=swrast,virgl,r300,nouveau%{?with_vmware:,svga}%{?with_radeonsi:,radeonsi,r600}%{?with_freedreno:,freedreno}%{?with_etnaviv:,etnaviv,imx}%{?with_tegra:,tegra}%{?with_vc4:,vc4} \
+  -Dgallium-drivers=swrast,virgl,r300,nouveau%{?with_vmware:,svga}%{?with_radeonsi:,radeonsi,r600}%{?with_freedreno:,freedreno}%{?with_etnaviv:,etnaviv,kmsro}%{?with_tegra:,tegra}%{?with_vc4:,vc4,kmsro} \
 %else
   -Dgallium-drivers=swrast,virgl \
 %endif
