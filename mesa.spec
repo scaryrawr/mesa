@@ -48,7 +48,7 @@
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-%global ver 19.0.0-rc1
+%global ver 19.0.0-rc2
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
 Release:        1%{?dist}
 License:        MIT
@@ -63,8 +63,6 @@ Source3:        Makefile
 # Source4 contains email correspondence clarifying the license terms.
 # Fedora opts to ignore the optional part of clause 2 and treat that code as 2 clause BSD.
 Source4:        Mesa-MLAA-License-Clarification-Email.txt
-Source5:        freedreno-meson.build
-Source6:        ir3_cmdline.c
 
 Patch3:         0003-evergreen-big-endian.patch
 
@@ -367,9 +365,6 @@ Headers for development with the Vulkan API.
 %endif
 
 cp %{SOURCE4} docs/
-# Nasty hack to fix build, reported to upstream freedreno maintainer for upstream make dist fix
-cp %{SOURCE5} src/freedreno/meson.build
-cp %{SOURCE6} src/gallium/drivers/freedreno/ir3/ir3_cmdline.c
 
 %build
 %if !0%{sanitize}
@@ -638,6 +633,9 @@ popd
 %endif
 
 %changelog
+* Tue Feb  5 2019 Peter Robinson <pbrobinson@fedoraproject.org> 19.0.0~rc2-1
+- Update to 19.0.0~rc2
+
 * Thu Jan 31 2019 Igor Gnatenko <ignatenkobrain@fedoraproject.org> - 19.0.0~rc1-1
 - Update to 19.0.0~rc1
 
