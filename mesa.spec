@@ -50,7 +50,7 @@ Name:           mesa
 Summary:        Mesa graphics libraries
 %global ver 19.0.0-rc2
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
-Release:        1%{?dist}
+Release:        2%{?dist}
 License:        MIT
 URL:            http://www.mesa3d.org
 
@@ -65,6 +65,10 @@ Source3:        Makefile
 Source4:        Mesa-MLAA-License-Clarification-Email.txt
 
 Patch3:         0003-evergreen-big-endian.patch
+
+# Disable rgb10 configs by default:
+# https://bugzilla.redhat.com/show_bug.cgi?id=1560481
+Patch7:         0001-gallium-Disable-rgb10-configs-by-default.patch
 
 # https://lists.freedesktop.org/archives/mesa-dev/2018-November/210797.html
 # https://bugzilla.redhat.com/show_bug.cgi?id=1650929
@@ -633,6 +637,9 @@ popd
 %endif
 
 %changelog
+* Fri Feb 08 2019 Pete Walter <pwalter@fedoraproject.org> - 19.0.0~rc2-2
+- Add back accidentally lost patch to disable rgb10 configs by default (#1650929)
+
 * Tue Feb  5 2019 Peter Robinson <pbrobinson@fedoraproject.org> 19.0.0~rc2-1
 - Update to 19.0.0~rc2
 
