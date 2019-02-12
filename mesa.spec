@@ -50,7 +50,7 @@ Name:           mesa
 Summary:        Mesa graphics libraries
 %global ver 19.0.0-rc2
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
-Release:        2%{?dist}
+Release:        3%{?dist}
 License:        MIT
 URL:            http://www.mesa3d.org
 
@@ -73,6 +73,9 @@ Patch7:         0001-gallium-Disable-rgb10-configs-by-default.patch
 # https://lists.freedesktop.org/archives/mesa-dev/2018-November/210797.html
 # https://bugzilla.redhat.com/show_bug.cgi?id=1650929
 Patch10:        0001-wayland-egl-Ensure-EGL-surface-is-resized-on-DRI-upd.patch
+
+# https://gitlab.freedesktop.org/mesa/mesa/commit/129a9f4937b8f2adb4d37999677d748d816d611c
+Patch20:        0001-radv-fix-compiler-issues-with-GCC-9.patch
 
 BuildRequires:  meson >= 0.45
 BuildRequires:  gcc
@@ -637,6 +640,9 @@ popd
 %endif
 
 %changelog
+* Tue Feb 12 2019 Igor Gnatenko <ignatenkobrain@fedoraproject.org> - 19.0.0~rc2-3
+- Fix radv vulkan
+
 * Fri Feb 08 2019 Pete Walter <pwalter@fedoraproject.org> - 19.0.0~rc2-2
 - Add back accidentally lost patch to disable rgb10 configs by default (#1650929)
 
