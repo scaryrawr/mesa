@@ -1,4 +1,4 @@
-From 0f0d7cd2ecf20d0f74df6c6ec7d04bb3b7156c30 Mon Sep 17 00:00:00 2001
+From 99914164455a589756186085b9b66d23f1318ee2 Mon Sep 17 00:00:00 2001
 From: Carlos Garnacho <carlosg@gnome.org>
 Date: Tue, 20 Nov 2018 18:06:38 +0100
 Subject: [PATCH] wayland/egl: Ensure EGL surface is resized on DRI
@@ -19,8 +19,11 @@ happened while there is a back buffer), and second the wayland buffers
 would need dropping if new surface size differs with the currently attached
 buffer. These are done in separate steps now.
 
+v2: Added the 'Fixes' tag
+
 https://bugzilla.redhat.com/show_bug.cgi?id=1650929
 
+Fixes: a9fb331ea7d ("wayland/egl: update surface size on window resize")
 Signed-off-by: Carlos Garnacho <carlosg@gnome.org>
 Tested-by: Bastien Nocera <hadess@hadess.net>
 ---
@@ -28,10 +31,10 @@ Tested-by: Bastien Nocera <hadess@hadess.net>
  1 file changed, 7 insertions(+), 4 deletions(-)
 
 diff --git a/src/egl/drivers/dri2/platform_wayland.c b/src/egl/drivers/dri2/platform_wayland.c
-index 34e09d7ec1..474a13316b 100644
+index c3ca1b6f7bc..3025e34ba63 100644
 --- a/src/egl/drivers/dri2/platform_wayland.c
 +++ b/src/egl/drivers/dri2/platform_wayland.c
-@@ -597,10 +597,8 @@ update_buffers(struct dri2_egl_surface *dri2_surf)
+@@ -637,10 +637,8 @@ update_buffers(struct dri2_egl_surface *dri2_surf)
     struct dri2_egl_display *dri2_dpy =
        dri2_egl_display(dri2_surf->base.Resource.Display);
  
@@ -44,7 +47,7 @@ index 34e09d7ec1..474a13316b 100644
  
        dri2_surf->base.Width  = dri2_surf->wl_win->width;
        dri2_surf->base.Height = dri2_surf->wl_win->height;
-@@ -608,6 +606,11 @@ update_buffers(struct dri2_egl_surface *dri2_surf)
+@@ -648,6 +646,11 @@ update_buffers(struct dri2_egl_surface *dri2_surf)
        dri2_surf->dy = dri2_surf->wl_win->dy;
     }
  
@@ -57,5 +60,5 @@ index 34e09d7ec1..474a13316b 100644
        _eglError(EGL_BAD_ALLOC, "failed to allocate color buffer");
        return -1;
 -- 
-2.20.0.rc2
+2.20.1
 
