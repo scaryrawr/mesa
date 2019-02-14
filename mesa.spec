@@ -120,7 +120,7 @@ BuildRequires:  pkgconfig(xshmfence) >= 1.1
 BuildRequires:  pkgconfig(dri2proto) >= 2.8
 BuildRequires:  pkgconfig(glproto) >= 1.4.14
 BuildRequires:  pkgconfig(xcb-xfixes)
-BuildRequires:  pkgconfig(xcb-randr) >= 1.12
+BuildRequires:  pkgconfig(xcb-randr)
 BuildRequires:  pkgconfig(xrandr) >= 1.3
 BuildRequires:  bison
 BuildRequires:  flex
