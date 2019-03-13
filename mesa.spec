@@ -48,7 +48,7 @@
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-%global ver 19.0.0-rc7
+%global ver 19.0.0
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
 Release:        1%{?dist}
 License:        MIT
@@ -633,6 +633,9 @@ popd
 %endif
 
 %changelog
+* Wed Mar 13 2019 Peter Robinson <pbrobinson@fedoraproject.org> 19.0.0-1
+- Update to 19.0.0
+
 * Thu Mar 07 2019 Pete Walter <pwalter@fedoraproject.org> - 19.0.0~rc7-1
 - Update to 19.0.0~rc7
 
