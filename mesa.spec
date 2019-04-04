@@ -50,7 +50,7 @@ Name:           mesa
 Summary:        Mesa graphics libraries
 %global ver 19.0.1
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
-Release:        1%{?dist}
+Release:        2%{?dist}
 License:        MIT
 URL:            http://www.mesa3d.org
 
@@ -74,6 +74,7 @@ BuildRequires:  meson >= 0.45
 BuildRequires:  gcc
 BuildRequires:  gcc-c++
 BuildRequires:  gettext
+BuildRequires:  chrpath
 
 %if 0%{?with_hardware}
 BuildRequires:  kernel-headers
@@ -429,6 +430,9 @@ for i in libOSMesa*.so libGL.so ; do
 done
 popd
 
+# Fixed by aa7afe324c2092fb31f9498cb3eda47dda96e6f2, temporary workaround
+chrpath -d -k %{buildroot}%{_libdir}/dri/*.so
+
 %files filesystem
 %doc docs/Mesa-MLAA-License-Clarification-Email.txt
 %dir %{_libdir}/dri
@@ -633,6 +637,9 @@ popd
 %endif
 
 %changelog
+* Thu Apr 04 2019 Adam Jackson <ajax@redhat.com> 19.0.1-2
+- Nuke rpath from installed DRI drivers
+
 * Wed Mar 27 2019 Igor Gnatenko <ignatenkobrain@fedoraproject.org> - 19.0.1-1
 - Update to 19.0.1
 
