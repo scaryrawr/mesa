@@ -44,20 +44,15 @@
 
 %global dri_drivers %{?base_drivers}%{?platform_drivers}
 
-%global sanitize 0
-
 Name:           mesa
 Summary:        Mesa graphics libraries
 %global ver 19.0.2
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
-Release:        1%{?dist}
+Release:        2%{?dist}
 License:        MIT
 URL:            http://www.mesa3d.org
 
-#Source0:        https://mesa.freedesktop.org/archive/%{name}-%{ver}.tar.xz
-Source0:        %{name}-%{ver}.tar.xz
-Source1:        vl_decoder.c
-Source2:        vl_mpeg12_decoder.c
+Source0:        https://mesa.freedesktop.org/archive/%{name}-%{ver}.tar.xz
 Source3:        Makefile
 # src/gallium/auxiliary/postprocess/pp_mlaa* have an ... interestingly worded license.
 # Source4 contains email correspondence clarifying the license terms.
@@ -354,24 +349,10 @@ Requires:       vulkan-devel
 Headers for development with the Vulkan API.
 
 %prep
-%if 0%{sanitize}
-%setup -q -n %{name}-%{ver}
-  cp -f %{SOURCE1} src/gallium/auxiliary/vl/vl_decoder.c
-  cp -f %{SOURCE2} src/gallium/auxiliary/vl/vl_mpeg12_decoder.c
-  exit 0
-%else
 %autosetup -n %{name}-%{ver} -p1
-  cmp %{SOURCE1} src/gallium/auxiliary/vl/vl_decoder.c
-  cmp %{SOURCE2} src/gallium/auxiliary/vl/vl_mpeg12_decoder.c
-%endif
-
 cp %{SOURCE4} docs/
 
 %build
-%if !0%{sanitize}
-  cmp %{SOURCE1} src/gallium/auxiliary/vl/vl_decoder.c
-  cmp %{SOURCE2} src/gallium/auxiliary/vl/vl_mpeg12_decoder.c
-%endif
 
 %meson -Dcpp_std=gnu++11 \
   -Dplatforms=x11,wayland,drm,surfaceless \
@@ -634,6 +615,10 @@ popd
 %endif
 
 %changelog
+* Thu Apr 11 2019 Adam Jackson <ajax@redhat.com> - 19.0.2-2
+- Drop the mpeg1/2 sanitize hack
+- Switch to upstream tarball since we no longer need to do the above
+
 * Thu Apr 11 08:48:37 CEST 2019 Igor Gnatenko <ignatenkobrain@fedoraprojec.org> - 19.0.2-1
 - Update to 19.0.2
 
