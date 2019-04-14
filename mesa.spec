@@ -53,11 +53,10 @@ License:        MIT
 URL:            http://www.mesa3d.org
 
 Source0:        https://mesa.freedesktop.org/archive/%{name}-%{ver}.tar.xz
-Source3:        Makefile
 # src/gallium/auxiliary/postprocess/pp_mlaa* have an ... interestingly worded license.
-# Source4 contains email correspondence clarifying the license terms.
+# Source1 contains email correspondence clarifying the license terms.
 # Fedora opts to ignore the optional part of clause 2 and treat that code as 2 clause BSD.
-Source4:        Mesa-MLAA-License-Clarification-Email.txt
+Source1:        Mesa-MLAA-License-Clarification-Email.txt
 
 Patch3:         0003-evergreen-big-endian.patch
 
@@ -350,7 +349,7 @@ Headers for development with the Vulkan API.
 
 %prep
 %autosetup -n %{name}-%{ver} -p1
-cp %{SOURCE4} docs/
+cp %{SOURCE1} docs/
 
 %build
 
