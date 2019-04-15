@@ -68,7 +68,6 @@ BuildRequires:  meson >= 0.45
 BuildRequires:  gcc
 BuildRequires:  gcc-c++
 BuildRequires:  gettext
-BuildRequires:  chrpath
 
 %if 0%{?with_hardware}
 BuildRequires:  kernel-headers
