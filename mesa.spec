@@ -48,7 +48,7 @@ Name:           mesa
 Summary:        Mesa graphics libraries
 %global ver 19.0.2
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
-Release:        2%{?dist}
+Release:        3%{?dist}
 License:        MIT
 URL:            http://www.mesa3d.org
 
@@ -613,6 +613,9 @@ popd
 %endif
 
 %changelog
+* Tue Apr 16 2019 Adam Williamson <awilliam@redhat.com> - 19.0.2-3
+- Rebuild with Meson fix for #1699099
+
 * Thu Apr 11 2019 Adam Jackson <ajax@redhat.com> - 19.0.2-2
 - Drop the mpeg1/2 sanitize hack
 - Switch to upstream tarball since we no longer need to do the above
