@@ -571,8 +571,18 @@ popd
 %{_libdir}/gallium-pipe/*.so
 %endif
 %if 0%{?with_kmsro}
+%{_libdir}/dri/armada-drm_dri.so
 %{_libdir}/dri/hx8357d_dri.so
+%{_libdir}/dri/ili9225_dri.so
+%{_libdir}/dri/ili9341_dri.so
+%{_libdir}/dri/meson_dri.so
+%{_libdir}/dri/mi8023qt_dri.so
 %{_libdir}/dri/pl111_dri.so
+%{_libdir}/dri/repaper_dri.so
+%{_libdir}/dri/rockchip_dri.so
+%{_libdir}/dri/st5786_dri.so
+%{_libdir}/dri/st7735r_dri.so
+%{_libdir}/dri/sun4i-drm_dri.so
 %endif
 %{_libdir}/dri/kms_swrast_dri.so
 %{_libdir}/dri/swrast_dri.so
