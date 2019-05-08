@@ -575,6 +575,7 @@ popd
 %endif
 %if 0%{?with_kmsro}
 %{_libdir}/dri/armada-drm_dri.so
+%{_libdir}/dri/exynos_dri.so
 %{_libdir}/dri/hx8357d_dri.so
 %{_libdir}/dri/ili9225_dri.so
 %{_libdir}/dri/ili9341_dri.so
