@@ -46,7 +46,7 @@
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-%global ver 19.0.3
+%global ver 19.1.0-rc1
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
 Release:        1%{?dist}
 License:        MIT
@@ -464,7 +464,6 @@ popd
 %{_includedir}/GLES3/gl3ext.h
 %{_includedir}/GLES3/gl31.h
 %{_includedir}/GLES3/gl32.h
-%{_libdir}/pkgconfig/glesv2.pc
 
 %ldconfig_scriptlets libglapi
 %files libglapi
@@ -613,6 +612,9 @@ popd
 %endif
 
 %changelog
+* Wed May 08 2019 Dave Airlie <airlied@redhat.com> - 19.1.0~rc1-1
+- Update to 19.1.0-rc1
+
 * Thu Apr 25 2019 Pete Walter <pwalter@fedoraproject.org> - 19.0.3-1
 - Update to 19.0.3
 
