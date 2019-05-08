@@ -58,6 +58,9 @@ Source0:        https://mesa.freedesktop.org/archive/%{name}-%{ver}.tar.xz
 # Fedora opts to ignore the optional part of clause 2 and treat that code as 2 clause BSD.
 Source1:        Mesa-MLAA-License-Clarification-Email.txt
 
+# sent upstream should be in rc2
+Patch1:		0001-kmsro-add-_dri.so-to-two-of-the-kmsro-drivers.patch
+
 Patch3:         0003-evergreen-big-endian.patch
 
 # Disable rgb10 configs by default:
@@ -576,11 +579,11 @@ popd
 %{_libdir}/dri/ili9225_dri.so
 %{_libdir}/dri/ili9341_dri.so
 %{_libdir}/dri/meson_dri.so
-%{_libdir}/dri/mi8023qt_dri.so
+%{_libdir}/dri/mi0283qt_dri.so
 %{_libdir}/dri/pl111_dri.so
 %{_libdir}/dri/repaper_dri.so
 %{_libdir}/dri/rockchip_dri.so
-%{_libdir}/dri/st5786_dri.so
+%{_libdir}/dri/st7586_dri.so
 %{_libdir}/dri/st7735r_dri.so
 %{_libdir}/dri/sun4i-drm_dri.so
 %endif
