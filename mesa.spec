@@ -23,6 +23,7 @@
 %global with_etnaviv   1
 %global with_freedreno 1
 %global with_kmsro     1
+%global with_lima      1
 %global with_tegra     1
 %global with_vc4       1
 %global with_xa        1
@@ -48,7 +49,7 @@ Name:           mesa
 Summary:        Mesa graphics libraries
 %global ver 19.1.0-rc1
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
-Release:        1%{?dist}
+Release:        2%{?dist}
 License:        MIT
 URL:            http://www.mesa3d.org
 
@@ -360,7 +361,7 @@ cp %{SOURCE1} docs/
   -Ddri3=true \
   -Ddri-drivers=%{?dri_drivers} \
 %if 0%{?with_hardware}
-  -Dgallium-drivers=swrast,virgl,r300,nouveau%{?with_vmware:,svga}%{?with_radeonsi:,radeonsi,r600}%{?with_freedreno:,freedreno}%{?with_etnaviv:,etnaviv}%{?with_tegra:,tegra}%{?with_vc4:,vc4}%{?with_kmsro:,kmsro} \
+  -Dgallium-drivers=swrast,virgl,r300,nouveau%{?with_vmware:,svga}%{?with_radeonsi:,radeonsi,r600}%{?with_freedreno:,freedreno}%{?with_etnaviv:,etnaviv}%{?with_tegra:,tegra}%{?with_vc4:,vc4}%{?with_kmsro:,kmsro}%{?with_lima:,lima} \
 %else
   -Dgallium-drivers=swrast,virgl \
 %endif
@@ -559,6 +560,9 @@ popd
 %if 0%{?with_tegra}
 %{_libdir}/dri/tegra_dri.so
 %endif
+%if 0%{?with_lima}
+%{_libdir}/dri/lima_dri.so
+%endif
 %{_libdir}/dri/nouveau_dri.so
 %if 0%{?with_vmware}
 %{_libdir}/dri/vmwgfx_dri.so
@@ -626,6 +630,9 @@ popd
 %endif
 
 %changelog
+* Thu May 09 2019 Adam Jackson <ajax@redhat.com> -19.1.0~rc1-2
+- Enable lima
+
 * Wed May 08 2019 Dave Airlie <airlied@redhat.com> - 19.1.0~rc1-1
 - Update to 19.1.0-rc1
 
