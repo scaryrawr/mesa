@@ -50,7 +50,7 @@ Name:           mesa
 Summary:        Mesa graphics libraries
 %global ver 19.1.0-rc1
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
-Release:        3%{?dist}
+Release:        4%{?dist}
 License:        MIT
 URL:            http://www.mesa3d.org
 
@@ -59,6 +59,8 @@ Source0:        https://mesa.freedesktop.org/archive/%{name}-%{ver}.tar.xz
 # Source1 contains email correspondence clarifying the license terms.
 # Fedora opts to ignore the optional part of clause 2 and treat that code as 2 clause BSD.
 Source1:        Mesa-MLAA-License-Clarification-Email.txt
+
+Source2:	glesv2.pc
 
 # sent upstream should be in rc2
 Patch1:		0001-kmsro-add-_dri.so-to-two-of-the-kmsro-drivers.patch
@@ -355,6 +357,8 @@ Headers for development with the Vulkan API.
 %autosetup -n %{name}-%{ver} -p1
 cp %{SOURCE1} docs/
 
+cp %{SOURCE2} .
+
 %build
 
 %meson -Dcpp_std=gnu++11 \
@@ -394,6 +398,8 @@ cp %{SOURCE1} docs/
 
 %install
 %meson_install
+
+install glesv2.pc %{buildroot}%{_libdir}/pkgconfig/
 
 # libvdpau opens the versioned name, don't bother including the unversioned
 rm -vf %{buildroot}%{_libdir}/vdpau/*.so
@@ -469,6 +475,7 @@ popd
 %{_includedir}/GLES3/gl3ext.h
 %{_includedir}/GLES3/gl31.h
 %{_includedir}/GLES3/gl32.h
+%{_libdir}/pkgconfig/glesv2.pc
 
 %ldconfig_scriptlets libglapi
 %files libglapi
@@ -634,6 +641,9 @@ popd
 %endif
 
 %changelog
+* Wed May 15 2019 Dave Airlie <airlied@redhat.com> - 19.1.0~rc1-4
+- Bring back glesv2.pc for now
+
 * Fri May 10 2019 Peter Robinson <pbrobinson@fedoraproject.org> 19.1.0~rc1-3
 - Enable panfrost
 
