@@ -48,9 +48,9 @@
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-%global ver 19.1.0-rc1
+%global ver 19.1.0-rc2
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
-Release:        4%{?dist}
+Release:        1%{?dist}
 License:        MIT
 URL:            http://www.mesa3d.org
 
@@ -61,9 +61,6 @@ Source0:        https://mesa.freedesktop.org/archive/%{name}-%{ver}.tar.xz
 Source1:        Mesa-MLAA-License-Clarification-Email.txt
 
 Source2:	glesv2.pc
-
-# sent upstream should be in rc2
-Patch1:		0001-kmsro-add-_dri.so-to-two-of-the-kmsro-drivers.patch
 
 Patch3:         0003-evergreen-big-endian.patch
 
@@ -641,6 +638,9 @@ popd
 %endif
 
 %changelog
+* Wed May 15 2019 Dave Airlie <airlied@redhat.com> - 19.1.0~rc2-1
+- Update to 19.1.0-rc2
+
 * Wed May 15 2019 Dave Airlie <airlied@redhat.com> - 19.1.0~rc1-4
 - Bring back glesv2.pc for now
 
