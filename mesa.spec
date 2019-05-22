@@ -48,7 +48,7 @@
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-%global ver 19.1.0-rc2
+%global ver 19.1.0-rc3
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
 Release:        1%{?dist}
 License:        MIT
@@ -638,6 +638,9 @@ popd
 %endif
 
 %changelog
+* Wed May 22 2019 Dave Airlie <airlied@redhat.com> - 19.1.0~rc3-1
+- Update to 19.1.0-rc3
+
 * Wed May 15 2019 Dave Airlie <airlied@redhat.com> - 19.1.0~rc2-1
 - Update to 19.1.0-rc2
 
