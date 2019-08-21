@@ -551,6 +551,10 @@ popd
 %{_libdir}/dri/i915_dri.so
 %{_libdir}/dri/i965_dri.so
 %endif
+%ifarch %{arm} aarch64
+%{_libdir}/dri/mxsfb-drm_dri.so
+%{_libdir}/dri/stm_dri.so
+%endif
 %if 0%{?with_vc4}
 %{_libdir}/dri/vc4_dri.so
 %endif
