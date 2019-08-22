@@ -51,7 +51,7 @@ Name:           mesa
 Summary:        Mesa graphics libraries
 %global ver 19.2.0-rc1
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
-Release:        1%{?dist}
+Release:        2%{?dist}
 License:        MIT
 URL:            http://www.mesa3d.org
 
@@ -60,8 +60,8 @@ Source0:        https://mesa.freedesktop.org/archive/%{name}-%{ver}.tar.xz
 # Source1 contains email correspondence clarifying the license terms.
 # Fedora opts to ignore the optional part of clause 2 and treat that code as 2 clause BSD.
 Source1:        Mesa-MLAA-License-Clarification-Email.txt
-
-Source2:	glesv2.pc
+Source2:        glesv2.pc
+Source3:        egl.pc
 
 Patch3:         0003-evergreen-big-endian.patch
 
@@ -354,8 +354,8 @@ Headers for development with the Vulkan API.
 %prep
 %autosetup -n %{name}-%{ver} -p1
 cp %{SOURCE1} docs/
-
 cp %{SOURCE2} .
+cp %{SOURCE3} .
 
 %build
 
@@ -398,6 +398,8 @@ cp %{SOURCE2} .
 %meson_install
 
 install glesv2.pc %{buildroot}%{_libdir}/pkgconfig/
+
+install egl.pc %{buildroot}%{_libdir}/pkgconfig/
 
 # libvdpau opens the versioned name, don't bother including the unversioned
 rm -vf %{buildroot}%{_libdir}/vdpau/*.so
@@ -458,6 +460,7 @@ popd
 %{_includedir}/EGL/eglmesaext.h
 %{_includedir}/EGL/eglplatform.h
 %{_includedir}/EGL/eglextchromium.h
+%{_libdir}/pkgconfig/egl.pc
 
 %files libGLES
 # No files, all provided by libglvnd
@@ -645,6 +648,9 @@ popd
 %endif
 
 %changelog
+* Thu Aug 22 2019 Peter Robinson <pbrobinson@fedoraproject.org> 19.2.0~rc1-2
+- Bring back egl.pc for now
+
 * Wed Aug 21 2019 Peter Robinson <pbrobinson@fedoraproject.org> 19.2.0~rc1-1
 - Update to 19.2.0~rc1
 
