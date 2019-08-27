@@ -51,7 +51,7 @@ Name:           mesa
 Summary:        Mesa graphics libraries
 %global ver 19.2.0-rc1
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
-Release:        2%{?dist}
+Release:        3%{?dist}
 License:        MIT
 URL:            http://www.mesa3d.org
 
@@ -141,7 +141,7 @@ BuildRequires:  pkgconfig(valgrind)
 BuildRequires:  python3-devel
 BuildRequires:  python3-mako
 %if 0%{?with_hardware}
-BuildRequires:  vulkan-devel
+BuildRequires:  vulkan-headers
 %endif
 
 %description
@@ -648,6 +648,9 @@ popd
 %endif
 
 %changelog
+* Tue Aug 27 2019 Adam Jackson <ajax@redhat.com> 19.2.0~rc1-3
+- BuildRequire vulkan-headers not vulkan-devel to ease llvm updates
+
 * Thu Aug 22 2019 Peter Robinson <pbrobinson@fedoraproject.org> 19.2.0~rc1-2
 - Bring back egl.pc for now
 
