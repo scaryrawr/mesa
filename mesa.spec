@@ -10,6 +10,7 @@
 
 %ifarch %{ix86} x86_64
 %global platform_drivers ,i915,i965
+%global with_iris   1
 %global with_vmware 1
 %global with_xa     1
 %global vulkan_drivers intel,amd
@@ -51,7 +52,7 @@ Name:           mesa
 Summary:        Mesa graphics libraries
 %global ver 19.2.0-rc3
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
-Release:        1%{?dist}
+Release:        2%{?dist}
 License:        MIT
 URL:            http://www.mesa3d.org
 
@@ -364,7 +365,7 @@ cp %{SOURCE3} .
   -Ddri3=true \
   -Ddri-drivers=%{?dri_drivers} \
 %if 0%{?with_hardware}
-  -Dgallium-drivers=swrast,virgl,r300,nouveau%{?with_vmware:,svga}%{?with_radeonsi:,radeonsi,r600}%{?with_freedreno:,freedreno}%{?with_etnaviv:,etnaviv}%{?with_tegra:,tegra}%{?with_vc4:,vc4}%{?with_v3d:,v3d}%{?with_kmsro:,kmsro}%{?with_lima:,lima}%{?with_panfrost:,panfrost} \
+  -Dgallium-drivers=swrast,virgl,r300,nouveau%{?with_iris:,iris}%{?with_vmware:,svga}%{?with_radeonsi:,radeonsi,r600}%{?with_freedreno:,freedreno}%{?with_etnaviv:,etnaviv}%{?with_tegra:,tegra}%{?with_vc4:,vc4}%{?with_v3d:,v3d}%{?with_kmsro:,kmsro}%{?with_lima:,lima}%{?with_panfrost:,panfrost} \
 %else
   -Dgallium-drivers=swrast,virgl \
 %endif
@@ -553,6 +554,7 @@ popd
 %ifarch %{ix86} x86_64
 %{_libdir}/dri/i915_dri.so
 %{_libdir}/dri/i965_dri.so
+%{_libdir}/dri/iris_dri.so
 %endif
 %ifarch %{arm} aarch64
 %{_libdir}/dri/mxsfb-drm_dri.so
@@ -648,6 +650,9 @@ popd
 %endif
 
 %changelog
+* Tue Sep 17 2019 Adam Jackson <ajax@redhat.com> - 19.2.0~rc3-2
+- Build iris too
+
 * Thu Sep 12 2019 Pete Walter <pwalter@fedoraproject.org> - 19.2.0~rc3-1
 - Update to 19.2.0~rc3
 
