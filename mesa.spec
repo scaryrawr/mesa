@@ -50,9 +50,9 @@
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-%global ver 19.2.0-rc3
+%global ver 19.2.0-rc4
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
-Release:        2%{?dist}
+Release:        1%{?dist}
 License:        MIT
 URL:            http://www.mesa3d.org
 
@@ -650,6 +650,9 @@ popd
 %endif
 
 %changelog
+* Wed Sep 18 2019 Pete Walter <pwalter@fedoraproject.org> - 19.2.0~rc4-1
+- Update to 19.2.0~rc4
+
 * Tue Sep 17 2019 Adam Jackson <ajax@redhat.com> - 19.2.0~rc3-2
 - Build iris too
 
