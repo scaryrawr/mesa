@@ -439,10 +439,8 @@ popd
 %{_libdir}/libGLX_system.so.0*
 %files libGL-devel
 %{_includedir}/GL/gl.h
-%{_includedir}/GL/gl_mangle.h
 %{_includedir}/GL/glext.h
 %{_includedir}/GL/glx.h
-%{_includedir}/GL/glx_mangle.h
 %{_includedir}/GL/glxext.h
 %{_includedir}/GL/glcorearb.h
 %dir %{_includedir}/GL/internal
