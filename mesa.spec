@@ -61,8 +61,6 @@ Source0:        https://mesa.freedesktop.org/archive/%{name}-%{ver}.tar.xz
 # Source1 contains email correspondence clarifying the license terms.
 # Fedora opts to ignore the optional part of clause 2 and treat that code as 2 clause BSD.
 Source1:        Mesa-MLAA-License-Clarification-Email.txt
-Source2:        glesv2.pc
-Source3:        egl.pc
 
 Patch3:         0003-evergreen-big-endian.patch
 
@@ -156,12 +154,6 @@ Obsoletes:      mesa-dri-filesystem < %{?epoch:%{epoch}:}%{version}-%{release}
 %description filesystem
 %{summary}.
 
-%package khr-devel
-Summary:        Mesa Khronos development headers
-
-%description khr-devel
-%{summary}.
-
 %package libGL
 Summary:        Mesa libGL runtime libraries
 Requires:       %{name}-libglapi%{?_isa} = %{?epoch:%{epoch}:}%{version}-%{release}
@@ -174,7 +166,6 @@ Requires:       libglvnd-glx%{?_isa} >= 1:1.0.1-0.9
 Summary:        Mesa libGL development package
 Requires:       %{name}-libGL%{?_isa} = %{?epoch:%{epoch}:}%{version}-%{release}
 Requires:       libglvnd-devel%{?_isa}
-Requires:       %{name}-khr-devel%{?_isa} = %{?epoch:%{epoch}:}%{version}-%{release}
 Provides:       libGL-devel
 Provides:       libGL-devel%{?_isa}
 
@@ -197,25 +188,6 @@ Provides:       libEGL-devel
 Provides:       libEGL-devel%{?_isa}
 
 %description libEGL-devel
-%{summary}.
-
-%package libGLES
-Summary:        Mesa libGLES runtime libraries
-Requires:       %{name}-libglapi%{?_isa} = %{?epoch:%{epoch}:}%{version}-%{release}
-Requires:       libglvnd-gles%{?_isa}
-
-%description libGLES
-%{summary}.
-
-%package libGLES-devel
-Summary:        Mesa libGLES development package
-Requires:       %{name}-libGLES%{?_isa} = %{?epoch:%{epoch}:}%{version}-%{release}
-Requires:       libglvnd-devel%{?_isa}
-Requires:       %{name}-khr-devel%{?_isa} = %{?epoch:%{epoch}:}%{version}-%{release}
-Provides:       libGLES-devel
-Provides:       libGLES-devel%{?_isa}
-
-%description libGLES-devel
 %{summary}.
 
 %package dri-drivers
@@ -355,8 +327,6 @@ Headers for development with the Vulkan API.
 %prep
 %autosetup -n %{name}-%{ver} -p1
 cp %{SOURCE1} docs/
-cp %{SOURCE2} .
-cp %{SOURCE3} .
 
 %build
 
@@ -398,10 +368,6 @@ cp %{SOURCE3} .
 %install
 %meson_install
 
-install glesv2.pc %{buildroot}%{_libdir}/pkgconfig/
-
-install egl.pc %{buildroot}%{_libdir}/pkgconfig/
-
 # libvdpau opens the versioned name, don't bother including the unversioned
 rm -vf %{buildroot}%{_libdir}/vdpau/*.so
 # likewise glvnd
@@ -430,51 +396,22 @@ popd
 %endif
 %endif
 
-%files khr-devel
-%dir %{_includedir}/KHR
-%{_includedir}/KHR/khrplatform.h
-
 %files libGL
 %{_libdir}/libGLX_mesa.so.0*
 %{_libdir}/libGLX_system.so.0*
 %files libGL-devel
-%{_includedir}/GL/gl.h
-%{_includedir}/GL/glext.h
-%{_includedir}/GL/glx.h
-%{_includedir}/GL/glxext.h
-%{_includedir}/GL/glcorearb.h
 %dir %{_includedir}/GL/internal
 %{_includedir}/GL/internal/dri_interface.h
 %{_libdir}/pkgconfig/dri.pc
 %{_libdir}/libglapi.so
-%{_libdir}/pkgconfig/gl.pc
 
 %files libEGL
 %{_datadir}/glvnd/egl_vendor.d/50_mesa.json
 %{_libdir}/libEGL_mesa.so.0*
 %files libEGL-devel
 %dir %{_includedir}/EGL
-%{_includedir}/EGL/eglext.h
-%{_includedir}/EGL/egl.h
 %{_includedir}/EGL/eglmesaext.h
-%{_includedir}/EGL/eglplatform.h
 %{_includedir}/EGL/eglextchromium.h
-%{_libdir}/pkgconfig/egl.pc
-
-%files libGLES
-# No files, all provided by libglvnd
-%files libGLES-devel
-%dir %{_includedir}/GLES2
-%{_includedir}/GLES2/gl2platform.h
-%{_includedir}/GLES2/gl2.h
-%{_includedir}/GLES2/gl2ext.h
-%dir %{_includedir}/GLES3
-%{_includedir}/GLES3/gl3platform.h
-%{_includedir}/GLES3/gl3.h
-%{_includedir}/GLES3/gl3ext.h
-%{_includedir}/GLES3/gl31.h
-%{_includedir}/GLES3/gl32.h
-%{_libdir}/pkgconfig/glesv2.pc
 
 %ldconfig_scriptlets libglapi
 %files libglapi
@@ -649,7 +586,8 @@ popd
 
 %changelog
 * Fri Oct 25 2019 Peter Robinson <pbrobinson@gmail.com> - 19.2.2-2
-- rebuild against libglvnd 1.2
+- Rebuild against libglvnd 1.2
+- Fix up and remove bits now in libglvnd
 
 * Fri Oct 25 2019 Pete Walter <pwalter@fedoraproject.org> - 19.2.2-1
 - Update to 19.2.2
