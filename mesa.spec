@@ -52,7 +52,7 @@ Name:           mesa
 Summary:        Mesa graphics libraries
 %global ver 19.2.2
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
-Release:        2%{?dist}
+Release:        3%{?dist}
 License:        MIT
 URL:            http://www.mesa3d.org
 
@@ -183,7 +183,7 @@ Requires:       libglvnd-egl%{?_isa}
 Summary:        Mesa libEGL development package
 Requires:       %{name}-libEGL%{?_isa} = %{?epoch:%{epoch}:}%{version}-%{release}
 Requires:       libglvnd-devel%{?_isa}
-Requires:       %{name}-khr-devel%{?_isa} = %{?epoch:%{epoch}:}%{version}-%{release}
+Requires:       %{name}-khr-devel%{?_isa}
 Provides:       libEGL-devel
 Provides:       libEGL-devel%{?_isa}
 
@@ -585,6 +585,9 @@ popd
 %endif
 
 %changelog
+* Fri Oct 25 2019 Peter Robinson <pbrobinson@gmail.com> - 19.2.2-3
+- adjust mesa-khr-devel requires now provided by libglvnd
+
 * Fri Oct 25 2019 Peter Robinson <pbrobinson@gmail.com> - 19.2.2-2
 - Rebuild against libglvnd 1.2
 - Fix up and remove bits now in libglvnd
