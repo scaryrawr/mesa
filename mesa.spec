@@ -50,9 +50,9 @@
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-%global ver 19.2.2
+%global ver 19.2.3
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
-Release:        3%{?dist}
+Release:        1%{?dist}
 License:        MIT
 URL:            http://www.mesa3d.org
 
@@ -585,6 +585,9 @@ popd
 %endif
 
 %changelog
+* Thu Nov 07 2019 Pete Walter <pwalter@fedoraproject.org> - 19.2.3-1
+- Update to 19.2.3
+
 * Fri Oct 25 2019 Peter Robinson <pbrobinson@gmail.com> - 19.2.2-3
 - adjust mesa-khr-devel requires now provided by libglvnd
 
