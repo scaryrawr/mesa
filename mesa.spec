@@ -50,7 +50,7 @@
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-%global ver 19.2.3
+%global ver 19.3.0-rc2
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
 Release:        1%{?dist}
 License:        MIT
@@ -63,10 +63,6 @@ Source0:        https://mesa.freedesktop.org/archive/%{name}-%{ver}.tar.xz
 Source1:        Mesa-MLAA-License-Clarification-Email.txt
 
 Patch3:         0003-evergreen-big-endian.patch
-
-# Disable rgb10 configs by default:
-# https://bugzilla.redhat.com/show_bug.cgi?id=1560481
-Patch7:         0001-gallium-Disable-rgb10-configs-by-default.patch
 
 BuildRequires:  meson >= 0.45
 BuildRequires:  gcc
@@ -330,7 +326,7 @@ cp %{SOURCE1} docs/
 
 %build
 
-%meson -Dcpp_std=gnu++11 \
+%meson -Dcpp_std=gnu++14 \
   -Dplatforms=x11,wayland,drm,surfaceless \
   -Ddri3=true \
   -Ddri-drivers=%{?dri_drivers} \
@@ -585,6 +581,9 @@ popd
 %endif
 
 %changelog
+* Fri Nov 08 2019 Pete Walter <pwalter@fedoraproject.org> - 19.3.0~rc2-1
+- Update to 19.3.0~rc2
+
 * Thu Nov 07 2019 Pete Walter <pwalter@fedoraproject.org> - 19.2.3-1
 - Update to 19.2.3
 
