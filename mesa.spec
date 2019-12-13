@@ -52,7 +52,7 @@ Name:           mesa
 Summary:        Mesa graphics libraries
 %global ver 19.3.2
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
-Release:        2%{?dist}
+Release:        3%{?dist}
 License:        MIT
 URL:            http://www.mesa3d.org
 
@@ -63,6 +63,8 @@ Source0:        https://mesa.freedesktop.org/archive/%{name}-%{ver}.tar.xz
 Source1:        Mesa-MLAA-License-Clarification-Email.txt
 
 Patch3:         0003-evergreen-big-endian.patch
+# https://fedoraproject.org/wiki/Changes/Stop-Shipping-Individual-Component-Libraries-In-clang-lib-Package
+Patch4:		0001-Link-with-libclang-cpp.patch
 
 BuildRequires:  meson >= 0.45
 BuildRequires:  gcc
@@ -585,6 +587,10 @@ popd
 %endif
 
 %changelog
+* Thu Jan 23 2020 Tom Stellard <tstellar@redhat.com> - 19.3.2-3
+- Link against libclang-cpp.so
+- https://fedoraproject.org/wiki/Changes/Stop-Shipping-Individual-Component-Libraries-In-clang-lib-Package
+
 * Thu Jan 23 2020 Tom Stellard <tstellar@redhat.com> - 19.3.2-2
 - Build with -fcommon until upstream fixes omx build with gcc10
 
