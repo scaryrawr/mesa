@@ -50,7 +50,7 @@
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-%global ver 19.3.0
+%global ver 19.3.1
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
 Release:        1%{?dist}
 License:        MIT
@@ -61,9 +61,6 @@ Source0:        https://mesa.freedesktop.org/archive/%{name}-%{ver}.tar.xz
 # Source1 contains email correspondence clarifying the license terms.
 # Fedora opts to ignore the optional part of clause 2 and treat that code as 2 clause BSD.
 Source1:        Mesa-MLAA-License-Clarification-Email.txt
-
-# https://gitlab.freedesktop.org/mesa/mesa/issues/2042
-Patch0:         fix-arm-build.patch
 
 Patch3:         0003-evergreen-big-endian.patch
 
@@ -584,6 +581,9 @@ popd
 %endif
 
 %changelog
+* Wed Dec 18 2019 Pete Walter <pwalter@fedoraproject.org> - 19.3.1-1
+- Update to 19.3.1
+
 * Mon Dec 16 2019 Pete Walter <pwalter@fedoraproject.org> - 19.3.0-1
 - Update to 19.3.0
 
