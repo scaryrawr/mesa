@@ -52,7 +52,7 @@ Name:           mesa
 Summary:        Mesa graphics libraries
 %global ver 19.3.2
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
-Release:        1%{?dist}
+Release:        2%{?dist}
 License:        MIT
 URL:            http://www.mesa3d.org
 
@@ -326,6 +326,10 @@ cp %{SOURCE1} docs/
 
 %build
 
+# Build with -fcommon until the omx build with gcc10 is fixed upstream
+# https://gitlab.freedesktop.org/mesa/mesa/issues/2385
+%global optflags %{optflags} -fcommon
+
 %meson -Dcpp_std=gnu++14 \
   -Dplatforms=x11,wayland,drm,surfaceless \
   -Ddri3=true \
@@ -581,6 +585,9 @@ popd
 %endif
 
 %changelog
+* Thu Jan 23 2020 Tom Stellard <tstellar@redhat.com> - 19.3.2-2
+- Build with -fcommon until upstream fixes omx build with gcc10
+
 * Fri Jan 10 2020 Pete Walter <pwalter@fedoraproject.org> - 19.3.2-1
 - Update to 19.3.2
 
