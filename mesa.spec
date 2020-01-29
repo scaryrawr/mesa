@@ -50,9 +50,9 @@
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-%global ver 19.3.2
+%global ver 19.3.3
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
-Release:        3%{?dist}
+Release:        1%{?dist}
 License:        MIT
 URL:            http://www.mesa3d.org
 
@@ -587,6 +587,9 @@ popd
 %endif
 
 %changelog
+* Wed Jan 29 2020 Pete Walter <pwalter@fedoraproject.org> - 19.3.3-1
+- Update to 19.3.3
+
 * Thu Jan 23 2020 Tom Stellard <tstellar@redhat.com> - 19.3.2-3
 - Link against libclang-cpp.so
 - https://fedoraproject.org/wiki/Changes/Stop-Shipping-Individual-Component-Libraries-In-clang-lib-Package
