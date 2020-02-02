@@ -494,6 +494,8 @@ popd
 %{_libdir}/dri/iris_dri.so
 %endif
 %ifarch %{arm} aarch64
+%{_libdir}/dri/ingenic-drm_dri.so
+%{_libdir}/dri/mcde_dri.so
 %{_libdir}/dri/mxsfb-drm_dri.so
 %{_libdir}/dri/stm_dri.so
 %endif
