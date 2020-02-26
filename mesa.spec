@@ -52,7 +52,7 @@ Name:           mesa
 Summary:        Mesa graphics libraries
 %global ver 20.0.0
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
-Release:        1%{?dist}
+Release:        2%{?dist}
 License:        MIT
 URL:            http://www.mesa3d.org
 
@@ -326,6 +326,9 @@ Headers for development with the Vulkan API.
 %autosetup -n %{name}-%{ver} -p1
 cp %{SOURCE1} docs/
 
+# Make sure the build uses gnu++14 as llvm 10 headers require that
+sed -i -e 's/cpp_std=gnu++11/cpp_std=gnu++14/g' meson.build
+
 %build
 
 # Build with -fcommon until the omx build with gcc10 is fixed upstream
@@ -589,6 +592,9 @@ popd
 %endif
 
 %changelog
+* Wed Feb 26 2020 Kalev Lember <klember@redhat.com> - 20.0.0-2
+- Fix the build with llvm 10 (#1803351)
+
 * Thu Feb 20 2020 Pete Walter <pwalter@fedoraproject.org> - 20.0.0-1
 - Update to 20.0.0
 
