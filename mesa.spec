@@ -50,9 +50,9 @@
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-%global ver 20.0.0
+%global ver 20.0.1
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
-Release:        2%{?dist}
+Release:        1%{?dist}
 License:        MIT
 URL:            http://www.mesa3d.org
 
@@ -592,6 +592,9 @@ popd
 %endif
 
 %changelog
+* Fri Mar 06 2020 Pete Walter <pwalter@fedoraproject.org> - 20.0.1-1
+- Update to 20.0.1
+
 * Wed Feb 26 2020 Kalev Lember <klember@redhat.com> - 20.0.0-2
 - Fix the build with llvm 10 (#1803351)
 
