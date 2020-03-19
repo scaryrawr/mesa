@@ -50,7 +50,7 @@
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-%global ver 20.0.1
+%global ver 20.0.2
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
 Release:        1%{?dist}
 License:        MIT
@@ -592,6 +592,9 @@ popd
 %endif
 
 %changelog
+* Thu Mar 19 2020 Pete Walter <pwalter@fedoraproject.org> - 20.0.2-1
+- Update to 20.0.2
+
 * Fri Mar 06 2020 Pete Walter <pwalter@fedoraproject.org> - 20.0.1-1
 - Update to 20.0.1
 
