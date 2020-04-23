@@ -63,8 +63,6 @@ Source0:        https://mesa.freedesktop.org/archive/%{name}-%{ver}.tar.xz
 Source1:        Mesa-MLAA-License-Clarification-Email.txt
 
 Patch3:         0003-evergreen-big-endian.patch
-# https://fedoraproject.org/wiki/Changes/Stop-Shipping-Individual-Component-Libraries-In-clang-lib-Package
-Patch4:		0001-Link-with-libclang-cpp.patch
 
 BuildRequires:  meson >= 0.45
 BuildRequires:  gcc
