@@ -50,7 +50,7 @@
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-%global ver 20.0.7
+%global ver 20.1.0-rc4
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
 Release:        1%{?dist}
 License:        MIT
@@ -365,6 +365,7 @@ sed -i -e 's/cpp_std=gnu++11/cpp_std=gnu++14/g' meson.build
   -Dbuild-tests=false \
   -Dselinux=true \
   -Dosmesa=gallium \
+  -Dvulkan-device-select-layer=true \
   %{nil}
 %meson_build
 
@@ -580,6 +581,8 @@ popd
 %endif
 %{_libdir}/libvulkan_radeon.so
 %{_datadir}/vulkan/icd.d/radeon_icd.*.json
+%{_libdir}/libVkLayer_MESA_device_select.so
+%{_datadir}/vulkan/implicit_layer.d/VkLayer_MESA_device_select.json
 %endif
 
 %files vulkan-devel
@@ -590,6 +593,9 @@ popd
 %endif
 
 %changelog
+* Fri May 22 2020 Dave Airlie <airlied@redhat.com> - 20.1.0~rc4-1
+- Update to 20.1.0-rc4
+
 * Thu May 14 2020 Pete Walter <pwalter@fedoraproject.org> - 20.0.7-1
 - Update to 20.0.7
 
