@@ -327,6 +327,12 @@ cp %{SOURCE1} docs/
 # Make sure the build uses gnu++14 as llvm 10 headers require that
 sed -i -e 's/cpp_std=gnu++11/cpp_std=gnu++14/g' meson.build
 
+# cElementTree no longer exists in Python 3.9
+sed -i -e 's/import xml.etree.cElementTree/import xml.etree.ElementTree/g' \
+    src/amd/vulkan/radv_extensions.py \
+    src/freedreno/vulkan/tu_extensions.py \
+    src/intel/vulkan/anv_extensions_gen.py
+
 %build
 
 # Build with -fcommon until the omx build with gcc10 is fixed upstream
@@ -595,6 +601,7 @@ popd
 %changelog
 * Wed Jun 10 2020 Pete Walter <pwalter@fedoraproject.org> - 20.1.1-1
 - Update to 20.1.1
+- Fix the build with Python 3.9
 
 * Thu May 28 2020 Dave Airlie <airlied@redhat.com> - 20.1.0.1
 - Update to 20.1.0
