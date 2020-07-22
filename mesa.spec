@@ -52,7 +52,7 @@ Name:           mesa
 Summary:        Mesa graphics libraries
 %global ver 20.1.3
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
-Release:        1%{?dist}
+Release:        2%{?dist}
 License:        MIT
 URL:            http://www.mesa3d.org
 
@@ -72,20 +72,10 @@ BuildRequires:  gettext
 %if 0%{?with_hardware}
 BuildRequires:  kernel-headers
 %endif
-%ifarch %{ix86} x86_64
-BuildRequires:  pkgconfig(libdrm_intel) >= 2.4.75
-%endif
-%if 0%{?with_radeonsi}
-BuildRequires:  pkgconfig(libdrm_amdgpu) >= 2.4.97
-%endif
-BuildRequires:  pkgconfig(libdrm_radeon) >= 2.4.71
-BuildRequires:  pkgconfig(libdrm_nouveau) >= 2.4.66
-%if 0%{?with_etnaviv}
-BuildRequires:  pkgconfig(libdrm_etnaviv) >= 2.4.89
-%endif
-%if 0%{?with_vc4}
-BuildRequires:  pkgconfig(libdrm) >= 2.4.89
-%endif
+# We only check for the minimum version of pkgconfig(libdrm) needed so that the
+# SRPMs for each arch still have the same build dependencies. See:
+# https://bugzilla.redhat.com/show_bug.cgi?id=1859515
+BuildRequires:  pkgconfig(libdrm) >= 2.4.97
 BuildRequires:  pkgconfig(expat)
 BuildRequires:  pkgconfig(zlib) >= 1.2.3
 BuildRequires:  pkgconfig(libselinux)
@@ -599,6 +589,10 @@ popd
 %endif
 
 %changelog
+* Wed Jul 22 2020 Lyude Paul <lyude@redhat.com> - 20.1.3-2
+- Only require pkgconfig(libdrm) to fix build dependencies for arches other
+  than the one our SRPM was generated with (#1859515)
+
 * Sat Jul 11 2020 Pete Walter <pwalter@fedoraproject.org> - 20.1.3-1
 - Update to 20.1.3
 
