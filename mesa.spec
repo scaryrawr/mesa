@@ -50,9 +50,9 @@
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-%global ver 20.1.3
+%global ver 20.1.4
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
-Release:        2%{?dist}
+Release:        1%{?dist}
 License:        MIT
 URL:            http://www.mesa3d.org
 
@@ -589,6 +589,9 @@ popd
 %endif
 
 %changelog
+* Thu Jul 23 2020 Pete Walter <pwalter@fedoraproject.org> - 20.1.4-1
+- Update to 20.1.4
+
 * Wed Jul 22 2020 Lyude Paul <lyude@redhat.com> - 20.1.3-2
 - Only require pkgconfig(libdrm) to fix build dependencies for arches other
   than the one our SRPM was generated with (#1859515)
