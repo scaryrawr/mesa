@@ -52,7 +52,7 @@ Name:           mesa
 Summary:        Mesa graphics libraries
 %global ver 20.1.6
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
-Release:        1%{?dist}
+Release:        2%{?dist}
 License:        MIT
 URL:            http://www.mesa3d.org
 
@@ -324,6 +324,10 @@ sed -i -e 's/import xml.etree.cElementTree/import xml.etree.ElementTree/g' \
     src/intel/vulkan/anv_extensions_gen.py
 
 %build
+# We've gotten a report that enabling LTO for mesa breaks some games. See
+# https://bugzilla.redhat.com/show_bug.cgi?id=1862771 for details.
+# Disable LTO for now
+%define _lto_cflags %{nil}
 
 # Build with -fcommon until the omx build with gcc10 is fixed upstream
 # https://gitlab.freedesktop.org/mesa/mesa/issues/2385
@@ -589,6 +593,9 @@ popd
 %endif
 
 %changelog
+* Sat Aug 22 2020 Kalev Lember <klember@redhat.com> - 20.1.6-2
+- Disable LTO as it appears to break some games (#1862771)
+
 * Thu Aug 20 2020 Pete Walter <pwalter@fedoraproject.org> - 20.1.6-1
 - Update to 20.1.6
 
