@@ -50,9 +50,9 @@
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-%global ver 20.1.6
+%global ver 20.2.0-rc2
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
-Release:        2%{?dist}
+Release:        1%{?dist}
 License:        MIT
 URL:            http://www.mesa3d.org
 
@@ -593,6 +593,9 @@ popd
 %endif
 
 %changelog
+* Sun Aug 23 2020 Pete Walter <pwalter@fedoraproject.org> - 20.2.0~rc2-1
+- Update to 20.2.0~rc2
+
 * Sat Aug 22 2020 Kalev Lember <klember@redhat.com> - 20.1.6-2
 - Disable LTO as it appears to break some games (#1862771)
 
