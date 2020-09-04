@@ -314,22 +314,13 @@ Headers for development with the Vulkan API.
 %autosetup -n %{name}-%{ver} -p1
 cp %{SOURCE1} docs/
 
-# Make sure the build uses gnu++14 as llvm 10 headers require that
-sed -i -e 's/cpp_std=gnu++11/cpp_std=gnu++14/g' meson.build
-
-# cElementTree no longer exists in Python 3.9
-sed -i -e 's/import xml.etree.cElementTree/import xml.etree.ElementTree/g' \
-    src/amd/vulkan/radv_extensions.py \
-    src/freedreno/vulkan/tu_extensions.py \
-    src/intel/vulkan/anv_extensions_gen.py
-
 %build
 # We've gotten a report that enabling LTO for mesa breaks some games. See
 # https://bugzilla.redhat.com/show_bug.cgi?id=1862771 for details.
 # Disable LTO for now
 %define _lto_cflags %{nil}
 
-%meson -Dcpp_std=gnu++14 \
+%meson \
   -Dplatforms=x11,wayland,drm,surfaceless \
   -Ddri3=true \
   -Ddri-drivers=%{?dri_drivers} \
@@ -591,6 +582,7 @@ popd
 %changelog
 * Fri Sep 04 2020 Pete Walter <pwalter@fedoraproject.org> - 20.2.0~rc4-1
 - Update to 20.2.0~rc4
+- Remove more no longer needed build hacks
 
 * Thu Sep 03 2020 Pete Walter <pwalter@fedoraproject.org> - 20.2.0~rc3-2
 - Remove -fcommon build workaround
