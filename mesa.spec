@@ -50,9 +50,9 @@
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-%global ver 20.2.0-rc3
+%global ver 20.2.0-rc4
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
-Release:        2%{?dist}
+Release:        1%{?dist}
 License:        MIT
 URL:            http://www.mesa3d.org
 
@@ -589,6 +589,9 @@ popd
 %endif
 
 %changelog
+* Fri Sep 04 2020 Pete Walter <pwalter@fedoraproject.org> - 20.2.0~rc4-1
+- Update to 20.2.0~rc4
+
 * Thu Sep 03 2020 Pete Walter <pwalter@fedoraproject.org> - 20.2.0~rc3-2
 - Remove -fcommon build workaround
 
