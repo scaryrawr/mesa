@@ -52,7 +52,7 @@ Name:           mesa
 Summary:        Mesa graphics libraries
 %global ver 20.2.0-rc4
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
-Release:        1%{?dist}
+Release:        2%{?dist}
 License:        MIT
 URL:            http://www.mesa3d.org
 
@@ -154,6 +154,7 @@ Requires:       %{name}-libGL%{?_isa} = %{?epoch:%{epoch}:}%{version}-%{release}
 Requires:       libglvnd-devel%{?_isa}
 Provides:       libGL-devel
 Provides:       libGL-devel%{?_isa}
+Recommends:     gl-manpages
 
 %description libGL-devel
 %{summary}.
@@ -580,6 +581,9 @@ popd
 %endif
 
 %changelog
+* Fri Sep 25 2020 Adam Jackson <ajax@redhat.com>
+- mesa-libGL-devel Recommends: gl-manpages
+
 * Fri Sep 04 2020 Pete Walter <pwalter@fedoraproject.org> - 20.2.0~rc4-1
 - Update to 20.2.0~rc4
 - Remove more no longer needed build hacks
