@@ -52,7 +52,7 @@ Name:           mesa
 Summary:        Mesa graphics libraries
 %global ver 20.2.0
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
-Release:        1%{?dist}
+Release:        2%{?dist}
 License:        MIT
 URL:            http://www.mesa3d.org
 
@@ -61,8 +61,6 @@ Source0:        https://mesa.freedesktop.org/archive/%{name}-%{ver}.tar.xz
 # Source1 contains email correspondence clarifying the license terms.
 # Fedora opts to ignore the optional part of clause 2 and treat that code as 2 clause BSD.
 Source1:        Mesa-MLAA-License-Clarification-Email.txt
-
-Patch3:         0003-evergreen-big-endian.patch
 
 BuildRequires:  meson >= 0.45
 BuildRequires:  gcc
@@ -581,6 +579,9 @@ popd
 %endif
 
 %changelog
+* Tue Sep 29 2020 Pete Walter <pwalter@fedoraproject.org> - 20.2.0-2
+- Drop no longer needed big endian fix
+
 * Tue Sep 29 2020 Pete Walter <pwalter@fedoraproject.org> - 20.2.0-1
 - Update to 20.2.0
 
