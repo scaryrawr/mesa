@@ -1,23 +1,21 @@
 %ifnarch s390x
 %global with_hardware 1
+%global with_vulkan 1
 %global with_vdpau 1
 %global with_vaapi 1
 %global with_nine 1
 %global with_omx 1
 %global with_opencl 1
-%global base_drivers nouveau,r100,r200
+%global base_dri nouveau,r100,r200
+%global base_vulkan amd
 %endif
 
 %ifarch %{ix86} x86_64
-%global platform_drivers ,i915,i965
 %global with_iris   1
 %global with_vmware 1
 %global with_xa     1
-%global vulkan_drivers intel,amd
-%else
-%ifnarch s390x
-%global vulkan_drivers amd
-%endif
+%global platform_dri ,i915,i965
+%global platform_vulkan ,intel
 %endif
 
 %ifarch %{arm} aarch64
@@ -46,13 +44,14 @@
 %bcond_with valgrind
 %endif
 
-%global dri_drivers %{?base_drivers}%{?platform_drivers}
+%global dri_drivers %{?base_dri}%{?platform_dri}
+%global vulkan_drivers %{?base_vulkan}%{?platform_vulkan}
 
 Name:           mesa
 Summary:        Mesa graphics libraries
 %global ver 20.2.3
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
-Release:        1%{?dist}
+Release:        2%{?dist}
 License:        MIT
 URL:            http://www.mesa3d.org
 
@@ -66,7 +65,6 @@ BuildRequires:  meson >= 0.45
 BuildRequires:  gcc
 BuildRequires:  gcc-c++
 BuildRequires:  gettext
-
 %if 0%{?with_hardware}
 BuildRequires:  kernel-headers
 %endif
@@ -123,8 +121,13 @@ BuildRequires:  pkgconfig(valgrind)
 %endif
 BuildRequires:  python3-devel
 BuildRequires:  python3-mako
-%if 0%{?with_hardware}
+%if 0%{?with_vulkan}
 BuildRequires:  vulkan-headers
+%endif
+%ifarch s390x
+# Vulkan not supported on s390x, packages were empty
+Obsoletes:      mesa-vulkan-drivers < 20.2.3-2
+Obsoletes:      mesa-vulkan-devel < 20.2.3-2
 %endif
 
 %description
@@ -294,6 +297,7 @@ Requires:       %{name}-libd3d%{?_isa} = %{?epoch:%{epoch}:}%{version}-%{release
 %{summary}.
 %endif
 
+%if 0%{?with_vulkan}
 %package vulkan-drivers
 Summary:        Mesa Vulkan drivers
 Requires:       vulkan%{_isa}
@@ -308,6 +312,7 @@ Requires:       vulkan-devel
 
 %description vulkan-devel
 Headers for development with the Vulkan API.
+%endif
 
 %prep
 %autosetup -n %{name}-%{ver} -p1
@@ -323,6 +328,7 @@ cp %{SOURCE1} docs/
   -Dplatforms=x11,wayland,drm,surfaceless \
   -Ddri3=true \
   -Ddri-drivers=%{?dri_drivers} \
+  -Dosmesa=gallium \
 %if 0%{?with_hardware}
   -Dgallium-drivers=swrast,virgl,r300,nouveau%{?with_iris:,iris}%{?with_vmware:,svga}%{?with_radeonsi:,radeonsi,r600}%{?with_freedreno:,freedreno}%{?with_etnaviv:,etnaviv}%{?with_tegra:,tegra}%{?with_vc4:,vc4}%{?with_v3d:,v3d}%{?with_kmsro:,kmsro}%{?with_lima:,lima}%{?with_panfrost:,panfrost} \
 %else
@@ -336,6 +342,7 @@ cp %{SOURCE1} docs/
   -Dgallium-nine=%{?with_nine:true}%{!?with_nine:false} \
   -Dgallium-opencl=%{?with_opencl:icd}%{!?with_opencl:disabled} \
   -Dvulkan-drivers=%{?vulkan_drivers} \
+  -Dvulkan-device-select-layer=true \
   -Dshared-glapi=true \
   -Dgles1=false \
   -Dgles2=true \
@@ -350,8 +357,6 @@ cp %{SOURCE1} docs/
   -Dvalgrind=%{?with_valgrind:true}%{!?with_valgrind:false} \
   -Dbuild-tests=false \
   -Dselinux=true \
-  -Dosmesa=gallium \
-  -Dvulkan-device-select-layer=true \
   %{nil}
 %meson_build
 
@@ -467,6 +472,10 @@ popd
 %files dri-drivers
 %dir %{_datadir}/drirc.d
 %{_datadir}/drirc.d/00-mesa-defaults.conf
+%{_libdir}/dri/kms_swrast_dri.so
+%{_libdir}/dri/swrast_dri.so
+%{_libdir}/dri/virtio_gpu_dri.so
+
 %if 0%{?with_hardware}
 %{_libdir}/dri/radeon_dri.so
 %{_libdir}/dri/r200_dri.so
@@ -539,9 +548,6 @@ popd
 %{_libdir}/dri/st7735r_dri.so
 %{_libdir}/dri/sun4i-drm_dri.so
 %endif
-%{_libdir}/dri/kms_swrast_dri.so
-%{_libdir}/dri/swrast_dri.so
-%{_libdir}/dri/virtio_gpu_dri.so
 
 %if 0%{?with_hardware}
 %if 0%{?with_omx}
@@ -559,8 +565,8 @@ popd
 %endif
 %endif
 
+%if 0%{?with_vulkan}
 %files vulkan-drivers
-%if 0%{?with_hardware}
 %ifarch %{ix86} x86_64
 %{_libdir}/libvulkan_intel.so
 %{_datadir}/vulkan/icd.d/intel_icd.*.json
@@ -569,16 +575,17 @@ popd
 %{_datadir}/vulkan/icd.d/radeon_icd.*.json
 %{_libdir}/libVkLayer_MESA_device_select.so
 %{_datadir}/vulkan/implicit_layer.d/VkLayer_MESA_device_select.json
-%endif
 
 %files vulkan-devel
-%if 0%{?with_hardware}
 %ifarch %{ix86} x86_64
 %{_includedir}/vulkan/vulkan_intel.h
 %endif
 %endif
 
 %changelog
+* Sat Nov 28 2020 Peter Robinson <pbrobinson@fedoraproject.org> - 20.2.3-2
+- Cleanup vulkan conditionals
+
 * Tue Nov 24 2020 Pete Walter <pwalter@fedoraproject.org> - 20.2.3-1
 - Update to 20.2.3
 
