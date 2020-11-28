@@ -325,8 +325,8 @@ cp %{SOURCE1} docs/
 %define _lto_cflags %{nil}
 
 %meson \
-  -Dplatforms=x11,wayland,drm,surfaceless \
-  -Ddri3=true \
+  -Dplatforms=x11,wayland \
+  -Ddri3=enabled \
   -Ddri-drivers=%{?dri_drivers} \
   -Dosmesa=gallium \
 %if 0%{?with_hardware}
@@ -334,27 +334,27 @@ cp %{SOURCE1} docs/
 %else
   -Dgallium-drivers=swrast,virgl \
 %endif
-  -Dgallium-vdpau=%{?with_vdpau:true}%{!?with_vdpau:false} \
-  -Dgallium-xvmc=false \
+  -Dgallium-vdpau=%{?with_vdpau:enabled}%{!?with_vdpau:disabled} \
+  -Dgallium-xvmc=disabled \
   -Dgallium-omx=%{?with_omx:bellagio}%{!?with_omx:disabled} \
-  -Dgallium-va=%{?with_vaapi:true}%{!?with_vaapi:false} \
-  -Dgallium-xa=%{?with_xa:true}%{!?with_xa:false} \
+  -Dgallium-va=%{?with_vaapi:enabled}%{!?with_vaapi:disabled} \
+  -Dgallium-xa=%{?with_xa:enabled}%{!?with_xa:disabled} \
   -Dgallium-nine=%{?with_nine:true}%{!?with_nine:false} \
   -Dgallium-opencl=%{?with_opencl:icd}%{!?with_opencl:disabled} \
   -Dvulkan-drivers=%{?vulkan_drivers} \
   -Dvulkan-device-select-layer=true \
-  -Dshared-glapi=true \
-  -Dgles1=false \
-  -Dgles2=true \
+  -Dshared-glapi=enabled \
+  -Dgles1=disabled \
+  -Dgles2=enabled \
   -Dopengl=true \
-  -Dgbm=true \
+  -Dgbm=enabled \
   -Dglx=dri \
-  -Degl=true \
+  -Degl=enabled \
   -Dglvnd=true \
   -Dasm=%{?with_asm:true}%{!?with_asm:false} \
-  -Dllvm=true \
-  -Dshared-llvm=true \
-  -Dvalgrind=%{?with_valgrind:true}%{!?with_valgrind:false} \
+  -Dllvm=enabled \
+  -Dshared-llvm=enabled \
+  -Dvalgrind=%{?with_valgrind:enabled}%{!?with_valgrind:disabled} \
   -Dbuild-tests=false \
   -Dselinux=true \
   %{nil}
@@ -585,6 +585,7 @@ popd
 %changelog
 * Sat Nov 28 2020 Peter Robinson <pbrobinson@fedoraproject.org> - 20.2.3-2
 - Cleanup vulkan conditionals
+- Update meson options and nomenclature
 
 * Tue Nov 24 2020 Pete Walter <pwalter@fedoraproject.org> - 20.2.3-1
 - Update to 20.2.3
