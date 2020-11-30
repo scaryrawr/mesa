@@ -49,7 +49,7 @@
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-%global ver 20.3.0-rc2
+%global ver 20.3.0-rc3
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
 Release:        1%{?dist}
 License:        MIT
@@ -583,6 +583,9 @@ popd
 %endif
 
 %changelog
+* Tue Dec 01 2020 Dave Airlie <airlied@redhat.com> - 20.3.0-rc3
+- Update to 20.3.0-rc3
+
 * Mon Nov 30 2020 Dave Airlie <airlied@redhat.com> - 20.3.0-rc2
 - Update to 20.3.0-rc2
 - Enable lavapipe software vulkan
