@@ -1,13 +1,13 @@
 %ifnarch s390x
 %global with_hardware 1
-%global with_vulkan 1
+%global with_vulkan_hw 1
 %global with_vdpau 1
 %global with_vaapi 1
 %global with_nine 1
 %global with_omx 1
 %global with_opencl 1
 %global base_dri nouveau,r100,r200
-%global base_vulkan amd
+%global base_vulkan ,amd
 %endif
 
 %ifarch %{ix86} x86_64
@@ -45,13 +45,13 @@
 %endif
 
 %global dri_drivers %{?base_dri}%{?platform_dri}
-%global vulkan_drivers %{?base_vulkan}%{?platform_vulkan}
+%global vulkan_drivers swrast%{?base_vulkan}%{?platform_vulkan}
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-%global ver 20.2.3
+%global ver 20.3.0-rc2
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
-Release:        2%{?dist}
+Release:        1%{?dist}
 License:        MIT
 URL:            http://www.mesa3d.org
 
@@ -121,9 +121,7 @@ BuildRequires:  pkgconfig(valgrind)
 %endif
 BuildRequires:  python3-devel
 BuildRequires:  python3-mako
-%if 0%{?with_vulkan}
 BuildRequires:  vulkan-headers
-%endif
 %ifarch s390x
 # Vulkan not supported on s390x, packages were empty
 Obsoletes:      mesa-vulkan-drivers < 20.2.3-2
@@ -297,7 +295,6 @@ Requires:       %{name}-libd3d%{?_isa} = %{?epoch:%{epoch}:}%{version}-%{release
 %{summary}.
 %endif
 
-%if 0%{?with_vulkan}
 %package vulkan-drivers
 Summary:        Mesa Vulkan drivers
 Requires:       vulkan%{_isa}
@@ -312,7 +309,6 @@ Requires:       vulkan-devel
 
 %description vulkan-devel
 Headers for development with the Vulkan API.
-%endif
 
 %prep
 %autosetup -n %{name}-%{ver} -p1
@@ -539,6 +535,8 @@ popd
 %{_libdir}/dri/hx8357d_dri.so
 %{_libdir}/dri/ili9225_dri.so
 %{_libdir}/dri/ili9341_dri.so
+%{_libdir}/dri/imx-dcss_dri.so
+%{_libdir}/dri/mediatek_dri.so
 %{_libdir}/dri/meson_dri.so
 %{_libdir}/dri/mi0283qt_dri.so
 %{_libdir}/dri/pl111_dri.so
@@ -565,14 +563,17 @@ popd
 %endif
 %endif
 
-%if 0%{?with_vulkan}
 %files vulkan-drivers
+%if 0%{?with_vulkan_hw}
 %ifarch %{ix86} x86_64
 %{_libdir}/libvulkan_intel.so
 %{_datadir}/vulkan/icd.d/intel_icd.*.json
 %endif
 %{_libdir}/libvulkan_radeon.so
 %{_datadir}/vulkan/icd.d/radeon_icd.*.json
+%endif
+%{_libdir}/libvulkan_lvp.so
+%{_datadir}/vulkan/icd.d/lvp_icd.*.json
 %{_libdir}/libVkLayer_MESA_device_select.so
 %{_datadir}/vulkan/implicit_layer.d/VkLayer_MESA_device_select.json
 
@@ -580,9 +581,12 @@ popd
 %ifarch %{ix86} x86_64
 %{_includedir}/vulkan/vulkan_intel.h
 %endif
-%endif
 
 %changelog
+* Mon Nov 30 2020 Dave Airlie <airlied@redhat.com> - 20.3.0-rc2
+- Update to 20.3.0-rc2
+- Enable lavapipe software vulkan
+
 * Sat Nov 28 2020 Peter Robinson <pbrobinson@fedoraproject.org> - 20.2.3-2
 - Cleanup vulkan conditionals
 - Update meson options and nomenclature
