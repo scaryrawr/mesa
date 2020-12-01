@@ -28,6 +28,7 @@
 %global with_vc4       1
 %global with_v3d       1
 %global with_xa        1
+%global platform_vulkan ,broadcom,freedreno
 %endif
 
 %ifnarch %{arm} s390x
@@ -51,7 +52,7 @@ Name:           mesa
 Summary:        Mesa graphics libraries
 %global ver 20.3.0-rc3
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
-Release:        1%{?dist}
+Release:        2%{?dist}
 License:        MIT
 URL:            http://www.mesa3d.org
 
@@ -122,10 +123,8 @@ BuildRequires:  pkgconfig(valgrind)
 BuildRequires:  python3-devel
 BuildRequires:  python3-mako
 BuildRequires:  vulkan-headers
-%ifarch s390x
-# Vulkan not supported on s390x, packages were empty
-Obsoletes:      mesa-vulkan-drivers < 20.2.3-2
-Obsoletes:      mesa-vulkan-devel < 20.2.3-2
+%if 0%{?with_vulkan_hw}
+BuildRequires:  pkgconfig(vulkan)
 %endif
 
 %description
@@ -326,7 +325,7 @@ cp %{SOURCE1} docs/
   -Ddri-drivers=%{?dri_drivers} \
   -Dosmesa=gallium \
 %if 0%{?with_hardware}
-  -Dgallium-drivers=swrast,virgl,r300,nouveau%{?with_iris:,iris}%{?with_vmware:,svga}%{?with_radeonsi:,radeonsi,r600}%{?with_freedreno:,freedreno}%{?with_etnaviv:,etnaviv}%{?with_tegra:,tegra}%{?with_vc4:,vc4}%{?with_v3d:,v3d}%{?with_kmsro:,kmsro}%{?with_lima:,lima}%{?with_panfrost:,panfrost} \
+  -Dgallium-drivers=swrast,virgl,r300,nouveau%{?with_iris:,iris}%{?with_vmware:,svga}%{?with_radeonsi:,radeonsi,r600}%{?with_freedreno:,freedreno}%{?with_etnaviv:,etnaviv}%{?with_tegra:,tegra}%{?with_vc4:,vc4}%{?with_v3d:,v3d}%{?with_kmsro:,kmsro}%{?with_lima:,lima}%{?with_panfrost:,panfrost}%{?with_vulkan_hw:,zink} \
 %else
   -Dgallium-drivers=swrast,virgl \
 %endif
@@ -546,6 +545,9 @@ popd
 %{_libdir}/dri/st7735r_dri.so
 %{_libdir}/dri/sun4i-drm_dri.so
 %endif
+%if 0%{?with_vulkan_hw}
+%{_libdir}/dri/zink_dri.so
+%endif
 
 %if 0%{?with_hardware}
 %if 0%{?with_omx}
@@ -564,18 +566,24 @@ popd
 %endif
 
 %files vulkan-drivers
-%if 0%{?with_vulkan_hw}
-%ifarch %{ix86} x86_64
-%{_libdir}/libvulkan_intel.so
-%{_datadir}/vulkan/icd.d/intel_icd.*.json
-%endif
-%{_libdir}/libvulkan_radeon.so
-%{_datadir}/vulkan/icd.d/radeon_icd.*.json
-%endif
 %{_libdir}/libvulkan_lvp.so
 %{_datadir}/vulkan/icd.d/lvp_icd.*.json
 %{_libdir}/libVkLayer_MESA_device_select.so
 %{_datadir}/vulkan/implicit_layer.d/VkLayer_MESA_device_select.json
+%if 0%{?with_vulkan_hw}
+%{_libdir}/libvulkan_radeon.so
+%{_datadir}/vulkan/icd.d/radeon_icd.*.json
+%ifarch %{ix86} x86_64
+%{_libdir}/libvulkan_intel.so
+%{_datadir}/vulkan/icd.d/intel_icd.*.json
+%endif
+%ifarch %{arm} aarch64
+%{_libdir}/libvulkan_broadcom.so
+%{_datadir}/vulkan/icd.d/broadcom_icd.*.json
+%{_libdir}/libvulkan_freedreno.so
+%{_datadir}/vulkan/icd.d/freedreno_icd.*.json
+%endif
+%endif
 
 %files vulkan-devel
 %ifarch %{ix86} x86_64
@@ -583,6 +591,10 @@ popd
 %endif
 
 %changelog
+* Tue Dec  1 2020 Peter Robinson <pbrobinson@fedoraproject.org> - 20.3.0~rc3-2
+- Enable Zink opengl over vulkan driver
+- Enable Broadcom v3dv and freedreno vulkan drivers on arm
+
 * Tue Dec 01 2020 Dave Airlie <airlied@redhat.com> - 20.3.0-rc3
 - Update to 20.3.0-rc3
 
