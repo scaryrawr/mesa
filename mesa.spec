@@ -50,9 +50,9 @@
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-%global ver 20.3.0-rc3
+%global ver 20.3.0
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
-Release:        2%{?dist}
+Release:        1%{?dist}
 License:        MIT
 URL:            http://www.mesa3d.org
 
@@ -591,6 +591,9 @@ popd
 %endif
 
 %changelog
+* Fri Dec 04 2020 Dave Airlie <airlied@redhat.com> - 20.3.0-1
+- Update to 20.3.0 release
+
 * Tue Dec  1 2020 Peter Robinson <pbrobinson@fedoraproject.org> - 20.3.0~rc3-2
 - Enable Zink opengl over vulkan driver
 - Enable Broadcom v3dv and freedreno vulkan drivers on arm
