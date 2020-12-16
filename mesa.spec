@@ -604,10 +604,10 @@ popd
 - Enable Zink opengl over vulkan driver
 - Enable Broadcom v3dv and freedreno vulkan drivers on arm
 
-* Tue Dec 01 2020 Dave Airlie <airlied@redhat.com> - 20.3.0-rc3
+* Tue Dec 01 2020 Dave Airlie <airlied@redhat.com> - 20.3.0~rc3-1
 - Update to 20.3.0-rc3
 
-* Mon Nov 30 2020 Dave Airlie <airlied@redhat.com> - 20.3.0-rc2
+* Mon Nov 30 2020 Dave Airlie <airlied@redhat.com> - 20.3.0~rc2-1
 - Update to 20.3.0-rc2
 - Enable lavapipe software vulkan
 
