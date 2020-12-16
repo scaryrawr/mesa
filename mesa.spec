@@ -50,9 +50,9 @@
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-%global ver 20.3.0
+%global ver 20.3.1
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
-Release:        2%{?dist}
+Release:        1%{?dist}
 License:        MIT
 URL:            http://www.mesa3d.org
 
@@ -61,8 +61,6 @@ Source0:        https://mesa.freedesktop.org/archive/%{name}-%{ver}.tar.xz
 # Source1 contains email correspondence clarifying the license terms.
 # Fedora opts to ignore the optional part of clause 2 and treat that code as 2 clause BSD.
 Source1:        Mesa-MLAA-License-Clarification-Email.txt
-
-Patch0: 0001-radeonsi-fix-regression-on-gpus-using-the-radeon-win.patch
 
 BuildRequires:  meson >= 0.45
 BuildRequires:  gcc
@@ -593,6 +591,9 @@ popd
 %endif
 
 %changelog
+* Wed Dec 16 2020 Pete Walter <pwalter@fedoraproject.org> - 20.3.1-1
+- Update to 20.3.1
+
 * Mon Dec 07 2020 Dave Airlie <airlied@redhat.com> - 20.3.0-2
 - Fix regression with radeon si/cik cards
 
