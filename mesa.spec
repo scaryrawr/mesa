@@ -52,7 +52,7 @@ Name:           mesa
 Summary:        Mesa graphics libraries
 %global ver 20.3.3
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
-Release:        1%{?dist}
+Release:        2%{?dist}
 License:        MIT
 URL:            http://www.mesa3d.org
 
@@ -61,6 +61,9 @@ Source0:        https://mesa.freedesktop.org/archive/%{name}-%{ver}.tar.xz
 # Source1 contains email correspondence clarifying the license terms.
 # Fedora opts to ignore the optional part of clause 2 and treat that code as 2 clause BSD.
 Source1:        Mesa-MLAA-License-Clarification-Email.txt
+
+# fix device selection layer
+Patch0: 0001-device-select-layer-update-for-vulkan-1.2.patch
 
 BuildRequires:  meson >= 0.45
 BuildRequires:  gcc
@@ -591,6 +594,9 @@ popd
 %endif
 
 %changelog
+* Fri Jan 15 2021 Dave Airlie <airlied@redhat.com> - 20.3.3-2
+- Fix device selection layer for vulkan 1.2
+
 * Wed Jan 13 2021 Pete Walter <pwalter@fedoraproject.org> - 20.3.3-1
 - Update to 20.3.3
 

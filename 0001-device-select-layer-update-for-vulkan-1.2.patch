@@ -1,0 +1,33 @@
+From b905acfbdcd63067b017494ea6fb405753de9a23 Mon Sep 17 00:00:00 2001
+From: Dave Airlie <airlied@redhat.com>
+Date: Fri, 15 Jan 2021 09:19:03 +1000
+Subject: [PATCH] device-select-layer: update for vulkan 1.2
+
+The vulkan loader doesn't load layers for apps that require a newer
+version of vulkan, so this layer didn't get loaded for vulkan 1.2 apps.
+
+I would like to just stick 1.09 in there but it might be worth
+validating it works at new version of vulkan I suppose and the major
+doesn't revise that often
+
+Fixes: 9bc5b2d169d3 ("vulkan: add initial device selection layer. (v6)")
+---
+ src/vulkan/device-select-layer/VkLayer_MESA_device_select.json | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/vulkan/device-select-layer/VkLayer_MESA_device_select.json b/src/vulkan/device-select-layer/VkLayer_MESA_device_select.json
+index 1d5fffd0135..361ae9fe74e 100644
+--- a/src/vulkan/device-select-layer/VkLayer_MESA_device_select.json
++++ b/src/vulkan/device-select-layer/VkLayer_MESA_device_select.json
+@@ -4,7 +4,7 @@
+     "name": "VK_LAYER_MESA_device_select",
+     "type": "GLOBAL",
+     "library_path": "libVkLayer_MESA_device_select.so",
+-    "api_version": "1.1.73",
++    "api_version": "1.2.73",
+     "implementation_version": "1",
+     "description": "Linux device selection layer",
+     "functions": {
+-- 
+2.26.2
+
