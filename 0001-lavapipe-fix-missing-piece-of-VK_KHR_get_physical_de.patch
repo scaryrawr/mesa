@@ -1,0 +1,86 @@
+From 3306a3395b36d3ebddaa0ed28c58ca1272196695 Mon Sep 17 00:00:00 2001
+From: Dave Airlie <airlied@gmail.com>
+Date: Fri, 15 Jan 2021 09:57:52 +1000
+Subject: [PATCH] lavapipe: fix missing piece of
+ VK_KHR_get_physical_device_properties2
+
+I missed two parts of the APIs for this, so add them, should fix
+crashes in gstreamer vulkan when it tries to load lvp.
+
+Cc: "20.3" <mesa-stable@lists.freedesktop.org>
+---
+ src/gallium/frontends/lavapipe/lvp_device.c | 43 +++++++++++++++++----
+ 1 file changed, 35 insertions(+), 8 deletions(-)
+
+diff --git a/src/gallium/frontends/lavapipe/lvp_device.c b/src/gallium/frontends/lavapipe/lvp_device.c
+index 0eaf278679c..3d05e424278 100644
+--- a/src/gallium/frontends/lavapipe/lvp_device.c
++++ b/src/gallium/frontends/lavapipe/lvp_device.c
+@@ -631,6 +631,19 @@ void lvp_GetPhysicalDeviceProperties2(
+    }
+ }
+ 
++static void lvp_get_physical_device_queue_family_properties(
++   VkQueueFamilyProperties*                    pQueueFamilyProperties)
++{
++   *pQueueFamilyProperties = (VkQueueFamilyProperties) {
++      .queueFlags = VK_QUEUE_GRAPHICS_BIT |
++      VK_QUEUE_COMPUTE_BIT |
++      VK_QUEUE_TRANSFER_BIT,
++      .queueCount = 1,
++      .timestampValidBits = 64,
++      .minImageTransferGranularity = (VkExtent3D) { 1, 1, 1 },
++   };
++}
++
+ void lvp_GetPhysicalDeviceQueueFamilyProperties(
+    VkPhysicalDevice                            physicalDevice,
+    uint32_t*                                   pCount,
+@@ -642,15 +655,21 @@ void lvp_GetPhysicalDeviceQueueFamilyProperties(
+    }
+ 
+    assert(*pCount >= 1);
++   lvp_get_physical_device_queue_family_properties(pQueueFamilyProperties);
++}
+ 
+-   *pQueueFamilyProperties = (VkQueueFamilyProperties) {
+-      .queueFlags = VK_QUEUE_GRAPHICS_BIT |
+-      VK_QUEUE_COMPUTE_BIT |
+-      VK_QUEUE_TRANSFER_BIT,
+-      .queueCount = 1,
+-      .timestampValidBits = 64,
+-      .minImageTransferGranularity = (VkExtent3D) { 1, 1, 1 },
+-   };
++void lvp_GetPhysicalDeviceQueueFamilyProperties2(
++   VkPhysicalDevice                            physicalDevice,
++   uint32_t*                                   pCount,
++   VkQueueFamilyProperties2                   *pQueueFamilyProperties)
++{
++   if (pQueueFamilyProperties == NULL) {
++      *pCount = 1;
++      return;
++   }
++
++   assert(*pCount >= 1);
++   lvp_get_physical_device_queue_family_properties(&pQueueFamilyProperties->queueFamilyProperties);
+ }
+ 
+ void lvp_GetPhysicalDeviceMemoryProperties(
+@@ -673,6 +692,14 @@ void lvp_GetPhysicalDeviceMemoryProperties(
+    };
+ }
+ 
++void lvp_GetPhysicalDeviceMemoryProperties2(
++   VkPhysicalDevice                            physicalDevice,
++   VkPhysicalDeviceMemoryProperties2          *pMemoryProperties)
++{
++   lvp_GetPhysicalDeviceMemoryProperties(physicalDevice,
++                                         &pMemoryProperties->memoryProperties);
++}
++
+ PFN_vkVoidFunction lvp_GetInstanceProcAddr(
+    VkInstance                                  _instance,
+    const char*                                 pName)
+-- 
+2.29.2
+
