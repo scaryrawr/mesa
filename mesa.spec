@@ -45,14 +45,16 @@
 %bcond_with valgrind
 %endif
 
+%if !0%{?rhel}
 %global dri_drivers %{?base_dri}%{?platform_dri}
+%endif
 %global vulkan_drivers swrast%{?base_vulkan}%{?platform_vulkan}
 
 Name:           mesa
 Summary:        Mesa graphics libraries
 %global ver 20.3.3
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
-Release:        3%{?dist}
+Release:        4%{?dist}
 License:        MIT
 URL:            http://www.mesa3d.org
 
@@ -477,17 +479,21 @@ popd
 %{_libdir}/dri/virtio_gpu_dri.so
 
 %if 0%{?with_hardware}
+%if !0%{?rhel}
 %{_libdir}/dri/radeon_dri.so
 %{_libdir}/dri/r200_dri.so
 %{_libdir}/dri/nouveau_vieux_dri.so
+%endif
 %{_libdir}/dri/r300_dri.so
 %if 0%{?with_radeonsi}
 %{_libdir}/dri/r600_dri.so
 %{_libdir}/dri/radeonsi_dri.so
 %endif
 %ifarch %{ix86} x86_64
+%if !0%{?rhel}
 %{_libdir}/dri/i915_dri.so
 %{_libdir}/dri/i965_dri.so
+%endif
 %{_libdir}/dri/iris_dri.so
 %endif
 %ifarch %{arm} aarch64
@@ -596,6 +602,9 @@ popd
 %endif
 
 %changelog
+* Tue Jan 19 2021 Adam Jackson <ajax@redhat.com> - 20.3.3-4
+- Disable classic drivers in RHEL
+
 * Fri Jan 15 2021 Dave Airlie <airlied@redhat.com> - 20.3.3-3
 - Fix lavapipe missing ext that breaks gstreamer/pidgin
 
