@@ -54,7 +54,7 @@ Name:           mesa
 Summary:        Mesa graphics libraries
 %global ver 20.3.3
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
-Release:        4%{?dist}
+Release:        5%{?dist}
 License:        MIT
 URL:            http://www.mesa3d.org
 
@@ -602,6 +602,9 @@ popd
 %endif
 
 %changelog
+* Fri Jan 22 2021 Tom Stellard <tstellar@redhat.com> - 20.3.3-5
+- Rebuild for clang-11.1.0
+
 * Tue Jan 19 2021 Adam Jackson <ajax@redhat.com> - 20.3.3-4
 - Disable classic drivers in RHEL
 
