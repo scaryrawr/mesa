@@ -54,7 +54,7 @@ Name:           mesa
 Summary:        Mesa graphics libraries
 %global ver 20.3.3
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
-Release:        5%{?dist}
+Release:        6%{?dist}
 License:        MIT
 URL:            http://www.mesa3d.org
 
@@ -602,6 +602,9 @@ popd
 %endif
 
 %changelog
+* Tue Jan 26 2021 Fedora Release Engineering <releng@fedoraproject.org> - 20.3.3-6
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_34_Mass_Rebuild
+
 * Fri Jan 22 2021 Tom Stellard <tstellar@redhat.com> - 20.3.3-5
 - Rebuild for clang-11.1.0
 
