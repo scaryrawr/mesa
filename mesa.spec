@@ -35,10 +35,6 @@
 %global with_radeonsi 1
 %endif
 
-%ifnarch %{x86}
-%global with_asm 1
-%endif
-
 %ifarch %{valgrind_arches}
 %bcond_without valgrind
 %else
@@ -52,9 +48,9 @@
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-%global ver 20.3.3
+%global ver 21.0.0-rc3
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
-Release:        7%{?dist}
+Release:        1%{?dist}
 License:        MIT
 URL:            http://www.mesa3d.org
 
@@ -63,11 +59,6 @@ Source0:        https://mesa.freedesktop.org/archive/%{name}-%{ver}.tar.xz
 # Source1 contains email correspondence clarifying the license terms.
 # Fedora opts to ignore the optional part of clause 2 and treat that code as 2 clause BSD.
 Source1:        Mesa-MLAA-License-Clarification-Email.txt
-
-# fix device selection layer
-Patch0: 0001-device-select-layer-update-for-vulkan-1.2.patch
-# fix lvp extension missing
-Patch1: 0001-lavapipe-fix-missing-piece-of-VK_KHR_get_physical_de.patch
 
 # fix qemu/egl issue
 Patch2: fix-egl.patch
@@ -333,7 +324,7 @@ cp %{SOURCE1} docs/
   -Dplatforms=x11,wayland \
   -Ddri3=enabled \
   -Ddri-drivers=%{?dri_drivers} \
-  -Dosmesa=gallium \
+  -Dosmesa=true \
 %if 0%{?with_hardware}
   -Dgallium-drivers=swrast,virgl,r300,nouveau%{?with_iris:,iris}%{?with_vmware:,svga}%{?with_radeonsi:,radeonsi,r600}%{?with_freedreno:,freedreno}%{?with_etnaviv:,etnaviv}%{?with_tegra:,tegra}%{?with_vc4:,vc4}%{?with_v3d:,v3d}%{?with_kmsro:,kmsro}%{?with_lima:,lima}%{?with_panfrost:,panfrost}%{?with_vulkan_hw:,zink} \
 %else
@@ -356,7 +347,7 @@ cp %{SOURCE1} docs/
   -Dglx=dri \
   -Degl=enabled \
   -Dglvnd=true \
-  -Dasm=%{?with_asm:true}%{!?with_asm:false} \
+  -Dmicrosoft-clc=disabled \
   -Dllvm=enabled \
   -Dshared-llvm=enabled \
   -Dvalgrind=%{?with_valgrind:enabled}%{!?with_valgrind:disabled} \
@@ -605,6 +596,9 @@ popd
 %endif
 
 %changelog
+* Fri Jan 29 2021 Pete Walter <pwalter@fedoraproject.org> - 21.0.0~rc3-1
+- Update to 21.0.0-rc3
+
 * Fri Jan 29 2021 Dave Airlie <airlied@redhat.com> - 20.3.3-7
 - Backport upstream fix for EGL issues with qemu
 
