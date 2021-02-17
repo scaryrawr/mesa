@@ -48,9 +48,9 @@
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-%global ver 21.0.0-rc3
+%global ver 21.0.0-rc4
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
-Release:        2%{?dist}
+Release:        1%{?dist}
 License:        MIT
 URL:            http://www.mesa3d.org
 
@@ -59,9 +59,6 @@ Source0:        https://mesa.freedesktop.org/archive/%{name}-%{ver}.tar.xz
 # Source1 contains email correspondence clarifying the license terms.
 # Fedora opts to ignore the optional part of clause 2 and treat that code as 2 clause BSD.
 Source1:        Mesa-MLAA-License-Clarification-Email.txt
-
-# fix qemu/egl issue
-Patch2: fix-egl.patch
 
 # fix zink/swrast/gnome-shell
 Patch3: 0001-zink-don-t-pick-a-cpu-device-ever.patch
@@ -599,6 +596,9 @@ popd
 %endif
 
 %changelog
+* Wed Feb 17 2021 Pete Walter <pwalter@fedoraproject.org> - 21.0.0~rc4-1
+- Update to 21.0.0-rc4
+
 * Wed Feb 03 2021 Dave Airlie <airlied@redhat.com> - 21.0.0~rc3-2
 - Fix zink/swrast/lavapipe/gnome-shell interaction (#1924360)
 
