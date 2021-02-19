@@ -3,9 +3,11 @@
 %global with_vulkan_hw 1
 %global with_vdpau 1
 %global with_vaapi 1
+%if !0%{?rhel}
 %global with_nine 1
 %global with_omx 1
 %global with_opencl 1
+%endif
 %global base_dri nouveau,r100,r200
 %global base_vulkan ,amd
 %endif
@@ -50,7 +52,7 @@ Name:           mesa
 Summary:        Mesa graphics libraries
 %global ver 21.0.0-rc4
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
-Release:        1%{?dist}
+Release:        2%{?dist}
 License:        MIT
 URL:            http://www.mesa3d.org
 
@@ -529,7 +531,7 @@ popd
 %{_libdir}/dri/radeonsi_drv_video.so
 %endif
 %endif
-%if 0%{?with_hardware}
+%if 0%{?with_opencl}
 %dir %{_libdir}/gallium-pipe
 %{_libdir}/gallium-pipe/*.so
 %endif
@@ -596,6 +598,9 @@ popd
 %endif
 
 %changelog
+* Fri Feb 19 2021 Adam Jackson <ajax@redhat.com> - 21.0.0~rc4-2
+- Disable OpenMAX, OpenCL, and nine in RHEL
+
 * Wed Feb 17 2021 Pete Walter <pwalter@fedoraproject.org> - 21.0.0~rc4-1
 - Update to 21.0.0-rc4
 
