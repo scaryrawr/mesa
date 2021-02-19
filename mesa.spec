@@ -50,9 +50,9 @@
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-%global ver 21.0.0-rc4
+%global ver 21.0.0-rc5
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
-Release:        2%{?dist}
+Release:        1%{?dist}
 License:        MIT
 URL:            http://www.mesa3d.org
 
@@ -61,9 +61,6 @@ Source0:        https://mesa.freedesktop.org/archive/%{name}-%{ver}.tar.xz
 # Source1 contains email correspondence clarifying the license terms.
 # Fedora opts to ignore the optional part of clause 2 and treat that code as 2 clause BSD.
 Source1:        Mesa-MLAA-License-Clarification-Email.txt
-
-# fix zink/swrast/gnome-shell
-Patch3: 0001-zink-don-t-pick-a-cpu-device-ever.patch
 
 BuildRequires:  meson >= 0.45
 BuildRequires:  gcc
@@ -598,6 +595,9 @@ popd
 %endif
 
 %changelog
+* Fri Feb 19 2021 Pete Walter <pwalter@fedoraproject.org> - 21.0.0~rc5-1
+- Update to 21.0.0-rc5
+
 * Fri Feb 19 2021 Adam Jackson <ajax@redhat.com> - 21.0.0~rc4-2
 - Disable OpenMAX, OpenCL, and nine in RHEL
 
