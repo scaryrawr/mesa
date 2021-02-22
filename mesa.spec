@@ -52,7 +52,7 @@ Name:           mesa
 Summary:        Mesa graphics libraries
 %global ver 21.0.0-rc5
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
-Release:        1%{?dist}
+Release:        2%{?dist}
 License:        MIT
 URL:            http://www.mesa3d.org
 
@@ -61,6 +61,9 @@ Source0:        https://mesa.freedesktop.org/archive/%{name}-%{ver}.tar.xz
 # Source1 contains email correspondence clarifying the license terms.
 # Fedora opts to ignore the optional part of clause 2 and treat that code as 2 clause BSD.
 Source1:        Mesa-MLAA-License-Clarification-Email.txt
+
+# fix glx regression with sddm
+Patch1:         0001-glx-proposed-fix-for-setSwapInterval.patch
 
 BuildRequires:  meson >= 0.45
 BuildRequires:  gcc
@@ -595,6 +598,9 @@ popd
 %endif
 
 %changelog
+* Mon Feb 22 2021 Dave Airlie <airlied@redhat.com> - 21.0.0~rc5-2
+- fix sddm/vmware regression
+
 * Fri Feb 19 2021 Pete Walter <pwalter@fedoraproject.org> - 21.0.0~rc5-1
 - Update to 21.0.0-rc5
 
