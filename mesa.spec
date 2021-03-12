@@ -50,9 +50,9 @@
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-%global ver 21.0.0-rc5
+%global ver 21.0.0
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
-Release:        3%{?dist}
+Release:        1%{?dist}
 License:        MIT
 URL:            http://www.mesa3d.org
 
@@ -61,15 +61,6 @@ Source0:        https://mesa.freedesktop.org/archive/%{name}-%{ver}.tar.xz
 # Source1 contains email correspondence clarifying the license terms.
 # Fedora opts to ignore the optional part of clause 2 and treat that code as 2 clause BSD.
 Source1:        Mesa-MLAA-License-Clarification-Email.txt
-
-# fix glx regression with sddm
-Patch1:         0001-glx-proposed-fix-for-setSwapInterval.patch
-
-# fix GNOME crash on Jetson Nano:
-# https://bugzilla.redhat.com/show_bug.cgi?id=1930977
-# https://gitlab.freedesktop.org/mesa/mesa/-/merge_requests/9425
-Patch2:         0001-tegra-context-fix-regression-in-tegra_draw_vbo.patch
-Patch3:         0002-tegra-context-unwrap-indirect_draw_count-as-well.patch
 
 BuildRequires:  meson >= 0.45
 BuildRequires:  gcc
@@ -604,6 +595,9 @@ popd
 %endif
 
 %changelog
+* Fri Mar 12 2021 Pete Walter <pwalter@fedoraproject.org> - 21.0.0-1
+- Update to 21.0.0
+
 * Mon Mar 08 2021 Adam Williamson <awilliam@redhat.com> - 21.0.0~rc5-3
 - Backport MR #9425 to fix GNOME Shell crash on Jetson Nano (#1930977)
 
