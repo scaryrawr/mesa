@@ -52,7 +52,7 @@ Name:           mesa
 Summary:        Mesa graphics libraries
 %global ver 21.0.1
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
-Release:        1%{?dist}
+Release:        2%{?dist}
 License:        MIT
 URL:            http://www.mesa3d.org
 
@@ -64,6 +64,8 @@ Source1:        Mesa-MLAA-License-Clarification-Email.txt
 
 # https://gitlab.freedesktop.org/mesa/mesa/-/issues/4442
 Patch0:         mesa-llvm12.patch
+
+Patch1: 0001-drisw-move-zink-down-the-list-below-the-sw-drivers.patch
 
 BuildRequires:  meson >= 0.45
 BuildRequires:  gcc
@@ -598,6 +600,9 @@ popd
 %endif
 
 %changelog
+* Thu Mar 25 2021 Dave Airlie <airlied@redhat.com> - 21.0.1-2
+- fix zink loading in places it shouldn't.
+
 * Wed Mar 24 2021 Pete Walter <pwalter@fedoraproject.org> - 21.0.1-1
 - Update to 21.0.1
 
