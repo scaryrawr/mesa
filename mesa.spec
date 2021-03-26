@@ -21,19 +21,25 @@
 %endif
 
 %ifarch %{arm} aarch64
+%if !0%{?rhel}
 %global with_etnaviv   1
-%global with_freedreno 1
-%global with_kmsro     1
 %global with_lima      1
-%global with_panfrost  1
-%global with_tegra     1
 %global with_vc4       1
 %global with_v3d       1
+%endif
+%global with_freedreno 1
+%global with_kmsro     1
+%global with_panfrost  1
+%global with_tegra     1
 %global with_xa        1
 %global platform_vulkan ,broadcom,freedreno
 %endif
 
 %ifnarch %{arm} s390x
+%if !0%{?rhel}
+%global with_r300 1
+%global with_r600 1
+%endif
 %global with_radeonsi 1
 %endif
 
@@ -52,7 +58,7 @@ Name:           mesa
 Summary:        Mesa graphics libraries
 %global ver 21.0.1
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
-Release:        2%{?dist}
+Release:        3%{?dist}
 License:        MIT
 URL:            http://www.mesa3d.org
 
@@ -330,7 +336,7 @@ cp %{SOURCE1} docs/
   -Ddri-drivers=%{?dri_drivers} \
   -Dosmesa=true \
 %if 0%{?with_hardware}
-  -Dgallium-drivers=swrast,virgl,r300,nouveau%{?with_iris:,iris}%{?with_vmware:,svga}%{?with_radeonsi:,radeonsi,r600}%{?with_freedreno:,freedreno}%{?with_etnaviv:,etnaviv}%{?with_tegra:,tegra}%{?with_vc4:,vc4}%{?with_v3d:,v3d}%{?with_kmsro:,kmsro}%{?with_lima:,lima}%{?with_panfrost:,panfrost}%{?with_vulkan_hw:,zink} \
+  -Dgallium-drivers=swrast,virgl,nouveau%{?with_r300:,r300}%{?with_iris:,iris}%{?with_vmware:,svga}%{?with_radeonsi:,radeonsi}%{?with_r600:,r600}%{?with_freedreno:,freedreno}%{?with_etnaviv:,etnaviv}%{?with_tegra:,tegra}%{?with_vc4:,vc4}%{?with_v3d:,v3d}%{?with_kmsro:,kmsro}%{?with_lima:,lima}%{?with_panfrost:,panfrost}%{?with_vulkan_hw:,zink} \
 %else
   -Dgallium-drivers=swrast,virgl \
 %endif
@@ -482,9 +488,13 @@ popd
 %{_libdir}/dri/r200_dri.so
 %{_libdir}/dri/nouveau_vieux_dri.so
 %endif
+%if 0%{?with_r300}
 %{_libdir}/dri/r300_dri.so
+%endif
 %if 0%{?with_radeonsi}
+%if 0%{?with_r600}
 %{_libdir}/dri/r600_dri.so
+%endif
 %{_libdir}/dri/radeonsi_dri.so
 %endif
 %ifarch %{ix86} x86_64
@@ -528,8 +538,10 @@ popd
 %{_libdir}/dri/vmwgfx_dri.so
 %endif
 %{_libdir}/dri/nouveau_drv_video.so
-%if 0%{?with_radeonsi}
+%if 0%{?with_r600}
 %{_libdir}/dri/r600_drv_video.so
+%endif
+%if 0%{?with_radeonsi}
 %{_libdir}/dri/radeonsi_drv_video.so
 %endif
 %endif
@@ -558,7 +570,6 @@ popd
 %{_libdir}/dri/zink_dri.so
 %endif
 
-%if 0%{?with_hardware}
 %if 0%{?with_omx}
 %files omx-drivers
 %{_libdir}/bellagio/libomx_mesa.so
@@ -566,11 +577,14 @@ popd
 %if 0%{?with_vdpau}
 %files vdpau-drivers
 %{_libdir}/vdpau/libvdpau_nouveau.so.1*
+%if 0%{?with_r300}
 %{_libdir}/vdpau/libvdpau_r300.so.1*
-%if 0%{?with_radeonsi}
-%{_libdir}/vdpau/libvdpau_r600.so.1*
-%{_libdir}/vdpau/libvdpau_radeonsi.so.1*
 %endif
+%if 0%{?with_r600}
+%{_libdir}/vdpau/libvdpau_r600.so.1*
+%endif
+%if 0%{?with_radeonsi}
+%{_libdir}/vdpau/libvdpau_radeonsi.so.1*
 %endif
 %endif
 
@@ -600,6 +614,10 @@ popd
 %endif
 
 %changelog
+* Fri Mar 26 2021 Adam Jackson <ajax@redhat.com> - 21.0.1-3
+- Split out with_r300 and with_r600
+- Disable r300, r600, etnaviv, lima, vc4 and v3d in RHEL
+
 * Thu Mar 25 2021 Dave Airlie <airlied@redhat.com> - 21.0.1-2
 - fix zink loading in places it shouldn't.
 
