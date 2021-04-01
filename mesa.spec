@@ -58,7 +58,7 @@ Name:           mesa
 Summary:        Mesa graphics libraries
 %global ver 21.0.1
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
-Release:        3%{?dist}
+Release:        4%{?dist}
 License:        MIT
 URL:            http://www.mesa3d.org
 
@@ -72,6 +72,8 @@ Source1:        Mesa-MLAA-License-Clarification-Email.txt
 Patch0:         mesa-llvm12.patch
 
 Patch1: 0001-drisw-move-zink-down-the-list-below-the-sw-drivers.patch
+# fix AMD EPYC 2-socket machines
+Patch2: cpu_caps_fixes.patch
 
 BuildRequires:  meson >= 0.45
 BuildRequires:  gcc
@@ -614,6 +616,9 @@ popd
 %endif
 
 %changelog
+* Thu Apr 01 2021 Dave Airlie <airlied@redhat.com> - 21.0.1-4
+- Backport CPU caps fixes
+
 * Fri Mar 26 2021 Adam Jackson <ajax@redhat.com> - 21.0.1-3
 - Split out with_r300 and with_r600
 - Disable r300, r600, etnaviv, lima, vc4 and v3d in RHEL
