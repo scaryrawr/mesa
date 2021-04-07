@@ -56,9 +56,9 @@
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-%global ver 21.0.1
+%global ver 21.0.2
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
-Release:        4%{?dist}
+Release:        1%{?dist}
 License:        MIT
 URL:            http://www.mesa3d.org
 
@@ -70,10 +70,6 @@ Source1:        Mesa-MLAA-License-Clarification-Email.txt
 
 # https://gitlab.freedesktop.org/mesa/mesa/-/issues/4442
 Patch0:         mesa-llvm12.patch
-
-Patch1: 0001-drisw-move-zink-down-the-list-below-the-sw-drivers.patch
-# fix AMD EPYC 2-socket machines
-Patch2: cpu_caps_fixes.patch
 
 BuildRequires:  meson >= 0.45
 BuildRequires:  gcc
@@ -616,6 +612,9 @@ popd
 %endif
 
 %changelog
+* Wed Apr 07 2021 Pete Walter <pwalter@fedoraproject.org> - 21.0.2-1
+- Update to 21.0.2
+
 * Thu Apr 01 2021 Dave Airlie <airlied@redhat.com> - 21.0.1-4
 - Backport CPU caps fixes
 
