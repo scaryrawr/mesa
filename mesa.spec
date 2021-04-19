@@ -58,7 +58,7 @@ Name:           mesa
 Summary:        Mesa graphics libraries
 %global ver 21.0.2
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
-Release:        1%{?dist}
+Release:        2%{?dist}
 License:        MIT
 URL:            http://www.mesa3d.org
 
@@ -504,6 +504,7 @@ popd
 %endif
 %ifarch %{arm} aarch64
 %{_libdir}/dri/ingenic-drm_dri.so
+%{_libdir}/dri/imx-drm_dri.so
 %{_libdir}/dri/mcde_dri.so
 %{_libdir}/dri/mxsfb-drm_dri.so
 %{_libdir}/dri/stm_dri.so
@@ -520,7 +521,6 @@ popd
 %endif
 %if 0%{?with_etnaviv}
 %{_libdir}/dri/etnaviv_dri.so
-%{_libdir}/dri/imx-drm_dri.so
 %endif
 %if 0%{?with_tegra}
 %{_libdir}/dri/tegra_dri.so
@@ -612,6 +612,9 @@ popd
 %endif
 
 %changelog
+* Tue Apr 20 2021 Dave Airlie <airlied@redhat.com> - 21.0.2-2
+- Fix location of imx-drm
+
 * Wed Apr 07 2021 Pete Walter <pwalter@fedoraproject.org> - 21.0.2-1
 - Update to 21.0.2
 
