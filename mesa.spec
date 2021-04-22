@@ -56,9 +56,9 @@
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-%global ver 21.0.2
+%global ver 21.0.3
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
-Release:        2%{?dist}
+Release:        1%{?dist}
 License:        MIT
 URL:            http://www.mesa3d.org
 
@@ -612,6 +612,9 @@ popd
 %endif
 
 %changelog
+* Thu Apr 22 2021 Pete Walter <pwalter@fedoraproject.org> - 21.0.3-1
+- Update to 21.0.3
+
 * Tue Apr 20 2021 Dave Airlie <airlied@redhat.com> - 21.0.2-2
 - Fix location of imx-drm
 
