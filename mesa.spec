@@ -58,7 +58,7 @@ Name:           mesa
 Summary:        Mesa graphics libraries
 %global ver 21.0.3
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
-Release:        1%{?dist}
+Release:        2%{?dist}
 License:        MIT
 URL:            http://www.mesa3d.org
 
@@ -70,6 +70,9 @@ Source1:        Mesa-MLAA-License-Clarification-Email.txt
 
 # https://gitlab.freedesktop.org/mesa/mesa/-/issues/4442
 Patch0:         mesa-llvm12.patch
+
+# https://gitlab.freedesktop.org/mesa/mesa/-/issues/4691
+Patch1:         10440.patch
 
 BuildRequires:  meson >= 0.45
 BuildRequires:  gcc
@@ -612,6 +615,9 @@ popd
 %endif
 
 %changelog
+* Thu Apr 29 2021 Kalev Lember <klember@redhat.com> - 21.0.3-2
+- Backport a fix for amdgpu graphics corruption regression
+
 * Thu Apr 22 2021 Pete Walter <pwalter@fedoraproject.org> - 21.0.3-1
 - Update to 21.0.3
 
