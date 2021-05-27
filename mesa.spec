@@ -410,12 +410,10 @@ popd
 %{_includedir}/EGL/eglmesaext.h
 %{_includedir}/EGL/eglextchromium.h
 
-%ldconfig_scriptlets libglapi
 %files libglapi
 %{_libdir}/libglapi.so.0
 %{_libdir}/libglapi.so.0.*
 
-%ldconfig_scriptlets libOSMesa
 %files libOSMesa
 %{_libdir}/libOSMesa.so.8*
 %files libOSMesa-devel
@@ -424,7 +422,6 @@ popd
 %{_libdir}/libOSMesa.so
 %{_libdir}/pkgconfig/osmesa.pc
 
-%ldconfig_scriptlets libgbm
 %files libgbm
 %{_libdir}/libgbm.so.1
 %{_libdir}/libgbm.so.1.*
@@ -434,7 +431,6 @@ popd
 %{_libdir}/pkgconfig/gbm.pc
 
 %if 0%{?with_xa}
-%ldconfig_scriptlets libxatracker
 %files libxatracker
 %if 0%{?with_hardware}
 %{_libdir}/libxatracker.so.2
@@ -452,7 +448,6 @@ popd
 %endif
 
 %if 0%{?with_opencl}
-%ldconfig_scriptlets libOpenCL
 %files libOpenCL
 %{_libdir}/libMesaOpenCL.so.*
 %{_sysconfdir}/OpenCL/vendors/mesa.icd
