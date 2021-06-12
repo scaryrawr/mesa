@@ -56,9 +56,9 @@
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-%global ver 21.1.1
+%global ver 21.1.2
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
-Release:        2%{?dist}
+Release:        1%{?dist}
 License:        MIT
 URL:            http://www.mesa3d.org
 
@@ -602,6 +602,9 @@ popd
 %files vulkan-devel
 
 %changelog
+* Sat Jun 12 2021 Pete Walter <pwalter@fedoraproject.org> - 21.1.2-1
+- Update to 21.1.2
+
 * Wed May 26 2021 Tom Stellard <tstellar@redhat.com> - 21.1.1-2
 - Rebuild for LLVM 12.0.0-final
 
