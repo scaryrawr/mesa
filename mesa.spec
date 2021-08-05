@@ -56,7 +56,7 @@
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-%global ver 21.1.6
+%global ver 21.2.0
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
 Release:        1%{?dist}
 License:        MIT
@@ -490,6 +490,7 @@ popd
 %endif
 %ifarch %{ix86} x86_64
 %if !0%{?rhel}
+%{_libdir}/dri/i830_dri.so
 %{_libdir}/dri/i915_dri.so
 %{_libdir}/dri/i965_dri.so
 %endif
@@ -498,6 +499,7 @@ popd
 %ifarch %{arm} aarch64
 %{_libdir}/dri/ingenic-drm_dri.so
 %{_libdir}/dri/imx-drm_dri.so
+%{_libdir}/dri/mali-dp_dri.so
 %{_libdir}/dri/mcde_dri.so
 %{_libdir}/dri/mxsfb-drm_dri.so
 %{_libdir}/dri/stm_dri.so
@@ -602,6 +604,9 @@ popd
 %files vulkan-devel
 
 %changelog
+* Thu Aug 05 2021 Pete Walter <pwalter@fedoraproject.org> - 21.2.0-1
+- Update to 21.2.0
+
 * Fri Jul 30 2021 Pete Walter <pwalter@fedoraproject.org> - 21.1.6-1
 - Update to 21.1.6
 
