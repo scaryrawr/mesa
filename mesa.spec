@@ -33,7 +33,7 @@
 %global with_panfrost  1
 %global with_tegra     1
 %global with_xa        1
-%global platform_vulkan ,broadcom,freedreno
+%global platform_vulkan ,broadcom,freedreno,panfrost
 %endif
 
 %ifnarch %{arm} s390x
@@ -605,6 +605,8 @@ popd
 %{_datadir}/vulkan/icd.d/broadcom_icd.*.json
 %{_libdir}/libvulkan_freedreno.so
 %{_datadir}/vulkan/icd.d/freedreno_icd.*.json
+%{_libdir}/libvulkan_panfrost.so
+%{_datadir}/vulkan/icd.d/panfrost_icd.aarch64.json
 %endif
 %endif
 
