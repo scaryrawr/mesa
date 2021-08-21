@@ -606,7 +606,7 @@ popd
 %{_libdir}/libvulkan_freedreno.so
 %{_datadir}/vulkan/icd.d/freedreno_icd.*.json
 %{_libdir}/libvulkan_panfrost.so
-%{_datadir}/vulkan/icd.d/panfrost_icd.aarch64.json
+%{_datadir}/vulkan/icd.d/panfrost_icd.*.json
 %endif
 %endif
 
