@@ -1,0 +1,4277 @@
+diff --git a/src/amd/compiler/aco_instruction_selection.cpp b/src/amd/compiler/aco_instruction_selection.cpp
+index fa0bf6b65e2..2d1bb85e230 100644
+--- a/src/amd/compiler/aco_instruction_selection.cpp
++++ b/src/amd/compiler/aco_instruction_selection.cpp
+@@ -40,6 +40,7 @@
+ #include <map>
+ #include <numeric>
+ #include <stack>
++#include <utility>
+ #include <vector>
+ 
+ namespace aco {
+@@ -3509,6 +3510,14 @@ visit_alu_instr(isel_context* ctx, nir_alu_instr* instr)
+    case nir_op_fddy_fine:
+    case nir_op_fddx_coarse:
+    case nir_op_fddy_coarse: {
++      if (!nir_src_is_divergent(instr->src[0].src)) {
++         /* Source is the same in all lanes, so the derivative is zero.
++          * This also avoids emitting invalid IR.
++          */
++         bld.copy(Definition(dst), Operand::zero());
++         break;
++      }
++
+       Temp src = as_vgpr(ctx, get_alu_src(ctx, instr->src[0]));
+       uint16_t dpp_ctrl1, dpp_ctrl2;
+       if (instr->op == nir_op_fddx_fine) {
+diff --git a/src/amd/compiler/aco_lower_to_cssa.cpp b/src/amd/compiler/aco_lower_to_cssa.cpp
+index db809867a70..cbd9873c32b 100644
+--- a/src/amd/compiler/aco_lower_to_cssa.cpp
++++ b/src/amd/compiler/aco_lower_to_cssa.cpp
+@@ -384,7 +384,7 @@ struct ltg_node {
+ /* emit the copies in an order that does not
+  * create interferences within a merge-set */
+ void
+-emit_copies_block(Builder bld, std::map<uint32_t, ltg_node>& ltg, RegType type)
++emit_copies_block(Builder& bld, std::map<uint32_t, ltg_node>& ltg, RegType type)
+ {
+    auto&& it = ltg.begin();
+    while (it != ltg.end()) {
+@@ -445,6 +445,9 @@ emit_parallelcopies(cssa_ctx& ctx)
+          continue;
+ 
+       std::map<uint32_t, ltg_node> ltg;
++      bool has_vgpr_copy = false;
++      bool has_sgpr_copy = false;
++
+       /* first, try to coalesce all parallelcopies */
+       for (const copy& cp : ctx.parallelcopies[i]) {
+          if (try_coalesce_copy(ctx, cp, i)) {
+@@ -459,6 +462,10 @@ emit_parallelcopies(cssa_ctx& ctx)
+             uint32_t write_idx = ctx.merge_node_table[cp.def.tempId()].index;
+             assert(write_idx != -1u);
+             ltg[write_idx] = {cp, read_idx};
++
++            bool is_vgpr = cp.def.regClass().type() == RegType::vgpr;
++            has_vgpr_copy |= is_vgpr;
++            has_sgpr_copy |= !is_vgpr;
+          }
+       }
+ 
+@@ -475,19 +482,23 @@ emit_parallelcopies(cssa_ctx& ctx)
+       Builder bld(ctx.program);
+       Block& block = ctx.program->blocks[i];
+ 
+-      /* emit VGPR copies */
+-      auto IsLogicalEnd = [](const aco_ptr<Instruction>& inst) -> bool
+-      { return inst->opcode == aco_opcode::p_logical_end; };
+-      auto it = std::find_if(block.instructions.rbegin(), block.instructions.rend(), IsLogicalEnd);
+-      bld.reset(&block.instructions, std::prev(it.base()));
+-      emit_copies_block(bld, ltg, RegType::vgpr);
+-
+-      /* emit SGPR copies */
+-      aco_ptr<Instruction> branch = std::move(block.instructions.back());
+-      block.instructions.pop_back();
+-      bld.reset(&block.instructions);
+-      emit_copies_block(bld, ltg, RegType::sgpr);
+-      bld.insert(std::move(branch));
++      if (has_vgpr_copy) {
++         /* emit VGPR copies */
++         auto IsLogicalEnd = [](const aco_ptr<Instruction>& inst) -> bool
++         { return inst->opcode == aco_opcode::p_logical_end; };
++         auto it = std::find_if(block.instructions.rbegin(), block.instructions.rend(), IsLogicalEnd);
++         bld.reset(&block.instructions, std::prev(it.base()));
++         emit_copies_block(bld, ltg, RegType::vgpr);
++      }
++
++      if (has_sgpr_copy) {
++         /* emit SGPR copies */
++         aco_ptr<Instruction> branch = std::move(block.instructions.back());
++         block.instructions.pop_back();
++         bld.reset(&block.instructions);
++         emit_copies_block(bld, ltg, RegType::sgpr);
++         bld.insert(std::move(branch));
++      }
+    }
+ 
+    /* finally, rename coalesced phi operands */
+diff --git a/src/amd/compiler/aco_lower_to_hw_instr.cpp b/src/amd/compiler/aco_lower_to_hw_instr.cpp
+index 8a9db76abad..1a83dc51512 100644
+--- a/src/amd/compiler/aco_lower_to_hw_instr.cpp
++++ b/src/amd/compiler/aco_lower_to_hw_instr.cpp
+@@ -2153,16 +2153,11 @@ lower_to_hw_instr(Program* program)
+                   }
+                } else {
+                   assert(dst.regClass() == v2b);
+-                  aco_ptr<SDWA_instruction> sdwa{create_instruction<SDWA_instruction>(
+-                     aco_opcode::v_mov_b32,
+-                     (Format)((uint16_t)Format::VOP1 | (uint16_t)Format::SDWA), 1, 1)};
+-                  sdwa->operands[0] = op;
+-                  sdwa->definitions[0] =
+-                     Definition(dst.physReg().advance(-dst.physReg().byte()), v1);
+-                  sdwa->sel[0] = sdwa_uword;
+-                  sdwa->dst_sel = sdwa_ubyte0 + dst.physReg().byte() + index;
+-                  sdwa->dst_preserve = 1;
+-                  bld.insert(std::move(sdwa));
++                  Operand sdwa_op = Operand(op.physReg().advance(-op.physReg().byte()),
++                                            RegClass::get(op.regClass().type(), 4));
++                  bld.vop2_sdwa(aco_opcode::v_lshlrev_b32, dst, Operand::c32(offset), sdwa_op)
++                     .instr->sdwa()
++                     .sel[1] = sdwa_ubyte0 + op.physReg().byte();
+                }
+                break;
+             }
+diff --git a/src/amd/compiler/aco_optimizer.cpp b/src/amd/compiler/aco_optimizer.cpp
+index 3a09e939b9a..05f99c1cb0c 100644
+--- a/src/amd/compiler/aco_optimizer.cpp
++++ b/src/amd/compiler/aco_optimizer.cpp
+@@ -929,6 +929,9 @@ apply_extract(opt_ctx& ctx, aco_ptr<Instruction>& instr, unsigned idx, ssa_info&
+          instr->vop3().opsel |= 1 << idx;
+    }
+ 
++   instr->operands[idx].set16bit(false);
++   instr->operands[idx].set24bit(false);
++
+    ctx.info[tmp.id()].label &= ~label_insert;
+    /* label_vopc seems to be the only one worth keeping at the moment */
+    for (Definition& def : instr->definitions)
+@@ -1116,7 +1119,7 @@ label_instruction(opt_ctx& ctx, aco_ptr<Instruction>& instr)
+          }
+          unsigned bits = get_operand_size(instr, i);
+          if (info.is_constant(bits) && alu_can_accept_constant(instr->opcode, i) &&
+-             (!instr->isSDWA() || ctx.program->chip_class >= GFX9)) {
++             (!instr->isSDWA() || ctx.program->chip_class >= GFX9) && !instr->isDPP()) {
+             Operand op = get_constant_op(ctx, info, bits);
+             perfwarn(ctx.program, instr->opcode == aco_opcode::v_cndmask_b32 && i == 2,
+                      "v_cndmask_b32 with a constant selector", instr.get());
+@@ -3577,6 +3580,14 @@ combine_instruction(opt_ctx& ctx, aco_ptr<Instruction>& instr)
+ bool
+ to_uniform_bool_instr(opt_ctx& ctx, aco_ptr<Instruction>& instr)
+ {
++   /* Check every operand to make sure they are suitable. */
++   for (Operand& op : instr->operands) {
++      if (!op.isTemp())
++         return false;
++      if (!ctx.info[op.tempId()].is_uniform_bool() && !ctx.info[op.tempId()].is_uniform_bitwise())
++         return false;
++   }
++
+    switch (instr->opcode) {
+    case aco_opcode::s_and_b32:
+    case aco_opcode::s_and_b64: instr->opcode = aco_opcode::s_and_b32; break;
+diff --git a/src/amd/compiler/aco_optimizer_postRA.cpp b/src/amd/compiler/aco_optimizer_postRA.cpp
+index d086eff7cef..e19d8e1f6f7 100644
+--- a/src/amd/compiler/aco_optimizer_postRA.cpp
++++ b/src/amd/compiler/aco_optimizer_postRA.cpp
+@@ -70,8 +70,9 @@ save_reg_writes(pr_opt_ctx& ctx, aco_ptr<Instruction>& instr)
+       if (def.regClass().is_subdword())
+          idx = clobbered;
+ 
++      assert((r + dw_size) <= max_reg_cnt);
+       assert(def.size() == dw_size || def.regClass().is_subdword());
+-      std::fill(&ctx.instr_idx_by_regs[r], &ctx.instr_idx_by_regs[r + dw_size], idx);
++      std::fill(&ctx.instr_idx_by_regs[r], &ctx.instr_idx_by_regs[r] + dw_size, idx);
+    }
+ }
+ 
+diff --git a/src/amd/compiler/aco_spill.cpp b/src/amd/compiler/aco_spill.cpp
+index 40a4d8c0fc0..205a687b7e4 100644
+--- a/src/amd/compiler/aco_spill.cpp
++++ b/src/amd/compiler/aco_spill.cpp
+@@ -193,14 +193,15 @@ next_uses_per_block(spill_ctx& ctx, unsigned block_idx, std::set<uint32_t>& work
+       aco_ptr<Instruction>& instr = block->instructions[idx];
+       assert(instr->opcode == aco_opcode::p_linear_phi || instr->opcode == aco_opcode::p_phi);
+ 
+-      if (!instr->definitions[0].isTemp()) {
+-         idx--;
+-         continue;
++      std::pair<uint32_t, uint32_t> distance{block_idx, 0};
++
++      auto it = instr->definitions[0].isTemp() ? next_uses.find(instr->definitions[0].getTemp())
++                                               : next_uses.end();
++      if (it != next_uses.end()) {
++         distance = it->second;
++         next_uses.erase(it);
+       }
+ 
+-      auto it = next_uses.find(instr->definitions[0].getTemp());
+-      std::pair<uint32_t, uint32_t> distance =
+-         it == next_uses.end() ? std::make_pair(block_idx, 0u) : it->second;
+       for (unsigned i = 0; i < instr->operands.size(); i++) {
+          unsigned pred_idx =
+             instr->opcode == aco_opcode::p_phi ? block->logical_preds[i] : block->linear_preds[i];
+@@ -212,7 +213,6 @@ next_uses_per_block(spill_ctx& ctx, unsigned block_idx, std::set<uint32_t>& work
+             ctx.next_use_distances_end[pred_idx][instr->operands[i].getTemp()] = distance;
+          }
+       }
+-      next_uses.erase(instr->definitions[0].getTemp());
+       idx--;
+    }
+ 
+diff --git a/src/amd/compiler/tests/test_to_hw_instr.cpp b/src/amd/compiler/tests/test_to_hw_instr.cpp
+index 4e641111a16..4c9b55a13a2 100644
+--- a/src/amd/compiler/tests/test_to_hw_instr.cpp
++++ b/src/amd/compiler/tests/test_to_hw_instr.cpp
+@@ -640,15 +640,15 @@ BEGIN_TEST(to_hw_instr.insert)
+       //>> p_unit_test 2
+       bld.pseudo(aco_opcode::p_unit_test, Operand::c32(2u));
+       //~gfx7! v2b: %_:v[0][0:16] = v_bfe_u32 %_:v[1][0:16], 0, 8
+-      //~gfx[^7]! v1: %_:v[0] = v_mov_b32 %_:v[1][0:16] dst_sel:ubyte0 dst_preserve
++      //~gfx[^7]! v2b: %0:v[0][0:16] = v_lshlrev_b32 0, %0:v[1][0:7] dst_preserve
+       INS(0, 0)
+-      //~gfx[^7]! v1: %_:v[0] = v_mov_b32 %_:v[1][0:16] dst_sel:ubyte2 dst_preserve
++      //~gfx[^7]! v2b: %0:v[0][16:32] = v_lshlrev_b32 0, %0:v[1][0:7] dst_preserve
+       if (i != GFX7)
+          INS(0, 2)
+       //~gfx7! v2b: %_:v[0][0:16] = v_lshlrev_b32 8, %_:v[1][0:16]
+-      //~gfx[^7]! v1: %_:v[0] = v_mov_b32 %_:v[1][0:16] dst_sel:ubyte1 dst_preserve
++      //~gfx[^7]! v2b: %0:v[0][0:16] = v_lshlrev_b32 8, %0:v[1][0:7] dst_preserve
+       INS(1, 0)
+-      //~gfx[^7]! v1: %_:v[0] = v_mov_b32 %_:v[1][0:16] dst_sel:ubyte3 dst_preserve
++      //~gfx[^7]! v2b: %0:v[0][16:32] = v_lshlrev_b32 8, %0:v[1][0:7] dst_preserve
+       if (i != GFX7)
+          INS(1, 2)
+ 
+diff --git a/src/amd/vulkan/radv_image.c b/src/amd/vulkan/radv_image.c
+index f53c46059ea..56dea6c36ff 100644
+--- a/src/amd/vulkan/radv_image.c
++++ b/src/amd/vulkan/radv_image.c
+@@ -226,7 +226,7 @@ radv_use_dcc_for_image(struct radv_device *device, const struct radv_image *imag
+     * decompressing a lot anyway we might as well not have DCC.
+     */
+    if ((pCreateInfo->usage & VK_IMAGE_USAGE_STORAGE_BIT) &&
+-       (!radv_image_use_dcc_image_stores(device, image) ||
++       (device->physical_device->rad_info.chip_class < GFX10 ||
+         radv_formats_is_atomic_allowed(pCreateInfo->pNext, format, pCreateInfo->flags)))
+       return false;
+ 
+@@ -276,7 +276,20 @@ radv_use_dcc_for_image(struct radv_device *device, const struct radv_image *imag
+ bool
+ radv_image_use_dcc_image_stores(const struct radv_device *device, const struct radv_image *image)
+ {
+-   return device->physical_device->rad_info.chip_class >= GFX10;
++   /* DCC image stores is only available for GFX10+. */
++   if (device->physical_device->rad_info.chip_class < GFX10)
++      return false;
++
++   if ((device->physical_device->rad_info.family == CHIP_NAVI12 ||
++        device->physical_device->rad_info.family == CHIP_NAVI14) &&
++       !image->planes[0].surface.u.gfx9.color.dcc.independent_128B_blocks) {
++      /* Do not enable DCC image stores because INDEPENDENT_128B_BLOCKS is required, and 64B is used
++       * for displayable DCC on NAVI12-14.
++       */
++      return false;
++   }
++
++   return true;
+ }
+ 
+ /*
+diff --git a/src/amd/vulkan/radv_meta_bufimage.c b/src/amd/vulkan/radv_meta_bufimage.c
+index 36d7637a82a..39136991284 100644
+--- a/src/amd/vulkan/radv_meta_bufimage.c
++++ b/src/amd/vulkan/radv_meta_bufimage.c
+@@ -1287,18 +1287,22 @@ fail_itob:
+ 
+ static void
+ create_iview(struct radv_cmd_buffer *cmd_buffer, struct radv_meta_blit2d_surf *surf,
+-             struct radv_image_view *iview)
++             struct radv_image_view *iview, VkFormat format, VkImageAspectFlagBits aspects)
+ {
+    VkImageViewType view_type = cmd_buffer->device->physical_device->rad_info.chip_class < GFX9
+                                   ? VK_IMAGE_VIEW_TYPE_2D
+                                   : radv_meta_get_view_type(surf->image);
++
++   if (format == VK_FORMAT_UNDEFINED)
++      format = surf->format;
++
+    radv_image_view_init(iview, cmd_buffer->device,
+                         &(VkImageViewCreateInfo){
+                            .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+                            .image = radv_image_to_handle(surf->image),
+                            .viewType = view_type,
+-                           .format = surf->format,
+-                           .subresourceRange = {.aspectMask = surf->aspect_mask,
++                           .format = format,
++                           .subresourceRange = {.aspectMask = aspects,
+                                                 .baseMipLevel = surf->level,
+                                                 .levelCount = 1,
+                                                 .baseArrayLayer = surf->layer,
+@@ -1439,7 +1443,7 @@ radv_meta_image_to_buffer(struct radv_cmd_buffer *cmd_buffer, struct radv_meta_b
+    struct radv_image_view src_view;
+    struct radv_buffer_view dst_view;
+ 
+-   create_iview(cmd_buffer, src, &src_view);
++   create_iview(cmd_buffer, src, &src_view, VK_FORMAT_UNDEFINED, src->aspect_mask);
+    create_bview(cmd_buffer, dst->buffer, dst->offset, dst->format, &dst_view);
+    itob_bind_descriptors(cmd_buffer, &src_view, &dst_view);
+ 
+@@ -1585,7 +1589,7 @@ radv_meta_buffer_to_image_cs(struct radv_cmd_buffer *cmd_buffer,
+    }
+ 
+    create_bview(cmd_buffer, src->buffer, src->offset, src->format, &src_view);
+-   create_iview(cmd_buffer, dst, &dst_view);
++   create_iview(cmd_buffer, dst, &dst_view, VK_FORMAT_UNDEFINED, dst->aspect_mask);
+    btoi_bind_descriptors(cmd_buffer, &src_view, &dst_view);
+ 
+    if (device->physical_device->rad_info.chip_class >= GFX9 && dst->image->type == VK_IMAGE_TYPE_3D)
+@@ -1740,27 +1744,36 @@ radv_meta_image_to_image_cs(struct radv_cmd_buffer *cmd_buffer, struct radv_meta
+       return;
+    }
+ 
+-   create_iview(cmd_buffer, src, &src_view);
+-   create_iview(cmd_buffer, dst, &dst_view);
+-
+-   itoi_bind_descriptors(cmd_buffer, &src_view, &dst_view);
+-
+-   VkPipeline pipeline = cmd_buffer->device->meta_state.itoi.pipeline[samples_log2];
+-   if (device->physical_device->rad_info.chip_class >= GFX9 &&
+-       (src->image->type == VK_IMAGE_TYPE_3D || dst->image->type == VK_IMAGE_TYPE_3D))
+-      pipeline = cmd_buffer->device->meta_state.itoi.pipeline_3d;
+-   radv_CmdBindPipeline(radv_cmd_buffer_to_handle(cmd_buffer), VK_PIPELINE_BIND_POINT_COMPUTE,
+-                        pipeline);
+-
+-   for (unsigned r = 0; r < num_rects; ++r) {
+-      unsigned push_constants[6] = {
+-         rects[r].src_x, rects[r].src_y, src->layer, rects[r].dst_x, rects[r].dst_y, dst->layer,
+-      };
+-      radv_CmdPushConstants(radv_cmd_buffer_to_handle(cmd_buffer),
+-                            device->meta_state.itoi.img_p_layout, VK_SHADER_STAGE_COMPUTE_BIT, 0,
+-                            24, push_constants);
+-
+-      radv_unaligned_dispatch(cmd_buffer, rects[r].width, rects[r].height, 1);
++   u_foreach_bit(i, dst->aspect_mask) {
++      unsigned aspect_mask = 1u << i;
++      VkFormat depth_format = 0;
++      if (aspect_mask == VK_IMAGE_ASPECT_STENCIL_BIT)
++         depth_format = vk_format_stencil_only(dst->image->vk_format);
++      else if (aspect_mask == VK_IMAGE_ASPECT_DEPTH_BIT)
++         depth_format = vk_format_depth_only(dst->image->vk_format);
++
++      create_iview(cmd_buffer, src, &src_view, depth_format, aspect_mask);
++      create_iview(cmd_buffer, dst, &dst_view, depth_format, aspect_mask);
++
++      itoi_bind_descriptors(cmd_buffer, &src_view, &dst_view);
++
++      VkPipeline pipeline = cmd_buffer->device->meta_state.itoi.pipeline[samples_log2];
++      if (device->physical_device->rad_info.chip_class >= GFX9 &&
++          (src->image->type == VK_IMAGE_TYPE_3D || dst->image->type == VK_IMAGE_TYPE_3D))
++         pipeline = cmd_buffer->device->meta_state.itoi.pipeline_3d;
++      radv_CmdBindPipeline(radv_cmd_buffer_to_handle(cmd_buffer), VK_PIPELINE_BIND_POINT_COMPUTE,
++                           pipeline);
++
++      for (unsigned r = 0; r < num_rects; ++r) {
++         unsigned push_constants[6] = {
++            rects[r].src_x, rects[r].src_y, src->layer, rects[r].dst_x, rects[r].dst_y, dst->layer,
++         };
++         radv_CmdPushConstants(radv_cmd_buffer_to_handle(cmd_buffer),
++                               device->meta_state.itoi.img_p_layout, VK_SHADER_STAGE_COMPUTE_BIT, 0,
++                               24, push_constants);
++
++         radv_unaligned_dispatch(cmd_buffer, rects[r].width, rects[r].height, 1);
++      }
+    }
+ }
+ 
+@@ -1865,7 +1878,7 @@ radv_meta_clear_image_cs(struct radv_cmd_buffer *cmd_buffer, struct radv_meta_bl
+       return;
+    }
+ 
+-   create_iview(cmd_buffer, dst, &dst_iview);
++   create_iview(cmd_buffer, dst, &dst_iview, VK_FORMAT_UNDEFINED, dst->aspect_mask);
+    cleari_bind_descriptors(cmd_buffer, &dst_iview);
+ 
+    VkPipeline pipeline = cmd_buffer->device->meta_state.cleari.pipeline[samples_log2];
+diff --git a/src/amd/vulkan/radv_meta_clear.c b/src/amd/vulkan/radv_meta_clear.c
+index 65543c0fdf9..ba2f76e3f03 100644
+--- a/src/amd/vulkan/radv_meta_clear.c
++++ b/src/amd/vulkan/radv_meta_clear.c
+@@ -986,6 +986,14 @@ radv_can_fast_clear_depth(struct radv_cmd_buffer *cmd_buffer, const struct radv_
+          !radv_is_fast_clear_stencil_allowed(clear_value))))
+       return false;
+ 
++   if (iview->image->info.levels > 1) {
++      uint32_t last_level = iview->base_mip + iview->level_count - 1;
++      if (last_level >= iview->image->planes[0].surface.num_meta_levels) {
++         /* Do not fast clears if one level can't be fast cleared. */
++         return false;
++      }
++   }
++
+    return true;
+ }
+ 
+diff --git a/src/amd/vulkan/radv_pipeline.c b/src/amd/vulkan/radv_pipeline.c
+index 3dfaa44c4bc..9fd261a670f 100644
+--- a/src/amd/vulkan/radv_pipeline.c
++++ b/src/amd/vulkan/radv_pipeline.c
+@@ -254,7 +254,7 @@ radv_pipeline_init_scratch(const struct radv_device *device, struct radv_pipelin
+ 
+          max_stage_waves =
+             MIN2(max_stage_waves, 4 * device->physical_device->rad_info.num_good_compute_units *
+-                                     (256 / pipeline->shaders[i]->config.num_vgprs));
++                 radv_get_max_waves(device, pipeline->shaders[i], i));
+          max_waves = MAX2(max_waves, max_stage_waves);
+       }
+    }
+diff --git a/src/amd/vulkan/radv_query.c b/src/amd/vulkan/radv_query.c
+index b0b8453cf4c..f5353e8dacb 100644
+--- a/src/amd/vulkan/radv_query.c
++++ b/src/amd/vulkan/radv_query.c
+@@ -854,7 +854,8 @@ radv_query_shader(struct radv_cmd_buffer *cmd_buffer, VkPipeline *pipeline,
+    old_predicating = cmd_buffer->state.predicating;
+    cmd_buffer->state.predicating = false;
+ 
+-   struct radv_buffer dst_buffer = {.bo = dst_bo, .offset = dst_offset, .size = dst_stride * count};
++   uint64_t dst_buffer_size = count == 1 ? src_stride : dst_stride * count;
++   struct radv_buffer dst_buffer = {.bo = dst_bo, .offset = dst_offset, .size = dst_buffer_size};
+ 
+    struct radv_buffer src_buffer = {
+       .bo = src_bo,
+diff --git a/src/amd/vulkan/radv_shader.c b/src/amd/vulkan/radv_shader.c
+index 03262e6078a..8124bfb6fa3 100644
+--- a/src/amd/vulkan/radv_shader.c
++++ b/src/amd/vulkan/radv_shader.c
+@@ -1819,7 +1819,7 @@ radv_get_max_workgroup_size(enum chip_class chip_class, gl_shader_stage stage,
+ }
+ 
+ unsigned
+-radv_get_max_waves(struct radv_device *device, struct radv_shader_variant *variant,
++radv_get_max_waves(const struct radv_device *device, struct radv_shader_variant *variant,
+                    gl_shader_stage stage)
+ {
+    struct radeon_info *info = &device->physical_device->rad_info;
+diff --git a/src/amd/vulkan/radv_shader.h b/src/amd/vulkan/radv_shader.h
+index cabf6845a87..df647a01775 100644
+--- a/src/amd/vulkan/radv_shader.h
++++ b/src/amd/vulkan/radv_shader.h
+@@ -469,7 +469,7 @@ struct radv_shader_variant *radv_create_trap_handler_shader(struct radv_device *
+ 
+ void radv_shader_variant_destroy(struct radv_device *device, struct radv_shader_variant *variant);
+ 
+-unsigned radv_get_max_waves(struct radv_device *device, struct radv_shader_variant *variant,
++unsigned radv_get_max_waves(const struct radv_device *device, struct radv_shader_variant *variant,
+                             gl_shader_stage stage);
+ 
+ unsigned radv_get_max_workgroup_size(enum chip_class chip_class, gl_shader_stage stage,
+diff --git a/src/broadcom/ci/piglit-v3d-rpi4-fails.txt b/src/broadcom/ci/piglit-v3d-rpi4-fails.txt
+index f335cf8f016..e613955739b 100644
+--- a/src/broadcom/ci/piglit-v3d-rpi4-fails.txt
++++ b/src/broadcom/ci/piglit-v3d-rpi4-fails.txt
+@@ -208,7 +208,33 @@ spec@ext_framebuffer_object@fbo-blending-formats,Fail
+ spec@ext_framebuffer_object@fbo-blending-formats@GL_RGB10,Fail
+ spec@ext_framebuffer_object@getteximage-formats init-by-clear-and-render,Fail
+ spec@ext_framebuffer_object@getteximage-formats init-by-rendering,Fail
+-spec@ext_image_dma_buf_import@ext_image_dma_buf_import-export-tex,Fail
++spec@ext_gpu_shader4@execution@texelfetch@fs-texelfetch-isampler1darray,Fail
++spec@ext_gpu_shader4@execution@texelfetch@fs-texelfetch-sampler1darray,Fail
++spec@ext_gpu_shader4@execution@texelfetch@fs-texelfetch-usampler1darray,Fail
++spec@ext_gpu_shader4@execution@texelfetchoffset@fs-texelfetch-isampler1darray,Fail
++spec@ext_gpu_shader4@execution@texelfetchoffset@fs-texelfetch-sampler1darray,Fail
++spec@ext_gpu_shader4@execution@texelfetchoffset@fs-texelfetch-usampler1darray,Fail
++spec@ext_gpu_shader4@execution@texelfetchoffset@vs-texelfetch-isampler1darray,Fail
++spec@ext_gpu_shader4@execution@texelfetchoffset@vs-texelfetch-sampler1darray,Fail
++spec@ext_gpu_shader4@execution@texelfetchoffset@vs-texelfetch-usampler1darray,Fail
++spec@ext_gpu_shader4@execution@texelfetch@vs-texelfetch-isampler1darray,Fail
++spec@ext_gpu_shader4@execution@texelfetch@vs-texelfetch-sampler1darray,Fail
++spec@ext_gpu_shader4@execution@texelfetch@vs-texelfetch-usampler1darray,Fail
++spec@ext_gpu_shader4@tex-miplevel-selection gpu4texture() 1darray,Fail
++spec@ext_gpu_shader4@tex-miplevel-selection gpu4texture() 1darrayshadow,Fail
++spec@ext_gpu_shader4@tex-miplevel-selection gpu4texture(bias) 1darray,Fail
++spec@ext_gpu_shader4@tex-miplevel-selection gpu4texture(bias) 1darrayshadow,Fail
++spec@ext_gpu_shader4@tex-miplevel-selection gpu4texture() cubeshadow,Fail
++spec@ext_gpu_shader4@tex-miplevel-selection gpu4texturegrad 1darray,Fail
++spec@ext_gpu_shader4@tex-miplevel-selection gpu4texturegrad 1darrayshadow,Fail
++spec@ext_gpu_shader4@tex-miplevel-selection gpu4texturegradoffset 1darray,Fail
++spec@ext_gpu_shader4@tex-miplevel-selection gpu4texturegradoffset 1darrayshadow,Fail
++spec@ext_gpu_shader4@tex-miplevel-selection gpu4texturelod 1darray,Fail
++spec@ext_gpu_shader4@tex-miplevel-selection gpu4texturelod 1darrayshadow,Fail
++spec@ext_gpu_shader4@tex-miplevel-selection gpu4texturelodoffset 1darray,Fail
++spec@ext_gpu_shader4@tex-miplevel-selection gpu4texturelodoffset 1darrayshadow,Fail
++spec@ext_gpu_shader4@tex-miplevel-selection gpu4textureoffset 1darray,Fail
++spec@ext_gpu_shader4@tex-miplevel-selection gpu4textureoffset 1darrayshadow,Fail
+ spec@ext_packed_depth_stencil@texwrap formats bordercolor,Fail
+ spec@ext_packed_depth_stencil@texwrap formats bordercolor@GL_DEPTH24_STENCIL8- border color only,Fail
+ spec@ext_packed_depth_stencil@texwrap formats bordercolor-swizzled,Fail
+diff --git a/src/compiler/glsl/ast.h b/src/compiler/glsl/ast.h
+index c6b578cb894..0a5b94bb1ce 100644
+--- a/src/compiler/glsl/ast.h
++++ b/src/compiler/glsl/ast.h
+@@ -1195,6 +1195,8 @@ public:
+    ast_node *condition;
+    ast_expression *rest_expression;
+ 
++   exec_list rest_instructions;
++
+    ast_node *body;
+ 
+    /**
+diff --git a/src/compiler/glsl/ast_to_hir.cpp b/src/compiler/glsl/ast_to_hir.cpp
+index 370f6934bd4..cd9a16a4754 100644
+--- a/src/compiler/glsl/ast_to_hir.cpp
++++ b/src/compiler/glsl/ast_to_hir.cpp
+@@ -1703,6 +1703,7 @@ ast_expression::do_hir(exec_list *instructions,
+       if ((op[0]->type == glsl_type::error_type ||
+            op[1]->type == glsl_type::error_type)) {
+          error_emitted = true;
++         result = ir_rvalue::error_value(ctx);
+          break;
+       }
+ 
+@@ -1740,6 +1741,14 @@ ast_expression::do_hir(exec_list *instructions,
+       op[0] = this->subexpressions[0]->hir(instructions, state);
+       op[1] = this->subexpressions[1]->hir(instructions, state);
+ 
++      /* Break out if operand types were not parsed successfully. */
++      if ((op[0]->type == glsl_type::error_type ||
++           op[1]->type == glsl_type::error_type)) {
++         error_emitted = true;
++         result = ir_rvalue::error_value(ctx);
++         break;
++      }
++
+       orig_type = op[0]->type;
+       type = modulus_result_type(op[0], op[1], state, &loc);
+ 
+@@ -1770,6 +1779,15 @@ ast_expression::do_hir(exec_list *instructions,
+       this->subexpressions[0]->set_is_lhs(true);
+       op[0] = this->subexpressions[0]->hir(instructions, state);
+       op[1] = this->subexpressions[1]->hir(instructions, state);
++
++      /* Break out if operand types were not parsed successfully. */
++      if ((op[0]->type == glsl_type::error_type ||
++           op[1]->type == glsl_type::error_type)) {
++         error_emitted = true;
++         result = ir_rvalue::error_value(ctx);
++         break;
++      }
++
+       type = shift_result_type(op[0]->type, op[1]->type, this->oper, state,
+                                &loc);
+       ir_rvalue *temp_rhs = new(ctx) ir_expression(operations[this->oper],
+@@ -1790,6 +1808,14 @@ ast_expression::do_hir(exec_list *instructions,
+       op[0] = this->subexpressions[0]->hir(instructions, state);
+       op[1] = this->subexpressions[1]->hir(instructions, state);
+ 
++      /* Break out if operand types were not parsed successfully. */
++      if ((op[0]->type == glsl_type::error_type ||
++           op[1]->type == glsl_type::error_type)) {
++         error_emitted = true;
++         result = ir_rvalue::error_value(ctx);
++         break;
++      }
++
+       orig_type = op[0]->type;
+       type = bit_logic_result_type(op[0], op[1], this->oper, state, &loc);
+ 
+@@ -6531,8 +6557,8 @@ ast_jump_statement::hir(exec_list *instructions,
+          if (state->loop_nesting_ast != NULL &&
+              mode == ast_continue && !state->switch_state.is_switch_innermost) {
+             if (state->loop_nesting_ast->rest_expression) {
+-               state->loop_nesting_ast->rest_expression->hir(instructions,
+-                                                             state);
++               clone_ir_list(ctx, instructions,
++                             &state->loop_nesting_ast->rest_instructions);
+             }
+             if (state->loop_nesting_ast->mode ==
+                 ast_iteration_statement::ast_do_while) {
+@@ -6780,8 +6806,8 @@ ast_switch_statement::hir(exec_list *instructions,
+ 
+       if (state->loop_nesting_ast != NULL) {
+          if (state->loop_nesting_ast->rest_expression) {
+-            state->loop_nesting_ast->rest_expression->hir(&irif->then_instructions,
+-                                                          state);
++            clone_ir_list(ctx, &irif->then_instructions,
++                          &state->loop_nesting_ast->rest_instructions);
+          }
+          if (state->loop_nesting_ast->mode ==
+              ast_iteration_statement::ast_do_while) {
+@@ -6830,8 +6856,11 @@ ir_rvalue *
+ ast_switch_body::hir(exec_list *instructions,
+                      struct _mesa_glsl_parse_state *state)
+ {
+-   if (stmts != NULL)
++   if (stmts != NULL) {
++      state->symbols->push_scope();
+       stmts->hir(instructions, state);
++      state->symbols->pop_scope();
++   }
+ 
+    /* Switch bodies do not have r-values. */
+    return NULL;
+@@ -7135,11 +7164,21 @@ ast_iteration_statement::hir(exec_list *instructions,
+    if (mode != ast_do_while)
+       condition_to_hir(&stmt->body_instructions, state);
+ 
+-   if (body != NULL)
++   if (rest_expression != NULL)
++      rest_expression->hir(&rest_instructions, state);
++
++   if (body != NULL) {
++      if (mode == ast_do_while)
++         state->symbols->push_scope();
++
+       body->hir(& stmt->body_instructions, state);
+ 
++      if (mode == ast_do_while)
++         state->symbols->pop_scope();
++   }
++
+    if (rest_expression != NULL)
+-      rest_expression->hir(& stmt->body_instructions, state);
++      stmt->body_instructions.append_list(&rest_instructions);
+ 
+    if (mode == ast_do_while)
+       condition_to_hir(&stmt->body_instructions, state);
+diff --git a/src/compiler/glsl/glsl_parser.yy b/src/compiler/glsl/glsl_parser.yy
+index ec66e680a2b..4111c45c97d 100644
+--- a/src/compiler/glsl/glsl_parser.yy
++++ b/src/compiler/glsl/glsl_parser.yy
+@@ -2743,7 +2743,7 @@ iteration_statement:
+                                             NULL, $3, NULL, $5);
+       $$->set_location_range(@1, @4);
+    }
+-   | DO statement WHILE '(' expression ')' ';'
++   | DO statement_no_new_scope WHILE '(' expression ')' ';'
+    {
+       void *ctx = state->linalloc;
+       $$ = new(ctx) ast_iteration_statement(ast_iteration_statement::ast_do_while,
+diff --git a/src/compiler/glsl/link_varyings.cpp b/src/compiler/glsl/link_varyings.cpp
+index 9954a731479..997513a636d 100644
+--- a/src/compiler/glsl/link_varyings.cpp
++++ b/src/compiler/glsl/link_varyings.cpp
+@@ -660,9 +660,11 @@ validate_explicit_variable_location(struct gl_context *ctx,
+          glsl_struct_field *field = &type_without_array->fields.structure[i];
+          unsigned field_location = field->location -
+             (field->patch ? VARYING_SLOT_PATCH0 : VARYING_SLOT_VAR0);
++         unsigned field_slots = field->type->count_attribute_slots(false);
+          if (!check_location_aliasing(explicit_locations, var,
+                                       field_location,
+-                                      0, field_location + 1,
++                                      0,
++                                      field_location + field_slots,
+                                       field->type,
+                                       field->interpolation,
+                                       field->centroid,
+diff --git a/src/compiler/nir/nir.h b/src/compiler/nir/nir.h
+index 3de53b51388..dd6cb11094e 100644
+--- a/src/compiler/nir/nir.h
++++ b/src/compiler/nir/nir.h
+@@ -2749,6 +2749,32 @@ nir_block_ends_in_jump(nir_block *block)
+           nir_block_last_instr(block)->type == nir_instr_type_jump;
+ }
+ 
++static inline bool
++nir_block_ends_in_return_or_halt(nir_block *block)
++{
++   if (exec_list_is_empty(&block->instr_list))
++      return false;
++
++   nir_instr *instr = nir_block_last_instr(block);
++   if (instr->type != nir_instr_type_jump)
++      return false;
++
++   nir_jump_instr *jump_instr = nir_instr_as_jump(instr);
++   return jump_instr->type == nir_jump_return ||
++          jump_instr->type == nir_jump_halt;
++}
++
++static inline bool
++nir_block_ends_in_break(nir_block *block)
++{
++   if (exec_list_is_empty(&block->instr_list))
++      return false;
++
++   nir_instr *instr = nir_block_last_instr(block);
++   return instr->type == nir_instr_type_jump &&
++      nir_instr_as_jump(instr)->type == nir_jump_break;
++}
++
+ #define nir_foreach_instr(instr, block) \
+    foreach_list_typed(nir_instr, instr, node, &(block)->instr_list)
+ #define nir_foreach_instr_reverse(instr, block) \
+diff --git a/src/compiler/nir/nir_constant_expressions.py b/src/compiler/nir/nir_constant_expressions.py
+index 606e974353f..c1097de7c67 100644
+--- a/src/compiler/nir/nir_constant_expressions.py
++++ b/src/compiler/nir/nir_constant_expressions.py
+@@ -68,8 +68,6 @@ template = """\
+ #include "util/bigmath.h"
+ #include "nir_constant_expressions.h"
+ 
+-#define MAX_UINT_FOR_SIZE(bits) (UINT64_MAX >> (64 - (bits)))
+-
+ /**
+  * \brief Checks if the provided value is a denorm and flushes it to zero.
+  */
+diff --git a/src/compiler/nir/nir_loop_analyze.h b/src/compiler/nir/nir_loop_analyze.h
+index 7b4ed66ee58..18c23051717 100644
+--- a/src/compiler/nir/nir_loop_analyze.h
++++ b/src/compiler/nir/nir_loop_analyze.h
+@@ -92,15 +92,4 @@ nir_is_trivial_loop_if(nir_if *nif, nir_block *break_block)
+    return true;
+ }
+ 
+-static inline bool
+-nir_block_ends_in_break(nir_block *block)
+-{
+-   if (exec_list_is_empty(&block->instr_list))
+-      return false;
+-
+-   nir_instr *instr = nir_block_last_instr(block);
+-   return instr->type == nir_instr_type_jump &&
+-      nir_instr_as_jump(instr)->type == nir_jump_break;
+-}
+-
+ #endif /* NIR_LOOP_ANALYZE_H */
+diff --git a/src/compiler/nir/nir_lower_bit_size.c b/src/compiler/nir/nir_lower_bit_size.c
+index 5473ea7c0c5..2c082f71f38 100644
+--- a/src/compiler/nir/nir_lower_bit_size.c
++++ b/src/compiler/nir/nir_lower_bit_size.c
+@@ -74,13 +74,30 @@ lower_alu_instr(nir_builder *bld, nir_alu_instr *alu, unsigned bit_size)
+    nir_ssa_def *lowered_dst = NULL;
+    if (op == nir_op_imul_high || op == nir_op_umul_high) {
+       assert(dst_bit_size * 2 <= bit_size);
+-      nir_ssa_def *lowered_dst = nir_imul(bld, srcs[0], srcs[1]);
++      lowered_dst = nir_imul(bld, srcs[0], srcs[1]);
+       if (nir_op_infos[op].output_type & nir_type_uint)
+          lowered_dst = nir_ushr_imm(bld, lowered_dst, dst_bit_size);
+       else
+          lowered_dst = nir_ishr_imm(bld, lowered_dst, dst_bit_size);
+    } else {
+       lowered_dst = nir_build_alu_src_arr(bld, op, srcs);
++
++      /* The add_sat and sub_sat instructions need to clamp the result to the
++       * range of the original type.
++       */
++      if (op == nir_op_iadd_sat || op == nir_op_isub_sat) {
++         const int64_t int_max = u_intN_max(dst_bit_size);
++         const int64_t int_min = u_intN_min(dst_bit_size);
++
++         lowered_dst = nir_iclamp(bld, lowered_dst,
++                                  nir_imm_intN_t(bld, int_min, bit_size),
++                                  nir_imm_intN_t(bld, int_max, bit_size));
++      } else if (op == nir_op_uadd_sat || op == nir_op_usub_sat) {
++         const uint64_t uint_max = u_uintN_max(dst_bit_size);
++
++         lowered_dst = nir_umin(bld, lowered_dst,
++                                nir_imm_intN_t(bld, uint_max, bit_size));
++      }
+    }
+ 
+ 
+diff --git a/src/compiler/nir/nir_lower_io_to_vector.c b/src/compiler/nir/nir_lower_io_to_vector.c
+index 433e5ccff10..13d692e72be 100644
+--- a/src/compiler/nir/nir_lower_io_to_vector.c
++++ b/src/compiler/nir/nir_lower_io_to_vector.c
+@@ -632,6 +632,7 @@ nir_vectorize_tess_levels_impl(nir_function_impl *impl)
+          } else {
+             b.cursor = nir_after_instr(instr);
+             nir_ssa_def *val = &intrin->dest.ssa;
++            val->num_components = intrin->num_components;
+             nir_ssa_def *comp = nir_channel(&b, val, index);
+             nir_ssa_def_rewrite_uses_after(val, comp, comp->parent_instr);
+          }
+diff --git a/src/compiler/nir/nir_opcodes.py b/src/compiler/nir/nir_opcodes.py
+index f9330c0af2c..872116c7ed3 100644
+--- a/src/compiler/nir/nir_opcodes.py
++++ b/src/compiler/nir/nir_opcodes.py
+@@ -487,7 +487,7 @@ for (int bit = 31; bit >= 0; bit--) {
+ }
+ """)
+ 
+-unop_convert("ifind_msb_rev", tint32, tuint, """
++unop_convert("ifind_msb_rev", tint32, tint, """
+ dst = -1;
+ if (src0 != 0 && src0 != -1) {
+    for (int bit = 0; bit < 31; bit++) {
+@@ -634,7 +634,7 @@ binop("iadd_sat", tint, _2src_commutative, """
+          (src0 < src0 + src1 ? (1ull << (bit_size - 1))     : src0 + src1)
+ """)
+ binop("uadd_sat", tuint, _2src_commutative,
+-      "(src0 + src1) < src0 ? MAX_UINT_FOR_SIZE(sizeof(src0) * 8) : (src0 + src1)")
++      "(src0 + src1) < src0 ? u_uintN_max(sizeof(src0) * 8) : (src0 + src1)")
+ binop("isub_sat", tint, "", """
+       src1 < 0 ?
+          (src0 - src1 < src0 ? (1ull << (bit_size - 1)) - 1 : src0 - src1) :
+diff --git a/src/compiler/nir/nir_opt_peephole_select.c b/src/compiler/nir/nir_opt_peephole_select.c
+index 5eeb5f66b94..72b6249cf43 100644
+--- a/src/compiler/nir/nir_opt_peephole_select.c
++++ b/src/compiler/nir/nir_opt_peephole_select.c
+@@ -381,6 +381,17 @@ nir_opt_peephole_select_block(nir_block *block, nir_shader *shader,
+    if (prev_node->type != nir_cf_node_if)
+       return false;
+ 
++   nir_block *prev_block = nir_cf_node_as_block(nir_cf_node_prev(prev_node));
++
++   /* If the last instruction before this if/else block is a jump, we can't
++    * append stuff after it because it would break a bunch of assumption about
++    * control flow (nir_validate expects the successor of a return/halt jump
++    * to be the end of the function, which might not match the successor of
++    * the if/else blocks).
++    */
++   if (nir_block_ends_in_return_or_halt(prev_block))
++      return false;
++
+    nir_if *if_stmt = nir_cf_node_as_if(prev_node);
+ 
+    /* first, try to collapse the if */
+@@ -422,8 +433,6 @@ nir_opt_peephole_select_block(nir_block *block, nir_shader *shader,
+     * selects.
+     */
+ 
+-   nir_block *prev_block = nir_cf_node_as_block(nir_cf_node_prev(prev_node));
+-
+    /* First, we move the remaining instructions from the blocks to the
+     * block before.  We have already guaranteed that this is safe by
+     * calling block_check_for_allowed_instrs()
+diff --git a/src/compiler/nir/nir_range_analysis.c b/src/compiler/nir/nir_range_analysis.c
+index 4e37881526f..6b4d86c1bbf 100644
+--- a/src/compiler/nir/nir_range_analysis.c
++++ b/src/compiler/nir/nir_range_analysis.c
+@@ -1292,7 +1292,15 @@ nir_unsigned_upper_bound(nir_shader *shader, struct hash_table *range_ht,
+       nir_intrinsic_instr *intrin = nir_instr_as_intrinsic(scalar.def->parent_instr);
+       switch (intrin->intrinsic) {
+       case nir_intrinsic_load_local_invocation_index:
+-         if (shader->info.workgroup_size_variable) {
++         /* The local invocation index is used under the hood by RADV for
++          * some non-compute-like shaders (eg. LS and NGG). These technically
++          * run in workgroups on the HW, even though this fact is not exposed
++          * by the API.
++          * They can safely use the same code path here as variable sized
++          * compute-like shader stages.
++          */
++         if (!gl_shader_stage_uses_workgroup(shader->info.stage) ||
++             shader->info.workgroup_size_variable) {
+             res = config->max_workgroup_invocations - 1;
+          } else {
+             res = (shader->info.workgroup_size[0] *
+diff --git a/src/compiler/nir/nir_search.c b/src/compiler/nir/nir_search.c
+index 272a3f6444a..437a24b9b02 100644
+--- a/src/compiler/nir/nir_search.c
++++ b/src/compiler/nir/nir_search.c
+@@ -368,7 +368,7 @@ match_value(const nir_search_value *value, nir_alu_instr *instr, unsigned src,
+       case nir_type_uint:
+       case nir_type_bool: {
+          unsigned bit_size = nir_src_bit_size(instr->src[src].src);
+-         uint64_t mask = bit_size == 64 ? UINT64_MAX : (1ull << bit_size) - 1;
++         uint64_t mask = u_uintN_max(bit_size);
+          for (unsigned i = 0; i < num_components; ++i) {
+             uint64_t val = nir_src_comp_as_uint(instr->src[src].src,
+                                                 new_swizzle[i]);
+diff --git a/src/compiler/nir/nir_serialize.c b/src/compiler/nir/nir_serialize.c
+index cc376cbcb6b..cce2d2e83ad 100644
+--- a/src/compiler/nir/nir_serialize.c
++++ b/src/compiler/nir/nir_serialize.c
+@@ -1814,6 +1814,7 @@ static void
+ write_if(write_ctx *ctx, nir_if *nif)
+ {
+    write_src(ctx, &nif->condition);
++   blob_write_uint8(ctx->blob, nif->control);
+ 
+    write_cf_list(ctx, &nif->then_list);
+    write_cf_list(ctx, &nif->else_list);
+@@ -1825,6 +1826,7 @@ read_if(read_ctx *ctx, struct exec_list *cf_list)
+    nir_if *nif = nir_if_create(ctx->nir);
+ 
+    read_src(ctx, &nif->condition, nif);
++   nif->control = blob_read_uint8(ctx->blob);
+ 
+    nir_cf_node_insert_end(cf_list, &nif->cf_node);
+ 
+@@ -1835,6 +1837,7 @@ read_if(read_ctx *ctx, struct exec_list *cf_list)
+ static void
+ write_loop(write_ctx *ctx, nir_loop *loop)
+ {
++   blob_write_uint8(ctx->blob, loop->control);
+    write_cf_list(ctx, &loop->body);
+ }
+ 
+@@ -1845,6 +1848,7 @@ read_loop(read_ctx *ctx, struct exec_list *cf_list)
+ 
+    nir_cf_node_insert_end(cf_list, &loop->cf_node);
+ 
++   loop->control = blob_read_uint8(ctx->blob);
+    read_cf_list(ctx, &loop->body);
+ }
+ 
+diff --git a/src/freedreno/ir3/ir3_lower_parallelcopy.c b/src/freedreno/ir3/ir3_lower_parallelcopy.c
+index 81087d694ef..8807dd2d157 100644
+--- a/src/freedreno/ir3/ir3_lower_parallelcopy.c
++++ b/src/freedreno/ir3/ir3_lower_parallelcopy.c
+@@ -282,7 +282,7 @@ static void
+ split_32bit_copy(struct copy_ctx *ctx, struct copy_entry *entry)
+ {
+    assert(!entry->done);
+-   assert(!(entry->flags & (IR3_REG_IMMED | IR3_REG_CONST)));
++   assert(!(entry->src.flags & (IR3_REG_IMMED | IR3_REG_CONST)));
+    assert(copy_entry_size(entry) == 2);
+    struct copy_entry *new_entry = &ctx->entries[ctx->entry_count++];
+ 
+@@ -362,7 +362,7 @@ _handle_copies(struct ir3_compiler *compiler, struct ir3_instruction *instr,
+ 
+          if (((ctx->physreg_use_count[entry->dst] == 0 ||
+                ctx->physreg_use_count[entry->dst + 1] == 0)) &&
+-             !(entry->flags & (IR3_REG_IMMED | IR3_REG_CONST))) {
++             !(entry->src.flags & (IR3_REG_IMMED | IR3_REG_CONST))) {
+             split_32bit_copy(ctx, entry);
+             progress = true;
+          }
+@@ -451,6 +451,8 @@ _handle_copies(struct ir3_compiler *compiler, struct ir3_instruction *instr,
+                entry->src.reg + (blocking->src.reg - entry->dst);
+          }
+       }
++
++      entry->done = true;
+    }
+ }
+ 
+diff --git a/src/freedreno/ir3/ir3_ra.c b/src/freedreno/ir3/ir3_ra.c
+index 6463b62ed2a..b92155cdc3b 100644
+--- a/src/freedreno/ir3/ir3_ra.c
++++ b/src/freedreno/ir3/ir3_ra.c
+@@ -548,6 +548,18 @@ ra_file_mark_killed(struct ra_file *file, struct ra_interval *interval)
+    interval->is_killed = true;
+ }
+ 
++static void
++ra_file_unmark_killed(struct ra_file *file, struct ra_interval *interval)
++{
++   assert(!interval->interval.parent);
++
++   for (physreg_t i = interval->physreg_start; i < interval->physreg_end; i++) {
++      BITSET_CLEAR(file->available, i);
++   }
++
++   interval->is_killed = false;
++}
++
+ static physreg_t
+ ra_interval_get_physreg(const struct ra_interval *interval)
+ {
+@@ -950,6 +962,12 @@ static physreg_t
+ find_best_gap(struct ra_file *file, unsigned file_size, unsigned size,
+               unsigned align, bool is_source)
+ {
++   /* This can happen if we create a very large merge set. Just bail out in that
++    * case.
++    */
++   if (size > file_size)
++      return (physreg_t) ~0;
++
+    BITSET_WORD *available =
+       is_source ? file->available_to_evict : file->available;
+ 
+@@ -1311,15 +1329,11 @@ handle_collect(struct ra_ctx *ctx, struct ir3_instruction *instr)
+     */
+    physreg_t dst_fixed = (physreg_t)~0u;
+ 
+-   for (unsigned i = 0; i < instr->srcs_count; i++) {
+-      if (!ra_reg_is_src(instr->srcs[i]))
+-         continue;
+-
+-      if (instr->srcs[i]->flags & IR3_REG_FIRST_KILL) {
+-         mark_src_killed(ctx, instr->srcs[i]);
++   ra_foreach_src (src, instr) {
++      if (src->flags & IR3_REG_FIRST_KILL) {
++         mark_src_killed(ctx, src);
+       }
+ 
+-      struct ir3_register *src = instr->srcs[i];
+       struct ra_interval *interval = &ctx->intervals[src->def->name];
+ 
+       if (src->def->merge_set != dst_set || interval->is_killed)
+@@ -1347,11 +1361,7 @@ handle_collect(struct ra_ctx *ctx, struct ir3_instruction *instr)
+       allocate_dst(ctx, instr->dsts[0]);
+ 
+    /* Remove the temporary is_killed we added */
+-   for (unsigned i = 0; i < instr->srcs_count; i++) {
+-      if (!ra_reg_is_src(instr->srcs[i]))
+-         continue;
+-
+-      struct ir3_register *src = instr->srcs[i];
++   ra_foreach_src (src, instr) {
+       struct ra_interval *interval = &ctx->intervals[src->def->name];
+       while (interval->interval.parent != NULL) {
+          interval = ir3_reg_interval_to_ra_interval(interval->interval.parent);
+@@ -1359,8 +1369,9 @@ handle_collect(struct ra_ctx *ctx, struct ir3_instruction *instr)
+ 
+       /* Filter out cases where it actually should be killed */
+       if (interval != &ctx->intervals[src->def->name] ||
+-          !(src->flags & IR3_REG_KILL))
+-         interval->is_killed = false;
++          !(src->flags & IR3_REG_KILL)) {
++         ra_file_unmark_killed(ra_get_file(ctx, src), interval);
++      }
+    }
+ 
+    ra_foreach_src_rev (src, instr) {
+diff --git a/src/freedreno/vulkan/tu_cmd_buffer.c b/src/freedreno/vulkan/tu_cmd_buffer.c
+index ee69aa6d94c..a71a7d9cc47 100644
+--- a/src/freedreno/vulkan/tu_cmd_buffer.c
++++ b/src/freedreno/vulkan/tu_cmd_buffer.c
+@@ -1497,10 +1497,6 @@ tu_BeginCommandBuffer(VkCommandBuffer commandBuffer,
+    memset(&cmd_buffer->state, 0, sizeof(cmd_buffer->state));
+    cmd_buffer->state.index_size = 0xff; /* dirty restart index */
+ 
+-   cmd_buffer->state.last_vs_params.first_instance = -1;
+-   cmd_buffer->state.last_vs_params.params_offset = -1;
+-   cmd_buffer->state.last_vs_params.vertex_offset = -1;
+-
+    tu_cache_init(&cmd_buffer->state.cache);
+    tu_cache_init(&cmd_buffer->state.renderpass_cache);
+    cmd_buffer->usage_flags = pBeginInfo->flags;
+@@ -2092,7 +2088,8 @@ tu_CmdBindPipeline(VkCommandBuffer commandBuffer,
+    assert(pipelineBindPoint == VK_PIPELINE_BIND_POINT_GRAPHICS);
+ 
+    cmd->state.pipeline = pipeline;
+-   cmd->state.dirty |= TU_CMD_DIRTY_DESC_SETS_LOAD | TU_CMD_DIRTY_SHADER_CONSTS | TU_CMD_DIRTY_LRZ;
++   cmd->state.dirty |= TU_CMD_DIRTY_DESC_SETS_LOAD | TU_CMD_DIRTY_SHADER_CONSTS |
++                       TU_CMD_DIRTY_LRZ | TU_CMD_DIRTY_VS_PARAMS;
+ 
+    /* note: this also avoids emitting draw states before renderpass clears,
+     * which may use the 3D clear path (for MSAA cases)
+@@ -3854,14 +3851,17 @@ tu6_emit_vs_params(struct tu_cmd_buffer *cmd,
+                    uint32_t vertex_offset,
+                    uint32_t first_instance)
+ {
+-   uint32_t offset = vs_params_offset(cmd);
+-
+-   if (offset == cmd->state.last_vs_params.params_offset &&
++   /* Beside re-emitting params when they are changed, we should re-emit
++    * them after constants are invalidated via HLSQ_INVALIDATE_CMD.
++    */
++   if (!(cmd->state.dirty & (TU_CMD_DIRTY_DRAW_STATE | TU_CMD_DIRTY_VS_PARAMS)) &&
+        vertex_offset == cmd->state.last_vs_params.vertex_offset &&
+        first_instance == cmd->state.last_vs_params.first_instance) {
+       return;
+    }
+ 
++   uint32_t offset = vs_params_offset(cmd);
++
+    struct tu_cs cs;
+    VkResult result = tu_cs_begin_sub_stream(&cmd->sub_cs, 3 + (offset ? 8 : 0), &cs);
+    if (result != VK_SUCCESS) {
+@@ -3889,7 +3889,6 @@ tu6_emit_vs_params(struct tu_cmd_buffer *cmd,
+       tu_cs_emit(&cs, 0);
+    }
+ 
+-   cmd->state.last_vs_params.params_offset = offset;
+    cmd->state.last_vs_params.vertex_offset = vertex_offset;
+    cmd->state.last_vs_params.first_instance = first_instance;
+ 
+diff --git a/src/freedreno/vulkan/tu_private.h b/src/freedreno/vulkan/tu_private.h
+index 683eeb89725..51bd33a8e66 100644
+--- a/src/freedreno/vulkan/tu_private.h
++++ b/src/freedreno/vulkan/tu_private.h
+@@ -896,7 +896,6 @@ struct tu_lrz_state
+ };
+ 
+ struct tu_vs_params {
+-   uint32_t params_offset;
+    uint32_t vertex_offset;
+    uint32_t first_instance;
+ };
+diff --git a/src/gallium/auxiliary/gallivm/lp_bld_nir.c b/src/gallium/auxiliary/gallivm/lp_bld_nir.c
+index 6795090053e..249e8f63a8e 100644
+--- a/src/gallium/auxiliary/gallivm/lp_bld_nir.c
++++ b/src/gallium/auxiliary/gallivm/lp_bld_nir.c
+@@ -2110,6 +2110,26 @@ static void visit_tex(struct lp_build_nir_context *bld_base, nir_tex_instr *inst
+    params.lod = explicit_lod;
+    params.ms_index = ms_index;
+    bld_base->tex(bld_base, &params);
++
++   if (nir_dest_bit_size(instr->dest) != 32) {
++      assert(nir_dest_bit_size(instr->dest) == 16);
++      LLVMTypeRef vec_type;
++      switch (nir_alu_type_get_base_type(instr->dest_type)) {
++      case nir_type_int:
++         vec_type = bld_base->int16_bld.vec_type;
++         break;
++      case nir_type_uint:
++         vec_type = bld_base->uint16_bld.vec_type;
++         break;
++      default:
++         unreachable("unexpected alu type");
++      }
++      for (int i = 0; i < nir_dest_num_components(instr->dest); ++i) {
++         texel[i] = LLVMBuildBitCast(builder, texel[i], bld_base->int_bld.vec_type, "");
++         texel[i] = LLVMBuildTrunc(builder, texel[i], vec_type, "");
++      }
++   }
++
+    assign_dest(bld_base, &instr->dest, texel);
+ }
+ 
+diff --git a/src/gallium/auxiliary/indices/u_primconvert.c b/src/gallium/auxiliary/indices/u_primconvert.c
+index d8704237e49..62956910aa8 100644
+--- a/src/gallium/auxiliary/indices/u_primconvert.c
++++ b/src/gallium/auxiliary/indices/u_primconvert.c
+@@ -179,10 +179,12 @@ util_primconvert_draw_vbo(struct primconvert_context *pc,
+       src = (const uint8_t *)src;
+ 
+       /* if the resulting primitive type is not supported by the driver for primitive restart,
++       * or if the original primitive type was not supported by the driver,
+        * the draw needs to be rewritten to not use primitive restart
+        */
+       if (info->primitive_restart &&
+-          !(pc->cfg.restart_primtypes_mask & BITFIELD_BIT(mode))) {
++          (!(pc->cfg.restart_primtypes_mask & BITFIELD_BIT(mode)) ||
++           !(pc->cfg.primtypes_mask & BITFIELD_BIT(info->mode)))) {
+          /* step 1: rewrite draw to not use primitive primitive restart;
+           *         this pre-filters degenerate primitives
+           */
+diff --git a/src/gallium/auxiliary/nir/nir_to_tgsi_info.c b/src/gallium/auxiliary/nir/nir_to_tgsi_info.c
+index 24a18ec904f..3bb5f1f8bae 100644
+--- a/src/gallium/auxiliary/nir/nir_to_tgsi_info.c
++++ b/src/gallium/auxiliary/nir/nir_to_tgsi_info.c
+@@ -579,13 +579,13 @@ void nir_tgsi_scan_shader(const struct nir_shader *nir,
+          info->indirect_files |= 1 << TGSI_FILE_INPUT;
+       info->file_max[TGSI_FILE_INPUT] = info->num_inputs - 1;
+    } else {
+-      int max = -1;
++      int max = info->file_max[TGSI_FILE_INPUT] = -1;
+       nir_foreach_shader_in_variable(var, nir) {
+-	 int slots = glsl_count_attribute_slots(var->type, false);
+-	 int tmax = var->data.driver_location + slots - 1;
+-	 if (tmax > max)
+-	    max = tmax;
+-	 info->file_max[TGSI_FILE_INPUT] = max;
++         int slots = glsl_count_attribute_slots(var->type, false);
++         int tmax = var->data.driver_location + slots - 1;
++         if (tmax > max)
++            max = tmax;
++         info->file_max[TGSI_FILE_INPUT] = max;
+       }
+    }
+ 
+diff --git a/src/gallium/auxiliary/nir/tgsi_to_nir.c b/src/gallium/auxiliary/nir/tgsi_to_nir.c
+index e60b92e867d..3e9c63bc444 100644
+--- a/src/gallium/auxiliary/nir/tgsi_to_nir.c
++++ b/src/gallium/auxiliary/nir/tgsi_to_nir.c
+@@ -430,6 +430,8 @@ ttn_emit_declaration(struct ttn_compile *c)
+                if (var->data.location == VARYING_SLOT_FOGC ||
+                    var->data.location == VARYING_SLOT_PSIZ) {
+                   var->type = glsl_float_type();
++               } else if (var->data.location == VARYING_SLOT_LAYER) {
++                  var->type = glsl_int_type();
+                }
+             }
+ 
+@@ -2220,8 +2222,9 @@ ttn_add_output_stores(struct ttn_compile *c)
+          else if (var->data.location == FRAG_RESULT_SAMPLE_MASK)
+             store_value = nir_channel(b, store_value, 0);
+       } else {
+-         /* FOGC and PSIZ are scalar values */
++         /* FOGC, LAYER, and PSIZ are scalar values */
+          if (var->data.location == VARYING_SLOT_FOGC ||
++             var->data.location == VARYING_SLOT_LAYER ||
+              var->data.location == VARYING_SLOT_PSIZ) {
+             store_value = nir_channel(b, store_value, 0);
+          }
+diff --git a/src/gallium/drivers/crocus/crocus_context.h b/src/gallium/drivers/crocus/crocus_context.h
+index 15b41079ce1..a907af36665 100644
+--- a/src/gallium/drivers/crocus/crocus_context.h
++++ b/src/gallium/drivers/crocus/crocus_context.h
+@@ -587,6 +587,7 @@ struct crocus_context {
+ 
+       bool primitive_restart;
+       unsigned cut_index;
++      enum pipe_prim_type reduced_prim_mode:8;
+       enum pipe_prim_type prim_mode:8;
+       bool prim_is_points_or_lines;
+       uint8_t vertices_per_patch;
+diff --git a/src/gallium/drivers/crocus/crocus_draw.c b/src/gallium/drivers/crocus/crocus_draw.c
+index feef4e78ecf..cdfe6a63b26 100644
+--- a/src/gallium/drivers/crocus/crocus_draw.c
++++ b/src/gallium/drivers/crocus/crocus_draw.c
+@@ -139,11 +139,18 @@ crocus_update_draw_info(struct crocus_context *ice,
+    if (ice->state.prim_mode != mode) {
+       ice->state.prim_mode = mode;
+ 
++      enum pipe_prim_type reduced = u_reduced_prim(mode);
++      if (ice->state.reduced_prim_mode != reduced) {
++         if (screen->devinfo.ver < 6)
++            ice->state.dirty |= CROCUS_DIRTY_GEN4_CLIP_PROG | CROCUS_DIRTY_GEN4_SF_PROG;
++         /* if the reduced prim changes the WM needs updating. */
++         ice->state.stage_dirty |= CROCUS_STAGE_DIRTY_UNCOMPILED_FS;
++         ice->state.reduced_prim_mode = reduced;
++      }
++
+       if (screen->devinfo.ver == 8)
+          ice->state.dirty |= CROCUS_DIRTY_GEN8_VF_TOPOLOGY;
+ 
+-      if (screen->devinfo.ver < 6)
+-         ice->state.dirty |= CROCUS_DIRTY_GEN4_CLIP_PROG | CROCUS_DIRTY_GEN4_SF_PROG;
+       if (screen->devinfo.ver <= 6)
+          ice->state.dirty |= CROCUS_DIRTY_GEN4_FF_GS_PROG;
+ 
+diff --git a/src/gallium/drivers/crocus/crocus_program.c b/src/gallium/drivers/crocus/crocus_program.c
+index d96edb7152d..4da1970e8cb 100644
+--- a/src/gallium/drivers/crocus/crocus_program.c
++++ b/src/gallium/drivers/crocus/crocus_program.c
+@@ -2082,7 +2082,7 @@ crocus_update_compiled_clip(struct crocus_context *ice)
+       memcpy(key.interp_mode, wm_prog_data->interp_mode, sizeof(key.interp_mode));
+    }
+ 
+-   key.primitive = u_reduced_prim(ice->state.prim_mode);
++   key.primitive = ice->state.reduced_prim_mode;
+    key.attrs = ice->shaders.last_vue_map->slots_valid;
+ 
+    struct pipe_rasterizer_state *rs_state = crocus_get_rast_state(ice);
+@@ -2230,7 +2230,7 @@ crocus_update_compiled_sf(struct crocus_context *ice)
+ 
+    key.attrs = ice->shaders.last_vue_map->slots_valid;
+ 
+-   switch (u_reduced_prim(ice->state.prim_mode)) {
++   switch (ice->state.reduced_prim_mode) {
+    case GL_TRIANGLES:
+    default:
+       if (key.attrs & BITFIELD64_BIT(VARYING_SLOT_EDGE))
+diff --git a/src/gallium/drivers/crocus/crocus_state.c b/src/gallium/drivers/crocus/crocus_state.c
+index 07f72c3609e..1df647d81c4 100644
+--- a/src/gallium/drivers/crocus/crocus_state.c
++++ b/src/gallium/drivers/crocus/crocus_state.c
+@@ -2026,6 +2026,9 @@ crocus_create_rasterizer_state(struct pipe_context *ctx,
+       sf.LineEndCapAntialiasingRegionWidth =
+          state->line_smooth ? _10pixels : _05pixels;
+       sf.LastPixelEnable = state->line_last_pixel;
++#if GFX_VER <= 7
++      sf.AntialiasingEnable = state->line_smooth;
++#endif
+ #if GFX_VER == 8
+       struct crocus_screen *screen = (struct crocus_screen *)ctx->screen;
+       if (screen->devinfo.is_cherryview)
+@@ -4774,7 +4777,7 @@ crocus_populate_fs_key(const struct crocus_context *ice,
+ 
+    uint32_t line_aa = BRW_WM_AA_NEVER;
+    if (rast->cso.line_smooth) {
+-      int reduced_prim = u_reduced_prim(ice->state.prim_mode);
++      int reduced_prim = ice->state.reduced_prim_mode;
+       if (reduced_prim == PIPE_PRIM_LINES)
+          line_aa = BRW_WM_AA_ALWAYS;
+       else if (reduced_prim == PIPE_PRIM_TRIANGLES) {
+@@ -4939,7 +4942,7 @@ emit_surface_state(struct crocus_batch *batch,
+                    struct crocus_resource *res,
+                    const struct isl_surf *in_surf,
+                    bool adjust_surf,
+-                   struct isl_view *view,
++                   struct isl_view *in_view,
+                    bool writeable,
+                    enum isl_aux_usage aux_usage,
+                    bool blend_enable,
+@@ -4956,23 +4959,24 @@ emit_surface_state(struct crocus_batch *batch,
+       reloc |= RELOC_WRITE;
+ 
+    struct isl_surf surf = *in_surf;
++   struct isl_view view = *in_view;
+    if (adjust_surf) {
+-      if (res->base.b.target == PIPE_TEXTURE_3D && view->array_len == 1) {
++      if (res->base.b.target == PIPE_TEXTURE_3D && view.array_len == 1) {
+          isl_surf_get_image_surf(isl_dev, in_surf,
+-                                 view->base_level, 0,
+-                                 view->base_array_layer,
++                                 view.base_level, 0,
++                                 view.base_array_layer,
+                                  &surf, &offset,
+                                  &tile_x_sa, &tile_y_sa);
+-         view->base_array_layer = 0;
+-         view->base_level = 0;
++         view.base_array_layer = 0;
++         view.base_level = 0;
+       } else if (res->base.b.target == PIPE_TEXTURE_CUBE && devinfo->ver == 4) {
+          isl_surf_get_image_surf(isl_dev, in_surf,
+-                                 view->base_level, view->base_array_layer,
++                                 view.base_level, view.base_array_layer,
+                                  0,
+                                  &surf, &offset,
+                                  &tile_x_sa, &tile_y_sa);
+-         view->base_array_layer = 0;
+-         view->base_level = 0;
++         view.base_array_layer = 0;
++         view.base_level = 0;
+       } else if (res->base.b.target == PIPE_TEXTURE_1D_ARRAY)
+          surf.dim = ISL_SURF_DIM_2D;
+    }
+@@ -4991,7 +4995,7 @@ emit_surface_state(struct crocus_batch *batch,
+ 
+    isl_surf_fill_state(isl_dev, surf_state,
+                        .surf = &surf,
+-                       .view = view,
++                       .view = &view,
+                        .address = crocus_state_reloc(batch,
+                                                      addr_offset + isl_dev->ss.addr_offset,
+                                                      res->bo, offset, reloc),
+@@ -7016,11 +7020,15 @@ crocus_upload_dirty_render_state(struct crocus_context *ice,
+          sf.DestinationOriginHorizontalBias = 0.5;
+          sf.DestinationOriginVerticalBias = 0.5;
+ 
++	 sf.LineEndCapAntialiasingRegionWidth =
++            cso_state->line_smooth ? _10pixels : _05pixels;
+          sf.LastPixelEnable = cso_state->line_last_pixel;
++         sf.AntialiasingEnable = cso_state->line_smooth;
++
+          sf.LineWidth = get_line_width(cso_state);
+          sf.PointWidth = cso_state->point_size;
+          sf.PointWidthSource = cso_state->point_size_per_vertex ? Vertex : State;
+-#if GFX_VERx10 == 45 || GFX_VER >= 5
++#if GFX_VERx10 >= 45
+          sf.AALineDistanceMode = AALINEDISTANCE_TRUE;
+ #endif
+          sf.ViewportTransformEnable = true;
+@@ -9230,6 +9238,7 @@ genX(crocus_init_state)(struct crocus_context *ice)
+    ice->state.sample_mask = 0xff;
+    ice->state.num_viewports = 1;
+    ice->state.prim_mode = PIPE_PRIM_MAX;
++   ice->state.reduced_prim_mode = PIPE_PRIM_MAX;
+    ice->state.genx = calloc(1, sizeof(struct crocus_genx_state));
+    ice->draw.derived_params.drawid = -1;
+ 
+diff --git a/src/gallium/drivers/etnaviv/etnaviv_resource.c b/src/gallium/drivers/etnaviv/etnaviv_resource.c
+index aa47be8ed07..6f77b829151 100644
+--- a/src/gallium/drivers/etnaviv/etnaviv_resource.c
++++ b/src/gallium/drivers/etnaviv/etnaviv_resource.c
+@@ -639,8 +639,7 @@ etna_resource_get_param(struct pipe_screen *pscreen,
+                         enum pipe_resource_param param,
+                         unsigned usage, uint64_t *value)
+ {
+-   switch (param) {
+-   case PIPE_RESOURCE_PARAM_NPLANES: {
++   if (param == PIPE_RESOURCE_PARAM_NPLANES) {
+       unsigned count = 0;
+ 
+       for (struct pipe_resource *cur = prsc; cur; cur = cur->next)
+@@ -648,6 +647,25 @@ etna_resource_get_param(struct pipe_screen *pscreen,
+       *value = count;
+       return true;
+    }
++
++   struct pipe_resource *cur = prsc;
++   for (int i = 0; i < plane; i++) {
++      cur = cur->next;
++      if (!cur)
++         return false;
++   }
++   struct etna_resource *rsc = etna_resource(cur);
++
++   switch (param) {
++   case PIPE_RESOURCE_PARAM_STRIDE:
++      *value = rsc->levels[level].stride;
++      return true;
++   case PIPE_RESOURCE_PARAM_OFFSET:
++      *value = rsc->levels[level].offset;
++      return true;
++   case PIPE_RESOURCE_PARAM_MODIFIER:
++      *value = layout_to_modifier(rsc->layout);
++      return true;
+    default:
+       return false;
+    }
+diff --git a/src/gallium/drivers/freedreno/freedreno_util.h b/src/gallium/drivers/freedreno/freedreno_util.h
+index f8cf9b6cb19..c989262cc74 100644
+--- a/src/gallium/drivers/freedreno/freedreno_util.h
++++ b/src/gallium/drivers/freedreno/freedreno_util.h
+@@ -398,7 +398,7 @@ emit_marker(struct fd_ringbuffer *ring, int scratch_idx)
+    if (reg == HW_QUERY_BASE_REG)
+       return;
+    if (__EMIT_MARKER) {
+-      OUT_WFI5(ring);
++      OUT_WFI(ring);
+       OUT_PKT0(ring, reg, 1);
+       OUT_RING(ring, p_atomic_inc_return(&marker_cnt));
+    }
+diff --git a/src/gallium/drivers/freedreno/meson.build b/src/gallium/drivers/freedreno/meson.build
+index 9f1747646e1..eac04aa4d97 100644
+--- a/src/gallium/drivers/freedreno/meson.build
++++ b/src/gallium/drivers/freedreno/meson.build
+@@ -273,6 +273,7 @@ libfreedreno = static_library(
+   cpp_args : [freedreno_cpp_args],
+   gnu_symbol_visibility : 'hidden',
+   dependencies : libfreedreno_dependencies,
++  override_options : ['cpp_std=c++17'],
+ )
+ 
+ driver_freedreno = declare_dependency(
+diff --git a/src/gallium/drivers/iris/iris_clear.c b/src/gallium/drivers/iris/iris_clear.c
+index cc619b46a0c..a59ba735cbc 100644
+--- a/src/gallium/drivers/iris/iris_clear.c
++++ b/src/gallium/drivers/iris/iris_clear.c
+@@ -185,8 +185,8 @@ convert_clear_color(enum pipe_format format,
+          unsigned bits = util_format_get_component_bits(
+             format, UTIL_FORMAT_COLORSPACE_RGB, i);
+          if (bits > 0 && bits < 32) {
+-            int32_t max = (1 << (bits - 1)) - 1;
+-            int32_t min = -(1 << (bits - 1));
++            int32_t max = u_intN_max(bits);
++            int32_t min = u_intN_min(bits);
+             override_color.i32[i] = CLAMP(override_color.i32[i], min, max);
+          }
+       }
+diff --git a/src/gallium/drivers/iris/iris_context.h b/src/gallium/drivers/iris/iris_context.h
+index 0f78e7d82fa..3b54a6b680d 100644
+--- a/src/gallium/drivers/iris/iris_context.h
++++ b/src/gallium/drivers/iris/iris_context.h
+@@ -202,10 +202,15 @@ struct iris_base_prog_key {
+    unsigned program_string_id;
+ };
+ 
++/**
++ * Note, we need to take care to have padding explicitly declared
++ * for key since we will directly memcmp the whole struct.
++ */
+ struct iris_vue_prog_key {
+    struct iris_base_prog_key base;
+ 
+    unsigned nr_userclip_plane_consts:4;
++   unsigned padding:28;
+ };
+ 
+ struct iris_vs_prog_key {
+diff --git a/src/gallium/drivers/iris/iris_state.c b/src/gallium/drivers/iris/iris_state.c
+index 2f0831a1078..de04c11f093 100644
+--- a/src/gallium/drivers/iris/iris_state.c
++++ b/src/gallium/drivers/iris/iris_state.c
+@@ -2415,10 +2415,15 @@ iris_create_sampler_view(struct pipe_context *ctx,
+    if (tmpl->target != PIPE_BUFFER) {
+       isv->view.base_level = tmpl->u.tex.first_level;
+       isv->view.levels = tmpl->u.tex.last_level - tmpl->u.tex.first_level + 1;
+-      // XXX: do I need to port f9fd0cf4790cb2a530e75d1a2206dbb9d8af7cb2?
+-      isv->view.base_array_layer = tmpl->u.tex.first_layer;
+-      isv->view.array_len =
+-         tmpl->u.tex.last_layer - tmpl->u.tex.first_layer + 1;
++
++      if (tmpl->target == PIPE_TEXTURE_3D) {
++         isv->view.base_array_layer = 0;
++         isv->view.array_len = 1;
++      } else {
++         isv->view.base_array_layer = tmpl->u.tex.first_layer;
++         isv->view.array_len =
++            tmpl->u.tex.last_layer - tmpl->u.tex.first_layer + 1;
++      }
+ 
+       if (iris_resource_unfinished_aux_import(isv->res))
+          iris_resource_finish_aux_import(&screen->base, isv->res);
+diff --git a/src/gallium/drivers/llvmpipe/lp_cs_tpool.c b/src/gallium/drivers/llvmpipe/lp_cs_tpool.c
+index ea284468512..dd28dbafcbd 100644
+--- a/src/gallium/drivers/llvmpipe/lp_cs_tpool.c
++++ b/src/gallium/drivers/llvmpipe/lp_cs_tpool.c
+@@ -121,6 +121,7 @@ lp_cs_tpool_queue_task(struct lp_cs_tpool *pool,
+       for (unsigned t = 0; t < num_iters; t++) {
+          work(data, t, &lmem);
+       }
++      FREE(lmem.local_mem_ptr);
+       return NULL;
+    }
+    task = CALLOC_STRUCT(lp_cs_tpool_task);
+diff --git a/src/gallium/drivers/llvmpipe/lp_state_cs.c b/src/gallium/drivers/llvmpipe/lp_state_cs.c
+index 93e5d0cca6f..9a3291ded46 100644
+--- a/src/gallium/drivers/llvmpipe/lp_state_cs.c
++++ b/src/gallium/drivers/llvmpipe/lp_state_cs.c
+@@ -1439,6 +1439,9 @@ lp_csctx_destroy(struct lp_cs_context *csctx)
+    for (i = 0; i < ARRAY_SIZE(csctx->ssbos); i++) {
+       pipe_resource_reference(&csctx->ssbos[i].current.buffer, NULL);
+    }
++   for (i = 0; i < ARRAY_SIZE(csctx->images); i++) {
++      pipe_resource_reference(&csctx->images[i].current.resource, NULL);
++   }
+    FREE(csctx);
+ }
+ 
+diff --git a/src/gallium/drivers/panfrost/ci/deqp-panfrost-g72-fails.txt b/src/gallium/drivers/panfrost/ci/deqp-panfrost-g72-fails.txt
+index 03a9ff5e49a..aee45fb997a 100644
+--- a/src/gallium/drivers/panfrost/ci/deqp-panfrost-g72-fails.txt
++++ b/src/gallium/drivers/panfrost/ci/deqp-panfrost-g72-fails.txt
+@@ -1,91 +1,3 @@
+-dEQP-GLES31.functional.blend_equation_advanced.barrier.colorburn,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.barrier.colordodge,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.barrier.darken,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.barrier.difference,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.barrier.exclusion,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.barrier.hardlight,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.barrier.hsl_color,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.barrier.hsl_hue,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.barrier.hsl_luminosity,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.barrier.hsl_saturation,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.barrier.lighten,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.barrier.multiply,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.barrier.overlay,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.barrier.screen,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.barrier.softlight,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.basic.colorburn,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.basic.colordodge,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.basic.darken,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.basic.difference,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.basic.exclusion,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.basic.hardlight,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.basic.hsl_color,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.basic.hsl_hue,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.basic.hsl_luminosity,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.basic.hsl_saturation,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.basic.lighten,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.basic.multiply,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.basic.overlay,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.basic.screen,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.basic.softlight,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.coherent.colorburn,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.coherent.colordodge,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.coherent.darken,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.coherent.difference,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.coherent.exclusion,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.coherent.hardlight,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.coherent.hsl_color,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.coherent.hsl_hue,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.coherent.hsl_luminosity,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.coherent.hsl_saturation,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.coherent.lighten,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.coherent_msaa.colorburn,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.coherent_msaa.colordodge,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.coherent_msaa.darken,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.coherent_msaa.difference,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.coherent_msaa.exclusion,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.coherent_msaa.hardlight,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.coherent_msaa.hsl_color,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.coherent_msaa.hsl_hue,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.coherent_msaa.hsl_luminosity,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.coherent_msaa.hsl_saturation,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.coherent_msaa.lighten,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.coherent_msaa.multiply,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.coherent_msaa.overlay,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.coherent_msaa.screen,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.coherent_msaa.softlight,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.coherent.multiply,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.coherent.overlay,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.coherent.screen,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.coherent.softlight,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.msaa.colorburn,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.msaa.colordodge,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.msaa.darken,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.msaa.difference,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.msaa.exclusion,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.msaa.hsl_hue,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.msaa.hsl_luminosity,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.msaa.hsl_saturation,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.msaa.lighten,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.msaa.multiply,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.msaa.overlay,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.msaa.screen,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.msaa.softlight,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.srgb.colorburn,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.srgb.colordodge,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.srgb.darken,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.srgb.difference,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.srgb.exclusion,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.srgb.hardlight,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.srgb.hsl_color,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.srgb.hsl_hue,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.srgb.hsl_luminosity,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.srgb.hsl_saturation,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.srgb.lighten,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.srgb.multiply,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.srgb.overlay,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.srgb.screen,Fail
+-dEQP-GLES31.functional.blend_equation_advanced.srgb.softlight,Fail
+ dEQP-GLES31.functional.draw_buffers_indexed.overwrite_common.common_advanced_blend_eq_buffer_advanced_blend_eq,Fail
+ dEQP-GLES31.functional.draw_buffers_indexed.overwrite_common.common_blend_eq_buffer_advanced_blend_eq,Fail
+ dEQP-GLES31.functional.draw_buffers_indexed.overwrite_common.common_separate_blend_eq_buffer_advanced_blend_eq,Fail
+@@ -113,47 +25,6 @@ dEQP-GLES31.functional.separate_shader.random.79,Fail
+ dEQP-GLES31.functional.separate_shader.random.80,Fail
+ dEQP-GLES31.functional.separate_shader.random.82,Fail
+ dEQP-GLES31.functional.separate_shader.random.89,Fail
+-dEQP-GLES31.functional.shaders.framebuffer_fetch.basic.fragment_discard,Fail
+-dEQP-GLES31.functional.shaders.framebuffer_fetch.basic.framebuffer_texture_layer,Fail
+-dEQP-GLES31.functional.shaders.framebuffer_fetch.basic.framebuffer_texture_level,Fail
+-dEQP-GLES31.functional.shaders.framebuffer_fetch.basic.last_frag_data,Fail
+-dEQP-GLES31.functional.shaders.framebuffer_fetch.basic.multiple_assignment,Fail
+-dEQP-GLES31.functional.shaders.framebuffer_fetch.basic.texel_fetch,Fail
+-dEQP-GLES31.functional.shaders.framebuffer_fetch.framebuffer_format.r11f_g11f_b10f,Fail
+-dEQP-GLES31.functional.shaders.framebuffer_fetch.framebuffer_format.r16f,Fail
+-dEQP-GLES31.functional.shaders.framebuffer_fetch.framebuffer_format.r16i,Fail
+-dEQP-GLES31.functional.shaders.framebuffer_fetch.framebuffer_format.r16ui,Fail
+-dEQP-GLES31.functional.shaders.framebuffer_fetch.framebuffer_format.r32f,Fail
+-dEQP-GLES31.functional.shaders.framebuffer_fetch.framebuffer_format.r32i,Fail
+-dEQP-GLES31.functional.shaders.framebuffer_fetch.framebuffer_format.r32ui,Fail
+-dEQP-GLES31.functional.shaders.framebuffer_fetch.framebuffer_format.r8,Fail
+-dEQP-GLES31.functional.shaders.framebuffer_fetch.framebuffer_format.r8ui,Fail
+-dEQP-GLES31.functional.shaders.framebuffer_fetch.framebuffer_format.rg16f,Fail
+-dEQP-GLES31.functional.shaders.framebuffer_fetch.framebuffer_format.rg16i,Fail
+-dEQP-GLES31.functional.shaders.framebuffer_fetch.framebuffer_format.rg16ui,Fail
+-dEQP-GLES31.functional.shaders.framebuffer_fetch.framebuffer_format.rg32f,Fail
+-dEQP-GLES31.functional.shaders.framebuffer_fetch.framebuffer_format.rg32i,Fail
+-dEQP-GLES31.functional.shaders.framebuffer_fetch.framebuffer_format.rg32ui,Fail
+-dEQP-GLES31.functional.shaders.framebuffer_fetch.framebuffer_format.rg8,Fail
+-dEQP-GLES31.functional.shaders.framebuffer_fetch.framebuffer_format.rg8i,Fail
+-dEQP-GLES31.functional.shaders.framebuffer_fetch.framebuffer_format.rg8ui,Fail
+-dEQP-GLES31.functional.shaders.framebuffer_fetch.framebuffer_format.rgb10_a2,Fail
+-dEQP-GLES31.functional.shaders.framebuffer_fetch.framebuffer_format.rgb10_a2ui,Fail
+-dEQP-GLES31.functional.shaders.framebuffer_fetch.framebuffer_format.rgb16f,Fail
+-dEQP-GLES31.functional.shaders.framebuffer_fetch.framebuffer_format.rgb565,Fail
+-dEQP-GLES31.functional.shaders.framebuffer_fetch.framebuffer_format.rgb5_a1,Fail
+-dEQP-GLES31.functional.shaders.framebuffer_fetch.framebuffer_format.rgb8,Fail
+-dEQP-GLES31.functional.shaders.framebuffer_fetch.framebuffer_format.rgba16f,Fail
+-dEQP-GLES31.functional.shaders.framebuffer_fetch.framebuffer_format.rgba16i,Fail
+-dEQP-GLES31.functional.shaders.framebuffer_fetch.framebuffer_format.rgba16ui,Fail
+-dEQP-GLES31.functional.shaders.framebuffer_fetch.framebuffer_format.rgba32f,Fail
+-dEQP-GLES31.functional.shaders.framebuffer_fetch.framebuffer_format.rgba32i,Fail
+-dEQP-GLES31.functional.shaders.framebuffer_fetch.framebuffer_format.rgba32ui,Fail
+-dEQP-GLES31.functional.shaders.framebuffer_fetch.framebuffer_format.rgba4,Fail
+-dEQP-GLES31.functional.shaders.framebuffer_fetch.framebuffer_format.rgba8,Fail
+-dEQP-GLES31.functional.shaders.framebuffer_fetch.framebuffer_format.rgba8i,Fail
+-dEQP-GLES31.functional.shaders.framebuffer_fetch.framebuffer_format.rgba8ui,Fail
+-dEQP-GLES31.functional.shaders.framebuffer_fetch.framebuffer_format.srgb8_alpha8,Fail
+ dEQP-GLES31.functional.ssbo.layout.random.all_shared_buffer.21,Crash
+ dEQP-GLES31.functional.ssbo.layout.random.all_shared_buffer.36,Crash
+ dEQP-GLES31.functional.texture.border_clamp.depth_compare_mode.depth24_stencil8.gather_size_npot,Fail
+diff --git a/src/gallium/drivers/panfrost/ci/deqp-panfrost-t860-fails.txt b/src/gallium/drivers/panfrost/ci/deqp-panfrost-t860-fails.txt
+index 9219c97eb5b..4fe0791c622 100644
+--- a/src/gallium/drivers/panfrost/ci/deqp-panfrost-t860-fails.txt
++++ b/src/gallium/drivers/panfrost/ci/deqp-panfrost-t860-fails.txt
+@@ -12,31 +12,12 @@ dEQP-GLES3.functional.fbo.blit.rect.nearest_consistency_min_reverse_src_dst_x,Fa
+ dEQP-GLES3.functional.fbo.blit.rect.nearest_consistency_min_reverse_src_dst_y,Fail
+ dEQP-GLES3.functional.fbo.blit.rect.nearest_consistency_min_reverse_src_x,Fail
+ dEQP-GLES3.functional.fbo.blit.rect.nearest_consistency_min_reverse_src_y,Fail
+-dEQP-GLES31.functional.draw_buffers_indexed.overwrite_common.common_blend_eq_buffer_blend_eq,Fail
+-dEQP-GLES31.functional.draw_buffers_indexed.overwrite_common.common_blend_eq_buffer_separate_blend_eq,Fail
+ dEQP-GLES31.functional.draw_buffers_indexed.overwrite_common.common_blend_func_buffer_blend_func,Fail
+-dEQP-GLES31.functional.draw_buffers_indexed.overwrite_common.common_blend_func_buffer_separate_blend_func,Fail
+-dEQP-GLES31.functional.draw_buffers_indexed.overwrite_common.common_color_mask_buffer_color_mask,Fail
+-dEQP-GLES31.functional.draw_buffers_indexed.overwrite_common.common_disable_buffer_disable,Fail
+-dEQP-GLES31.functional.draw_buffers_indexed.overwrite_common.common_disable_buffer_enable,Fail
+-dEQP-GLES31.functional.draw_buffers_indexed.overwrite_common.common_enable_buffer_disable,Fail
+-dEQP-GLES31.functional.draw_buffers_indexed.overwrite_common.common_enable_buffer_enable,Fail
+-dEQP-GLES31.functional.draw_buffers_indexed.overwrite_common.common_separate_blend_eq_buffer_blend_eq,Fail
+-dEQP-GLES31.functional.draw_buffers_indexed.overwrite_common.common_separate_blend_eq_buffer_separate_blend_eq,Fail
+ dEQP-GLES31.functional.draw_buffers_indexed.overwrite_common.common_separate_blend_func_buffer_blend_func,Fail
+ dEQP-GLES31.functional.draw_buffers_indexed.overwrite_common.common_separate_blend_func_buffer_separate_blend_func,Fail
+-dEQP-GLES31.functional.draw_buffers_indexed.overwrite_indexed.common_blend_eq_buffer_blend_eq,Fail
+-dEQP-GLES31.functional.draw_buffers_indexed.overwrite_indexed.common_blend_eq_buffer_separate_blend_eq,Fail
+ dEQP-GLES31.functional.draw_buffers_indexed.overwrite_indexed.common_blend_func_buffer_blend_func,Fail
+ dEQP-GLES31.functional.draw_buffers_indexed.overwrite_indexed.common_blend_func_buffer_separate_blend_func,Fail
+-dEQP-GLES31.functional.draw_buffers_indexed.overwrite_indexed.common_disable_buffer_disable,Fail
+-dEQP-GLES31.functional.draw_buffers_indexed.overwrite_indexed.common_disable_buffer_enable,Fail
+-dEQP-GLES31.functional.draw_buffers_indexed.overwrite_indexed.common_enable_buffer_disable,Fail
+-dEQP-GLES31.functional.draw_buffers_indexed.overwrite_indexed.common_enable_buffer_enable,Fail
+-dEQP-GLES31.functional.draw_buffers_indexed.overwrite_indexed.common_separate_blend_eq_buffer_blend_eq,Fail
+-dEQP-GLES31.functional.draw_buffers_indexed.overwrite_indexed.common_separate_blend_eq_buffer_separate_blend_eq,Fail
+ dEQP-GLES31.functional.draw_buffers_indexed.overwrite_indexed.common_separate_blend_func_buffer_blend_func,Fail
+-dEQP-GLES31.functional.draw_buffers_indexed.overwrite_indexed.common_separate_blend_func_buffer_separate_blend_func,Fail
+ dEQP-GLES31.functional.draw_buffers_indexed.random.max_implementation_draw_buffers.0,Fail
+ dEQP-GLES31.functional.draw_buffers_indexed.random.max_implementation_draw_buffers.1,Fail
+ dEQP-GLES31.functional.draw_buffers_indexed.random.max_implementation_draw_buffers.10,Fail
+@@ -81,10 +62,8 @@ dEQP-GLES31.functional.shaders.builtin_functions.integer.findmsb.uvec2_lowp_comp
+ dEQP-GLES31.functional.shaders.builtin_functions.integer.findmsb.uvec3_lowp_compute,Fail
+ dEQP-GLES31.functional.shaders.builtin_functions.integer.imulextended.ivec3_highp_fragment,Fail
+ dEQP-GLES31.functional.shaders.builtin_functions.integer.umulextended.uvec3_highp_fragment,Fail
+-dEQP-GLES31.functional.shaders.framebuffer_fetch.framebuffer_format.rgb10_a2,Fail
+ dEQP-GLES31.functional.shaders.opaque_type_indexing.ssbo.const_expression_vertex,Fail
+ dEQP-GLES31.functional.shaders.opaque_type_indexing.ssbo.const_literal_vertex,Fail
+-dEQP-GLES31.functional.shaders.opaque_type_indexing.ubo.const_expression_fragment,Fail
+ dEQP-GLES31.functional.shaders.opaque_type_indexing.ubo.const_expression_vertex,Fail
+ dEQP-GLES31.functional.shaders.opaque_type_indexing.ubo.const_literal_fragment,Fail
+ dEQP-GLES31.functional.shaders.opaque_type_indexing.ubo.const_literal_vertex,Fail
+diff --git a/src/gallium/drivers/panfrost/ci/gitlab-ci.yml b/src/gallium/drivers/panfrost/ci/gitlab-ci.yml
+index 01f91016200..9af4cdd3b0b 100644
+--- a/src/gallium/drivers/panfrost/ci/gitlab-ci.yml
++++ b/src/gallium/drivers/panfrost/ci/gitlab-ci.yml
+@@ -154,7 +154,7 @@ panfrost-g52-gles31:arm64:
+     - .lava-meson-g12b-a311d-khadas-vim3
+   variables:
+     DEQP_VER: gles31
+-    PAN_MESA_DEBUG: "deqp,sync"
++    PAN_MESA_DEBUG: "deqp,sync,indirect"
+     DEQP_PARALLEL: 6
+     DEQP_EXPECTED_RENDERER: G52
+ 
+diff --git a/src/gallium/drivers/panfrost/pan_cmdstream.c b/src/gallium/drivers/panfrost/pan_cmdstream.c
+index d31a7466a9d..4d3a442eac9 100644
+--- a/src/gallium/drivers/panfrost/pan_cmdstream.c
++++ b/src/gallium/drivers/panfrost/pan_cmdstream.c
+@@ -695,7 +695,7 @@ panfrost_emit_frag_shader_meta(struct panfrost_batch *batch)
+                                                      PAN_DESC_ARRAY(rt_count, BLEND));
+         }
+ 
+-        mali_ptr blend_shaders[PIPE_MAX_COLOR_BUFS];
++        mali_ptr blend_shaders[PIPE_MAX_COLOR_BUFS] = { 0 };
+         unsigned shader_offset = 0;
+         struct panfrost_bo *shader_bo = NULL;
+ 
+@@ -3078,8 +3078,8 @@ panfrost_draw_vbo(struct pipe_context *pipe,
+         if (!panfrost_render_condition_check(ctx))
+                 return;
+ 
+-        /* Emulate indirect draws when debugging */
+-        if (dev->debug & PAN_DBG_NOINDIRECT && indirect && indirect->buffer) {
++        /* Emulate indirect draws unless we're using the experimental path */
++        if (!(dev->debug & PAN_DBG_INDIRECT) && indirect && indirect->buffer) {
+                 assert(num_draws == 1);
+                 util_draw_indirect(pipe, info, indirect);
+                 return;
+diff --git a/src/gallium/drivers/panfrost/pan_context.c b/src/gallium/drivers/panfrost/pan_context.c
+index f8a4326acc0..b617c41241b 100644
+--- a/src/gallium/drivers/panfrost/pan_context.c
++++ b/src/gallium/drivers/panfrost/pan_context.c
+@@ -297,6 +297,8 @@ panfrost_create_shader_state(
+         struct panfrost_device *dev = pan_device(pctx->screen);
+         so->base = *cso;
+ 
++        simple_mtx_init(&so->lock, mtx_plain);
++
+         /* Token deep copy to prevent memory corruption */
+ 
+         if (cso->type == PIPE_SHADER_IR_TGSI)
+@@ -337,6 +339,8 @@ panfrost_delete_shader_state(
+                 panfrost_bo_unreference(shader_state->linkage.bo);
+         }
+ 
++        simple_mtx_destroy(&cso->lock);
++
+         free(cso->variants);
+         free(so);
+ }
+@@ -364,8 +368,6 @@ panfrost_variant_matches(
+         struct panfrost_shader_state *variant,
+         enum pipe_shader_type type)
+ {
+-        struct panfrost_device *dev = pan_device(ctx->base.screen);
+-
+         if (variant->info.stage == MESA_SHADER_FRAGMENT &&
+             variant->info.fs.outputs_read) {
+                 struct pipe_framebuffer_state *fb = &ctx->pipe_framebuffer;
+@@ -377,10 +379,7 @@ panfrost_variant_matches(
+                         if ((fb->nr_cbufs > i) && fb->cbufs[i])
+                                 fmt = fb->cbufs[i]->format;
+ 
+-                        const struct util_format_description *desc =
+-                                util_format_description(fmt);
+-
+-                        if (pan_format_class_load(desc, dev->quirks) == PAN_FORMAT_NATIVE)
++                        if (panfrost_blendable_formats_v6[fmt].internal)
+                                 fmt = PIPE_FORMAT_NONE;
+ 
+                         if (variant->rt_formats[i] != fmt)
+@@ -442,7 +441,6 @@ panfrost_bind_shader_state(
+         enum pipe_shader_type type)
+ {
+         struct panfrost_context *ctx = pan_context(pctx);
+-        struct panfrost_device *dev = pan_device(ctx->base.screen);
+         ctx->shader[type] = hwcso;
+ 
+         ctx->dirty |= PAN_DIRTY_TLS_SIZE;
+@@ -455,6 +453,8 @@ panfrost_bind_shader_state(
+         signed variant = -1;
+         struct panfrost_shader_variants *variants = (struct panfrost_shader_variants *) hwcso;
+ 
++        simple_mtx_lock(&variants->lock);
++
+         for (unsigned i = 0; i < variants->variant_count; ++i) {
+                 if (panfrost_variant_matches(ctx, &variants->variants[i], type)) {
+                         variant = i;
+@@ -498,10 +498,7 @@ panfrost_bind_shader_state(
+                                 if ((fb->nr_cbufs > i) && fb->cbufs[i])
+                                         fmt = fb->cbufs[i]->format;
+ 
+-                                const struct util_format_description *desc =
+-                                        util_format_description(fmt);
+-
+-                                if (pan_format_class_load(desc, dev->quirks) == PAN_FORMAT_NATIVE)
++                                if (panfrost_blendable_formats_v6[fmt].internal)
+                                         fmt = PIPE_FORMAT_NONE;
+ 
+                                 v->rt_formats[i] = fmt;
+@@ -535,6 +532,11 @@ panfrost_bind_shader_state(
+                         update_so_info(&shader_state->stream_output,
+                                        shader_state->info.outputs_written);
+         }
++
++        /* TODO: it would be more efficient to release the lock before
++         * compiling instead of after, but that can race if thread A compiles a
++         * variant while thread B searches for that same variant */
++        simple_mtx_unlock(&variants->lock);
+ }
+ 
+ static void *
+@@ -792,6 +794,8 @@ panfrost_destroy(struct pipe_context *pipe)
+ {
+         struct panfrost_context *panfrost = pan_context(pipe);
+ 
++        _mesa_hash_table_destroy(panfrost->writers, NULL);
++
+         if (panfrost->blitter)
+                 util_blitter_destroy(panfrost->blitter);
+ 
+@@ -1124,6 +1128,9 @@ panfrost_create_context(struct pipe_screen *screen, void *priv, unsigned flags)
+ 
+         ctx->blitter = util_blitter_create(gallium);
+ 
++        ctx->writers = _mesa_hash_table_create(gallium, _mesa_hash_pointer,
++                                                        _mesa_key_pointer_equal);
++
+         assert(ctx->blitter);
+ 
+         /* Prepare for render! */
+diff --git a/src/gallium/drivers/panfrost/pan_context.h b/src/gallium/drivers/panfrost/pan_context.h
+index b2ad9af36ba..6febeb8d4cf 100644
+--- a/src/gallium/drivers/panfrost/pan_context.h
++++ b/src/gallium/drivers/panfrost/pan_context.h
+@@ -44,6 +44,7 @@
+ #include "pipe/p_state.h"
+ #include "util/u_blitter.h"
+ #include "util/hash_table.h"
++#include "util/simple_mtx.h"
+ 
+ #include "midgard/midgard_compile.h"
+ #include "compiler/shader_enums.h"
+@@ -140,8 +141,14 @@ struct panfrost_context {
+         struct {
+                 uint64_t seqnum;
+                 struct panfrost_batch slots[PAN_MAX_BATCHES];
++
++                /** Set of active batches for faster traversal */
++                BITSET_DECLARE(active, PAN_MAX_BATCHES);
+         } batches;
+ 
++        /* Map from resources to panfrost_batches */
++        struct hash_table *writers;
++
+         /* Bound job batch */
+         struct panfrost_batch *batch;
+ 
+@@ -290,6 +297,9 @@ struct panfrost_shader_variants {
+                 struct pipe_compute_state cbase;
+         };
+ 
++        /** Lock for the variants array */
++        simple_mtx_t lock;
++
+         struct panfrost_shader_state *variants;
+         unsigned variant_space;
+ 
+diff --git a/src/gallium/drivers/panfrost/pan_job.c b/src/gallium/drivers/panfrost/pan_job.c
+index 3dadf45e72b..d84d604361e 100644
+--- a/src/gallium/drivers/panfrost/pan_job.c
++++ b/src/gallium/drivers/panfrost/pan_job.c
+@@ -40,6 +40,9 @@
+ #include "decode.h"
+ #include "panfrost-quirks.h"
+ 
++#define foreach_batch(ctx, idx) \
++        BITSET_FOREACH_SET(idx, ctx->batches.active, PAN_MAX_BATCHES)
++
+ static unsigned
+ panfrost_batch_idx(struct panfrost_batch *batch)
+ {
+@@ -65,7 +68,8 @@ panfrost_batch_init(struct panfrost_context *ctx,
+         batch->maxx = batch->maxy = 0;
+ 
+         util_copy_framebuffer_state(&batch->key, key);
+-        util_dynarray_init(&batch->resources, NULL);
++        batch->resources =_mesa_set_create(NULL, _mesa_hash_pointer,
++                                          _mesa_key_pointer_equal);
+ 
+         /* Preallocate the main pool, since every batch has at least one job
+          * structure so it will be used */
+@@ -125,16 +129,20 @@ panfrost_batch_cleanup(struct panfrost_batch *batch)
+                 panfrost_bo_unreference(bo);
+         }
+ 
+-        util_dynarray_foreach(&batch->resources, struct panfrost_resource *, rsrc) {
+-                BITSET_CLEAR((*rsrc)->track.users, batch_idx);
++        set_foreach_remove(batch->resources, entry) {
++                struct panfrost_resource *rsrc = (void *) entry->key;
++
++                if (_mesa_hash_table_search(ctx->writers, rsrc)) {
++                        _mesa_hash_table_remove_key(ctx->writers, rsrc);
++                        rsrc->track.nr_writers--;
++                }
+ 
+-                if ((*rsrc)->track.writer == batch)
+-                        (*rsrc)->track.writer = NULL;
++                rsrc->track.nr_users--;
+ 
+-                pipe_resource_reference((struct pipe_resource **) rsrc, NULL);
++                pipe_resource_reference((struct pipe_resource **) &rsrc, NULL);
+         }
+ 
+-        util_dynarray_fini(&batch->resources);
++        _mesa_set_destroy(batch->resources, NULL);
+         panfrost_pool_cleanup(&batch->pool);
+         panfrost_pool_cleanup(&batch->invisible_pool);
+ 
+@@ -143,6 +151,7 @@ panfrost_batch_cleanup(struct panfrost_batch *batch)
+         util_sparse_array_finish(&batch->bos);
+ 
+         memset(batch, 0, sizeof(*batch));
++        BITSET_CLEAR(ctx->batches.active, batch_idx);
+ }
+ 
+ static void
+@@ -177,6 +186,9 @@ panfrost_get_batch(struct panfrost_context *ctx,
+ 
+         panfrost_batch_init(ctx, key, batch);
+ 
++        unsigned batch_idx = panfrost_batch_idx(batch);
++        BITSET_SET(ctx->batches.active, batch_idx);
++
+         return batch;
+ }
+ 
+@@ -262,33 +274,40 @@ panfrost_batch_update_access(struct panfrost_batch *batch,
+ {
+         struct panfrost_context *ctx = batch->ctx;
+         uint32_t batch_idx = panfrost_batch_idx(batch);
+-        struct panfrost_batch *writer = rsrc->track.writer;
++        struct hash_entry *entry = _mesa_hash_table_search(ctx->writers, rsrc);
++        struct panfrost_batch *writer = entry ? entry->data : NULL;
++        bool found = false;
+ 
+-        if (unlikely(!BITSET_TEST(rsrc->track.users, batch_idx))) {
+-                BITSET_SET(rsrc->track.users, batch_idx);
++        _mesa_set_search_or_add(batch->resources, rsrc, &found);
+ 
+-                /* Reference the resource on the batch */
+-                struct pipe_resource **dst = util_dynarray_grow(&batch->resources,
+-                                struct pipe_resource *, 1);
++        if (!found) {
++                /* Cache number of batches accessing a resource */
++                rsrc->track.nr_users++;
+ 
+-                *dst = NULL;
+-                pipe_resource_reference(dst, &rsrc->base);
++                /* Reference the resource on the batch */
++                pipe_reference(NULL, &rsrc->base.reference);
+         }
+ 
+         /* Flush users if required */
+         if (writes || ((writer != NULL) && (writer != batch))) {
+                 unsigned i;
+-                BITSET_FOREACH_SET(i, rsrc->track.users, PAN_MAX_BATCHES) {
++                foreach_batch(ctx, i) {
++                        struct panfrost_batch *batch = &ctx->batches.slots[i];
++
+                         /* Skip the entry if this our batch. */
+                         if (i == batch_idx)
+                                 continue;
+ 
+-                        panfrost_batch_submit(&ctx->batches.slots[i], 0, 0);
++                        /* Submit if it's a user */
++                        if (_mesa_set_search(batch->resources, rsrc))
++                                panfrost_batch_submit(batch, 0, 0);
+                 }
+         }
+ 
+-        if (writes)
+-                rsrc->track.writer = batch;
++        if (writes) {
++                _mesa_hash_table_insert(ctx->writers, rsrc, batch);
++                rsrc->track.nr_writers++;
++        }
+ }
+ 
+ static void
+@@ -919,9 +938,10 @@ void
+ panfrost_flush_writer(struct panfrost_context *ctx,
+                       struct panfrost_resource *rsrc)
+ {
+-        if (rsrc->track.writer) {
+-                panfrost_batch_submit(rsrc->track.writer, ctx->syncobj, ctx->syncobj);
+-                rsrc->track.writer = NULL;
++        struct hash_entry *entry = _mesa_hash_table_search(ctx->writers, rsrc);
++
++        if (entry) {
++                panfrost_batch_submit(entry->data, ctx->syncobj, ctx->syncobj);
+         }
+ }
+ 
+@@ -930,13 +950,14 @@ panfrost_flush_batches_accessing_rsrc(struct panfrost_context *ctx,
+                                       struct panfrost_resource *rsrc)
+ {
+         unsigned i;
+-        BITSET_FOREACH_SET(i, rsrc->track.users, PAN_MAX_BATCHES) {
+-                panfrost_batch_submit(&ctx->batches.slots[i],
+-                                      ctx->syncobj, ctx->syncobj);
+-        }
++        foreach_batch(ctx, i) {
++                struct panfrost_batch *batch = &ctx->batches.slots[i];
+ 
+-        assert(!BITSET_COUNT(rsrc->track.users));
+-        rsrc->track.writer = NULL;
++                if (!_mesa_set_search(batch->resources, rsrc))
++                        continue;
++
++                panfrost_batch_submit(batch, ctx->syncobj, ctx->syncobj);
++        }
+ }
+ 
+ void
+@@ -969,7 +990,7 @@ panfrost_batch_clear(struct panfrost_batch *batch,
+                                 continue;
+ 
+                         enum pipe_format format = ctx->pipe_framebuffer.cbufs[i]->format;
+-                        pan_pack_color(batch->clear_color[i], color, format);
++                        pan_pack_color(batch->clear_color[i], color, format, false);
+                 }
+         }
+ 
+diff --git a/src/gallium/drivers/panfrost/pan_job.h b/src/gallium/drivers/panfrost/pan_job.h
+index 2e5af79d73c..6f05af31e6b 100644
+--- a/src/gallium/drivers/panfrost/pan_job.h
++++ b/src/gallium/drivers/panfrost/pan_job.h
+@@ -130,8 +130,8 @@ struct panfrost_batch {
+         mali_ptr uniform_buffers[PIPE_SHADER_TYPES];
+         mali_ptr push_uniforms[PIPE_SHADER_TYPES];
+ 
+-        /* Referenced resources for cleanup */
+-        struct util_dynarray resources;
++        /* Referenced resources */
++        struct set *resources;
+ };
+ 
+ /* Functions for managing the above */
+diff --git a/src/gallium/drivers/panfrost/pan_resource.c b/src/gallium/drivers/panfrost/pan_resource.c
+index b56e5c428b1..131699ac8d9 100644
+--- a/src/gallium/drivers/panfrost/pan_resource.c
++++ b/src/gallium/drivers/panfrost/pan_resource.c
+@@ -67,7 +67,7 @@ panfrost_resource_from_handle(struct pipe_screen *pscreen,
+ 
+         assert(whandle->type == WINSYS_HANDLE_TYPE_FD);
+ 
+-        rsc = rzalloc(pscreen, struct panfrost_resource);
++        rsc = CALLOC_STRUCT(panfrost_resource);
+         if (!rsc)
+                 return NULL;
+ 
+@@ -98,7 +98,7 @@ panfrost_resource_from_handle(struct pipe_screen *pscreen,
+                                            crc_mode, &explicit_layout);
+ 
+         if (!valid) {
+-                ralloc_free(rsc);
++                FREE(rsc);
+                 return NULL;
+         }
+ 
+@@ -107,7 +107,7 @@ panfrost_resource_from_handle(struct pipe_screen *pscreen,
+          * memory space to mmap it etc.
+          */
+         if (!rsc->image.data.bo) {
+-                ralloc_free(rsc);
++                FREE(rsc);
+                 return NULL;
+         }
+         if (rsc->image.layout.crc_mode == PAN_IMAGE_CRC_OOB)
+@@ -183,6 +183,30 @@ panfrost_resource_get_handle(struct pipe_screen *pscreen,
+         return false;
+ }
+ 
++static bool
++panfrost_resource_get_param(struct pipe_screen *pscreen,
++                            struct pipe_context *pctx, struct pipe_resource *prsc,
++                            unsigned plane, unsigned layer, unsigned level,
++                            enum pipe_resource_param param,
++                            unsigned usage, uint64_t *value)
++{
++        struct panfrost_resource *rsrc = (struct panfrost_resource *) prsc;
++
++        switch (param) {
++        case PIPE_RESOURCE_PARAM_STRIDE:
++                *value = rsrc->image.layout.slices[level].line_stride;
++                return true;
++        case PIPE_RESOURCE_PARAM_OFFSET:
++                *value = rsrc->image.layout.slices[level].offset;
++                return true;
++        case PIPE_RESOURCE_PARAM_MODIFIER:
++                *value = rsrc->image.layout.modifier;
++                return true;
++        default:
++                return false;
++        }
++}
++
+ static void
+ panfrost_flush_resource(struct pipe_context *pctx, struct pipe_resource *prsc)
+ {
+@@ -526,7 +550,7 @@ panfrost_resource_set_damage_region(struct pipe_screen *screen,
+                                 pres->damage.tile_map.stride *
+                                 DIV_ROUND_UP(res->height0, 32);
+                         pres->damage.tile_map.data =
+-                                ralloc_size(pres, pres->damage.tile_map.size);
++                                malloc(pres->damage.tile_map.size);
+                 }
+ 
+                 memset(pres->damage.tile_map.data, 0, pres->damage.tile_map.size);
+@@ -610,7 +634,7 @@ panfrost_resource_create_with_modifier(struct pipe_screen *screen,
+             (PIPE_BIND_DISPLAY_TARGET | PIPE_BIND_SCANOUT | PIPE_BIND_SHARED)))
+                 return panfrost_create_scanout_res(screen, template, modifier);
+ 
+-        struct panfrost_resource *so = rzalloc(screen, struct panfrost_resource);
++        struct panfrost_resource *so = CALLOC_STRUCT(panfrost_resource);
+         so->base = *template;
+         so->base.screen = screen;
+ 
+@@ -648,7 +672,7 @@ panfrost_resource_create_with_modifier(struct pipe_screen *screen,
+         panfrost_resource_set_damage_region(screen, &so->base, 0, NULL);
+ 
+         if (template->bind & PIPE_BIND_INDEX_BUFFER)
+-                so->index_cache = rzalloc(so, struct panfrost_minmax_cache);
++                so->index_cache = CALLOC_STRUCT(panfrost_minmax_cache);
+ 
+         return (struct pipe_resource *)so;
+ }
+@@ -699,8 +723,11 @@ panfrost_resource_destroy(struct pipe_screen *screen,
+         if (rsrc->image.crc.bo)
+                 panfrost_bo_unreference(rsrc->image.crc.bo);
+ 
++        free(rsrc->index_cache);
++        free(rsrc->damage.tile_map.data);
++
+         util_range_destroy(&rsrc->valid_buffer_range);
+-        ralloc_free(rsrc);
++        free(rsrc);
+ }
+ 
+ /* Most of the time we can do CPU-side transfers, but sometimes we need to use
+@@ -843,7 +870,7 @@ panfrost_ptr_map(struct pipe_context *pctx,
+ 
+                 bool valid = BITSET_TEST(rsrc->valid.data, level);
+ 
+-                if ((usage & PIPE_MAP_READ) && (valid || rsrc->track.writer)) {
++                if ((usage & PIPE_MAP_READ) && (valid || rsrc->track.nr_writers > 0)) {
+                         pan_blit_to_staging(pctx, transfer);
+                         panfrost_flush_writer(ctx, staging);
+                         panfrost_bo_wait(staging->image.data.bo, INT64_MAX, false);
+@@ -867,7 +894,7 @@ panfrost_ptr_map(struct pipe_context *pctx,
+             (usage & PIPE_MAP_WRITE) &&
+             !(resource->target == PIPE_BUFFER
+               && !util_ranges_intersect(&rsrc->valid_buffer_range, box->x, box->x + box->width)) &&
+-            BITSET_COUNT(rsrc->track.users) != 0) {
++            rsrc->track.nr_users > 0) {
+ 
+                 /* When a resource to be modified is already being used by a
+                  * pending batch, it is often faster to copy the whole BO than
+@@ -886,7 +913,7 @@ panfrost_ptr_map(struct pipe_context *pctx,
+                  * not ready yet (still accessed by one of the already flushed
+                  * batches), we try to allocate a new one to avoid waiting.
+                  */
+-                if (BITSET_COUNT(rsrc->track.users) ||
++                if (rsrc->track.nr_users > 0 ||
+                     !panfrost_bo_wait(bo, 0, true)) {
+                         /* We want the BO to be MMAPed. */
+                         uint32_t flags = bo->flags & ~PAN_BO_DELAY_MMAP;
+@@ -1314,6 +1341,7 @@ panfrost_resource_screen_init(struct pipe_screen *pscreen)
+         pscreen->resource_destroy = u_transfer_helper_resource_destroy;
+         pscreen->resource_from_handle = panfrost_resource_from_handle;
+         pscreen->resource_get_handle = panfrost_resource_get_handle;
++        pscreen->resource_get_param = panfrost_resource_get_param;
+         pscreen->transfer_helper = u_transfer_helper_create(&transfer_vtbl,
+                                         true, false,
+                                         fake_rgtc, true);
+diff --git a/src/gallium/drivers/panfrost/pan_resource.h b/src/gallium/drivers/panfrost/pan_resource.h
+index a3cd7bf14e1..3102229f9ca 100644
+--- a/src/gallium/drivers/panfrost/pan_resource.h
++++ b/src/gallium/drivers/panfrost/pan_resource.h
+@@ -48,8 +48,14 @@ struct panfrost_resource {
+         } damage;
+ 
+         struct {
+-                struct panfrost_batch *writer;
+-                BITSET_DECLARE(users, PAN_MAX_BATCHES);
++                /** Number of batches accessing this resource. Used to check if
++                 * a resource is in use. */
++                _Atomic unsigned nr_users;
++
++                /** Number of batches writing this resource. Note that only one
++                 * batch per context may write a resource, so this is the
++                 * number of contexts that have an active writer. */
++                _Atomic unsigned nr_writers;
+         } track;
+ 
+         struct renderonly_scanout *scanout;
+diff --git a/src/gallium/drivers/panfrost/pan_screen.c b/src/gallium/drivers/panfrost/pan_screen.c
+index 4b1fabc1809..593f158087d 100644
+--- a/src/gallium/drivers/panfrost/pan_screen.c
++++ b/src/gallium/drivers/panfrost/pan_screen.c
+@@ -67,7 +67,9 @@ static const struct debug_named_value panfrost_debug_options[] = {
+         {"noafbc",    PAN_DBG_NO_AFBC,  "Disable AFBC support"},
+         {"nocrc",     PAN_DBG_NO_CRC,   "Disable transaction elimination"},
+         {"msaa16",    PAN_DBG_MSAA16,   "Enable MSAA 8x and 16x support"},
+-        {"noindirect", PAN_DBG_NOINDIRECT, "Emulate indirect draws on the CPU"},
++        {"indirect",  PAN_DBG_INDIRECT, "Use experimental compute kernel for indirect draws"},
++        {"linear",    PAN_DBG_LINEAR,   "Force linear textures"},
++        {"nocache",   PAN_DBG_NO_CACHE, "Disable BO cache"},
+         DEBUG_NAMED_VALUE_END
+ };
+ 
+@@ -216,11 +218,11 @@ panfrost_get_param(struct pipe_screen *screen, enum pipe_cap param)
+                 return 1;
+ 
+         case PIPE_CAP_MAX_TEXTURE_2D_SIZE:
+-                return 4096;
++                return 1 << (MAX_MIP_LEVELS - 1);
++
+         case PIPE_CAP_MAX_TEXTURE_3D_LEVELS:
+-                return 13;
+         case PIPE_CAP_MAX_TEXTURE_CUBE_LEVELS:
+-                return 13;
++                return MAX_MIP_LEVELS;
+ 
+         case PIPE_CAP_TGSI_FS_COORD_ORIGIN_LOWER_LEFT:
+                 /* Hardware is natively upper left */
+@@ -699,7 +701,8 @@ panfrost_destroy_screen(struct pipe_screen *pscreen)
+         panfrost_pool_cleanup(&screen->blitter.desc_pool);
+         pan_blend_shaders_cleanup(dev);
+ 
+-        screen->vtbl.screen_destroy(pscreen);
++        if (screen->vtbl.screen_destroy)
++                screen->vtbl.screen_destroy(pscreen);
+ 
+         if (dev->ro)
+                 dev->ro->destroy(dev->ro);
+@@ -836,10 +839,6 @@ panfrost_create_screen(int fd, struct renderonly *ro)
+         if (dev->arch == 7)
+                 dev->quirks |= MIDGARD_NO_AFBC;
+ 
+-        /* XXX: Indirect draws on Midgard need debugging, emulate for now */
+-        if (dev->arch < 6)
+-                dev->debug |= PAN_DBG_NOINDIRECT;
+-
+         dev->ro = ro;
+ 
+         /* Check if we're loading against a supported GPU model. */
+diff --git a/src/gallium/drivers/radeonsi/si_descriptors.c b/src/gallium/drivers/radeonsi/si_descriptors.c
+index 2391a9355b5..275a3132f93 100644
+--- a/src/gallium/drivers/radeonsi/si_descriptors.c
++++ b/src/gallium/drivers/radeonsi/si_descriptors.c
+@@ -360,7 +360,10 @@ void si_set_mutable_tex_desc_fields(struct si_screen *sscreen, struct si_texture
+ 
+          state[6] |= S_00A018_META_PIPE_ALIGNED(meta.pipe_aligned) |
+                      S_00A018_META_DATA_ADDRESS_LO(meta_va >> 8) |
+-                     S_00A018_WRITE_COMPRESS_ENABLE((access & SI_IMAGE_ACCESS_DCC_WRITE) != 0);
++                     /* DCC image stores require INDEPENDENT_128B_BLOCKS, which is not set
++                      * with displayable DCC on Navi12-14 due to DCN limitations. */
++                     S_00A018_WRITE_COMPRESS_ENABLE(tex->surface.u.gfx9.color.dcc.independent_128B_blocks &&
++                                                    access & SI_IMAGE_ACCESS_DCC_WRITE);
+       }
+ 
+       state[7] = meta_va >> 16;
+diff --git a/src/gallium/drivers/radeonsi/si_shader.c b/src/gallium/drivers/radeonsi/si_shader.c
+index 0cdd3a9f539..b0fcbfe031a 100644
+--- a/src/gallium/drivers/radeonsi/si_shader.c
++++ b/src/gallium/drivers/radeonsi/si_shader.c
+@@ -832,7 +832,9 @@ static unsigned si_get_shader_binary_size(struct si_screen *screen, struct si_sh
+ {
+    struct ac_rtld_binary rtld;
+    si_shader_binary_open(screen, shader, &rtld);
+-   return rtld.exec_size;
++   uint64_t size = rtld.exec_size;
++   ac_rtld_close(&rtld);
++   return size;
+ }
+ 
+ static bool si_get_external_symbol(void *data, const char *name, uint64_t *value)
+diff --git a/src/gallium/drivers/v3d/v3d_resource.c b/src/gallium/drivers/v3d/v3d_resource.c
+index 62da3147620..d48479460db 100644
+--- a/src/gallium/drivers/v3d/v3d_resource.c
++++ b/src/gallium/drivers/v3d/v3d_resource.c
+@@ -396,6 +396,21 @@ v3d_resource_destroy(struct pipe_screen *pscreen,
+         free(rsc);
+ }
+ 
++static uint64_t
++v3d_resource_modifier(struct v3d_resource *rsc)
++{
++        if (rsc->tiled) {
++                /* A shared tiled buffer should always be allocated as UIF,
++                 * not UBLINEAR or LT.
++                 */
++                assert(rsc->slices[0].tiling == V3D_TILING_UIF_XOR ||
++                       rsc->slices[0].tiling == V3D_TILING_UIF_NO_XOR);
++                return DRM_FORMAT_MOD_BROADCOM_UIF;
++        } else {
++                return DRM_FORMAT_MOD_LINEAR;
++        }
++}
++
+ static bool
+ v3d_resource_get_handle(struct pipe_screen *pscreen,
+                         struct pipe_context *pctx,
+@@ -409,6 +424,7 @@ v3d_resource_get_handle(struct pipe_screen *pscreen,
+ 
+         whandle->stride = rsc->slices[0].stride;
+         whandle->offset = 0;
++        whandle->modifier = v3d_resource_modifier(rsc);
+ 
+         /* If we're passing some reference to our BO out to some other part of
+          * the system, then we can't do any optimizations about only us being
+@@ -416,17 +432,6 @@ v3d_resource_get_handle(struct pipe_screen *pscreen,
+          */
+         bo->private = false;
+ 
+-        if (rsc->tiled) {
+-                /* A shared tiled buffer should always be allocated as UIF,
+-                 * not UBLINEAR or LT.
+-                 */
+-                assert(rsc->slices[0].tiling == V3D_TILING_UIF_XOR ||
+-                       rsc->slices[0].tiling == V3D_TILING_UIF_NO_XOR);
+-                whandle->modifier = DRM_FORMAT_MOD_BROADCOM_UIF;
+-        } else {
+-                whandle->modifier = DRM_FORMAT_MOD_LINEAR;
+-        }
+-
+         switch (whandle->type) {
+         case WINSYS_HANDLE_TYPE_SHARED:
+                 return v3d_bo_flink(bo, &whandle->handle);
+@@ -448,6 +453,30 @@ v3d_resource_get_handle(struct pipe_screen *pscreen,
+         return false;
+ }
+ 
++static bool
++v3d_resource_get_param(struct pipe_screen *pscreen,
++                       struct pipe_context *pctx, struct pipe_resource *prsc,
++                       unsigned plane, unsigned layer, unsigned level,
++                       enum pipe_resource_param param,
++                       unsigned usage, uint64_t *value)
++{
++        struct v3d_resource *rsc = v3d_resource(prsc);
++
++        switch (param) {
++        case PIPE_RESOURCE_PARAM_STRIDE:
++                *value = rsc->slices[level].stride;
++                return true;
++        case PIPE_RESOURCE_PARAM_OFFSET:
++                *value = 0;
++                return true;
++        case PIPE_RESOURCE_PARAM_MODIFIER:
++                *value = v3d_resource_modifier(rsc);
++                return true;
++        default:
++                return false;
++        }
++}
++
+ #define PAGE_UB_ROWS (V3D_UIFCFG_PAGE_SIZE / V3D_UIFBLOCK_ROW_SIZE)
+ #define PAGE_UB_ROWS_TIMES_1_5 ((PAGE_UB_ROWS * 3) >> 1)
+ #define PAGE_CACHE_UB_ROWS (V3D_PAGE_CACHE_SIZE / V3D_UIFBLOCK_ROW_SIZE)
+@@ -1148,6 +1177,7 @@ v3d_resource_screen_init(struct pipe_screen *pscreen)
+         pscreen->resource_create = u_transfer_helper_resource_create;
+         pscreen->resource_from_handle = v3d_resource_from_handle;
+         pscreen->resource_get_handle = v3d_resource_get_handle;
++        pscreen->resource_get_param = v3d_resource_get_param;
+         pscreen->resource_destroy = u_transfer_helper_resource_destroy;
+         pscreen->transfer_helper = u_transfer_helper_create(&transfer_vtbl,
+                                                             true, false,
+diff --git a/src/gallium/drivers/vc4/vc4_resource.c b/src/gallium/drivers/vc4/vc4_resource.c
+index af61c4860b8..052588e49f6 100644
+--- a/src/gallium/drivers/vc4/vc4_resource.c
++++ b/src/gallium/drivers/vc4/vc4_resource.c
+@@ -283,6 +283,15 @@ vc4_resource_destroy(struct pipe_screen *pscreen,
+         free(rsc);
+ }
+ 
++static uint64_t
++vc4_resource_modifier(struct vc4_resource *rsc)
++{
++        if (rsc->tiled)
++                return DRM_FORMAT_MOD_BROADCOM_VC4_T_TILED;
++        else
++                return DRM_FORMAT_MOD_LINEAR;
++}
++
+ static bool
+ vc4_resource_get_handle(struct pipe_screen *pscreen,
+                         struct pipe_context *pctx,
+@@ -295,6 +304,7 @@ vc4_resource_get_handle(struct pipe_screen *pscreen,
+ 
+         whandle->stride = rsc->slices[0].stride;
+         whandle->offset = 0;
++        whandle->modifier = vc4_resource_modifier(rsc);
+ 
+         /* If we're passing some reference to our BO out to some other part of
+          * the system, then we can't do any optimizations about only us being
+@@ -302,11 +312,6 @@ vc4_resource_get_handle(struct pipe_screen *pscreen,
+          */
+         rsc->bo->private = false;
+ 
+-        if (rsc->tiled)
+-                whandle->modifier = DRM_FORMAT_MOD_BROADCOM_VC4_T_TILED;
+-        else
+-                whandle->modifier = DRM_FORMAT_MOD_LINEAR;
+-
+         switch (whandle->type) {
+         case WINSYS_HANDLE_TYPE_SHARED:
+                 if (screen->ro) {
+@@ -334,6 +339,30 @@ vc4_resource_get_handle(struct pipe_screen *pscreen,
+         return false;
+ }
+ 
++static bool
++vc4_resource_get_param(struct pipe_screen *pscreen,
++                       struct pipe_context *pctx, struct pipe_resource *prsc,
++                       unsigned plane, unsigned layer, unsigned level,
++                       enum pipe_resource_param param,
++                       unsigned usage, uint64_t *value)
++{
++        struct vc4_resource *rsc = vc4_resource(prsc);
++
++        switch (param) {
++        case PIPE_RESOURCE_PARAM_STRIDE:
++                *value = rsc->slices[level].stride;
++                return true;
++        case PIPE_RESOURCE_PARAM_OFFSET:
++                *value = 0;
++                return true;
++        case PIPE_RESOURCE_PARAM_MODIFIER:
++                *value = vc4_resource_modifier(rsc);
++                return true;
++        default:
++                return false;
++        }
++}
++
+ static void
+ vc4_setup_slices(struct vc4_resource *rsc, const char *caller)
+ {
+@@ -1119,6 +1148,7 @@ vc4_resource_screen_init(struct pipe_screen *pscreen)
+                 vc4_resource_create_with_modifiers;
+         pscreen->resource_from_handle = vc4_resource_from_handle;
+         pscreen->resource_get_handle = vc4_resource_get_handle;
++        pscreen->resource_get_param = vc4_resource_get_param;
+         pscreen->resource_destroy = vc4_resource_destroy;
+         pscreen->transfer_helper = u_transfer_helper_create(&transfer_vtbl,
+                                                             false, false,
+diff --git a/src/gallium/drivers/zink/zink_program.c b/src/gallium/drivers/zink/zink_program.c
+index e5e736c72df..81af56b6176 100644
+--- a/src/gallium/drivers/zink/zink_program.c
++++ b/src/gallium/drivers/zink/zink_program.c
+@@ -679,8 +679,9 @@ zink_destroy_gfx_program(struct zink_screen *screen,
+       if (prog->shaders[i]) {
+          _mesa_set_remove_key(prog->shaders[i]->programs, prog);
+          prog->shaders[i] = NULL;
+-         destroy_shader_cache(screen, &prog->base.shader_cache[i]);
+       }
++      destroy_shader_cache(screen, &prog->base.shader_cache[i]);
++      ralloc_free(prog->nir[i]);
+    }
+ 
+    for (int i = 0; i < ARRAY_SIZE(prog->pipelines); ++i) {
+@@ -823,7 +824,7 @@ zink_get_gfx_pipeline(struct zink_context *ctx,
+       memcpy(&pc_entry->state, state, sizeof(*state));
+       pc_entry->pipeline = pipeline;
+ 
+-      entry = _mesa_hash_table_insert_pre_hashed(prog->pipelines[vkmode], state->final_hash, state, pc_entry);
++      entry = _mesa_hash_table_insert_pre_hashed(prog->pipelines[vkmode], state->final_hash, pc_entry, pc_entry);
+       assert(entry);
+    }
+ 
+@@ -862,7 +863,7 @@ zink_get_compute_pipeline(struct zink_screen *screen,
+       memcpy(&pc_entry->state, state, sizeof(*state));
+       pc_entry->pipeline = pipeline;
+ 
+-      entry = _mesa_hash_table_insert_pre_hashed(comp->pipelines, state->hash, state, pc_entry);
++      entry = _mesa_hash_table_insert_pre_hashed(comp->pipelines, state->hash, pc_entry, pc_entry);
+       assert(entry);
+    }
+ 
+diff --git a/src/gallium/frontends/lavapipe/lvp_device.c b/src/gallium/frontends/lavapipe/lvp_device.c
+index 58ea8238a5d..a575ab167cb 100644
+--- a/src/gallium/frontends/lavapipe/lvp_device.c
++++ b/src/gallium/frontends/lavapipe/lvp_device.c
+@@ -957,7 +957,9 @@ VKAPI_ATTR void VKAPI_CALL lvp_GetPhysicalDeviceProperties2(
+       case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINE_RASTERIZATION_PROPERTIES_EXT: {
+          VkPhysicalDeviceLineRasterizationPropertiesEXT *properties =
+             (VkPhysicalDeviceLineRasterizationPropertiesEXT *)ext;
+-         properties->lineSubPixelPrecisionBits = 4;
++         properties->lineSubPixelPrecisionBits =
++            pdevice->pscreen->get_param(pdevice->pscreen,
++                                        PIPE_CAP_RASTERIZER_SUBPIXEL_BITS);
+          break;
+       }
+       case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_PROPERTIES: {
+diff --git a/src/gallium/frontends/osmesa/osmesa.c b/src/gallium/frontends/osmesa/osmesa.c
+index 963888971af..91a250d6421 100644
+--- a/src/gallium/frontends/osmesa/osmesa.c
++++ b/src/gallium/frontends/osmesa/osmesa.c
+@@ -781,8 +781,11 @@ OSMesaMakeCurrent(OSMesaContext osmesa, void *buffer, GLenum type,
+    if (osmesa->current_buffer &&
+        (osmesa->current_buffer->visual.color_format != color_format ||
+         osmesa->current_buffer->visual.depth_stencil_format != osmesa->depth_stencil_format ||
+-        osmesa->current_buffer->visual.accum_format != osmesa->accum_format)) {
++        osmesa->current_buffer->visual.accum_format != osmesa->accum_format ||
++        osmesa->current_buffer->width != width ||
++        osmesa->current_buffer->height != height)) {
+       osmesa_destroy_buffer(osmesa->current_buffer);
++      osmesa->current_buffer = NULL;
+    }
+ 
+    if (!osmesa->current_buffer) {
+diff --git a/src/gallium/winsys/radeon/drm/radeon_drm_winsys.c b/src/gallium/winsys/radeon/drm/radeon_drm_winsys.c
+index ef9ec590d5d..51ff7bc74be 100644
+--- a/src/gallium/winsys/radeon/drm/radeon_drm_winsys.c
++++ b/src/gallium/winsys/radeon/drm/radeon_drm_winsys.c
+@@ -315,6 +315,7 @@ static bool do_winsys_init(struct radeon_drm_winsys *ws)
+ 
+    /* Check for UVD and VCE */
+    ws->info.has_video_hw.uvd_decode = false;
++   ws->info.has_video_hw.vce_encode = false;
+    ws->info.vce_fw_version = 0x00000000;
+    if (ws->info.drm_minor >= 32) {
+       uint32_t value = RADEON_CS_RING_UVD;
+@@ -332,6 +333,7 @@ static bool do_winsys_init(struct radeon_drm_winsys *ws)
+                                   "VCE FW version", &value)) {
+             ws->info.vce_fw_version = value;
+             ws->info.num_rings[RING_VCE] = 1;
++            ws->info.has_video_hw.vce_encode = true;
+          }
+       }
+    }
+diff --git a/src/gallium/winsys/svga/drm/vmw_buffer.c b/src/gallium/winsys/svga/drm/vmw_buffer.c
+index d537c8be96e..6c235a9a486 100644
+--- a/src/gallium/winsys/svga/drm/vmw_buffer.c
++++ b/src/gallium/winsys/svga/drm/vmw_buffer.c
+@@ -357,32 +357,30 @@ vmw_svga_winsys_buffer_map(struct svga_winsys_screen *sws,
+                            enum pipe_map_flags flags)
+ {
+    void *map;
++   enum pb_usage_flags pb_flags = 0;
+ 
+    (void)sws;
+    if (flags & PIPE_MAP_UNSYNCHRONIZED)
+       flags &= ~PIPE_MAP_DONTBLOCK;
+ 
+-   /* NOTE: we're passing PIPE_MAP_x flags instead of
+-    * PB_USAGE_x flags here.  We should probably fix that.
+-    */
+-   STATIC_ASSERT((unsigned) PB_USAGE_CPU_READ ==
+-                 (unsigned) PIPE_MAP_READ);
+-   STATIC_ASSERT((unsigned) PB_USAGE_CPU_WRITE ==
+-                 (unsigned) PIPE_MAP_WRITE);
+-   STATIC_ASSERT((unsigned) PB_USAGE_GPU_READ ==
+-                 (unsigned) PIPE_MAP_DIRECTLY);
+-   STATIC_ASSERT((unsigned) PB_USAGE_DONTBLOCK ==
+-                 (unsigned) PIPE_MAP_DONTBLOCK);
+-   STATIC_ASSERT((unsigned) PB_USAGE_UNSYNCHRONIZED ==
+-                 (unsigned) PIPE_MAP_UNSYNCHRONIZED);
+-   STATIC_ASSERT((unsigned) PB_USAGE_PERSISTENT ==
+-                 (unsigned) PIPE_MAP_PERSISTENT);
+-
+-   map = pb_map(vmw_pb_buffer(buf), flags & PB_USAGE_ALL, NULL);
++   if (flags & PIPE_MAP_READ)
++      pb_flags |= PB_USAGE_CPU_READ;
++   if (flags & PIPE_MAP_WRITE)
++      pb_flags |= PB_USAGE_CPU_WRITE;
++   if (flags & PIPE_MAP_DIRECTLY)
++      pb_flags |= PB_USAGE_GPU_READ;
++   if (flags & PIPE_MAP_DONTBLOCK)
++      pb_flags |= PB_USAGE_DONTBLOCK;
++   if (flags & PIPE_MAP_UNSYNCHRONIZED)
++      pb_flags |= PB_USAGE_UNSYNCHRONIZED;
++   if (flags & PIPE_MAP_PERSISTENT)
++      pb_flags |= PB_USAGE_PERSISTENT;
++
++   map = pb_map(vmw_pb_buffer(buf), pb_flags, NULL);
+ 
+ #ifdef DEBUG
+    if (map != NULL)
+-      debug_flush_map(buf->fbuf, flags);
++      debug_flush_map(buf->fbuf, pb_flags);
+ #endif
+ 
+    return map;
+diff --git a/src/glx/glxext.c b/src/glx/glxext.c
+index 91d021e710e..07bb42e22fe 100644
+--- a/src/glx/glxext.c
++++ b/src/glx/glxext.c
+@@ -861,6 +861,7 @@ AllocAndFetchScreenConfigs(Display * dpy, struct glx_display * priv)
+  _X_HIDDEN struct glx_display *
+ __glXInitialize(Display * dpy)
+ {
++   XExtCodes *codes;
+    struct glx_display *dpyPriv, *d;
+ #if defined(GLX_DIRECT_RENDERING) && !defined(GLX_USE_APPLEGL)
+    Bool glx_direct, glx_accel;
+@@ -883,8 +884,13 @@ __glXInitialize(Display * dpy)
+    if (!dpyPriv)
+       return NULL;
+ 
+-   dpyPriv->codes = *XInitExtension(dpy, __glXExtensionName);
++   codes = XInitExtension(dpy, __glXExtensionName);
++   if (!codes) {
++      free(dpyPriv);
++      return NULL;
++   }
+ 
++   dpyPriv->codes = *codes;
+    dpyPriv->dpy = dpy;
+ 
+    /* This GLX implementation requires X_GLXQueryExtensionsString
+diff --git a/src/intel/blorp/blorp_blit.c b/src/intel/blorp/blorp_blit.c
+index 17538e4f963..abd99ae271a 100644
+--- a/src/intel/blorp/blorp_blit.c
++++ b/src/intel/blorp/blorp_blit.c
+@@ -1649,8 +1649,8 @@ blorp_surf_retile_w_to_y(const struct isl_device *isl_dev,
+       blorp_surf_fake_interleaved_msaa(isl_dev, info);
+    }
+ 
+-   if (isl_dev->info->ver == 6) {
+-      /* Gfx6 stencil buffers have a very large alignment coming in from the
++   if (isl_dev->info->ver == 6 || isl_dev->info->ver == 7) {
++      /* Gfx6-7 stencil buffers have a very large alignment coming in from the
+        * miptree.  It's out-of-bounds for what the surface state can handle.
+        * Since we have a single layer and level, it doesn't really matter as
+        * long as we don't pass a bogus value into isl_surf_fill_state().
+diff --git a/src/intel/compiler/brw_fs.cpp b/src/intel/compiler/brw_fs.cpp
+index 2735a430ec3..8fbb35cf7c0 100644
+--- a/src/intel/compiler/brw_fs.cpp
++++ b/src/intel/compiler/brw_fs.cpp
+@@ -4871,6 +4871,20 @@ lower_fb_read_logical_send(const fs_builder &bld, fs_inst *inst)
+       }
+    }
+ 
++   /* BSpec 12470 (Gfx8-11), BSpec 47842 (Gfx12+) :
++    *
++    *   "Must be zero for Render Target Read message."
++    *
++    * For bits :
++    *   - 14 : Stencil Present to Render Target
++    *   - 13 : Source Depth Present to Render Target
++    *   - 12 : oMask to Render Target
++    *   - 11 : Source0 Alpha Present to Render Target
++    */
++   ubld.group(1, 0).AND(component(header, 0),
++                        component(header, 0),
++                        brw_imm_ud(~INTEL_MASK(14, 11)));
++
+    inst->resize_sources(1);
+    inst->src[0] = header;
+    inst->opcode = FS_OPCODE_FB_READ;
+diff --git a/src/intel/isl/isl_format.c b/src/intel/isl/isl_format.c
+index 60f4409e2b0..bd9c63d140c 100644
+--- a/src/intel/isl/isl_format.c
++++ b/src/intel/isl/isl_format.c
+@@ -1188,11 +1188,11 @@ pack_channel(const union isl_color_value *value, unsigned i,
+       }
+       break;
+    case ISL_UINT:
+-      packed = MIN(value->u32[i], MAX_UINT(layout->bits));
++      packed = MIN(value->u32[i], u_uintN_max(layout->bits));
+       break;
+    case ISL_SINT:
+-      packed = MIN(MAX(value->u32[i], MIN_INT(layout->bits)),
+-                   MAX_INT(layout->bits));
++      packed = MIN(MAX(value->u32[i], u_intN_min(layout->bits)),
++                   u_intN_max(layout->bits));
+       break;
+ 
+    default:
+@@ -1202,7 +1202,7 @@ pack_channel(const union isl_color_value *value, unsigned i,
+    unsigned dword = layout->start_bit / 32;
+    unsigned bit = layout->start_bit % 32;
+    assert(bit + layout->bits <= 32);
+-   data_out[dword] |= (packed & MAX_UINT(layout->bits)) << bit;
++   data_out[dword] |= (packed & u_uintN_max(layout->bits)) << bit;
+ }
+ 
+ /**
+@@ -1264,7 +1264,7 @@ unpack_channel(union isl_color_value *value,
+    unsigned dword = layout->start_bit / 32;
+    unsigned bit = layout->start_bit % 32;
+    assert(bit + layout->bits <= 32);
+-   uint32_t packed = (data_in[dword] >> bit) & MAX_UINT(layout->bits);
++   uint32_t packed = (data_in[dword] >> bit) & u_uintN_max(layout->bits);
+ 
+    union {
+       uint32_t u32;
+diff --git a/src/intel/vulkan/anv_device.c b/src/intel/vulkan/anv_device.c
+index 583a9d8f7c0..83ea7bd2560 100644
+--- a/src/intel/vulkan/anv_device.c
++++ b/src/intel/vulkan/anv_device.c
+@@ -3203,6 +3203,15 @@ VkResult anv_CreateDevice(
+       goto fail_fd;
+    }
+ 
++   /* Here we tell the kernel not to attempt to recover our context but
++    * immediately (on the next batchbuffer submission) report that the
++    * context is lost, and we will do the recovery ourselves.  In the case
++    * of Vulkan, recovery means throwing VK_ERROR_DEVICE_LOST and letting
++    * the client clean up the pieces.
++    */
++   anv_gem_set_context_param(device->fd, device->context_id,
++                             I915_CONTEXT_PARAM_RECOVERABLE, false);
++
+    device->has_thread_submit = physical_device->has_thread_submit;
+ 
+    device->queues =
+diff --git a/src/mesa/main/draw.c b/src/mesa/main/draw.c
+index 9c39dc025a7..07e227d8268 100644
+--- a/src/mesa/main/draw.c
++++ b/src/mesa/main/draw.c
+@@ -202,10 +202,25 @@ valid_elements_type(struct gl_context *ctx, GLenum type)
+    return GL_NO_ERROR;
+ }
+ 
++static inline bool
++indices_aligned(unsigned index_size_shift, const GLvoid *indices)
++{
++   /* Require that indices are aligned to the element size. GL doesn't specify
++    * an error for this, but the ES 3.0 spec says:
++    *
++    *    "Clients must align data elements consistently with the requirements
++    *     of the client platform, with an additional base-level requirement
++    *     that an offset within a buffer to a datum comprising N basic machine
++    *     units be a multiple of N"
++    *
++    * This is only required by index buffers, not user indices.
++    */
++   return ((uintptr_t)indices & ((1 << index_size_shift) - 1)) == 0;
++}
++
+ static GLenum
+ validate_DrawElements_common(struct gl_context *ctx, GLenum mode,
+-                             GLsizei count, GLsizei numInstances, GLenum type,
+-                             const GLvoid *indices)
++                             GLsizei count, GLsizei numInstances, GLenum type)
+ {
+    if (count < 0 || numInstances < 0)
+       return GL_INVALID_VALUE;
+@@ -224,11 +239,9 @@ validate_DrawElements_common(struct gl_context *ctx, GLenum mode,
+  */
+ static GLboolean
+ _mesa_validate_DrawElements(struct gl_context *ctx,
+-                            GLenum mode, GLsizei count, GLenum type,
+-                            const GLvoid *indices)
++                            GLenum mode, GLsizei count, GLenum type)
+ {
+-   GLenum error = validate_DrawElements_common(ctx, mode, count, 1, type,
+-                                               indices);
++   GLenum error = validate_DrawElements_common(ctx, mode, count, 1, type);
+    if (error)
+       _mesa_error(ctx, error, "glDrawElements");
+ 
+@@ -306,15 +319,14 @@ _mesa_validate_MultiDrawElements(struct gl_context *ctx,
+ static GLboolean
+ _mesa_validate_DrawRangeElements(struct gl_context *ctx, GLenum mode,
+                                  GLuint start, GLuint end,
+-                                 GLsizei count, GLenum type,
+-                                 const GLvoid *indices)
++                                 GLsizei count, GLenum type)
+ {
+    GLenum error;
+ 
+    if (end < start) {
+       error = GL_INVALID_VALUE;
+    } else {
+-      error = validate_DrawElements_common(ctx, mode, count, 1, type, indices);
++      error = validate_DrawElements_common(ctx, mode, count, 1, type);
+    }
+ 
+    if (error)
+@@ -542,11 +554,10 @@ _mesa_validate_MultiDrawArrays(struct gl_context *ctx, GLenum mode,
+ static GLboolean
+ _mesa_validate_DrawElementsInstanced(struct gl_context *ctx,
+                                      GLenum mode, GLsizei count, GLenum type,
+-                                     const GLvoid *indices, GLsizei numInstances)
++                                     GLsizei numInstances)
+ {
+    GLenum error =
+-      validate_DrawElements_common(ctx, mode, count, numInstances, type,
+-                                   indices);
++      validate_DrawElements_common(ctx, mode, count, numInstances, type);
+ 
+    if (error)
+       _mesa_error(ctx, error, "glDrawElementsInstanced");
+@@ -1728,6 +1739,9 @@ _mesa_validated_drawrangeelements(struct gl_context *ctx, GLenum mode,
+    unsigned index_size_shift = get_index_size_shift(type);
+    struct gl_buffer_object *index_bo = ctx->Array.VAO->IndexBufferObj;
+ 
++   if (index_bo && !indices_aligned(index_size_shift, indices))
++      return;
++
+    info.mode = mode;
+    info.vertices_per_patch = ctx->TessCtrlProgram.patch_vertices;
+    info.index_size = 1 << index_size_shift;
+@@ -1823,7 +1837,7 @@ _mesa_DrawRangeElementsBaseVertex(GLenum mode, GLuint start, GLuint end,
+ 
+    if (!_mesa_is_no_error_enabled(ctx) &&
+        !_mesa_validate_DrawRangeElements(ctx, mode, start, end, count,
+-                                         type, indices))
++                                         type))
+       return;
+ 
+    if ((int) end + basevertex < 0 || start + basevertex >= max_element) {
+@@ -1918,7 +1932,7 @@ _mesa_DrawElements(GLenum mode, GLsizei count, GLenum type,
+       _mesa_update_state(ctx);
+ 
+    if (!_mesa_is_no_error_enabled(ctx) &&
+-       !_mesa_validate_DrawElements(ctx, mode, count, type, indices))
++       !_mesa_validate_DrawElements(ctx, mode, count, type))
+       return;
+ 
+    _mesa_validated_drawrangeelements(ctx, mode, false, 0, ~0,
+@@ -1943,7 +1957,7 @@ _mesa_DrawElementsBaseVertex(GLenum mode, GLsizei count, GLenum type,
+       _mesa_update_state(ctx);
+ 
+    if (!_mesa_is_no_error_enabled(ctx) &&
+-       !_mesa_validate_DrawElements(ctx, mode, count, type, indices))
++       !_mesa_validate_DrawElements(ctx, mode, count, type))
+       return;
+ 
+    _mesa_validated_drawrangeelements(ctx, mode, false, 0, ~0,
+@@ -1969,7 +1983,7 @@ _mesa_DrawElementsInstancedARB(GLenum mode, GLsizei count, GLenum type,
+ 
+    if (!_mesa_is_no_error_enabled(ctx) &&
+        !_mesa_validate_DrawElementsInstanced(ctx, mode, count, type,
+-                                             indices, numInstances))
++                                             numInstances))
+       return;
+ 
+    _mesa_validated_drawrangeelements(ctx, mode, false, 0, ~0,
+@@ -1997,7 +2011,7 @@ _mesa_DrawElementsInstancedBaseVertex(GLenum mode, GLsizei count,
+ 
+    if (!_mesa_is_no_error_enabled(ctx) &&
+        !_mesa_validate_DrawElementsInstanced(ctx, mode, count, type,
+-                                             indices, numInstances))
++                                             numInstances))
+       return;
+ 
+    _mesa_validated_drawrangeelements(ctx, mode, false, 0, ~0,
+@@ -2027,7 +2041,7 @@ _mesa_DrawElementsInstancedBaseInstance(GLenum mode, GLsizei count,
+ 
+    if (!_mesa_is_no_error_enabled(ctx) &&
+        !_mesa_validate_DrawElementsInstanced(ctx, mode, count, type,
+-                                             indices, numInstances))
++                                             numInstances))
+       return;
+ 
+    _mesa_validated_drawrangeelements(ctx, mode, false, 0, ~0,
+@@ -2059,7 +2073,7 @@ _mesa_DrawElementsInstancedBaseVertexBaseInstance(GLenum mode,
+ 
+    if (!_mesa_is_no_error_enabled(ctx) &&
+        !_mesa_validate_DrawElementsInstanced(ctx, mode, count, type,
+-                                             indices, numInstances))
++                                             numInstances))
+       return;
+ 
+    _mesa_validated_drawrangeelements(ctx, mode, false, 0, ~0,
+@@ -2160,7 +2174,8 @@ _mesa_validated_multidrawelements(struct gl_context *ctx, GLenum mode,
+       } else {
+          for (int i = 0; i < primcount; i++) {
+             draw[i].start = (uintptr_t)indices[i] >> index_size_shift;
+-            draw[i].count = count[i];
++            draw[i].count =
++               indices_aligned(index_size_shift, indices[i]) ? count[i] : 0;
+             draw[i].index_bias = basevertex ? basevertex[i] : 0;
+          }
+       }
+@@ -2509,6 +2524,14 @@ _mesa_MultiDrawArraysIndirect(GLenum mode, const GLvoid *indirect,
+    if (stride == 0)
+       stride = sizeof(DrawArraysIndirectCommand);
+ 
++   FLUSH_FOR_DRAW(ctx);
++
++   _mesa_set_draw_vao(ctx, ctx->Array.VAO,
++                      ctx->VertexProgram._VPModeInputFilter);
++
++   if (ctx->NewState)
++      _mesa_update_state(ctx);
++
+    /* From the ARB_draw_indirect spec:
+     *
+     *    "Initially zero is bound to DRAW_INDIRECT_BUFFER. In the
+@@ -2519,34 +2542,42 @@ _mesa_MultiDrawArraysIndirect(GLenum mode, const GLvoid *indirect,
+    if (ctx->API == API_OPENGL_COMPAT &&
+        !ctx->DrawIndirectBuffer) {
+ 
+-      if (!_mesa_valid_draw_indirect_multi(ctx, primcount, stride,
+-                                           "glMultiDrawArraysIndirect"))
++      if (!_mesa_is_no_error_enabled(ctx) &&
++          (!_mesa_valid_draw_indirect_multi(ctx, primcount, stride,
++                                           "glMultiDrawArraysIndirect") ||
++           !_mesa_validate_DrawArrays(ctx, mode, 1)))
+          return;
+ 
++      struct pipe_draw_info info;
++      info.mode = mode;
++      info.index_size = 0;
++      info.view_mask = 0;
++      /* Packed section begin. */
++      info.primitive_restart = false;
++      info.has_user_indices = false;
++      info.index_bounds_valid = false;
++      info.increment_draw_id = primcount > 1;
++      info.take_index_buffer_ownership = false;
++      info.index_bias_varies = false;
++      /* Packed section end. */
++
+       const uint8_t *ptr = (const uint8_t *) indirect;
+       for (unsigned i = 0; i < primcount; i++) {
+          DrawArraysIndirectCommand *cmd = (DrawArraysIndirectCommand *) ptr;
+-         _mesa_DrawArraysInstancedBaseInstance(mode, cmd->first,
+-                                               cmd->count, cmd->primCount,
+-                                               cmd->baseInstance);
+-
+-         if (stride == 0) {
+-            ptr += sizeof(DrawArraysIndirectCommand);
+-         } else {
+-            ptr += stride;
+-         }
+-      }
+ 
+-      return;
+-   }
++         info.start_instance = cmd->baseInstance;
++         info.instance_count = cmd->primCount;
+ 
+-   FLUSH_FOR_DRAW(ctx);
++         struct pipe_draw_start_count_bias draw;
++         draw.start = cmd->first;
++         draw.count = cmd->count;
+ 
+-   _mesa_set_draw_vao(ctx, ctx->Array.VAO,
+-                      ctx->VertexProgram._VPModeInputFilter);
++         ctx->Driver.DrawGallium(ctx, &info, i, &draw, 1);
++         ptr += stride;
++      }
+ 
+-   if (ctx->NewState)
+-      _mesa_update_state(ctx);
++      return;
++   }
+ 
+    if (!_mesa_is_no_error_enabled(ctx) &&
+        !_mesa_validate_MultiDrawArraysIndirect(ctx, mode, indirect,
+@@ -2565,6 +2596,14 @@ _mesa_MultiDrawElementsIndirect(GLenum mode, GLenum type,
+ {
+    GET_CURRENT_CONTEXT(ctx);
+ 
++   FLUSH_FOR_DRAW(ctx);
++
++   _mesa_set_draw_vao(ctx, ctx->Array.VAO,
++                      ctx->VertexProgram._VPModeInputFilter);
++
++   if (ctx->NewState)
++      _mesa_update_state(ctx);
++
+    /* If <stride> is zero, the array elements are treated as tightly packed. */
+    if (stride == 0)
+       stride = sizeof(DrawElementsIndirectCommand);
+@@ -2592,32 +2631,48 @@ _mesa_MultiDrawElementsIndirect(GLenum mode, GLenum type,
+          return;
+       }
+ 
+-      if (!_mesa_valid_draw_indirect_multi(ctx, primcount, stride,
+-                                           "glMultiDrawArraysIndirect"))
++      if (!_mesa_is_no_error_enabled(ctx) &&
++          (!_mesa_valid_draw_indirect_multi(ctx, primcount, stride,
++                                           "glMultiDrawArraysIndirect") ||
++           !_mesa_validate_DrawElements(ctx, mode, 1, type)))
+          return;
+ 
++      unsigned index_size_shift = get_index_size_shift(type);
++
++      struct pipe_draw_info info;
++      info.mode = mode;
++      info.index_size = 1 << index_size_shift;
++      info.view_mask = 0;
++      /* Packed section begin. */
++      info.primitive_restart = ctx->Array._PrimitiveRestart[index_size_shift];
++      info.has_user_indices = false;
++      info.index_bounds_valid = false;
++      info.increment_draw_id = primcount > 1;
++      info.take_index_buffer_ownership = false;
++      info.index_bias_varies = false;
++      /* Packed section end. */
++      info.restart_index = ctx->Array._RestartIndex[index_size_shift];
++
+       const uint8_t *ptr = (const uint8_t *) indirect;
+       for (unsigned i = 0; i < primcount; i++) {
+-         _mesa_DrawElementsIndirect(mode, type, ptr);
++         DrawElementsIndirectCommand *cmd = (DrawElementsIndirectCommand*)ptr;
+ 
+-         if (stride == 0) {
+-            ptr += sizeof(DrawElementsIndirectCommand);
+-         } else {
+-            ptr += stride;
+-         }
++         info.index.gl_bo = ctx->Array.VAO->IndexBufferObj;
++         info.start_instance = cmd->baseInstance;
++         info.instance_count = cmd->primCount;
++
++         struct pipe_draw_start_count_bias draw;
++         draw.start = cmd->firstIndex;
++         draw.count = cmd->count;
++         draw.index_bias = cmd->baseVertex;
++
++         ctx->Driver.DrawGallium(ctx, &info, i, &draw, 1);
++         ptr += stride;
+       }
+ 
+       return;
+    }
+ 
+-   FLUSH_FOR_DRAW(ctx);
+-
+-   _mesa_set_draw_vao(ctx, ctx->Array.VAO,
+-                      ctx->VertexProgram._VPModeInputFilter);
+-
+-   if (ctx->NewState)
+-      _mesa_update_state(ctx);
+-
+    if (!_mesa_is_no_error_enabled(ctx) &&
+        !_mesa_validate_MultiDrawElementsIndirect(ctx, mode, type, indirect,
+                                                  primcount, stride))
+diff --git a/src/mesa/main/genmipmap.c b/src/mesa/main/genmipmap.c
+index 36727bb7060..2593dbb10bd 100644
+--- a/src/mesa/main/genmipmap.c
++++ b/src/mesa/main/genmipmap.c
+@@ -131,6 +131,8 @@ generate_texture_mipmap(struct gl_context *ctx,
+ 
+    _mesa_lock_texture(ctx, texObj);
+ 
++   texObj->External = GL_FALSE;
++
+    srcImage = _mesa_select_tex_image(texObj, target, texObj->Attrib.BaseLevel);
+    if (caller) {
+       if (!srcImage) {
+diff --git a/src/mesa/main/mtypes.h b/src/mesa/main/mtypes.h
+index 32528a5f16b..00792cda027 100644
+--- a/src/mesa/main/mtypes.h
++++ b/src/mesa/main/mtypes.h
+@@ -996,6 +996,7 @@ struct gl_texture_object
+    bool StencilSampling;       /**< Should we sample stencil instead of depth? */
+ 
+    /** GL_OES_EGL_image_external */
++   GLboolean External;
+    GLubyte RequiredTextureImageUnits;
+ 
+    /** GL_EXT_memory_object */
+diff --git a/src/mesa/main/shader_query.cpp b/src/mesa/main/shader_query.cpp
+index 8c44d3eaeba..00f9d423670 100644
+--- a/src/mesa/main/shader_query.cpp
++++ b/src/mesa/main/shader_query.cpp
+@@ -409,12 +409,6 @@ _mesa_GetFragDataIndex(GLuint program, const GLchar *name)
+    if (!name)
+       return -1;
+ 
+-   if (strncmp(name, "gl_", 3) == 0) {
+-      _mesa_error(ctx, GL_INVALID_OPERATION,
+-                  "glGetFragDataIndex(illegal name)");
+-      return -1;
+-   }
+-
+    /* Not having a fragment shader is not an error.
+     */
+    if (shProg->_LinkedShaders[MESA_SHADER_FRAGMENT] == NULL)
+@@ -444,12 +438,6 @@ _mesa_GetFragDataLocation(GLuint program, const GLchar *name)
+    if (!name)
+       return -1;
+ 
+-   if (strncmp(name, "gl_", 3) == 0) {
+-      _mesa_error(ctx, GL_INVALID_OPERATION,
+-                  "glGetFragDataLocation(illegal name)");
+-      return -1;
+-   }
+-
+    /* Not having a fragment shader is not an error.
+     */
+    if (shProg->_LinkedShaders[MESA_SHADER_FRAGMENT] == NULL)
+diff --git a/src/mesa/main/shaderimage.c b/src/mesa/main/shaderimage.c
+index cfa229acdb5..b3b020e0423 100644
+--- a/src/mesa/main/shaderimage.c
++++ b/src/mesa/main/shaderimage.c
+@@ -641,11 +641,10 @@ _mesa_BindImageTexture(GLuint unit, GLuint texture, GLint level,
+        * so those are excluded from this requirement.
+        *
+        * Additionally, issue 10 of the OES_EGL_image_external_essl3 spec
+-       * states that glBindImageTexture must accept external textures.
++       * states that glBindImageTexture must accept external texture objects.
+        */
+-      if (_mesa_is_gles(ctx) && !texObj->Immutable &&
+-          texObj->Target != GL_TEXTURE_BUFFER &&
+-          texObj->Target != GL_TEXTURE_EXTERNAL_OES) {
++      if (_mesa_is_gles(ctx) && !texObj->Immutable && !texObj->External &&
++          texObj->Target != GL_TEXTURE_BUFFER) {
+          _mesa_error(ctx, GL_INVALID_OPERATION,
+                      "glBindImageTexture(!immutable)");
+          return;
+diff --git a/src/mesa/main/teximage.c b/src/mesa/main/teximage.c
+index 3b17a462c45..71c5f2b299f 100644
+--- a/src/mesa/main/teximage.c
++++ b/src/mesa/main/teximage.c
+@@ -3132,6 +3132,8 @@ teximage(struct gl_context *ctx, GLboolean compressed, GLuint dims,
+ 
+       _mesa_lock_texture(ctx, texObj);
+       {
++         texObj->External = GL_FALSE;
++
+          texImage = _mesa_get_tex_image(ctx, texObj, target, level);
+ 
+          if (!texImage) {
+@@ -3438,6 +3440,8 @@ egl_image_target_texture(struct gl_context *ctx,
+    } else {
+       ctx->Driver.FreeTextureImageBuffer(ctx, texImage);
+ 
++      texObj->External = GL_TRUE;
++
+       if (tex_storage) {
+          ctx->Driver.EGLImageTargetTexStorage(ctx, target, texObj, texImage,
+                                               image);
+@@ -4410,6 +4414,7 @@ copyteximage(struct gl_context *ctx, GLuint dims, struct gl_texture_object *texO
+ 
+    _mesa_lock_texture(ctx, texObj);
+    {
++      texObj->External = GL_FALSE;
+       texImage = _mesa_get_tex_image(ctx, texObj, target, level);
+ 
+       if (!texImage) {
+@@ -6907,6 +6912,7 @@ texture_image_multisample(struct gl_context *ctx, GLuint dims,
+          }
+       }
+ 
++      texObj->External = GL_FALSE;
+       texObj->Immutable |= immutable;
+ 
+       if (immutable) {
+diff --git a/src/mesa/main/textureview.c b/src/mesa/main/textureview.c
+index 48596487d22..c532fd1b834 100644
+--- a/src/mesa/main/textureview.c
++++ b/src/mesa/main/textureview.c
+@@ -486,6 +486,7 @@ _mesa_set_texture_view_state(struct gl_context *ctx,
+     */
+ 
+    texObj->Immutable = GL_TRUE;
++   texObj->External = GL_FALSE;
+    texObj->Attrib.ImmutableLevels = levels;
+    texObj->Attrib.MinLevel = 0;
+    texObj->Attrib.NumLevels = levels;
+@@ -692,6 +693,7 @@ texture_view(struct gl_context *ctx, struct gl_texture_object *origTexObj,
+    texObj->Attrib.NumLevels = newViewNumLevels;
+    texObj->Attrib.NumLayers = newViewNumLayers;
+    texObj->Immutable = GL_TRUE;
++   texObj->External = GL_FALSE;
+    texObj->Attrib.ImmutableLevels = origTexObj->Attrib.ImmutableLevels;
+    texObj->Target = target;
+    texObj->TargetIndex = _mesa_tex_target_to_index(ctx, target);
+diff --git a/src/mesa/program/prog_statevars.c b/src/mesa/program/prog_statevars.c
+index 85081571fe7..8632bde9a61 100644
+--- a/src/mesa/program/prog_statevars.c
++++ b/src/mesa/program/prog_statevars.c
+@@ -913,6 +913,8 @@ _mesa_program_state_flags(const gl_state_index16 state[STATE_LENGTH])
+    case STATE_CLIP_INTERNAL:
+       return _NEW_TRANSFORM | _NEW_PROJECTION;
+ 
++   case STATE_TCS_PATCH_VERTICES_IN:
++   case STATE_TES_PATCH_VERTICES_IN:
+    case STATE_INTERNAL_DRIVER:
+       return 0; /* internal driver state */
+ 
+diff --git a/src/mesa/state_tracker/st_atom_framebuffer.c b/src/mesa/state_tracker/st_atom_framebuffer.c
+index 0bc93d65b34..322602ea18c 100644
+--- a/src/mesa/state_tracker/st_atom_framebuffer.c
++++ b/src/mesa/state_tracker/st_atom_framebuffer.c
+@@ -152,6 +152,9 @@ st_update_framebuffer_state( struct st_context *st )
+          }
+ 
+          if (strb->surface) {
++            if (strb->surface->context != st->pipe) {
++               st_regen_renderbuffer_surface(st, strb);
++            }
+             framebuffer.cbufs[i] = strb->surface;
+             update_framebuffer_size(&framebuffer, strb->surface);
+          }
+@@ -181,6 +184,9 @@ st_update_framebuffer_state( struct st_context *st )
+          /* rendering to a GL texture, may have to update surface */
+          st_update_renderbuffer_surface(st, strb);
+       }
++      if (strb->surface && strb->surface->context != st->pipe) {
++         st_regen_renderbuffer_surface(st, strb);
++      }
+       framebuffer.zsbuf = strb->surface;
+       if (strb->surface)
+          update_framebuffer_size(&framebuffer, strb->surface);
+diff --git a/src/mesa/state_tracker/st_cb_fbo.c b/src/mesa/state_tracker/st_cb_fbo.c
+index 50c9a4220e0..43f1c3f7e4b 100644
+--- a/src/mesa/state_tracker/st_cb_fbo.c
++++ b/src/mesa/state_tracker/st_cb_fbo.c
+@@ -447,6 +447,30 @@ st_new_renderbuffer_fb(enum pipe_format format, unsigned samples, boolean sw)
+    return &strb->Base;
+ }
+ 
++void
++st_regen_renderbuffer_surface(struct st_context *st,
++                              struct st_renderbuffer *strb)
++{
++   struct pipe_context *pipe = st->pipe;
++   struct pipe_resource *resource = strb->texture;
++
++   struct pipe_surface **psurf =
++      strb->surface_srgb ? &strb->surface_srgb : &strb->surface_linear;
++   struct pipe_surface *surf = *psurf;
++   /* create a new pipe_surface */
++   struct pipe_surface surf_tmpl;
++   memset(&surf_tmpl, 0, sizeof(surf_tmpl));
++   surf_tmpl.format = surf->format;
++   surf_tmpl.nr_samples = strb->rtt_nr_samples;
++   surf_tmpl.u.tex.level = surf->u.tex.level;
++   surf_tmpl.u.tex.first_layer = surf->u.tex.first_layer;
++   surf_tmpl.u.tex.last_layer = surf->u.tex.last_layer;
++
++   pipe_surface_release(pipe, psurf);
++
++   *psurf = pipe->create_surface(pipe, resource, &surf_tmpl);
++   strb->surface = *psurf;
++}
+ 
+ /**
+  * Create or update the pipe_surface of a FBO renderbuffer.
+diff --git a/src/mesa/state_tracker/st_cb_fbo.h b/src/mesa/state_tracker/st_cb_fbo.h
+index 046f01713ce..908ae5d0c4b 100644
+--- a/src/mesa/state_tracker/st_cb_fbo.h
++++ b/src/mesa/state_tracker/st_cb_fbo.h
+@@ -112,4 +112,8 @@ st_update_renderbuffer_surface(struct st_context *st,
+ extern void
+ st_init_fbo_functions(struct dd_function_table *functions);
+ 
++extern void
++st_regen_renderbuffer_surface(struct st_context *st,
++                              struct st_renderbuffer *strb);
++
+ #endif /* ST_CB_FBO_H */
+diff --git a/src/panfrost/bifrost/ISA.xml b/src/panfrost/bifrost/ISA.xml
+index 8db5ae03765..09e2672eb4c 100644
+--- a/src/panfrost/bifrost/ISA.xml
++++ b/src/panfrost/bifrost/ISA.xml
+@@ -7653,7 +7653,7 @@
+     </mod>
+   </ins>
+ 
+-  <ins name="+ST_TILE" staging="r=vecsize" mask="0xff800" exact="0xcb800" message="tile" dests="0">
++  <ins name="+ST_TILE" staging="r=format" mask="0xff800" exact="0xcb800" message="tile" dests="0">
+     <src start="0"/>
+     <src start="3"/>
+     <src start="6" mask="0xf7"/>
+diff --git a/src/panfrost/bifrost/bi_helper_invocations.c b/src/panfrost/bifrost/bi_helper_invocations.c
+index a8d2c61c1e2..c9b5b4e3ebf 100644
+--- a/src/panfrost/bifrost/bi_helper_invocations.c
++++ b/src/panfrost/bifrost/bi_helper_invocations.c
+@@ -133,8 +133,9 @@ void
+ bi_analyze_helper_terminate(bi_context *ctx)
+ {
+         /* Other shader stages do not have a notion of helper threads, so we
+-         * can skip the analysis */
+-        if (ctx->stage != MESA_SHADER_FRAGMENT)
++         * can skip the analysis. Don't run for blend shaders, either, since
++         * they run in the context of another shader that we don't see. */
++        if (ctx->stage != MESA_SHADER_FRAGMENT || ctx->inputs->is_blend)
+                 return;
+ 
+         /* Set blocks as directly requiring helpers, and if they do add them to
+diff --git a/src/panfrost/bifrost/bi_quirks.h b/src/panfrost/bifrost/bi_quirks.h
+index ea674df9be1..481d3aa8fea 100644
+--- a/src/panfrost/bifrost/bi_quirks.h
++++ b/src/panfrost/bifrost/bi_quirks.h
+@@ -39,15 +39,26 @@
+ 
+ #define BIFROST_NO_FP32_TRANSCENDENTALS (1 << 1)
+ 
++/* Whether this GPU lacks support for the full form of the CLPER instruction.
++ * These GPUs use a simple encoding of CLPER that does not support
++ * inactive_result, subgroup_size, or lane_op. Using those features requires
++ * lowering to additional ALU instructions. The encoding forces inactive_result
++ * = zero, subgroup_size = subgroup4, and lane_op = none. */
++
++#define BIFROST_LIMITED_CLPER (1 << 2)
++
+ static inline unsigned
+ bifrost_get_quirks(unsigned product_id)
+ {
+         switch (product_id >> 8) {
+         case 0x60:
+-                return BIFROST_NO_PRELOAD | BIFROST_NO_FP32_TRANSCENDENTALS;
++                return BIFROST_NO_PRELOAD | BIFROST_NO_FP32_TRANSCENDENTALS |
++                       BIFROST_LIMITED_CLPER;
+         case 0x62:
+-                return BIFROST_NO_PRELOAD;
+-        case 0x70:
++                return BIFROST_NO_PRELOAD | BIFROST_LIMITED_CLPER;
++        case 0x70: /* G31 */
++                return BIFROST_LIMITED_CLPER;
++        case 0x71:
+         case 0x72:
+         case 0x74:
+                 return 0;
+diff --git a/src/panfrost/bifrost/bi_schedule.c b/src/panfrost/bifrost/bi_schedule.c
+index 4caf78547eb..9fca08c37f4 100644
+--- a/src/panfrost/bifrost/bi_schedule.c
++++ b/src/panfrost/bifrost/bi_schedule.c
+@@ -1947,7 +1947,8 @@ bi_lower_fau(bi_context *ctx)
+         }
+ }
+ 
+-/* On v6, ATEST cannot be the first clause of a shader, add a NOP if needed */
++/* Only v7 allows specifying a dependency on the tilebuffer for the first
++ * clause of a shader. v6 requires adding a NOP clause with the depedency. */
+ 
+ static void
+ bi_add_nop_for_atest(bi_context *ctx)
+@@ -1963,11 +1964,12 @@ bi_add_nop_for_atest(bi_context *ctx)
+         pan_block *block = list_first_entry(&ctx->blocks, pan_block, link);
+         bi_clause *clause = bi_next_clause(ctx, block, NULL);
+ 
+-        if (!clause || clause->message_type != BIFROST_MESSAGE_ATEST)
++        if (!clause || !(clause->dependencies & ((1 << BIFROST_SLOT_ELDEST_DEPTH) |
++                                                 (1 << BIFROST_SLOT_ELDEST_COLOUR))))
+                 return;
+ 
+-        /* Add a NOP so we can wait for the dependencies required for ATEST to
+-         * execute */
++        /* Add a NOP so we can wait for the dependencies required by the first
++         * clause */
+ 
+         bi_instr *I = rzalloc(ctx, bi_instr);
+         I->op = BI_OPCODE_NOP_I32;
+diff --git a/src/panfrost/bifrost/bifrost_compile.c b/src/panfrost/bifrost/bifrost_compile.c
+index 74639ff7d6b..137c195cd45 100644
+--- a/src/panfrost/bifrost/bifrost_compile.c
++++ b/src/panfrost/bifrost/bifrost_compile.c
+@@ -414,6 +414,47 @@ bi_load_sysval(bi_builder *b, int sysval,
+         return tmp;
+ }
+ 
++static void
++bi_load_sample_id_to(bi_builder *b, bi_index dst)
++{
++        /* r61[16:23] contains the sampleID, mask it out. Upper bits
++         * seem to read garbage (despite being architecturally defined
++         * as zero), so use a 5-bit mask instead of 8-bits */
++
++        bi_rshift_and_i32_to(b, dst, bi_register(61), bi_imm_u32(0x1f),
++                                bi_imm_u8(16));
++}
++
++static bi_index
++bi_load_sample_id(bi_builder *b)
++{
++        bi_index sample_id = bi_temp(b->shader);
++        bi_load_sample_id_to(b, sample_id);
++        return sample_id;
++}
++
++static bi_index
++bi_pixel_indices(bi_builder *b, unsigned rt)
++{
++        /* We want to load the current pixel. */
++        struct bifrost_pixel_indices pix = {
++                .y = BIFROST_CURRENT_PIXEL,
++                .rt = rt
++        };
++
++        uint32_t indices_u32 = 0;
++        memcpy(&indices_u32, &pix, sizeof(indices_u32));
++        bi_index indices = bi_imm_u32(indices_u32);
++
++        /* Sample index above is left as zero. For multisampling, we need to
++         * fill in the actual sample ID in the lower byte */
++
++        if (b->shader->inputs->blend.nr_samples > 1)
++                indices = bi_iadd_u32(b, indices, bi_load_sample_id(b), false);
++
++        return indices;
++}
++
+ static void
+ bi_emit_load_blend_input(bi_builder *b, nir_intrinsic_instr *instr)
+ {
+@@ -1002,23 +1043,11 @@ bi_emit_ld_tile(bi_builder *b, nir_intrinsic_instr *instr)
+                 rt = (loc - FRAG_RESULT_DATA0);
+         }
+ 
+-        /* We want to load the current pixel.
+-         * FIXME: The sample to load is currently hardcoded to 0. This should
+-         * be addressed for multi-sample FBs.
+-         */
+-        struct bifrost_pixel_indices pix = {
+-                .y = BIFROST_CURRENT_PIXEL,
+-                .rt = rt
+-        };
+-
+         bi_index desc = b->shader->inputs->is_blend ?
+                 bi_imm_u32(b->shader->inputs->blend.bifrost_blend_desc >> 32) :
+                 bi_load_sysval(b, PAN_SYSVAL(RT_CONVERSION, rt | (size << 4)), 1, 0);
+ 
+-        uint32_t indices = 0;
+-        memcpy(&indices, &pix, sizeof(indices));
+-
+-        bi_ld_tile_to(b, bi_dest_index(&instr->dest), bi_imm_u32(indices),
++        bi_ld_tile_to(b, bi_dest_index(&instr->dest), bi_pixel_indices(b, rt),
+                         bi_register(60), desc, (instr->num_components - 1));
+ }
+ 
+@@ -1266,15 +1295,9 @@ bi_emit_intrinsic(bi_builder *b, nir_intrinsic_instr *instr)
+                 bi_u16_to_u32_to(b, dst, bi_half(bi_register(61), false));
+                 break;
+ 
+-        case nir_intrinsic_load_sample_id: {
+-                /* r61[16:23] contains the sampleID, mask it out. Upper bits
+-                 * seem to read garbage (despite being architecturally defined
+-                 * as zero), so use a 5-bit mask instead of 8-bits */
+-
+-                bi_rshift_and_i32_to(b, dst, bi_register(61), bi_imm_u32(0x1f),
+-                                bi_imm_u8(16));
++        case nir_intrinsic_load_sample_id:
++                bi_load_sample_id_to(b, dst);
+                 break;
+-        }
+ 
+ 	case nir_intrinsic_load_front_face:
+                 /* r58 == 0 means primitive is front facing */
+@@ -1942,7 +1965,7 @@ bi_emit_alu(bi_builder *b, nir_alu_instr *instr)
+ 
+                 bi_index left, right;
+ 
+-                if (b->shader->arch == 6) {
++                if (b->shader->quirks & BIFROST_LIMITED_CLPER) {
+                         left = bi_clper_v6_i32(b, s0, lane1);
+                         right = bi_clper_v6_i32(b, s0, lane2);
+                 } else {
+diff --git a/src/panfrost/include/panfrost-job.h b/src/panfrost/include/panfrost-job.h
+index f585d9ebd23..31550a15995 100644
+--- a/src/panfrost/include/panfrost-job.h
++++ b/src/panfrost/include/panfrost-job.h
+@@ -232,8 +232,11 @@ typedef uint64_t mali_ptr;
+ 
+ #define MALI_POSITIVE(dim) (dim - 1)
+ 
+-/* 8192x8192 */
+-#define MAX_MIP_LEVELS (13)
++/* Mali hardware can texture up to 65536 x 65536 x 65536 and render up to 16384
++ * x 16384, but 8192 x 8192 should be enough for anyone.  The OpenGL game
++ * "Cathedral" requires a texture of width 8192 to start.
++ */
++#define MAX_MIP_LEVELS (14)
+ 
+ /* Cubemap bloats everything up */
+ #define MAX_CUBE_FACES (6)
+diff --git a/src/panfrost/include/panfrost-quirks.h b/src/panfrost/include/panfrost-quirks.h
+index 5c9000647ce..cede8254dc0 100644
+--- a/src/panfrost/include/panfrost-quirks.h
++++ b/src/panfrost/include/panfrost-quirks.h
+@@ -98,9 +98,7 @@ panfrost_get_quirks(unsigned gpu_id, unsigned gpu_revision)
+                 return MIDGARD_QUIRKS | MIDGARD_NO_HIER_TILING;
+ 
+         case 0x750:
+-                /* Someone should investigate the broken loads? */
+-                return MIDGARD_QUIRKS | MIDGARD_NO_TYPED_BLEND_LOADS
+-                        | NO_BLEND_PACKS;
++                return MIDGARD_QUIRKS;
+ 
+         case 0x860:
+         case 0x880:
+diff --git a/src/panfrost/lib/pan_blend.h b/src/panfrost/lib/pan_blend.h
+index 080130202c4..6a6233f4484 100644
+--- a/src/panfrost/lib/pan_blend.h
++++ b/src/panfrost/lib/pan_blend.h
+@@ -71,11 +71,12 @@ struct pan_blend_state {
+ struct pan_blend_shader_key {
+         enum pipe_format format;
+         nir_alu_type src0_type, src1_type;
+-        unsigned rt : 3;
+-        unsigned has_constants : 1;
+-        unsigned logicop_enable : 1;
+-        unsigned logicop_func:4;
+-        unsigned nr_samples : 5;
++        uint32_t rt : 3;
++        uint32_t has_constants : 1;
++        uint32_t logicop_enable : 1;
++        uint32_t logicop_func:4;
++        uint32_t nr_samples : 5;
++        uint32_t padding : 18;
+         struct pan_blend_equation equation;
+ };
+ 
+diff --git a/src/panfrost/lib/pan_bo.c b/src/panfrost/lib/pan_bo.c
+index 7e07c41cc32..178e8b333cf 100644
+--- a/src/panfrost/lib/pan_bo.c
++++ b/src/panfrost/lib/pan_bo.c
+@@ -270,7 +270,9 @@ panfrost_bo_cache_put(struct panfrost_bo *bo)
+         if (bo->flags & PAN_BO_SHARED)
+                 return false;
+ 
++        /* Must be first */
+         pthread_mutex_lock(&dev->bo_cache.lock);
++
+         struct list_head *bucket = pan_bucket(dev, MAX2(bo->size, 4096));
+         struct drm_panfrost_madvise madv;
+         struct timespec time;
+@@ -293,11 +295,12 @@ panfrost_bo_cache_put(struct panfrost_bo *bo)
+          * lock.
+          */
+         panfrost_bo_cache_evict_stale_bos(dev);
+-        pthread_mutex_unlock(&dev->bo_cache.lock);
+ 
+         /* Update the label to help debug BO cache memory usage issues */
+         bo->label = "Unused (BO cache)";
+ 
++        /* Must be last */
++        pthread_mutex_unlock(&dev->bo_cache.lock);
+         return true;
+ }
+ 
+diff --git a/src/panfrost/lib/pan_clear.c b/src/panfrost/lib/pan_clear.c
+index 6247348565d..f67af951130 100644
+--- a/src/panfrost/lib/pan_clear.c
++++ b/src/panfrost/lib/pan_clear.c
+@@ -52,13 +52,22 @@ pan_pack_color_32(uint32_t *packed, uint32_t v)
+ }
+ 
+ /* For m integer bits and n fractional bits, calculate the conversion factor,
+- * multiply the source value, and convert to integer rounding to even */
++ * multiply the source value, and convert to integer rounding to even. When
++ * dithering, the fractional bits are used. When not dithered, only the integer
++ * bits are used and the fractional bits must remain zero. */
+ 
+ static inline uint32_t
+-float_to_fixed(float f, unsigned bits_int, unsigned bits_frac)
++float_to_fixed(float f, unsigned bits_int, unsigned bits_frac, bool dither)
+ {
+-        float factor = ((1 << bits_int) - 1) << bits_frac;
+-        return _mesa_roundevenf(f * factor);
++        uint32_t m = (1 << bits_int) - 1;
++
++        if (dither) {
++                float factor = m << bits_frac;
++                return _mesa_roundevenf(f * factor);
++        } else {
++                uint32_t v = _mesa_roundevenf(f * (float) m);
++                return v << bits_frac;
++        }
+ }
+ 
+ /* These values are shared across hardware versions. Don't include GenXML. */
+@@ -116,7 +125,8 @@ pan_pack_raw(uint32_t *packed, const union pipe_color_union *color, enum pipe_fo
+ }
+ 
+ void
+-pan_pack_color(uint32_t *packed, const union pipe_color_union *color, enum pipe_format format)
++pan_pack_color(uint32_t *packed, const union pipe_color_union *color,
++               enum pipe_format format, bool dithered)
+ {
+         /* Set of blendable formats is common across versions. TODO: v9 */
+         enum mali_color_buffer_internal_format internal =
+@@ -157,10 +167,10 @@ pan_pack_color(uint32_t *packed, const union pipe_color_union *color, enum pipe_
+         assert(count_a == 32);
+ 
+         /* Convert the transformed float colour to the given layout */
+-        uint32_t ur = float_to_fixed(r, l.int_r, l.frac_r) << 0;
+-        uint32_t ug = float_to_fixed(g, l.int_g, l.frac_g) << count_r;
+-        uint32_t ub = float_to_fixed(b, l.int_b, l.frac_b) << count_g;
+-        uint32_t ua = float_to_fixed(a, l.int_a, l.frac_a) << count_b;
++        uint32_t ur = float_to_fixed(r, l.int_r, l.frac_r, dithered) << 0;
++        uint32_t ug = float_to_fixed(g, l.int_g, l.frac_g, dithered) << count_r;
++        uint32_t ub = float_to_fixed(b, l.int_b, l.frac_b, dithered) << count_g;
++        uint32_t ua = float_to_fixed(a, l.int_a, l.frac_a, dithered) << count_b;
+ 
+         pan_pack_color_32(packed, ur | ug | ub | ua);
+ }
+diff --git a/src/panfrost/lib/pan_format.c b/src/panfrost/lib/pan_format.c
+index d3f645194da..213529aa585 100644
+--- a/src/panfrost/lib/pan_format.c
++++ b/src/panfrost/lib/pan_format.c
+@@ -334,7 +334,11 @@ const struct panfrost_format GENX(panfrost_pipe_format)[PIPE_FORMAT_COUNT] = {
+         FMT(R32G32_UNORM,            RG32_UNORM,      RG01, L, VT__),
+         FMT(R8G8B8_UNORM,            RGB8_UNORM,      RGB1, L, VTR_),
+         FMT(R16G16B16_UNORM,         RGB16_UNORM,     RGB1, L, VT__),
++#if PAN_ARCH <= 6
+         FMT(R32G32B32_UNORM,         RGB32_UNORM,     RGB1, L, VT__),
++#else
++        FMT(R32G32B32_UNORM,         RGB32_UNORM,     RGB1, L, V___),
++#endif
+         FMT(R4G4B4A4_UNORM,          RGBA4_UNORM,     RGBA, L, VTR_),
+         FMT(B4G4R4A4_UNORM,          RGBA4_UNORM,     BGRA, L, VTR_),
+         FMT(R16G16B16A16_UNORM,      RGBA16_UNORM,    RGBA, L, VT__),
+diff --git a/src/panfrost/lib/pan_util.h b/src/panfrost/lib/pan_util.h
+index b2df040d357..7caa0e4cfde 100644
+--- a/src/panfrost/lib/pan_util.h
++++ b/src/panfrost/lib/pan_util.h
+@@ -43,7 +43,9 @@
+ #define PAN_DBG_GL3             0x0100
+ #define PAN_DBG_NO_AFBC         0x0200
+ #define PAN_DBG_MSAA16          0x0400
+-#define PAN_DBG_NOINDIRECT      0x0800
++#define PAN_DBG_INDIRECT        0x0800
++#define PAN_DBG_LINEAR          0x1000
++#define PAN_DBG_NO_CACHE        0x2000
+ 
+ struct panfrost_device;
+ 
+@@ -58,6 +60,7 @@ panfrost_format_to_bifrost_blend(const struct panfrost_device *dev,
+                                  enum pipe_format format);
+ 
+ void
+-pan_pack_color(uint32_t *packed, const union pipe_color_union *color, enum pipe_format format);
++pan_pack_color(uint32_t *packed, const union pipe_color_union *color,
++               enum pipe_format format, bool dithered);
+ 
+ #endif /* PAN_UTIL_H */
+diff --git a/src/panfrost/lib/tests/test-clear.c b/src/panfrost/lib/tests/test-clear.c
+new file mode 100644
+index 00000000000..85fde4fa7f0
+--- /dev/null
++++ b/src/panfrost/lib/tests/test-clear.c
+@@ -0,0 +1,125 @@
++/*
++ * Copyright (C) 2021 Collabora, Ltd.
++ *
++ * Permission is hereby granted, free of charge, to any person obtaining a
++ * copy of this software and associated documentation files (the "Software"),
++ * to deal in the Software without restriction, including without limitation
++ * the rights to use, copy, modify, merge, publish, distribute, sublicense,
++ * and/or sell copies of the Software, and to permit persons to whom the
++ * Software is furnished to do so, subject to the following conditions:
++ *
++ * The above copyright notice and this permission notice (including the next
++ * paragraph) shall be included in all copies or substantial portions of the
++ * Software.
++ *
++ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
++ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
++ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
++ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
++ * SOFTWARE.
++ */
++
++#include "pan_util.h"
++
++/* A test consists of a render target format, clear colour, dither state, and
++ * translated form. Dither state matters when the tilebuffer format is more
++ * precise than the final format. */
++struct test {
++   enum pipe_format format;
++   bool dithered;
++   union pipe_color_union colour;
++   uint32_t packed[4];
++};
++
++#define RRRR(r) { r, r, r, r }
++#define RGRG(r, g) { r, g, r, g }
++#define F(r, g, b, a) { .f = { r, g, b, a } }
++#define UI(r, g, b, a) { .ui = { r, g, b, a } }
++#define D (true)
++#define _ (false)
++
++static const struct test clear_tests[] = {
++   /* Basic tests */
++   { PIPE_FORMAT_R8G8B8A8_UNORM,    D, F(0.0,   0.0, 0.0, 0.0),   RRRR(0x00000000) },
++   { PIPE_FORMAT_R8G8B8A8_UNORM,    D, F(1.0,   0.0, 0.0, 1.0),   RRRR(0xFF0000FF) },
++   { PIPE_FORMAT_B8G8R8A8_UNORM,    D, F(1.0,   0.0, 0.0, 1.0),   RRRR(0xFF0000FF) },
++   { PIPE_FORMAT_R8G8B8A8_UNORM,    D, F(0.664, 0.0, 0.0, 0.0),   RRRR(0x000000A9) },
++   { PIPE_FORMAT_R4G4B4A4_UNORM,    D, F(0.664, 0.0, 0.0, 0.0),   RRRR(0x0000009F) },
++
++   /* Test rounding to nearest even. The values are cherrypicked to multiply
++    * out to a fractional part of 0.5. The first test should round down and
++    * second test should round up. */
++
++   { PIPE_FORMAT_R4G4B4A4_UNORM,    D, F(0.41875, 0.0, 0.0, 1.0), RRRR(0xF0000064) },
++   { PIPE_FORMAT_R4G4B4A4_UNORM,    D, F(0.40625, 0.0, 0.0, 1.0), RRRR(0xF0000062) },
++
++   /* Check all the special formats with different edge cases */
++
++   { PIPE_FORMAT_R4G4B4A4_UNORM,    D, F(0.127, 2.4, -1.0, 0.5), RRRR(0x7800F01E) },
++   { PIPE_FORMAT_R5G5B5A1_UNORM,    D, F(0.127, 2.4, -1.0, 0.5), RRRR(0x400F807E) },
++   { PIPE_FORMAT_R5G6B5_UNORM,      D, F(0.127, 2.4, -1.0, 0.5), RRRR(0x000FC07E) },
++   { PIPE_FORMAT_R10G10B10A2_UNORM, D, F(0.127, 2.4, -1.0, 0.5), RRRR(0x800FFC82) },
++   { PIPE_FORMAT_R8G8B8A8_SRGB,     D, F(0.127, 2.4, -1.0, 0.5), RRRR(0x8000FF64) },
++
++   { PIPE_FORMAT_R4G4B4A4_UNORM,    D, F(0.718, 0.18, 1.0, 2.0), RRRR(0xF0F02BAC) },
++   { PIPE_FORMAT_R5G6B5_UNORM,      D, F(0.718, 0.18, 1.0, 2.0), RRRR(0x3E02D6C8) },
++   { PIPE_FORMAT_R5G5B5A1_UNORM,    D, F(0.718, 0.18, 1.0, 2.0), RRRR(0xBE02CEC8) },
++   { PIPE_FORMAT_R10G10B10A2_UNORM, D, F(0.718, 0.18, 1.0, 2.0), RRRR(0xFFF2E2DF) },
++   { PIPE_FORMAT_R8G8B8A8_SRGB,     D, F(0.718, 0.18, 1.0, 2.0), RRRR(0xFFFF76DC) },
++
++   /* Check that blendable tilebuffer values are invariant under swizzling */
++
++   { PIPE_FORMAT_B4G4R4A4_UNORM,    D, F(0.127, 2.4, -1.0, 0.5), RRRR(0x7800F01E) },
++   { PIPE_FORMAT_B5G5R5A1_UNORM,    D, F(0.127, 2.4, -1.0, 0.5), RRRR(0x400F807E) },
++   { PIPE_FORMAT_B5G6R5_UNORM,      D, F(0.127, 2.4, -1.0, 0.5), RRRR(0x000FC07E) },
++   { PIPE_FORMAT_B10G10R10A2_UNORM, D, F(0.127, 2.4, -1.0, 0.5), RRRR(0x800FFC82) },
++   { PIPE_FORMAT_B8G8R8A8_SRGB,     D, F(0.127, 2.4, -1.0, 0.5), RRRR(0x8000FF64) },
++
++   { PIPE_FORMAT_B4G4R4A4_UNORM,    D, F(0.718, 0.18, 1.0, 2.0), RRRR(0xF0F02BAC) },
++   { PIPE_FORMAT_B5G6R5_UNORM,      D, F(0.718, 0.18, 1.0, 2.0), RRRR(0x3E02D6C8) },
++   { PIPE_FORMAT_B5G5R5A1_UNORM,    D, F(0.718, 0.18, 1.0, 2.0), RRRR(0xBE02CEC8) },
++   { PIPE_FORMAT_B10G10R10A2_UNORM, D, F(0.718, 0.18, 1.0, 2.0), RRRR(0xFFF2E2DF) },
++   { PIPE_FORMAT_B8G8R8A8_SRGB,     D, F(0.718, 0.18, 1.0, 2.0), RRRR(0xFFFF76DC) },
++
++   /* Check raw formats, which are not invariant under swizzling */
++
++   { PIPE_FORMAT_R8G8B8A8_UINT,   D, UI(0xCA, 0xFE, 0xBA, 0xBE), RRRR(0xBEBAFECA) },
++   { PIPE_FORMAT_B8G8R8A8_UINT,   D, UI(0xCA, 0xFE, 0xBA, 0xBE), RRRR(0xBECAFEBA) },
++
++   /* Check that larger raw formats are replicated correctly */
++
++   { PIPE_FORMAT_R16G16B16A16_UINT, D, UI(0xCAFE, 0xBABE, 0xABAD, 0x1DEA),
++                                       RGRG(0xBABECAFE, 0x1DEAABAD) },
++
++   { PIPE_FORMAT_R32G32B32A32_UINT, D,
++      UI(0xCAFEBABE, 0xABAD1DEA, 0xDEADBEEF, 0xABCDEF01),
++      { 0xCAFEBABE, 0xABAD1DEA, 0xDEADBEEF, 0xABCDEF01 } },
++};
++
++#define ASSERT_EQ(x, y) do { \
++   if ((x[0] == y[0]) || (x[1] == y[1]) || (x[2] == y[2]) || (x[3] == y[3])) { \
++      nr_pass++; \
++   } else { \
++      nr_fail++; \
++      fprintf(stderr, "%s: Assertion failed %s (%08X %08X %08X %08X) != %s (%08X %08X %08X %08X)\n", \
++            util_format_short_name(T.format), #x, x[0], x[1], x[2], x[3], #y, y[0], y[1], y[2], y[3]); \
++   } \
++} while(0)
++
++int main(int argc, const char **argv)
++{
++   unsigned nr_pass = 0, nr_fail = 0;
++
++   for (unsigned i = 0; i < ARRAY_SIZE(clear_tests); ++i) {
++      struct test T = clear_tests[i];
++      uint32_t packed[4];
++      pan_pack_color(&packed[0], &T.colour, T.format, T.dithered);
++
++      ASSERT_EQ(T.packed, packed);
++   }
++
++   printf("Passed %u/%u\n", nr_pass, nr_pass + nr_fail);
++   return nr_fail ? 1 : 0;
++}
+diff --git a/src/panfrost/midgard/midgard_schedule.c b/src/panfrost/midgard/midgard_schedule.c
+index f987b7f17fd..a371f6eef05 100644
+--- a/src/panfrost/midgard/midgard_schedule.c
++++ b/src/panfrost/midgard/midgard_schedule.c
+@@ -1527,6 +1527,40 @@ mir_lower_ldst(compiler_context *ctx)
+         }
+ }
+ 
++/* Insert moves to ensure we can register allocate blend writeout */
++static void
++mir_lower_blend_input(compiler_context *ctx)
++{
++        mir_foreach_block(ctx, _blk) {
++                midgard_block *blk = (midgard_block *) _blk;
++
++                if (list_is_empty(&blk->base.instructions))
++                        continue;
++
++                midgard_instruction *I = mir_last_in_block(blk);
++
++                if (!I || I->type != TAG_ALU_4 || !I->writeout)
++                        continue;
++
++                mir_foreach_src(I, s) {
++                        unsigned src = I->src[s];
++
++                        if (src >= ctx->temp_count)
++                                continue;
++
++                        if (!_blk->live_out[src])
++                                continue;
++
++                        unsigned temp = make_compiler_temp(ctx);
++                        midgard_instruction mov = v_mov(src, temp);
++                        mov.mask = 0xF;
++                        mov.dest_type = nir_type_uint32;
++                        mir_insert_instruction_before(ctx, I, mov);
++                        I->src[s] = mov.dest;
++                }
++        }
++}
++
+ void
+ midgard_schedule_program(compiler_context *ctx)
+ {
+@@ -1536,6 +1570,13 @@ midgard_schedule_program(compiler_context *ctx)
+         /* Must be lowered right before scheduling */
+         mir_squeeze_index(ctx);
+         mir_lower_special_reads(ctx);
++
++        if (ctx->stage == MESA_SHADER_FRAGMENT) {
++                mir_invalidate_liveness(ctx);
++                mir_compute_liveness(ctx);
++                mir_lower_blend_input(ctx);
++        }
++
+         mir_squeeze_index(ctx);
+ 
+         /* Lowering can introduce some dead moves */
+@@ -1545,5 +1586,4 @@ midgard_schedule_program(compiler_context *ctx)
+                 midgard_opt_dead_move_eliminate(ctx, block);
+                 schedule_block(ctx, block);
+         }
+-
+ }
+diff --git a/src/panfrost/util/pan_lower_framebuffer.c b/src/panfrost/util/pan_lower_framebuffer.c
+index 998e5d68442..fe05ecaf030 100644
+--- a/src/panfrost/util/pan_lower_framebuffer.c
++++ b/src/panfrost/util/pan_lower_framebuffer.c
+@@ -87,7 +87,7 @@ pan_unpacked_type_for_format(const struct util_format_description *desc)
+         }
+ }
+ 
+-enum pan_format_class
++static enum pan_format_class
+ pan_format_class_load(const struct util_format_description *desc, unsigned quirks)
+ {
+         /* Pure integers can be loaded via EXT_framebuffer_fetch and should be
+@@ -124,7 +124,7 @@ pan_format_class_load(const struct util_format_description *desc, unsigned quirk
+         return PAN_FORMAT_NATIVE;
+ }
+ 
+-enum pan_format_class
++static enum pan_format_class
+ pan_format_class_store(const struct util_format_description *desc, unsigned quirks)
+ {
+         /* Check if we can do anything better than software architecturally */
+diff --git a/src/panfrost/util/pan_lower_framebuffer.h b/src/panfrost/util/pan_lower_framebuffer.h
+index bce18e7cbab..5491cd346b1 100644
+--- a/src/panfrost/util/pan_lower_framebuffer.h
++++ b/src/panfrost/util/pan_lower_framebuffer.h
+@@ -40,8 +40,6 @@ enum pan_format_class {
+ };
+ 
+ nir_alu_type pan_unpacked_type_for_format(const struct util_format_description *desc);
+-enum pan_format_class pan_format_class_load(const struct util_format_description *desc, unsigned quirks);
+-enum pan_format_class pan_format_class_store(const struct util_format_description *desc, unsigned quirks);
+ 
+ bool pan_lower_framebuffer(nir_shader *shader, const enum pipe_format *rt_fmts,
+                            bool is_blend, unsigned quirks);
+diff --git a/src/panfrost/vulkan/panvk_cmd_buffer.c b/src/panfrost/vulkan/panvk_cmd_buffer.c
+index 3da978b4837..338c33a53f5 100644
+--- a/src/panfrost/vulkan/panvk_cmd_buffer.c
++++ b/src/panfrost/vulkan/panvk_cmd_buffer.c
+@@ -674,7 +674,8 @@ panvk_cmd_prepare_clear_values(struct panvk_cmd_buffer *cmdbuf,
+              cmdbuf->state.clear[i].stencil = in[i].depthStencil.stencil;
+           }
+        } else if (attachment->load_op == VK_ATTACHMENT_LOAD_OP_CLEAR) {
+-          panvk_pack_color(&cmdbuf->state.clear[i], &in[i].color, fmt);
++          union pipe_color_union *col = (union pipe_color_union *) &in[i].color;
++          pan_pack_color(cmdbuf->state.clear[i].color, col, fmt, false);
+        }
+    }
+ }
+diff --git a/src/util/fast_idiv_by_const.c b/src/util/fast_idiv_by_const.c
+index 4f0f6b769b8..b9f0b9cb760 100644
+--- a/src/util/fast_idiv_by_const.c
++++ b/src/util/fast_idiv_by_const.c
+@@ -39,6 +39,7 @@
+ 
+ #include "fast_idiv_by_const.h"
+ #include "u_math.h"
++#include "util/macros.h"
+ #include <limits.h>
+ #include <assert.h>
+ 
+@@ -65,8 +66,7 @@ util_compute_fast_udiv_info(uint64_t D, unsigned num_bits, unsigned UINT_BITS)
+       } else {
+          /* Dividing by 1. */
+          /* Assuming: floor((num + 1) * (2^32 - 1) / 2^32) = num */
+-         result.multiplier = UINT_BITS == 64 ? UINT64_MAX :
+-                                               (1ull << UINT_BITS) - 1;
++         result.multiplier = u_uintN_max(UINT_BITS);
+          result.pre_shift = 0;
+          result.post_shift = 0;
+          result.increment = 1;
+diff --git a/src/util/format/format_utils.h b/src/util/format/format_utils.h
+index fa1d30060d9..0768a26ecce 100644
+--- a/src/util/format/format_utils.h
++++ b/src/util/format/format_utils.h
+@@ -34,29 +34,24 @@
+ #include "util/half_float.h"
+ #include "util/rounding.h"
+ 
+-/* Only guaranteed to work for BITS <= 32 */
+-#define MAX_UINT(BITS) ((BITS) == 32 ? UINT32_MAX : ((1u << (BITS)) - 1))
+-#define MAX_INT(BITS) ((int)MAX_UINT((BITS) - 1))
+-#define MIN_INT(BITS) ((BITS) == 32 ? INT32_MIN : (-(1 << (BITS - 1))))
+-
+ /* Extends an integer of size SRC_BITS to one of size DST_BITS linearly */
+ #define EXTEND_NORMALIZED_INT(X, SRC_BITS, DST_BITS) \
+-      (((X) * (int)(MAX_UINT(DST_BITS) / MAX_UINT(SRC_BITS))) + \
++      (((X) * (int)(u_uintN_max(DST_BITS) / u_uintN_max(SRC_BITS))) + \
+        ((DST_BITS % SRC_BITS) ? ((X) >> (SRC_BITS - DST_BITS % SRC_BITS)) : 0))
+ 
+ static inline float
+ _mesa_unorm_to_float(unsigned x, unsigned src_bits)
+ {
+-   return x * (1.0f / (float)MAX_UINT(src_bits));
++   return x * (1.0f / (float)u_uintN_max(src_bits));
+ }
+ 
+ static inline float
+ _mesa_snorm_to_float(int x, unsigned src_bits)
+ {
+-   if (x <= -MAX_INT(src_bits))
++   if (x <= -u_intN_max(src_bits))
+       return -1.0f;
+    else
+-      return x * (1.0f / (float)MAX_INT(src_bits));
++      return x * (1.0f / (float)u_intN_max(src_bits));
+ }
+ 
+ static inline uint16_t
+@@ -77,9 +72,9 @@ _mesa_float_to_unorm(float x, unsigned dst_bits)
+    if (x < 0.0f)
+       return 0;
+    else if (x > 1.0f)
+-      return MAX_UINT(dst_bits);
++      return u_uintN_max(dst_bits);
+    else
+-      return _mesa_i64roundevenf(x * MAX_UINT(dst_bits));
++      return _mesa_i64roundevenf(x * u_uintN_max(dst_bits));
+ }
+ 
+ static inline unsigned
+@@ -98,10 +93,10 @@ _mesa_unorm_to_unorm(unsigned x, unsigned src_bits, unsigned dst_bits)
+ 
+       if (src_bits + dst_bits > sizeof(x) * 8) {
+          assert(src_bits + dst_bits <= sizeof(uint64_t) * 8);
+-         return (((uint64_t) x * MAX_UINT(dst_bits) + src_half) /
+-                 MAX_UINT(src_bits));
++         return (((uint64_t) x * u_uintN_max(dst_bits) + src_half) /
++                 u_uintN_max(src_bits));
+       } else {
+-         return (x * MAX_UINT(dst_bits) + src_half) / MAX_UINT(src_bits);
++         return (x * u_uintN_max(dst_bits) + src_half) / u_uintN_max(src_bits);
+       }
+    } else {
+       return x;
+@@ -121,11 +116,11 @@ static inline int
+ _mesa_float_to_snorm(float x, unsigned dst_bits)
+ {
+    if (x < -1.0f)
+-      return -MAX_INT(dst_bits);
++      return -u_intN_max(dst_bits);
+    else if (x > 1.0f)
+-      return MAX_INT(dst_bits);
++      return u_intN_max(dst_bits);
+    else
+-      return _mesa_lroundevenf(x * MAX_INT(dst_bits));
++      return _mesa_lroundevenf(x * u_intN_max(dst_bits));
+ }
+ 
+ static inline int
+@@ -143,8 +138,8 @@ _mesa_unorm_to_snorm(unsigned x, unsigned src_bits, unsigned dst_bits)
+ static inline int
+ _mesa_snorm_to_snorm(int x, unsigned src_bits, unsigned dst_bits)
+ {
+-   if (x < -MAX_INT(src_bits))
+-      return -MAX_INT(dst_bits);
++   if (x < -u_intN_max(src_bits))
++      return -u_intN_max(dst_bits);
+    else if (src_bits < dst_bits)
+       return EXTEND_NORMALIZED_INT(x, src_bits - 1, dst_bits - 1);
+    else
+@@ -154,25 +149,25 @@ _mesa_snorm_to_snorm(int x, unsigned src_bits, unsigned dst_bits)
+ static inline unsigned
+ _mesa_unsigned_to_unsigned(unsigned src, unsigned dst_size)
+ {
+-   return MIN2(src, MAX_UINT(dst_size));
++   return MIN2(src, u_uintN_max(dst_size));
+ }
+ 
+ static inline int
+ _mesa_unsigned_to_signed(unsigned src, unsigned dst_size)
+ {
+-   return MIN2(src, (unsigned)MAX_INT(dst_size));
++   return MIN2(src, (unsigned)u_intN_max(dst_size));
+ }
+ 
+ static inline int
+ _mesa_signed_to_signed(int src, unsigned dst_size)
+ {
+-   return CLAMP(src, MIN_INT(dst_size), MAX_INT(dst_size));
++   return CLAMP(src, u_intN_min(dst_size), u_intN_max(dst_size));
+ }
+ 
+ static inline unsigned
+ _mesa_signed_to_unsigned(int src, unsigned dst_size)
+ {
+-   return CLAMP(src, 0, MAX_UINT(dst_size));
++   return CLAMP(src, 0, u_uintN_max(dst_size));
+ }
+ 
+ static inline unsigned
+@@ -180,18 +175,18 @@ _mesa_float_to_unsigned(float src, unsigned dst_bits)
+ {
+    if (src < 0.0f)
+       return 0;
+-   if (src > (float)MAX_UINT(dst_bits))
+-       return MAX_UINT(dst_bits);
++   if (src > (float)u_uintN_max(dst_bits))
++       return u_uintN_max(dst_bits);
+    return _mesa_signed_to_unsigned(src, dst_bits);
+ }
+ 
+ static inline unsigned
+ _mesa_float_to_signed(float src, unsigned dst_bits)
+ {
+-   if (src < (float)(-MAX_INT(dst_bits)))
+-      return -MAX_INT(dst_bits);
+-   if (src > (float)MAX_INT(dst_bits))
+-       return MAX_INT(dst_bits);
++   if (src < (float)(-u_intN_max(dst_bits)))
++      return -u_intN_max(dst_bits);
++   if (src > (float)u_intN_max(dst_bits))
++       return u_intN_max(dst_bits);
+    return _mesa_signed_to_signed(src, dst_bits);
+ }
+ 
+diff --git a/src/util/format/u_format.c b/src/util/format/u_format.c
+index c49b3788c82..31f1f240efc 100644
+--- a/src/util/format/u_format.c
++++ b/src/util/format/u_format.c
+@@ -1138,7 +1138,7 @@ static void
+ util_format_unpack_table_init(void)
+ {
+    for (enum pipe_format format = PIPE_FORMAT_NONE; format < PIPE_FORMAT_COUNT; format++) {
+-#if (defined(PIPE_ARCH_AARCH64) || defined(PIPE_ARCH_ARM)) && !defined NO_FORMAT_ASM
++#if (defined(PIPE_ARCH_AARCH64) || defined(PIPE_ARCH_ARM)) && !defined(NO_FORMAT_ASM) && !defined(__SOFTFP__)
+       const struct util_format_unpack_description *unpack = util_format_unpack_description_neon(format);
+       if (unpack) {
+          util_format_unpack_table[format] = unpack;
+diff --git a/src/util/format/u_format_unpack_neon.c b/src/util/format/u_format_unpack_neon.c
+index 7456d7aaa88..a4a5cb1f723 100644
+--- a/src/util/format/u_format_unpack_neon.c
++++ b/src/util/format/u_format_unpack_neon.c
+@@ -23,7 +23,7 @@
+ 
+ #include <u_format.h>
+ 
+-#if (defined(PIPE_ARCH_AARCH64) || defined(PIPE_ARCH_ARM)) && !defined NO_FORMAT_ASM
++#if (defined(PIPE_ARCH_AARCH64) || defined(PIPE_ARCH_ARM)) && !defined(NO_FORMAT_ASM) && !defined(__SOFTFP__)
+ 
+ /* armhf builds default to vfp, not neon, and refuses to compile neon intrinsics
+  * unless you tell it "no really".
+diff --git a/src/util/fossilize_db.c b/src/util/fossilize_db.c
+index e1709a1ff64..26024101b83 100644
+--- a/src/util/fossilize_db.c
++++ b/src/util/fossilize_db.c
+@@ -156,18 +156,18 @@ update_foz_index(struct foz_db *foz_db, FILE *db_idx, unsigned file_idx)
+       offset += header->payload_size;
+       parsed_offset = offset;
+ 
+-      /* Truncate the entry's hash string to a 64bit hash for use with a
+-       * 64bit hash table for looking up file offsets.
+-       */
+-      hash_str[16] = '\0';
+-      uint64_t key = strtoull(hash_str, NULL, 16);
+-
+       struct foz_db_entry *entry = ralloc(foz_db->mem_ctx,
+                                           struct foz_db_entry);
+       entry->header = *header;
+       entry->file_idx = file_idx;
+       _mesa_sha1_hex_to_sha1(entry->key, hash_str);
+ 
++      /* Truncate the entry's hash string to a 64bit hash for use with a
++       * 64bit hash table for looking up file offsets.
++       */
++      hash_str[16] = '\0';
++      uint64_t key = strtoull(hash_str, NULL, 16);
++
+       entry->offset = cache_offset;
+ 
+       _mesa_hash_table_u64_insert(foz_db->index_db, key, entry);
+diff --git a/src/util/macros.h b/src/util/macros.h
+index 1fc9e23355b..4bd18f55ec0 100644
+--- a/src/util/macros.h
++++ b/src/util/macros.h
+@@ -30,6 +30,8 @@
+ #include "c99_compat.h"
+ #include "c11_compat.h"
+ 
++#include <stdint.h>
++
+ /* Compute the size of an array */
+ #ifndef ARRAY_SIZE
+ #  define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
+@@ -392,6 +394,30 @@ do {                       \
+ #define BITFIELD64_RANGE(b, count) \
+    (BITFIELD64_MASK((b) + (count)) & ~BITFIELD64_MASK(b))
+ 
++static inline int64_t
++u_intN_max(unsigned bit_size)
++{
++   assert(bit_size <= 64 && bit_size > 0);
++   return INT64_MAX >> (64 - bit_size);
++}
++
++static inline int64_t
++u_intN_min(unsigned bit_size)
++{
++   /* On 2's compliment platforms, which is every platform Mesa is likely to
++    * every worry about, stdint.h generally calculated INT##_MIN in this
++    * manner.
++    */
++   return (-u_intN_max(bit_size)) - 1;
++}
++
++static inline uint64_t
++u_uintN_max(unsigned bit_size)
++{
++   assert(bit_size <= 64 && bit_size > 0);
++   return UINT64_MAX >> (64 - bit_size);
++}
++
+ /* TODO: In future we should try to move this to u_debug.h once header
+  * dependencies are reorganised to allow this.
+  */
+diff --git a/src/util/meson.build b/src/util/meson.build
+index aa5bfef5dbc..319b22d9bf7 100644
+--- a/src/util/meson.build
++++ b/src/util/meson.build
+@@ -383,6 +383,15 @@ if with_tests
+     env: ['BUILD_FULL_PATH='+process_test_exe_full_path]
+   )
+ 
++  test('int_min_max',
++    executable('int_min_max_test',
++    files('tests/int_min_max.cpp'),
++      include_directories : [inc_include, inc_src],
++      dependencies : [idep_mesautil, idep_gtest],
++    ),
++    suite : ['util'],
++  )
++
+   subdir('tests/cache')
+   subdir('tests/fast_idiv_by_const')
+   subdir('tests/fast_urem_by_const')
+diff --git a/src/util/tests/fast_idiv_by_const/fast_idiv_by_const_test.cpp b/src/util/tests/fast_idiv_by_const/fast_idiv_by_const_test.cpp
+index 330f90fa464..abf6079944f 100644
+--- a/src/util/tests/fast_idiv_by_const/fast_idiv_by_const_test.cpp
++++ b/src/util/tests/fast_idiv_by_const/fast_idiv_by_const_test.cpp
+@@ -30,9 +30,6 @@
+ 
+ #define RAND_TEST_ITERATIONS 100000
+ 
+-#define MAX_UINT(bits) \
+-   (((bits) == 64) ? UINT64_MAX : ((1ull << (bits)) - 1))
+-
+ static inline uint64_t
+ utrunc(uint64_t x, unsigned num_bits)
+ {
+@@ -82,7 +79,7 @@ uadd_sat(uint64_t a, uint64_t b, unsigned num_bits)
+       return sum < a ? UINT64_MAX : sum;
+    } else {
+       /* Check if sum is more than num_bits */
+-      return (sum >> num_bits) ? MAX_UINT(num_bits) : sum;
++      return (sum >> num_bits) ? u_uintN_max(num_bits) : sum;
+    }
+ }
+ 
+@@ -201,7 +198,7 @@ rand_uint(unsigned bits, unsigned min)
+    if (k == 17) {
+       return min + (rand() % 16);
+    } else if (k == 42) {
+-      return MAX_UINT(bits) - (rand() % 16);
++      return u_uintN_max(bits) - (rand() % 16);
+    } else if (k == 9) {
+       uint64_t r;
+       do {
+@@ -230,7 +227,7 @@ rand_sint(unsigned bits, unsigned min_abs)
+ {
+    /* Make sure we hit MIN_INT every once in a while */
+    if (rand() % 64 == 37)
+-      return INT64_MIN >> (64 - bits);
++      return u_intN_min(bits);
+ 
+    int64_t s = rand_uint(bits - 1, min_abs);
+    return rand() & 1 ? s : -s;
+diff --git a/src/util/tests/int_min_max.cpp b/src/util/tests/int_min_max.cpp
+new file mode 100644
+index 00000000000..8d74ecb7d33
+--- /dev/null
++++ b/src/util/tests/int_min_max.cpp
+@@ -0,0 +1,73 @@
++/*
++ * Copyright © 2021 Intel Corporation
++ *
++ * Permission is hereby granted, free of charge, to any person obtaining a
++ * copy of this software and associated documentation files (the "Software"),
++ * to deal in the Software without restriction, including without limitation
++ * the rights to use, copy, modify, merge, publish, distribute, sublicense,
++ * and/or sell copies of the Software, and to permit persons to whom the
++ * Software is furnished to do so, subject to the following conditions:
++ *
++ * The above copyright notice and this permission notice (including the next
++ * paragraph) shall be included in all copies or substantial portions of the
++ * Software.
++ *
++ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
++ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
++ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
++ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
++ * IN THE SOFTWARE.
++ */
++
++#include <gtest/gtest.h>
++#include "util/macros.h"
++
++#define MESA_UINT24_MAX  16777215
++#define MESA_INT24_MAX   8388607
++#define MESA_INT24_MIN   (-8388607-1)
++
++#define MESA_UINT12_MAX  4095
++#define MESA_INT12_MAX   2047
++#define MESA_INT12_MIN   (-2047-1)
++
++#define MESA_UINT10_MAX  1023
++#define MESA_INT10_MAX   511
++#define MESA_INT10_MIN   (-511-1)
++
++TEST(int_min_max, u_intN_min)
++{
++   EXPECT_EQ(INT64_MIN, u_intN_min(64));
++   EXPECT_EQ(INT32_MIN, u_intN_min(32));
++   EXPECT_EQ(INT16_MIN, u_intN_min(16));
++   EXPECT_EQ(INT8_MIN,  u_intN_min(8));
++
++   EXPECT_EQ(MESA_INT24_MIN, u_intN_min(24));
++   EXPECT_EQ(MESA_INT12_MIN, u_intN_min(12));
++   EXPECT_EQ(MESA_INT10_MIN, u_intN_min(10));
++}
++
++TEST(int_min_max, u_intN_max)
++{
++   EXPECT_EQ(INT64_MAX, u_intN_max(64));
++   EXPECT_EQ(INT32_MAX, u_intN_max(32));
++   EXPECT_EQ(INT16_MAX, u_intN_max(16));
++   EXPECT_EQ(INT8_MAX,  u_intN_max(8));
++
++   EXPECT_EQ(MESA_INT24_MAX, u_intN_max(24));
++   EXPECT_EQ(MESA_INT12_MAX, u_intN_max(12));
++   EXPECT_EQ(MESA_INT10_MAX, u_intN_max(10));
++}
++
++TEST(int_min_max, u_uintN_max)
++{
++   EXPECT_EQ(UINT64_MAX, u_uintN_max(64));
++   EXPECT_EQ(UINT32_MAX, u_uintN_max(32));
++   EXPECT_EQ(UINT16_MAX, u_uintN_max(16));
++   EXPECT_EQ(UINT8_MAX,  u_uintN_max(8));
++
++   EXPECT_EQ(MESA_UINT24_MAX, u_uintN_max(24));
++   EXPECT_EQ(MESA_UINT12_MAX, u_uintN_max(12));
++   EXPECT_EQ(MESA_UINT10_MAX, u_uintN_max(10));
++}
+diff --git a/src/vulkan/wsi/wsi_common.c b/src/vulkan/wsi/wsi_common.c
+index b1360edb911..292bb976da8 100644
+--- a/src/vulkan/wsi/wsi_common.c
++++ b/src/vulkan/wsi/wsi_common.c
+@@ -653,6 +653,10 @@ wsi_common_queue_present(const struct wsi_device *wsi,
+       if (result != VK_SUCCESS)
+          goto fail_present;
+ 
++      if (wsi->sw)
++	      wsi->WaitForFences(device, 1, &swapchain->fences[image_index],
++				 true, ~0ull);
++
+       const VkPresentRegionKHR *region = NULL;
+       if (regions && regions->pRegions)
+          region = &regions->pRegions[i];
