@@ -73,6 +73,7 @@ Source1:        Mesa-MLAA-License-Clarification-Email.txt
 # https://gitlab.freedesktop.org/mesa/mesa/-/merge_requests/11940
 Patch0001: gallium-llvm13.patch
 
+Patch0002: crocus-fixes.diff
 BuildRequires:  meson >= 0.45
 BuildRequires:  gcc
 BuildRequires:  gcc-c++
