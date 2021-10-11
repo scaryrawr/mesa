@@ -59,3 +59,20 @@ index 2c8ea3a6529..56b517a28b6 100644
        usage |= ISL_SURF_USAGE_DISPLAY_BIT;
     return usage;
  }
+diff --git a/src/gallium/drivers/crocus/crocus_state.c b/src/gallium/drivers/crocus/crocus_state.c
+index 9dbe0a49e2d..4160b6260c6 100644
+--- a/src/gallium/drivers/crocus/crocus_state.c
++++ b/src/gallium/drivers/crocus/crocus_state.c
+@@ -5861,8 +5861,10 @@ crocus_upload_dirty_render_state(struct crocus_context *ice,
+      bool ret = crocus_calculate_urb_fence(batch, ice->curbe.total_size,
+                                            brw_vue_prog_data(ice->shaders.prog[MESA_SHADER_VERTEX]->prog_data)->urb_entry_size,
+                                            ((struct brw_sf_prog_data *)ice->shaders.sf_prog->prog_data)->urb_entry_size);
+-     if (ret)
+-        dirty |= CROCUS_DIRTY_GEN5_PIPELINED_POINTERS;
++     if (ret) {
++	dirty |= CROCUS_DIRTY_GEN5_PIPELINED_POINTERS | CROCUS_DIRTY_RASTER | CROCUS_DIRTY_CLIP;
++	stage_dirty |= CROCUS_STAGE_DIRTY_GS | CROCUS_STAGE_DIRTY_VS;
++     }
+    }
+ #endif
+    if (dirty & CROCUS_DIRTY_CC_VIEWPORT) {
