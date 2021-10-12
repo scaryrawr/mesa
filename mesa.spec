@@ -74,6 +74,20 @@ Source1:        Mesa-MLAA-License-Clarification-Email.txt
 Patch0001: gallium-llvm13.patch
 
 Patch0002: crocus-fixes.diff
+
+# Patches from Karol Herbst to make Tegra work again:
+# https://bugzilla.redhat.com/show_bug.cgi?id=1989726#c46
+# see also:
+# https://gitlab.freedesktop.org/mesa/mesa/-/issues/5399
+# First two are https://gitlab.freedesktop.org/mesa/mesa/-/merge_requests/13231
+Patch0003: 0001-tegra-Use-private-reference-count-for-sampler-views.patch
+Patch0004: 0002-tegra-Use-private-reference-count-for-resources.patch
+# Last four revert https://gitlab.freedesktop.org/mesa/mesa/-/merge_requests/3724
+Patch0005: 0003-Revert-nouveau-Use-format-modifiers-in-buffer-alloca.patch
+Patch0006: 0004-Revert-nouveau-no-modifier-the-invalid-modifier.patch
+Patch0007: 0005-Revert-nouveau-Use-DRM_FORMAT_MOD_NVIDIA_BLOCK_LINEA.patch
+Patch0008: 0006-Revert-nouveau-Stash-supported-sector-layout-in-scre.patch
+
 BuildRequires:  meson >= 0.45
 BuildRequires:  gcc
 BuildRequires:  gcc-c++
