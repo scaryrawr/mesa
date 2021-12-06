@@ -69,6 +69,11 @@ Source0:        https://mesa.freedesktop.org/archive/%{name}-%{ver}.tar.xz
 # Fedora opts to ignore the optional part of clause 2 and treat that code as 2 clause BSD.
 Source1:        Mesa-MLAA-License-Clarification-Email.txt
 
+# Patch from upstream to make GBM work again with NVIDIA 495:
+# https://bugzilla.redhat.com/show_bug.cgi?id=2028524
+# https://gitlab.freedesktop.org/mesa/mesa/-/issues/5709
+Patch0001: 14049.patch
+
 # Patches from Karol Herbst to make Tegra work again:
 # https://bugzilla.redhat.com/show_bug.cgi?id=1989726#c46
 # see also:
