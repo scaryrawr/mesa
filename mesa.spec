@@ -57,7 +57,7 @@
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-%global ver 21.3.5
+%global ver 21.3.6
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
 Release:        %autorelease
 License:        MIT
@@ -81,12 +81,6 @@ Patch0005: 0003-Revert-nouveau-Use-format-modifiers-in-buffer-alloca.patch
 Patch0006: 0004-Revert-nouveau-no-modifier-the-invalid-modifier.patch
 Patch0007: 0005-Revert-nouveau-Use-DRM_FORMAT_MOD_NVIDIA_BLOCK_LINEA.patch
 Patch0008: 0006-Revert-nouveau-Stash-supported-sector-layout-in-scre.patch
-
-# Patches to fix Intel blinking, see:
-# https://gitlab.freedesktop.org/pzanoni/mesa/-/commit/07dc3d4238e57901ccf98e0b506d9aad2c86b9d9
-# https://bugzilla.redhat.com/show_bug.cgi?id=2036600
-# https://bugzilla.redhat.com/show_bug.cgi?id=2040771
-Patch0009: 0001-iris-implement-inter-context-busy-tracking.patch
 
 BuildRequires:  meson >= 0.45
 BuildRequires:  gcc
