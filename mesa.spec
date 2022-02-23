@@ -57,7 +57,7 @@
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-%global ver 21.3.6
+%global ver 21.3.7
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
 Release:        %autorelease
 License:        MIT
@@ -73,9 +73,6 @@ Source1:        Mesa-MLAA-License-Clarification-Email.txt
 # https://bugzilla.redhat.com/show_bug.cgi?id=1989726#c46
 # see also:
 # https://gitlab.freedesktop.org/mesa/mesa/-/issues/5399
-# First two are https://gitlab.freedesktop.org/mesa/mesa/-/merge_requests/13231
-Patch0003: 0001-tegra-Use-private-reference-count-for-sampler-views.patch
-Patch0004: 0002-tegra-Use-private-reference-count-for-resources.patch
 # Last four revert https://gitlab.freedesktop.org/mesa/mesa/-/merge_requests/3724
 Patch0005: 0003-Revert-nouveau-Use-format-modifiers-in-buffer-alloca.patch
 Patch0006: 0004-Revert-nouveau-no-modifier-the-invalid-modifier.patch
