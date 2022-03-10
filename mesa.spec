@@ -370,7 +370,6 @@ cp %{SOURCE1} docs/
   -Dvalgrind=%{?with_valgrind:enabled}%{!?with_valgrind:disabled} \
   -Dbuild-tests=false \
   -Dselinux=true \
-  -Dprefer-crocus=true \
   %{nil}
 %meson_build
 
