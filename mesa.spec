@@ -310,17 +310,10 @@ Requires:       %{name}-libd3d%{?_isa} = %{?epoch:%{epoch}:}%{version}-%{release
 %package vulkan-drivers
 Summary:        Mesa Vulkan drivers
 Requires:       vulkan%{_isa}
+Obsoletes:      mesa-vulkan-devel < %{?epoch:%{epoch}:}%{version}-%{release}
 
 %description vulkan-drivers
 The drivers with support for the Vulkan API.
-
-%package vulkan-devel
-Summary:        Mesa Vulkan development files
-Requires:       %{name}-vulkan-drivers%{?_isa} = %{?epoch:%{epoch}:}%{version}-%{release}
-Requires:       vulkan-devel
-
-%description vulkan-devel
-Headers for development with the Vulkan API.
 
 %prep
 %autosetup -n %{name}-%{ver} -p1
@@ -601,8 +594,6 @@ popd
 %{_datadir}/vulkan/icd.d/panfrost_icd.*.json
 %endif
 %endif
-
-%files vulkan-devel
 
 %changelog
 %autochangelog
