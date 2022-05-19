@@ -52,7 +52,7 @@
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-%global ver 22.0.3
+%global ver 22.1.0
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
 Release:        %autorelease
 License:        MIT
