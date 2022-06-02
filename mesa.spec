@@ -52,7 +52,7 @@
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-%global ver 22.1.0
+%global ver 22.1.1
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
 Release:        %autorelease
 License:        MIT
@@ -74,7 +74,6 @@ Patch0006: 0004-Revert-nouveau-no-modifier-the-invalid-modifier.patch
 Patch0007: 0005-Revert-nouveau-Use-DRM_FORMAT_MOD_NVIDIA_BLOCK_LINEA.patch
 Patch0008: 0006-Revert-nouveau-Stash-supported-sector-layout-in-scre.patch
 
-Patch0009: 0001-llvmpipe-flush-resources-for-kms-swrast-path.patch
 BuildRequires:  meson >= 0.45
 BuildRequires:  gcc
 BuildRequires:  gcc-c++
