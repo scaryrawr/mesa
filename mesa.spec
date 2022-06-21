@@ -56,13 +56,13 @@
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-%global ver 22.1.0
+%global ver 22.1.2
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
 Release:        %autorelease
 License:        MIT
 URL:            http://www.mesa3d.org
 
-Source0:        https://mesa.freedesktop.org/archive/%{name}-%{ver}.tar.xz
+Source0:        https://archive.mesa3d.org/mesa-%{ver}.tar.xz
 # src/gallium/auxiliary/postprocess/pp_mlaa* have an ... interestingly worded license.
 # Source1 contains email correspondence clarifying the license terms.
 # Fedora opts to ignore the optional part of clause 2 and treat that code as 2 clause BSD.
