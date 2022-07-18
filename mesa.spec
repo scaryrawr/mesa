@@ -13,6 +13,7 @@
 
 %ifarch %{ix86} x86_64
 %global with_crocus 1
+%global with_i915   1
 %global with_iris   1
 %global with_vmware 1
 %global with_xa     1
@@ -77,6 +78,9 @@ Patch0005: 0003-Revert-nouveau-Use-format-modifiers-in-buffer-alloca.patch
 Patch0006: 0004-Revert-nouveau-no-modifier-the-invalid-modifier.patch
 Patch0007: 0005-Revert-nouveau-Use-DRM_FORMAT_MOD_NVIDIA_BLOCK_LINEA.patch
 Patch0008: 0006-Revert-nouveau-Stash-supported-sector-layout-in-scre.patch
+
+# attempt to fix race in kms_swrast_dri.so affecting kwin.
+Patch0010: 0001-kms-dri-add-mutex-lock-around-map-unmap.patch
 
 BuildRequires:  meson >= 0.45
 BuildRequires:  gcc
@@ -360,7 +364,7 @@ cp %{SOURCE1} docs/
   -Ddri3=enabled \
   -Dosmesa=true \
 %if 0%{?with_hardware}
-  -Dgallium-drivers=swrast,virgl,nouveau%{?with_r300:,r300}%{?with_crocus:,crocus}%{?with_iris:,iris}%{?with_vmware:,svga}%{?with_radeonsi:,radeonsi}%{?with_r600:,r600}%{?with_freedreno:,freedreno}%{?with_etnaviv:,etnaviv}%{?with_tegra:,tegra}%{?with_vc4:,vc4}%{?with_v3d:,v3d}%{?with_kmsro:,kmsro}%{?with_lima:,lima}%{?with_panfrost:,panfrost}%{?with_vulkan_hw:,zink}%{?with_d3d12:,d3d12} \
+  -Dgallium-drivers=swrast,virgl,nouveau%{?with_r300:,r300}%{?with_crocus:,crocus}%{?with_i915:,i915}%{?with_iris:,iris}%{?with_vmware:,svga}%{?with_radeonsi:,radeonsi}%{?with_r600:,r600}%{?with_freedreno:,freedreno}%{?with_etnaviv:,etnaviv}%{?with_tegra:,tegra}%{?with_vc4:,vc4}%{?with_v3d:,v3d}%{?with_kmsro:,kmsro}%{?with_lima:,lima}%{?with_panfrost:,panfrost}%{?with_vulkan_hw:,zink}%{?with_d3d12:,d3d12} \
 %else
   -Dgallium-drivers=swrast,virgl \
 %endif
@@ -513,6 +517,7 @@ popd
 %endif
 %ifarch %{ix86} x86_64
 %{_libdir}/dri/crocus_dri.so
+%{_libdir}/dri/i915_dri.so
 %{_libdir}/dri/iris_dri.so
 %endif
 %ifarch %{arm} aarch64
