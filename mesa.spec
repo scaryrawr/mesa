@@ -15,7 +15,6 @@
 %global with_crocus 1
 %global with_i915   1
 %global with_iris   1
-%global with_vmware 1
 %global with_xa     1
 %global platform_vulkan ,intel
 %endif
@@ -41,6 +40,7 @@
 %global with_r600 1
 %endif
 %global with_radeonsi 1
+%global with_vmware 1
 %endif
 
 %ifarch %{valgrind_arches}
