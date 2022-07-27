@@ -15,7 +15,6 @@
 %global with_crocus 1
 %global with_i915   1
 %global with_iris   1
-%global with_vmware 1
 %global with_xa     1
 %global with_d3d12  1
 %global platform_vulkan ,intel
@@ -45,6 +44,7 @@
 %global with_r600 1
 %endif
 %global with_radeonsi 1
+%global with_vmware 1
 %endif
 
 %ifarch %{valgrind_arches}
@@ -57,7 +57,7 @@
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-%global ver 22.1.3
+%global ver 22.1.4
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
 Release:        %autorelease
 License:        MIT
