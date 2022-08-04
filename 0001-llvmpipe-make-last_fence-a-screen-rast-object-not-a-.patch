@@ -1,0 +1,229 @@
+From 64e7c42f1b68250d2280320e01da2f5a0c4b07eb Mon Sep 17 00:00:00 2001
+From: Dave Airlie <airlied@redhat.com>
+Date: Fri, 22 Jul 2022 11:12:58 +1000
+Subject: [PATCH 1/2] llvmpipe: make last_fence a screen/rast object not a
+ context one.
+
+When a flush happens the per-context setup is used to hold the fence
+for the last scene sent to the rasterizer. However when multiple
+contexts are in use, this fence won't get returned to be blocked on.
+
+Instead move the last fence to the rasterizer object, and return
+that instead as it should be valid across contexts.
+
+Fixes gtk4 bugs on llvmpipe since overlapping vertex/fragment.
+
+Fixes: 6bbbe15a783a ("Reinstate: llvmpipe: allow vertex processing and fragment processing in parallel")
+Acked-by: Mike Blumenkrantz <michael.blumenkrantz@gmail.com>
+Part-of: <https://gitlab.freedesktop.org/mesa/mesa/-/merge_requests/17702>
+---
+ src/gallium/drivers/llvmpipe/lp_flush.c       | 12 ++++++---
+ src/gallium/drivers/llvmpipe/lp_rast.c        | 14 +++++++++-
+ src/gallium/drivers/llvmpipe/lp_rast.h        |  3 ++-
+ src/gallium/drivers/llvmpipe/lp_rast_priv.h   |  2 ++
+ src/gallium/drivers/llvmpipe/lp_setup.c       | 26 +++++--------------
+ src/gallium/drivers/llvmpipe/lp_setup.h       |  1 -
+ .../drivers/llvmpipe/lp_setup_context.h       |  1 -
+ 7 files changed, 33 insertions(+), 26 deletions(-)
+
+diff --git a/src/gallium/drivers/llvmpipe/lp_flush.c b/src/gallium/drivers/llvmpipe/lp_flush.c
+index c231f334eaf..c72944232e7 100644
+--- a/src/gallium/drivers/llvmpipe/lp_flush.c
++++ b/src/gallium/drivers/llvmpipe/lp_flush.c
+@@ -38,7 +38,9 @@
+ #include "lp_flush.h"
+ #include "lp_context.h"
+ #include "lp_setup.h"
+-
++#include "lp_fence.h"
++#include "lp_screen.h"
++#include "lp_rast.h"
+ 
+ /**
+  * \param fence  if non-null, returns pointer to a fence which can be waited on
+@@ -49,11 +51,15 @@ llvmpipe_flush( struct pipe_context *pipe,
+                 const char *reason)
+ {
+    struct llvmpipe_context *llvmpipe = llvmpipe_context(pipe);
+-
++   struct llvmpipe_screen *screen = llvmpipe_screen(pipe->screen);
+    draw_flush(llvmpipe->draw);
+ 
+    /* ask the setup module to flush */
+-   lp_setup_flush(llvmpipe->setup, fence, reason);
++   lp_setup_flush(llvmpipe->setup, reason);
++
++   lp_rast_fence(screen->rast, (struct lp_fence **)fence);
++   if (fence && (!*fence))
++      *fence = (struct pipe_fence_handle *)lp_fence_create(0);
+ 
+    /* Enable to dump BMPs of the color/depth buffers each frame */
+    if (0) {
+diff --git a/src/gallium/drivers/llvmpipe/lp_rast.c b/src/gallium/drivers/llvmpipe/lp_rast.c
+index e27d78a3432..6cdaa51b62d 100644
+--- a/src/gallium/drivers/llvmpipe/lp_rast.c
++++ b/src/gallium/drivers/llvmpipe/lp_rast.c
+@@ -47,6 +47,7 @@
+ #include "gallivm/lp_bld_format.h"
+ #include "gallivm/lp_bld_debug.h"
+ #include "lp_scene.h"
++#include "lp_screen.h"
+ #include "lp_tex_sample.h"
+ 
+ 
+@@ -1128,6 +1129,10 @@ lp_rast_queue_scene( struct lp_rasterizer *rast,
+ {
+    LP_DBG(DEBUG_SETUP, "%s\n", __FUNCTION__);
+ 
++   lp_fence_reference(&rast->last_fence, scene->fence);
++   if (rast->last_fence)
++      rast->last_fence->issued = TRUE;
++
+    if (rast->num_threads == 0) {
+       /* no threading */
+       unsigned fpstate = util_fpstate_get();
+@@ -1384,6 +1389,8 @@ void lp_rast_destroy( struct lp_rasterizer *rast )
+       align_free(rast->tasks[i].thread_data.cache);
+    }
+ 
++   lp_fence_reference(&rast->last_fence, NULL);
++
+    /* for synchronizing rasterization threads */
+    if (rast->num_threads > 0) {
+       util_barrier_destroy( &rast->barrier );
+@@ -1394,4 +1401,9 @@ void lp_rast_destroy( struct lp_rasterizer *rast )
+    FREE(rast);
+ }
+ 
+-
++void lp_rast_fence(struct lp_rasterizer *rast,
++                   struct lp_fence **fence)
++{
++   if (fence)
++      lp_fence_reference((struct lp_fence **)fence, rast->last_fence);
++}
+diff --git a/src/gallium/drivers/llvmpipe/lp_rast.h b/src/gallium/drivers/llvmpipe/lp_rast.h
+index 14a2710f7f5..1756345737f 100644
+--- a/src/gallium/drivers/llvmpipe/lp_rast.h
++++ b/src/gallium/drivers/llvmpipe/lp_rast.h
+@@ -388,5 +388,6 @@ lp_debug_draw_bins_by_cmd_length( struct lp_scene *scene );
+ void
+ lp_debug_draw_bins_by_coverage( struct lp_scene *scene );
+ 
+-
++void lp_rast_fence(struct lp_rasterizer *rast,
++                   struct lp_fence **fence);
+ #endif
+diff --git a/src/gallium/drivers/llvmpipe/lp_rast_priv.h b/src/gallium/drivers/llvmpipe/lp_rast_priv.h
+index c4da9cca2ff..8b28893aa22 100644
+--- a/src/gallium/drivers/llvmpipe/lp_rast_priv.h
++++ b/src/gallium/drivers/llvmpipe/lp_rast_priv.h
+@@ -129,6 +129,8 @@ struct lp_rasterizer
+ 
+    /** For synchronizing the rasterization threads */
+    util_barrier barrier;
++
++   struct lp_fence *last_fence;
+ };
+ 
+ void
+diff --git a/src/gallium/drivers/llvmpipe/lp_setup.c b/src/gallium/drivers/llvmpipe/lp_setup.c
+index ce681792683..ad92e2557c2 100644
+--- a/src/gallium/drivers/llvmpipe/lp_setup.c
++++ b/src/gallium/drivers/llvmpipe/lp_setup.c
+@@ -207,11 +207,6 @@ lp_setup_rasterize_scene( struct lp_setup_context *setup )
+ 
+    lp_scene_end_binning(scene);
+ 
+-   lp_fence_reference(&setup->last_fence, scene->fence);
+-
+-   if (setup->last_fence)
+-      setup->last_fence->issued = TRUE;
+-
+    mtx_lock(&screen->rast_mutex);
+    lp_rast_queue_scene(screen->rast, scene);
+    mtx_unlock(&screen->rast_mutex);
+@@ -387,17 +382,10 @@ fail:
+ 
+ 
+ void
+-lp_setup_flush( struct lp_setup_context *setup,
+-                struct pipe_fence_handle **fence,
+-                const char *reason)
++lp_setup_flush(struct lp_setup_context *setup,
++               const char *reason)
+ {
+-   set_scene_state( setup, SETUP_FLUSHED, reason );
+-
+-   if (fence) {
+-      lp_fence_reference((struct lp_fence **)fence, setup->last_fence);
+-      if (!*fence)
+-         *fence = (struct pipe_fence_handle *)lp_fence_create(0);
+-   }
++   set_scene_state(setup, SETUP_FLUSHED, reason);
+ }
+ 
+ 
+@@ -571,7 +559,7 @@ lp_setup_clear( struct lp_setup_context *setup,
+    if (flags & PIPE_CLEAR_DEPTHSTENCIL) {
+       unsigned flagszs = flags & PIPE_CLEAR_DEPTHSTENCIL;
+       if (!lp_setup_try_clear_zs(setup, depth, stencil, flagszs)) {
+-         lp_setup_flush(setup, NULL, __FUNCTION__);
++         set_scene_state( setup, SETUP_FLUSHED, __FUNCTION__ );
+ 
+          if (!lp_setup_try_clear_zs(setup, depth, stencil, flagszs))
+             assert(0);
+@@ -583,7 +571,7 @@ lp_setup_clear( struct lp_setup_context *setup,
+       for (i = 0; i < setup->fb.nr_cbufs; i++) {
+          if ((flags & (1 << (2 + i))) && setup->fb.cbufs[i]) {
+             if (!lp_setup_try_clear_color_buffer(setup, color, i)) {
+-               lp_setup_flush(setup, NULL, __FUNCTION__);
++               set_scene_state( setup, SETUP_FLUSHED, __FUNCTION__ );
+ 
+                if (!lp_setup_try_clear_color_buffer(setup, color, i))
+                   assert(0);
+@@ -1589,7 +1577,6 @@ lp_setup_destroy( struct lp_setup_context *setup )
+ 
+    LP_DBG(DEBUG_SETUP, "number of scenes used: %d\n", setup->num_active_scenes);
+    slab_destroy(&setup->scene_slab);
+-   lp_fence_reference(&setup->last_fence, NULL);
+ 
+    FREE( setup );
+ }
+@@ -1758,7 +1745,8 @@ lp_setup_end_query(struct lp_setup_context *setup, struct llvmpipe_query *pq)
+       }
+    }
+    else {
+-      lp_fence_reference(&pq->fence, setup->last_fence);
++      struct llvmpipe_screen *screen = llvmpipe_screen(setup->pipe->screen);
++      lp_rast_fence(screen->rast, &pq->fence);
+    }
+ 
+ fail:
+diff --git a/src/gallium/drivers/llvmpipe/lp_setup.h b/src/gallium/drivers/llvmpipe/lp_setup.h
+index 5ecef123417..fe360be63ca 100644
+--- a/src/gallium/drivers/llvmpipe/lp_setup.h
++++ b/src/gallium/drivers/llvmpipe/lp_setup.h
+@@ -64,7 +64,6 @@ lp_setup_clear(struct lp_setup_context *setup,
+ 
+ void
+ lp_setup_flush( struct lp_setup_context *setup,
+-                struct pipe_fence_handle **fence,
+                 const char *reason);
+ 
+ 
+diff --git a/src/gallium/drivers/llvmpipe/lp_setup_context.h b/src/gallium/drivers/llvmpipe/lp_setup_context.h
+index 420b78e2f52..fac84fb56ec 100644
+--- a/src/gallium/drivers/llvmpipe/lp_setup_context.h
++++ b/src/gallium/drivers/llvmpipe/lp_setup_context.h
+@@ -96,7 +96,6 @@ struct lp_setup_context
+    struct lp_scene *scenes[MAX_SCENES];  /**< all the scenes */
+    struct lp_scene *scene;               /**< current scene being built */
+ 
+-   struct lp_fence *last_fence;
+    struct llvmpipe_query *active_queries[LP_MAX_ACTIVE_BINNED_QUERIES];
+    unsigned active_binned_queries;
+ 
+-- 
+2.37.1
+
