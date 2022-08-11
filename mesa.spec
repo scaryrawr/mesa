@@ -53,7 +53,7 @@
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-%global ver 22.1.5
+%global ver 22.1.6
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
 Release:        %autorelease
 License:        MIT
@@ -74,10 +74,6 @@ Patch0005: 0003-Revert-nouveau-Use-format-modifiers-in-buffer-alloca.patch
 Patch0006: 0004-Revert-nouveau-no-modifier-the-invalid-modifier.patch
 Patch0007: 0005-Revert-nouveau-Use-DRM_FORMAT_MOD_NVIDIA_BLOCK_LINEA.patch
 Patch0008: 0006-Revert-nouveau-Stash-supported-sector-layout-in-scre.patch
-
-# two patches for llvmpipe/gtk4 bad interactions
-Patch0010: 0001-llvmpipe-make-last_fence-a-screen-rast-object-not-a-.patch
-Patch0011: 0002-llvmpipe-keep-context-list-and-use-to-track-resource.patch
 
 BuildRequires:  meson >= 0.45
 BuildRequires:  gcc
