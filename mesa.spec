@@ -53,7 +53,7 @@
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-%global ver 22.1.6
+%global ver 22.2.0-rc2
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
 Release:        %autorelease
 License:        MIT
@@ -490,6 +490,7 @@ popd
 %ifarch aarch64
 %{_libdir}/dri/ingenic-drm_dri.so
 %{_libdir}/dri/imx-drm_dri.so
+%{_libdir}/dri/imx-lcdif_dri.so
 %{_libdir}/dri/kirin_dri.so
 %{_libdir}/dri/komeda_dri.so
 %{_libdir}/dri/mali-dp_dri.so
