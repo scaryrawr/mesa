@@ -19,7 +19,7 @@
 %global platform_vulkan ,intel
 %endif
 
-%ifarch %{arm} aarch64
+%ifarch aarch64
 %if !0%{?rhel}
 %global with_etnaviv   1
 %global with_lima      1
@@ -34,7 +34,7 @@
 %global platform_vulkan ,broadcom,freedreno,panfrost
 %endif
 
-%ifnarch %{arm} s390x
+%ifnarch s390x
 %if !0%{?rhel}
 %global with_r300 1
 %global with_r600 1
@@ -487,7 +487,7 @@ popd
 %{_libdir}/dri/i915_dri.so
 %{_libdir}/dri/iris_dri.so
 %endif
-%ifarch %{arm} aarch64
+%ifarch aarch64
 %{_libdir}/dri/ingenic-drm_dri.so
 %{_libdir}/dri/imx-drm_dri.so
 %{_libdir}/dri/kirin_dri.so
@@ -588,7 +588,7 @@ popd
 %{_libdir}/libvulkan_intel.so
 %{_datadir}/vulkan/icd.d/intel_icd.*.json
 %endif
-%ifarch %{arm} aarch64
+%ifarch aarch64
 %{_libdir}/libvulkan_broadcom.so
 %{_datadir}/vulkan/icd.d/broadcom_icd.*.json
 %{_libdir}/libvulkan_freedreno.so
