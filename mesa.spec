@@ -344,6 +344,7 @@ cp %{SOURCE1} docs/
   -Dgallium-opencl=%{?with_opencl:icd}%{!?with_opencl:disabled} \
   -Dvulkan-drivers=%{?vulkan_drivers} \
   -Dvulkan-layers=device-select \
+  -Dvideo-codecs=h264dec,h264enc,h265dec,h265enc,vc1dec \
   -Dshared-glapi=enabled \
   -Dgles1=disabled \
   -Dgles2=enabled \
