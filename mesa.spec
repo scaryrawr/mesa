@@ -160,6 +160,7 @@ Obsoletes:      mesa-dri-filesystem < %{?epoch:%{epoch}:}%{version}-%{release}
 Summary:        Mesa libGL runtime libraries
 Requires:       %{name}-libglapi%{?_isa} = %{?epoch:%{epoch}:}%{version}-%{release}
 Requires:       libglvnd-glx%{?_isa} >= 1:1.3.2
+Recommends:     %{name}-dri-drivers%{?_isa} = %{?epoch:%{epoch}:}%{version}-%{release}
 
 %description libGL
 %{summary}.
@@ -178,6 +179,7 @@ Recommends:     gl-manpages
 %package libEGL
 Summary:        Mesa libEGL runtime libraries
 Requires:       libglvnd-egl%{?_isa} >= 1:1.3.2
+Recommends:     %{name}-dri-drivers%{?_isa} = %{?epoch:%{epoch}:}%{version}-%{release}
 
 %description libEGL
 %{summary}.
@@ -238,6 +240,7 @@ Requires:       %{name}-libOSMesa%{?_isa} = %{?epoch:%{epoch}:}%{version}-%{rele
 Summary:        Mesa gbm runtime library
 Provides:       libgbm
 Provides:       libgbm%{?_isa}
+Recommends:     %{name}-dri-drivers%{?_isa} = %{?epoch:%{epoch}:}%{version}-%{release}
 
 %description libgbm
 %{summary}.
