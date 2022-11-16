@@ -656,6 +656,10 @@ popd
 %if 0%{?with_d3d12}
 %files d3d12
 %{_libdir}/dri/d3d12_dri.so
+%{_libdir}/dri/d3d12_drv_video.so
+%if 0%{?with_vdpau}
+%{_libdir}/vdpau/libvdpau_d3d12.so.1*
+%endif
 
 %files d3d12-devel
 %{_includedir}/directx
