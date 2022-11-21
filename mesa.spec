@@ -417,8 +417,8 @@ popd
 %{_libdir}/libEGL_mesa.so.0*
 %files libEGL-devel
 %dir %{_includedir}/EGL
-%{_includedir}/EGL/eglmesaext.h
 %{_includedir}/EGL/eglext_angle.h
+%{_includedir}/EGL/eglmesaext.h
 
 %files libglapi
 %{_libdir}/libglapi.so.0
@@ -572,7 +572,6 @@ popd
 
 %if 0%{?with_va}
 %files va-drivers
-%{_libdir}/dri/virtio_gpu_drv_video.so
 %{_libdir}/dri/nouveau_drv_video.so
 %if 0%{?with_r600}
 %{_libdir}/dri/r600_drv_video.so
@@ -580,11 +579,11 @@ popd
 %if 0%{?with_radeonsi}
 %{_libdir}/dri/radeonsi_drv_video.so
 %endif
+%{_libdir}/dri/virtio_gpu_drv_video.so
 %endif
 
 %if 0%{?with_vdpau}
 %files vdpau-drivers
-%{_libdir}/vdpau/libvdpau_virtio_gpu.so.1*
 %{_libdir}/vdpau/libvdpau_nouveau.so.1*
 %if 0%{?with_r300}
 %{_libdir}/vdpau/libvdpau_r300.so.1*
@@ -595,6 +594,7 @@ popd
 %if 0%{?with_radeonsi}
 %{_libdir}/vdpau/libvdpau_radeonsi.so.1*
 %endif
+%{_libdir}/vdpau/libvdpau_virtio_gpu.so.1*
 %endif
 
 %files vulkan-drivers
