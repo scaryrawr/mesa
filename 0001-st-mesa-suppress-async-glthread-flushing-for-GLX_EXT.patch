@@ -1,0 +1,41 @@
+From d871958702ebcd46213cd09b91b9b05685f9be62 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Marek=20Ol=C5=A1=C3=A1k?= <marek.olsak@amd.com>
+Date: Thu, 17 Nov 2022 08:31:33 -0500
+Subject: [PATCH] st/mesa: suppress async glthread flushing for
+ GLX_EXT_texture_from_pixmap
+
+This might fix some window system issues.
+
+Fixes: 3da170faaec - glthread: change when glFlush flushes asynchronously
+
+Acked-by: Pierre-Eric Pelloux-Prayer <pierre-eric.pelloux-prayer@amd.com>
+Part-of: <https://gitlab.freedesktop.org/mesa/mesa/-/merge_requests/19809>
+---
+ src/mesa/state_tracker/st_manager.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/src/mesa/state_tracker/st_manager.c b/src/mesa/state_tracker/st_manager.c
+index 0e8644f2b8d..575b72937c7 100644
+--- a/src/mesa/state_tracker/st_manager.c
++++ b/src/mesa/state_tracker/st_manager.c
+@@ -832,6 +832,9 @@ st_context_flush(struct st_context_iface *stctxi, unsigned flags,
+       st->gfx_shaders_may_be_dirty = true;
+ }
+ 
++/* This is only for GLX_EXT_texture_from_pixmap and equivalent features
++ * in EGL and WGL.
++ */
+ static bool
+ st_context_teximage(struct st_context_iface *stctxi,
+                     enum st_texture_type tex_type,
+@@ -915,6 +918,7 @@ st_context_teximage(struct st_context_iface *stctxi,
+    texObj->needs_validation = true;
+ 
+    _mesa_dirty_texobj(ctx, texObj);
++   ctx->Shared->HasExternallySharedImages = true;
+    _mesa_unlock_texture(ctx, texObj);
+ 
+    return true;
+-- 
+2.38.1
+
