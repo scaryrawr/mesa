@@ -612,6 +612,8 @@ popd
 %ifarch %{ix86} x86_64
 %{_libdir}/libvulkan_intel.so
 %{_datadir}/vulkan/icd.d/intel_icd.*.json
+%{_libdir}/libvulkan_intel_hasvk.so
+%{_datadir}/vulkan/icd.d/intel_hasvk_icd.*.json
 %endif
 %ifarch aarch64
 %{_libdir}/libvulkan_broadcom.so
