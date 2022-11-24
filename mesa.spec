@@ -53,7 +53,7 @@
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-%global ver 22.3.0-rc3
+%global ver 22.3.0-rc4
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
 Release:        %autorelease
 License:        MIT
@@ -64,9 +64,6 @@ Source0:        https://archive.mesa3d.org/mesa-%{ver}.tar.xz
 # Source1 contains email correspondence clarifying the license terms.
 # Fedora opts to ignore the optional part of clause 2 and treat that code as 2 clause BSD.
 Source1:        Mesa-MLAA-License-Clarification-Email.txt
-
-# fix some radeonsi issues
-Patch0:	0001-st-mesa-suppress-async-glthread-flushing-for-GLX_EXT.patch
 
 BuildRequires:  meson >= 0.61.4
 BuildRequires:  gcc
