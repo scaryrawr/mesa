@@ -1,0 +1,27 @@
+From 808c054a42fd24a1aaefaeb1d95195fea9fb6e84 Mon Sep 17 00:00:00 2001
+From: Dave Airlie <airlied@redhat.com>
+Date: Wed, 7 Dec 2022 05:11:47 +1000
+Subject: [PATCH] glx: fix xshm check to init xshm_opcode.
+
+Found and proposed by Ray Strode (halfline)
+
+Fixes: 68e89401140d ("glx/drisw: use xcb instead of X to query connection")
+---
+ src/glx/drisw_glx.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/src/glx/drisw_glx.c b/src/glx/drisw_glx.c
+index c0d1e85fdc4..d7658eaf7c1 100644
+--- a/src/glx/drisw_glx.c
++++ b/src/glx/drisw_glx.c
+@@ -874,6 +874,7 @@ check_xshm(Display *dpy)
+ 
+    shm_cookie = xcb_query_extension(c, 7, "MIT-SHM");
+    shm_reply = xcb_query_extension_reply(c, shm_cookie, NULL);
++   xshm_opcode = shm_reply->major_opcode;
+ 
+    has_mit_shm = shm_reply->present;
+    free(shm_reply);
+-- 
+2.38.1
+
