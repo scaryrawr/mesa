@@ -17,7 +17,7 @@
 %global with_iris   1
 %global with_xa     1
 %global with_d3d12  1
-%global platform_vulkan ,intel
+%global platform_vulkan ,intel,intel_hasvk
 %global __meson_wrap_mode default
 %endif
 
@@ -57,7 +57,7 @@
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-%global ver 22.2.3
+%global ver 22.3.0
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
 Release:        %autorelease
 License:        MIT
@@ -69,21 +69,8 @@ Source0:        https://archive.mesa3d.org/mesa-%{ver}.tar.xz
 # Fedora opts to ignore the optional part of clause 2 and treat that code as 2 clause BSD.
 Source1:        Mesa-MLAA-License-Clarification-Email.txt
 
-# Patches from Karol Herbst to make Tegra work again:
-# https://bugzilla.redhat.com/show_bug.cgi?id=1989726#c46
-# see also:
-# https://gitlab.freedesktop.org/mesa/mesa/-/issues/5399
-# Last four revert https://gitlab.freedesktop.org/mesa/mesa/-/merge_requests/3724
-Patch0005: 0003-Revert-nouveau-Use-format-modifiers-in-buffer-alloca.patch
-Patch0006: 0004-Revert-nouveau-no-modifier-the-invalid-modifier.patch
-Patch0007: 0005-Revert-nouveau-Use-DRM_FORMAT_MOD_NVIDIA_BLOCK_LINEA.patch
-Patch0008: 0006-Revert-nouveau-Stash-supported-sector-layout-in-scre.patch
-
-# Patches from Karol Herbst to fix Nouveau multithreading:
-# https://gitlab.freedesktop.org/mesa/mesa/-/merge_requests/10752
-Patch0009: nouveau-multithreading-fixes.patch
-
-BuildRequires:  meson >= 0.45
+Patch10:        gnome-shell-glthread-disable.patch
+BuildRequires:  meson >= 0.61.4
 BuildRequires:  gcc
 BuildRequires:  gcc-c++
 BuildRequires:  gettext
@@ -136,7 +123,11 @@ BuildRequires:  pkgconfig(libglvnd) >= 1.3.2
 BuildRequires:  llvm-devel >= 7.0.0
 %if 0%{?with_opencl}
 BuildRequires:  clang-devel
+BuildRequires:  bindgen
+BuildRequires:  rust-packaging
 BuildRequires:  pkgconfig(libclc)
+BuildRequires:  pkgconfig(SPIRV-Tools)
+BuildRequires:  pkgconfig(LLVMSPIRVLib)
 %endif
 %if %{with valgrind}
 BuildRequires:  pkgconfig(valgrind)
@@ -385,12 +376,14 @@ cp %{SOURCE1} docs/
   -Dgallium-drivers=swrast,virgl \
 %endif
   -Dgallium-vdpau=%{?with_vdpau:enabled}%{!?with_vdpau:disabled} \
-  -Dgallium-xvmc=disabled \
   -Dgallium-omx=%{?with_omx:bellagio}%{!?with_omx:disabled} \
   -Dgallium-va=%{?with_va:enabled}%{!?with_va:disabled} \
   -Dgallium-xa=%{?with_xa:enabled}%{!?with_xa:disabled} \
   -Dgallium-nine=%{?with_nine:true}%{!?with_nine:false} \
   -Dgallium-opencl=%{?with_opencl:icd}%{!?with_opencl:disabled} \
+%if 0%{?with_opencl}
+  -Dgallium-rusticl=true -Dllvm=enabled -Drust_std=2021 \
+%endif
   -Dvulkan-drivers=%{?vulkan_drivers} \
   -Dvulkan-layers=device-select \
   -Dshared-glapi=enabled \
@@ -455,8 +448,8 @@ popd
 %{_libdir}/libEGL_mesa.so.0*
 %files libEGL-devel
 %dir %{_includedir}/EGL
+%{_includedir}/EGL/eglext_angle.h
 %{_includedir}/EGL/eglmesaext.h
-%{_includedir}/EGL/eglextchromium.h
 
 %files libglapi
 %{_libdir}/libglapi.so.0
@@ -498,9 +491,12 @@ popd
 %if 0%{?with_opencl}
 %files libOpenCL
 %{_libdir}/libMesaOpenCL.so.*
+%{_libdir}/libRusticlOpenCL.so.*
 %{_sysconfdir}/OpenCL/vendors/mesa.icd
+%{_sysconfdir}/OpenCL/vendors/rusticl.icd
 %files libOpenCL-devel
 %{_libdir}/libMesaOpenCL.so
+%{_libdir}/libRusticlOpenCL.so
 %endif
 
 %if 0%{?with_nine}
@@ -614,6 +610,7 @@ popd
 %if 0%{?with_radeonsi}
 %{_libdir}/dri/radeonsi_drv_video.so
 %endif
+%{_libdir}/dri/virtio_gpu_drv_video.so
 %endif
 
 %if 0%{?with_vdpau}
@@ -628,6 +625,7 @@ popd
 %if 0%{?with_radeonsi}
 %{_libdir}/vdpau/libvdpau_radeonsi.so.1*
 %endif
+%{_libdir}/vdpau/libvdpau_virtio_gpu.so.1*
 %endif
 
 %files vulkan-drivers
@@ -642,6 +640,8 @@ popd
 %ifarch %{ix86} x86_64
 %{_libdir}/libvulkan_intel.so
 %{_datadir}/vulkan/icd.d/intel_icd.*.json
+%{_libdir}/libvulkan_intel_hasvk.so
+%{_datadir}/vulkan/icd.d/intel_hasvk_icd.*.json
 %endif
 %ifarch aarch64
 %{_libdir}/libvulkan_broadcom.so
