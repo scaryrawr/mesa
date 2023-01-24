@@ -70,6 +70,7 @@ Source0:        https://archive.mesa3d.org/mesa-%{ver}.tar.xz
 Source1:        Mesa-MLAA-License-Clarification-Email.txt
 
 Patch10:        gnome-shell-glthread-disable.patch
+Patch11:        radeonsi-turn-off-glthread.patch
 
 BuildRequires:  meson >= 0.61.4
 BuildRequires:  gcc
