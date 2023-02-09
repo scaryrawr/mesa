@@ -53,7 +53,7 @@
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-%global ver 22.3.4
+%global ver 22.3.5
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
 Release:        %autorelease
 License:        MIT
@@ -65,8 +65,8 @@ Source0:        https://archive.mesa3d.org/mesa-%{ver}.tar.xz
 # Fedora opts to ignore the optional part of clause 2 and treat that code as 2 clause BSD.
 Source1:        Mesa-MLAA-License-Clarification-Email.txt
 
-Patch10:        gnome-shell-glthread-disable.patch
-Patch11:        radeonsi-turn-off-glthread.patch
+# fix crocus gnome-shell/webrtc captures
+Patch1:         0001-crocus-disable-Y-tiling-for-render-targets-properly.patch
 
 BuildRequires:  meson >= 0.61.4
 BuildRequires:  gcc
