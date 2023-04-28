@@ -131,6 +131,9 @@ BuildRequires:  pkgconfig(valgrind)
 %endif
 BuildRequires:  python3-devel
 BuildRequires:  python3-mako
+%ifarch %{ix86} x86_64
+BuildRequires:  python3-ply
+%endif
 BuildRequires:  vulkan-headers
 BuildRequires:  glslang
 %if 0%{?with_vulkan_hw}
@@ -371,6 +374,7 @@ export RUSTFLAGS="%build_rustflags"
   -Dglx=dri \
   -Degl=enabled \
   -Dglvnd=true \
+  -Dintel-clc=enabled \
   -Dmicrosoft-clc=disabled \
   -Dllvm=enabled \
   -Dshared-llvm=enabled \
