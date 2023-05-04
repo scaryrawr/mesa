@@ -14,6 +14,9 @@
 %ifarch %{ix86} x86_64
 %global with_crocus 1
 %global with_i915   1
+%if !0%{?rhel}
+%global with_intel_clc 1
+%endif
 %global with_iris   1
 %global with_xa     1
 %global with_d3d12  1
@@ -135,6 +138,9 @@ BuildRequires:  pkgconfig(valgrind)
 %endif
 BuildRequires:  python3-devel
 BuildRequires:  python3-mako
+%if 0%{?with_intel_clc}
+BuildRequires:  python3-ply
+%endif
 BuildRequires:  vulkan-headers
 BuildRequires:  glslang
 %if 0%{?with_vulkan_hw}
@@ -390,7 +396,7 @@ export RUSTFLAGS="%build_rustflags"
   -Dgallium-nine=%{?with_nine:true}%{!?with_nine:false} \
   -Dgallium-opencl=%{?with_opencl:icd}%{!?with_opencl:disabled} \
 %if 0%{?with_opencl}
-  -Dgallium-rusticl=true -Dllvm=enabled -Drust_std=2021 \
+  -Dgallium-rusticl=true \
 %endif
   -Dvulkan-drivers=%{?vulkan_drivers} \
   -Dvulkan-layers=device-select \
@@ -402,6 +408,9 @@ export RUSTFLAGS="%build_rustflags"
   -Dglx=dri \
   -Degl=enabled \
   -Dglvnd=true \
+%if 0%{?with_intel_clc}
+  -Dintel-clc=enabled \
+%endif
   -Dmicrosoft-clc=disabled \
   -Dllvm=enabled \
   -Dshared-llvm=enabled \
