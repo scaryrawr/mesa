@@ -56,7 +56,7 @@
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-%global ver 23.0.3
+%global ver 23.1.0
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
 Release:        %autorelease
 License:        MIT
@@ -133,6 +133,7 @@ BuildRequires:  pkgconfig(LLVMSPIRVLib)
 BuildRequires:  pkgconfig(valgrind)
 %endif
 BuildRequires:  python3-devel
+BuildRequires:  python3-dataclasses
 BuildRequires:  python3-mako
 %if 0%{?with_intel_clc}
 BuildRequires:  python3-ply
