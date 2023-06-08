@@ -85,8 +85,10 @@ BuildRequires:  kernel-headers
 # SRPMs for each arch still have the same build dependencies. See:
 # https://bugzilla.redhat.com/show_bug.cgi?id=1859515
 BuildRequires:  pkgconfig(libdrm) >= 2.4.97
+BuildRequires:  pkgconfig(libunwind)
 BuildRequires:  pkgconfig(expat)
 BuildRequires:  pkgconfig(zlib) >= 1.2.3
+BuildRequires:  pkgconfig(libzstd)
 BuildRequires:  pkgconfig(libselinux)
 BuildRequires:  pkgconfig(wayland-scanner)
 BuildRequires:  pkgconfig(wayland-protocols) >= 1.8
@@ -113,6 +115,7 @@ BuildRequires:  pkgconfig(xcb-randr)
 BuildRequires:  pkgconfig(xrandr) >= 1.3
 BuildRequires:  bison
 BuildRequires:  flex
+BuildRequires:  lm_sensors-devel
 %if 0%{?with_vdpau}
 BuildRequires:  pkgconfig(vdpau) >= 1.1
 %endif
@@ -417,8 +420,6 @@ export RUSTFLAGS="%build_rustflags"
   -Dvalgrind=%{?with_valgrind:enabled}%{!?with_valgrind:disabled} \
   -Dbuild-tests=false \
   -Dselinux=true \
-  -Dlibunwind=disabled \
-  -Dlmsensors=disabled \
   -Dandroid-libbacktrace=disabled \
   %{nil}
 %meson_build
