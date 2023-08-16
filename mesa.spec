@@ -90,9 +90,7 @@ BuildRequires:  kernel-headers
 # SRPMs for each arch still have the same build dependencies. See:
 # https://bugzilla.redhat.com/show_bug.cgi?id=1859515
 BuildRequires:  pkgconfig(libdrm) >= 2.4.97
-%if 0%{?with_libunwind}
 BuildRequires:  pkgconfig(libunwind)
-%endif
 BuildRequires:  pkgconfig(expat)
 BuildRequires:  pkgconfig(zlib) >= 1.2.3
 BuildRequires:  pkgconfig(libzstd)
@@ -122,9 +120,7 @@ BuildRequires:  pkgconfig(xcb-randr)
 BuildRequires:  pkgconfig(xrandr) >= 1.3
 BuildRequires:  bison
 BuildRequires:  flex
-%if 0%{?with_lmsensors}
 BuildRequires:  lm_sensors-devel
-%endif
 %if 0%{?with_vdpau}
 BuildRequires:  pkgconfig(vdpau) >= 1.1
 %endif
@@ -221,6 +217,10 @@ Requires:       %{name}-libglapi%{?_isa} = %{?epoch:%{epoch}:}%{version}-%{relea
 %if 0%{?with_va}
 Recommends:     %{name}-va-drivers%{?_isa}
 %endif
+# If mesa-libEGL is installed, it must match in version. This is here to prevent using
+# mesa-libEGL < 23.0.3-1 (frozen in the 'fedora' repo) which didn't have strong enough
+# inter-dependencies. See https://bugzilla.redhat.com/show_bug.cgi?id=2193135 .
+Requires:       (%{name}-libEGL%{?_isa} = %{?epoch:%{epoch}:}%{version}-%{release} if %{name}-libEGL%{?_isa})
 
 %description dri-drivers
 %{summary}.
@@ -437,12 +437,6 @@ export RUSTFLAGS="%build_rustflags"
   -Dvalgrind=%{?with_valgrind:enabled}%{!?with_valgrind:disabled} \
   -Dbuild-tests=false \
   -Dselinux=true \
-%if !0%{?with_libunwind}
-  -Dlibunwind=disabled \
-%endif
-%if !0%{?with_lmsensors}
-  -Dlmsensors=disabled \
-%endif
   -Dandroid-libbacktrace=disabled \
   %{nil}
 %meson_build
