@@ -19,25 +19,25 @@
 %endif
 %global with_iris   1
 %global with_xa     1
+%global intel_platform_vulkan ,intel,intel_hasvk
 %global with_d3d12  1
-%global platform_vulkan ,intel,intel_hasvk
 %global __meson_wrap_mode default
 %endif
 
-%ifarch aarch64
+%ifarch aarch64 x86_64 %{ix86}
 %if !0%{?rhel}
-%global with_etnaviv   1
 %global with_lima      1
 %global with_vc4       1
-%global with_v3d       1
 %endif
 %global with_d3d12     1
+%global with_etnaviv   1
 %global with_freedreno 1
 %global with_kmsro     1
 %global with_panfrost  1
 %global with_tegra     1
+%global with_v3d       1
 %global with_xa        1
-%global platform_vulkan ,broadcom,freedreno,panfrost
+%global extra_platform_vulkan ,broadcom,freedreno,panfrost
 %global __meson_wrap_mode default
 %endif
 
@@ -61,14 +61,14 @@
 %bcond_with valgrind
 %endif
 
-%global vulkan_drivers swrast%{?base_vulkan}%{?platform_vulkan}
+%global vulkan_drivers swrast%{?base_vulkan}%{?intel_platform_vulkan}%{?extra_platform_vulkan}
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-%global ver 23.1.6
+%global ver 23.3.0-rc2
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
 Release:        %autorelease
-License:        MIT
+License:        MIT AND BSD-3-Clause AND SGI-B-2.0
 URL:            http://www.mesa3d.org
 
 Source0:        https://archive.mesa3d.org/mesa-%{ver}.tar.xz
@@ -78,8 +78,11 @@ Source0:        https://archive.mesa3d.org/mesa-%{ver}.tar.xz
 Source1:        Mesa-MLAA-License-Clarification-Email.txt
 
 Patch10:        gnome-shell-glthread-disable.patch
+Patch11:        0001-nir-add-deref-follower-builder-for-casts.patch
+Patch12:        0001-zink-Fix-crash-on-zink_create_screen-error-path.patch
+Patch13:        0001-zink-allow-software-rendering-only-if-selected.patch
 
-BuildRequires:  meson >= 1.0.0
+BuildRequires:  meson >= 1.2.0
 BuildRequires:  gcc
 BuildRequires:  gcc-c++
 BuildRequires:  gettext
@@ -421,7 +424,7 @@ export RUSTFLAGS="%build_rustflags"
   -Dvulkan-drivers=%{?vulkan_drivers} \
   -Dvulkan-layers=device-select \
   -Dshared-glapi=enabled \
-  -Dgles1=disabled \
+  -Dgles1=enabled \
   -Dgles2=enabled \
   -Dopengl=true \
   -Dgbm=enabled \
@@ -570,7 +573,7 @@ popd
 %{_libdir}/dri/i915_dri.so
 %{_libdir}/dri/iris_dri.so
 %endif
-%ifarch aarch64
+%ifarch aarch64 x86_64 %{ix86}
 %{_libdir}/dri/ingenic-drm_dri.so
 %{_libdir}/dri/imx-drm_dri.so
 %{_libdir}/dri/imx-lcdif_dri.so
@@ -616,6 +619,7 @@ popd
 %if 0%{?with_kmsro}
 %{_libdir}/dri/armada-drm_dri.so
 %{_libdir}/dri/exynos_dri.so
+%{_libdir}/dri/hdlcd_dri.so
 %{_libdir}/dri/hx8357d_dri.so
 %{_libdir}/dri/ili9225_dri.so
 %{_libdir}/dri/ili9341_dri.so
@@ -681,7 +685,7 @@ popd
 %{_libdir}/libvulkan_intel_hasvk.so
 %{_datadir}/vulkan/icd.d/intel_hasvk_icd.*.json
 %endif
-%ifarch aarch64
+%ifarch aarch64 x86_64 %{ix86}
 %{_libdir}/libvulkan_broadcom.so
 %{_datadir}/vulkan/icd.d/broadcom_icd.*.json
 %{_libdir}/libvulkan_freedreno.so
@@ -704,6 +708,7 @@ popd
 
 %files d3d12-static
 %{_libdir}/libDirectX-Guids.a
+%{_libdir}/libd3dx12-format-properties.a
 %endif
 
 %changelog

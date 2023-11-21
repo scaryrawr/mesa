@@ -1,0 +1,45 @@
+From 8927e2739b4997312785ea3972044348b9f3b0b4 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Jos=C3=A9=20Exp=C3=B3sito?= <jexposit@redhat.com>
+Date: Fri, 3 Nov 2023 14:15:06 +0100
+Subject: [PATCH] zink: Fix crash on zink_create_screen error path
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+The `zink_internal_create_screen()` function can fail before
+`screen->loader_lib` and/or `screen->instance` are initialized.
+The `zink_destroy_screen()` doesn't check those cases and crashes.
+
+The error was found by Fedora's CI. The back trace is available at [1].
+
+[1] https://bodhi.fedoraproject.org/updates/FEDORA-2023-c39f82c465
+Fixes: 0c2045553fe4 ("zink: use screen destructor for creation fails")
+Signed-off-by: José Expósito <jexposit@redhat.com>
+---
+ src/gallium/drivers/zink/zink_screen.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/src/gallium/drivers/zink/zink_screen.c b/src/gallium/drivers/zink/zink_screen.c
+index 74b575ed658..0edb8d5f35e 100644
+--- a/src/gallium/drivers/zink/zink_screen.c
++++ b/src/gallium/drivers/zink/zink_screen.c
+@@ -1520,10 +1520,14 @@ zink_destroy_screen(struct pipe_screen *pscreen)
+    if (screen->dev)
+       VKSCR(DestroyDevice)(screen->dev, NULL);
+ 
+-   VKSCR(DestroyInstance)(screen->instance, NULL);
++   if (screen->instance)
++      VKSCR(DestroyInstance)(screen->instance, NULL);
++
+    util_idalloc_mt_fini(&screen->buffer_ids);
+ 
+-   util_dl_close(screen->loader_lib);
++   if (screen->loader_lib)
++      util_dl_close(screen->loader_lib);
++
+    if (screen->drm_fd != -1)
+       close(screen->drm_fd);
+ 
+-- 
+2.41.0
+
