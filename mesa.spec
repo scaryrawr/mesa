@@ -368,19 +368,6 @@ cp %{SOURCE1} docs/
 # ensure standard Rust compiler flags are set
 export RUSTFLAGS="%build_rustflags"
 
-# An update on the linker will now refuse to create binaries with a loadable
-# memory segment that has read, write and execute permissions set.
-# mesa creates one unless "glx-read-only-text" is enabled, however, the
-# documentation for "glx-read-only-text" reads:
-#
-#   "Disable writable .text section on x86 (decreases performance)"
-#
-# In order to avoid possible performance regressions, disable the linker error:
-# https://bugzilla.redhat.com/show_bug.cgi?id=2250927
-%ifarch %{ix86}
-LDFLAGS=-Wl,--no-error-rwx-segments
-%endif
-
 # We've gotten a report that enabling LTO for mesa breaks some games. See
 # https://bugzilla.redhat.com/show_bug.cgi?id=1862771 for details.
 # Disable LTO for now
@@ -430,6 +417,9 @@ LDFLAGS=-Wl,--no-error-rwx-segments
   -Dlmsensors=disabled \
 %endif
   -Dandroid-libbacktrace=disabled \
+%ifarch %{ix86}
+  -Dglx-read-only-text=true
+%endif
   %{nil}
 %meson_build
 
