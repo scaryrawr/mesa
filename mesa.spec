@@ -442,6 +442,9 @@ export RUSTFLAGS="%build_rustflags"
   -Dbuild-tests=false \
   -Dselinux=true \
   -Dandroid-libbacktrace=disabled \
+%ifarch %{ix86}
+  -Dglx-read-only-text=true
+%endif
   %{nil}
 %meson_build
 
