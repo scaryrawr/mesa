@@ -9,11 +9,13 @@
 %global with_r300 1
 %global with_r600 1
 %global with_nine 1
-%global with_nvk %{with vulkan_hw}
+%if 0%{?with_vulkan_hw}
+%global with_nvk %{with_vulkan_hw}
+%endif
 %global with_omx 1
 %global with_opencl 1
 %endif
-%global base_vulkan ,amd
+%global base_vulkan %{?with_vulkan_hw:,amd}%{!?with_vulkan_hw:%{nil}}
 %endif
 
 %ifnarch %{ix86}
@@ -28,10 +30,12 @@
 %global with_iris   1
 %global with_xa     1
 %global with_intel_clc 1
-%global intel_platform_vulkan ,intel,intel_hasvk
+%global intel_platform_vulkan %{?with_vulkan_hw:,intel,intel_hasvk}%{!?with_vulkan_hw:%{nil}}
 %endif
 %ifarch x86_64
+%if !0%{?with_vulkan_hw}
 %global with_intel_vk_rt 1
+%endif
 %endif
 
 %ifarch aarch64 x86_64 %{ix86}
@@ -46,7 +50,7 @@
 %global with_tegra     1
 %global with_v3d       1
 %global with_xa        1
-%global extra_platform_vulkan ,broadcom,freedreno,panfrost,imagination-experimental
+%global extra_platform_vulkan %{?with_vulkan_hw:,broadcom,freedreno,panfrost,imagination-experimental}%{!?with_vulkan_hw:%{nil}}
 %endif
 
 %if !0%{?rhel}
