@@ -74,7 +74,6 @@ Source0:        https://archive.mesa3d.org/mesa-%{ver}.tar.xz
 Source1:        Mesa-MLAA-License-Clarification-Email.txt
 
 Patch10:        gnome-shell-glthread-disable.patch
-Patch11:        0001-zink-initialize-drm_fd-to-1.patch
 
 BuildRequires:  meson >= 1.2.0
 BuildRequires:  gcc
