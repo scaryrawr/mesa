@@ -76,6 +76,7 @@ Source1:        Mesa-MLAA-License-Clarification-Email.txt
 Patch10:        gnome-shell-glthread-disable.patch
 Patch11:        0001-intel-compiler-reemit-boolean-resolve-for-inverted-i.patch
 Patch12:        0001-intel-compiler-fix-release-build-unused-variable.patch
+Patch13:        disable-zink-egl-fallback.patch
 
 BuildRequires:  meson >= 1.2.0
 BuildRequires:  gcc
