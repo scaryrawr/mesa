@@ -24,7 +24,7 @@ index b9f7366763b..5a4ec96e93f 100644
 +
 +      if (devinfo->ver <= 5) {
 +         /* redo boolean resolve on gen5 */
-+         fs_reg masked = bld.vgrf(glsl_int_type());
++         fs_reg masked = bld.vgrf(BRW_REGISTER_TYPE_D);
 +         bld.AND(masked, cond_reg, brw_imm_d(1));
 +         masked.negate = true;
 +         bld.MOV(retype(cond_reg, BRW_REGISTER_TYPE_D), masked);
