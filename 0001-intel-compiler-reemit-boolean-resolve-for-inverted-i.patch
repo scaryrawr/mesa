@@ -19,15 +19,15 @@ diff --git a/src/intel/compiler/brw_fs_nir.cpp b/src/intel/compiler/brw_fs_nir.c
 index 33f2a4046b2..ccdd0fe7db8 100644
 --- a/src/intel/compiler/brw_fs_nir.cpp
 +++ b/src/intel/compiler/brw_fs_nir.cpp
-@@ -422,6 +422,17 @@ fs_nir_emit_if(nir_to_brw_state &ntb, nir_if *if_stmt)
+@@ -422,6 +422,17 @@ fs_visitor::nir_emit_if(nir_if *if_stmt)
        invert = true;
-       cond_reg = get_nir_src(ntb, cond->src[0].src);
+       cond_reg = get_nir_src(cond->src[0].src);
        cond_reg = offset(cond_reg, bld, cond->src[0].swizzle[0]);
 +
 +      if (devinfo->ver <= 5 &&
 +	  (cond->instr.pass_flags & BRW_NIR_BOOLEAN_MASK) == BRW_NIR_BOOLEAN_NEEDS_RESOLVE) {
 +         /* redo boolean resolve on gen5 */
-+         fs_reg masked = ntb.s.vgrf(glsl_int_type());
++         fs_reg masked = bld.vgrf(BRW_REGISTER_TYPE_D);
 +         bld.AND(masked, cond_reg, brw_imm_d(1));
 +         masked.negate = true;
 +         fs_reg tmp = bld.vgrf(cond_reg.type);
@@ -36,7 +36,7 @@ index 33f2a4046b2..ccdd0fe7db8 100644
 +      }
     } else {
        invert = false;
-       cond_reg = get_nir_src(ntb, if_stmt->condition);
+       cond_reg = get_nir_src(if_stmt->condition);
 -- 
 2.43.0
 
