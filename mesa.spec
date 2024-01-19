@@ -61,7 +61,7 @@
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-%global ver 24.0.0-rc1
+%global ver 24.0.0-rc2
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
 Release:        %autorelease
 License:        MIT AND BSD-3-Clause AND SGI-B-2.0
@@ -650,10 +650,7 @@ popd
 
 %files vulkan-drivers
 %{_libdir}/libvulkan_lvp.so
-%{_libdir}/libpowervr_rogue.so
-%{_libdir}/libvulkan_powervr_mesa.so
 %{_datadir}/vulkan/icd.d/lvp_icd.*.json
-%{_datadir}/vulkan/icd.d/powervr_mesa_icd.*.json
 %{_libdir}/libVkLayer_MESA_device_select.so
 %{_datadir}/vulkan/implicit_layer.d/VkLayer_MESA_device_select.json
 %if 0%{?with_vulkan_hw}
@@ -673,6 +670,9 @@ popd
 %{_datadir}/vulkan/icd.d/freedreno_icd.*.json
 %{_libdir}/libvulkan_panfrost.so
 %{_datadir}/vulkan/icd.d/panfrost_icd.*.json
+%{_libdir}/libpowervr_rogue.so
+%{_libdir}/libvulkan_powervr_mesa.so
+%{_datadir}/vulkan/icd.d/powervr_mesa_icd.*.json
 %endif
 %endif
 
