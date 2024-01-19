@@ -74,6 +74,8 @@ Source0:        https://archive.mesa3d.org/mesa-%{ver}.tar.xz
 Source1:        Mesa-MLAA-License-Clarification-Email.txt
 
 Patch10:        gnome-shell-glthread-disable.patch
+# Workaround for llvm/clang bug: https://github.com/llvm/llvm-project/issues/78691
+Patch11:        gallium-Undef-__arm_streaming-macro-to-workaround-cl.patch
 
 BuildRequires:  meson >= 1.2.0
 BuildRequires:  gcc
