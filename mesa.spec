@@ -5,14 +5,11 @@
 %global with_va 1
 %if !0%{?rhel}
 %global with_nine 1
+%global with_nvk %{with vulkan_hw}
 %global with_omx 1
 %global with_opencl 1
 %endif
 %global base_vulkan ,amd
-%endif
-
-%if 0%{?with_vulkan_hw}
-%global with_nvk 1
 %endif
 
 %ifarch %{ix86} x86_64
