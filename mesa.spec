@@ -93,6 +93,7 @@ BuildRequires:  kernel-headers
 BuildRequires:  pkgconfig(libdrm) >= 2.4.97
 BuildRequires:  pkgconfig(lua)
 BuildRequires:  pkgconfig(libunwind)
+BuildRequires:  pkgconfig(libarchive)
 BuildRequires:  pkgconfig(expat)
 BuildRequires:  pkgconfig(zlib) >= 1.2.3
 BuildRequires:  pkgconfig(libzstd)
