@@ -1,0 +1,84 @@
+From 4204fc291b6d78507efc3a1ea6ebe3e2065de03c Mon Sep 17 00:00:00 2001
+From: Iago Toral Quiroga <itoral@igalia.com>
+Date: Wed, 27 Mar 2024 11:02:12 +0100
+Subject: [PATCH] v3d: fix GFXH-930 workaround
+
+When we are reading any builtins like VertexID or InstanceID
+the hw requires the first attribute to be active. In the
+coordinate shader, however, it may have been DCEd, so we need
+to detect that case and program a dummy attribute in that
+scenario.
+
+Fixes missing window decorations with GTK4+.
+
+Closes: https://gitlab.freedesktop.org/mesa/mesa/-/issues/10853
+---
+ src/broadcom/compiler/nir_to_vir.c  | 17 +++++++++++++++--
+ src/gallium/drivers/v3d/v3dx_draw.c | 12 +++++++++++-
+ 2 files changed, 26 insertions(+), 3 deletions(-)
+
+diff --git a/src/broadcom/compiler/nir_to_vir.c b/src/broadcom/compiler/nir_to_vir.c
+index 265654625017c..f0309935ccc6d 100644
+--- a/src/broadcom/compiler/nir_to_vir.c
++++ b/src/broadcom/compiler/nir_to_vir.c
+@@ -2745,8 +2745,21 @@ ntq_emit_load_input(struct v3d_compile *c, nir_intrinsic_instr *instr)
+                                SYSTEM_VALUE_VERTEX_ID)) {
+                       index++;
+                }
+-               for (int i = 0; i < offset; i++)
+-                      index += c->vattr_sizes[i];
++
++               for (int i = 0; i < offset; i++) {
++                      /* GFXH-930: if any builtins (vid, iid, etc) are read then
++                       * attribute 0 must be active (size > 0). When we hit this,
++                       * the driver is expected to program attribute 0 to have a
++                       * size of 1, so here we need to add that.
++                       */
++                      if (i == 0 && c->vs_key->is_coord &&
++                          c->vattr_sizes[i] == 0 && index > 0) {
++                         index++;
++                      } else {
++                         index += c->vattr_sizes[i];
++                      }
++               }
++
+                index += nir_intrinsic_component(instr);
+                for (int i = 0; i < instr->num_components; i++) {
+                       struct qreg vpm_offset = vir_uniform_ui(c, index++);
+diff --git a/src/gallium/drivers/v3d/v3dx_draw.c b/src/gallium/drivers/v3d/v3dx_draw.c
+index 8fb99f735ab0f..163b7a037e6f1 100644
+--- a/src/gallium/drivers/v3d/v3dx_draw.c
++++ b/src/gallium/drivers/v3d/v3dx_draw.c
+@@ -709,6 +709,9 @@ v3d_emit_gl_shader_state(struct v3d_context *v3d,
+         }
+ 
+         bool cs_loaded_any = false;
++        const bool cs_uses_builtins = v3d->prog.cs->prog_data.vs->uses_iid ||
++                                      v3d->prog.cs->prog_data.vs->uses_biid ||
++                                      v3d->prog.cs->prog_data.vs->uses_vid;
+         for (int i = 0; i < vtx->num_elements; i++) {
+                 struct pipe_vertex_element *elem = &vtx->pipe[i];
+                 struct pipe_vertex_buffer *vb =
+@@ -738,11 +741,18 @@ v3d_emit_gl_shader_state(struct v3d_context *v3d,
+                          * inputs.  (Since CS is just dead-code-elimination
+                          * compared to VS, we can't have CS loading but not
+                          * VS).
++                         *
++                         * Also, if any builtins are loaded, then we always
++                         * need the first attribute to be enabled.
+                          */
+                         if (v3d->prog.cs->prog_data.vs->vattr_sizes[i])
+                                 cs_loaded_any = true;
+-                        if (i == vtx->num_elements - 1 && !cs_loaded_any) {
++                        if (i == 0 && cs_uses_builtins && !cs_loaded_any) {
++                                attr.number_of_values_read_by_coordinate_shader = 1;
++                                cs_loaded_any = true;
++                        } else if (i == vtx->num_elements - 1 && !cs_loaded_any) {
+                                 attr.number_of_values_read_by_coordinate_shader = 1;
++                                cs_loaded_any = true;
+                         }
+                         attr.maximum_index = 0xffffff;
+                 }
+-- 
+GitLab
+
