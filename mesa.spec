@@ -62,7 +62,7 @@
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-%global ver 24.0.4
+%global ver 24.0.5
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
 Release:        %autorelease
 License:        MIT AND BSD-3-Clause AND SGI-B-2.0
@@ -75,16 +75,6 @@ Source0:        https://archive.mesa3d.org/mesa-%{ver}.tar.xz
 Source1:        Mesa-MLAA-License-Clarification-Email.txt
 
 Patch10:        gnome-shell-glthread-disable.patch
-
-# Backport of https://gitlab.freedesktop.org/mesa/mesa/-/merge_requests/28101
-# to fix LLVM 18 compatibility (https://bugzilla.redhat.com/show_bug.cgi?id=2268800).
-Patch20:        0001-Pass-no-verify-fixpoint-option-to-instcombine-in-LLV.patch
-
-# Fix broken rendering with new GTK4 renderer on Raspberry Pi
-# https://bugzilla.redhat.com/show_bug.cgi?id=2269412
-# https://gitlab.freedesktop.org/mesa/mesa/-/issues/10853
-# https://gitlab.freedesktop.org/mesa/mesa/-/merge_requests/28414
-Patch22:        28414.patch
 
 BuildRequires:  meson >= 1.3.0
 BuildRequires:  gcc
