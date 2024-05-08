@@ -1,9 +1,13 @@
 %ifnarch s390x
 %global with_hardware 1
+%global with_radeonsi 1
+%global with_vmware 1
 %global with_vulkan_hw 1
 %global with_vdpau 1
 %global with_va 1
 %if !0%{?rhel}
+%global with_r300 1
+%global with_r600 1
 %global with_nine 1
 %global with_nvk %{with vulkan_hw}
 %global with_omx 1
@@ -15,12 +19,15 @@
 %ifarch %{ix86} x86_64
 %global with_crocus 1
 %global with_i915   1
+%global with_iris   1
+%global with_xa     1
 %if !0%{?rhel}
 %global with_intel_clc 1
 %endif
-%global with_iris   1
-%global with_xa     1
 %global intel_platform_vulkan ,intel,intel_hasvk
+%endif
+%ifarch x86_64
+%global with_intel_vk_rt 1
 %endif
 
 %ifarch aarch64 x86_64 %{ix86}
@@ -36,15 +43,6 @@
 %global with_v3d       1
 %global with_xa        1
 %global extra_platform_vulkan ,broadcom,freedreno,panfrost,imagination-experimental
-%endif
-
-%ifnarch s390x
-%if !0%{?rhel}
-%global with_r300 1
-%global with_r600 1
-%endif
-%global with_radeonsi 1
-%global with_vmware 1
 %endif
 
 %if !0%{?rhel}
@@ -422,10 +420,11 @@ export MESON_PACKAGE_CACHE_DIR="%{cargo_registry}/"
   -Dgbm=enabled \
   -Dglx=dri \
   -Degl=enabled \
-  -Dglvnd=true \
+  -Dglvnd=enabled \
 %if 0%{?with_intel_clc}
   -Dintel-clc=enabled \
 %endif
+  -Dintel-rt=%{?with_intel_vk_rt:enabled}%{!?with_intel_vk_rt:disabled} \
   -Dmicrosoft-clc=disabled \
   -Dllvm=enabled \
   -Dshared-llvm=enabled \
@@ -441,9 +440,6 @@ export MESON_PACKAGE_CACHE_DIR="%{cargo_registry}/"
   -Dandroid-libbacktrace=disabled \
 %ifarch %{ix86}
   -Dglx-read-only-text=true \
-%endif
-%ifnarch x86_64
-  -Dintel-rt=disabled \
 %endif
   %{nil}
 %meson_build
