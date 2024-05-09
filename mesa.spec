@@ -16,6 +16,12 @@
 %global base_vulkan ,amd
 %endif
 
+%ifnarch %{ix86}
+%if !0%{?rhel}
+%global with_teflon 1
+%endif
+%endif
+
 %ifarch %{ix86} x86_64
 %global with_crocus 1
 %global with_i915   1
@@ -136,6 +142,11 @@ BuildRequires:  pkgconfig(libomxil-bellagio)
 BuildRequires:  pkgconfig(libelf)
 BuildRequires:  pkgconfig(libglvnd) >= 1.3.2
 BuildRequires:  llvm-devel >= 7.0.0
+%if 0%{?with_teflon}
+BuildRequires:  flatbuffers-devel
+BuildRequires:  flatbuffers-compiler
+BuildRequires:  xtensor-devel
+%endif
 %if 0%{?with_opencl} || 0%{?with_nvk}
 BuildRequires:  clang-devel
 BuildRequires:  bindgen
@@ -345,6 +356,13 @@ Requires:       %{name}-libOpenCL%{?_isa} = %{?epoch:%{epoch}:}%{version}-%{rele
 %{summary}.
 %endif
 
+%if 0%{?with_teflon}
+%package libTeflon
+Summary:        Mesa TensorFlow Lite delegate
+
+%description libTeflon
+%{summary}.
+
 %if 0%{?with_nine}
 %package libd3d
 Summary:        Mesa Direct3D9 state tracker
@@ -408,6 +426,7 @@ export MESON_PACKAGE_CACHE_DIR="%{cargo_registry}/"
   -Dgallium-va=%{?with_va:enabled}%{!?with_va:disabled} \
   -Dgallium-xa=%{?with_xa:enabled}%{!?with_xa:disabled} \
   -Dgallium-nine=%{?with_nine:true}%{!?with_nine:false} \
+  -Dteflon=%{?with_teflon:true}%{!?with_teflon:false} \
   -Dgallium-opencl=%{?with_opencl:icd}%{!?with_opencl:disabled} \
 %if 0%{?with_opencl}
   -Dgallium-rusticl=true \
@@ -530,12 +549,18 @@ popd
 %endif
 %endif
 
+%if 0%{?with_teflon}
+%files libTeflon
+%{_libdir}/libteflon.so
+%endif
+
 %if 0%{?with_opencl}
 %files libOpenCL
 %{_libdir}/libMesaOpenCL.so.*
 %{_libdir}/libRusticlOpenCL.so.*
 %{_sysconfdir}/OpenCL/vendors/mesa.icd
 %{_sysconfdir}/OpenCL/vendors/rusticl.icd
+
 %files libOpenCL-devel
 %{_libdir}/libMesaOpenCL.so
 %{_libdir}/libRusticlOpenCL.so
