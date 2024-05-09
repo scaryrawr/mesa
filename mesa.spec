@@ -362,6 +362,7 @@ Summary:        Mesa TensorFlow Lite delegate
 
 %description libTeflon
 %{summary}.
+%endif
 
 %if 0%{?with_nine}
 %package libd3d
