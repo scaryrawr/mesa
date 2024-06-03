@@ -27,9 +27,7 @@
 %global with_i915   1
 %global with_iris   1
 %global with_xa     1
-%if !0%{?rhel}
 %global with_intel_clc 1
-%endif
 %global intel_platform_vulkan ,intel,intel_hasvk
 %endif
 %ifarch x86_64
@@ -143,13 +141,15 @@ BuildRequires:  flatbuffers-devel
 BuildRequires:  flatbuffers-compiler
 BuildRequires:  xtensor-devel
 %endif
-%if 0%{?with_opencl} || 0%{?with_nvk}
+%if 0%{?with_opencl} || 0%{?with_nvk} || 0%{?with_intel_clc}
 BuildRequires:  clang-devel
-BuildRequires:  bindgen
-BuildRequires:  rust-packaging
 BuildRequires:  pkgconfig(libclc)
 BuildRequires:  pkgconfig(SPIRV-Tools)
 BuildRequires:  pkgconfig(LLVMSPIRVLib)
+%endif
+%if 0%{?with_opencl} || 0%{?with_nvk}
+BuildRequires:  bindgen
+BuildRequires:  rust-packaging
 %endif
 %if 0%{?with_nvk}
 BuildRequires:  cbindgen
