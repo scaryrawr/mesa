@@ -81,6 +81,7 @@ Patch:          gnome-shell-glthread-disable.patch
 Patch:          fix-egl-on-s390x.patch
 %endif
 Patch:          0001-llvmpipe-Init-eglQueryDmaBufModifiersEXT-num_modifie.patch
+Patch:          0001-Revert-ac-radeonsi-remove-has_syncobj-has_fence_to_h.patch
 
 BuildRequires:  meson >= 1.3.0
 BuildRequires:  gcc
