@@ -80,6 +80,7 @@ Patch:          gnome-shell-glthread-disable.patch
 %ifarch s390x
 Patch:          fix-egl-on-s390x.patch
 %endif
+Patch:          0001-llvmpipe-Init-eglQueryDmaBufModifiersEXT-num_modifie.patch
 
 BuildRequires:  meson >= 1.3.0
 BuildRequires:  gcc
