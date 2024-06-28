@@ -77,7 +77,9 @@ Source0:        https://archive.mesa3d.org/mesa-%{ver}.tar.xz
 Source1:        Mesa-MLAA-License-Clarification-Email.txt
 
 Patch:          gnome-shell-glthread-disable.patch
+%ifarch s390x
 Patch:          fix-egl-on-s390x.patch
+%endif
 
 BuildRequires:  meson >= 1.3.0
 BuildRequires:  gcc
