@@ -81,6 +81,11 @@ Source0:        https://archive.mesa3d.org/mesa-%{ver}.tar.xz
 Source1:        Mesa-MLAA-License-Clarification-Email.txt
 
 Patch10:        gnome-shell-glthread-disable.patch
+Patch11:        0001-llvmpipe-Init-eglQueryDmaBufModifiersEXT-num_modifie.patch
+Patch12:        0001-Revert-ac-radeonsi-remove-has_syncobj-has_fence_to_h.patch
+
+# s390x only
+Patch100:       fix-egl-on-s390x.patch
 
 BuildRequires:  meson >= 1.3.0
 BuildRequires:  gcc
@@ -419,7 +424,11 @@ Requires:       %{name}-d3d12%{?_isa} = %{?epoch:%{epoch}:}%{version}-%{release}
 %endif
 
 %prep
-%autosetup -n %{name}-%{ver} -p1
+%autosetup -n %{name}-%{ver} -N
+%autopatch -p1 -M 99
+%ifarch s390x
+%autopatch -p1 -m 100
+%endif
 cp %{SOURCE1} docs/
 
 %build
