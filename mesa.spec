@@ -68,7 +68,7 @@
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-%global ver 24.1.4
+%global ver 24.2.0-rc3
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
 Release:        %autorelease
 License:        MIT AND BSD-3-Clause AND SGI-B-2.0
@@ -81,7 +81,6 @@ Source0:        https://archive.mesa3d.org/mesa-%{ver}.tar.xz
 Source1:        Mesa-MLAA-License-Clarification-Email.txt
 
 Patch10:        gnome-shell-glthread-disable.patch
-Patch11:        0001-Revert-frontends-va-Fix-AV1-slice_data_offset-with-m.patch
 
 BuildRequires:  meson >= 1.3.0
 BuildRequires:  gcc
@@ -174,6 +173,7 @@ BuildRequires:  python3-mako
 BuildRequires:  python3-ply
 %endif
 BuildRequires:  python3-pycparser
+BuildRequires:  python3-pyyaml
 BuildRequires:  vulkan-headers
 BuildRequires:  glslang
 %if 0%{?with_vulkan_hw}
@@ -608,7 +608,9 @@ popd
 %files dri-drivers
 %dir %{_datadir}/drirc.d
 %{_datadir}/drirc.d/00-mesa-defaults.conf
+%{_libdir}/libgallium-*.so
 %{_libdir}/dri/kms_swrast_dri.so
+%{_libdir}/dri/libdril_dri.so
 %{_libdir}/dri/swrast_dri.so
 %{_libdir}/dri/virtio_gpu_dri.so
 
@@ -696,10 +698,8 @@ popd
 %{_libdir}/dri/sti_dri.so
 %{_libdir}/dri/sun4i-drm_dri.so
 %{_libdir}/dri/udl_dri.so
+%{_libdir}/dri/vkms_dri.so
 %{_libdir}/dri/zynqmp-dpsub_dri.so
-%endif
-%if 0%{?with_vulkan_hw}
-%{_libdir}/dri/zink_dri.so
 %endif
 
 %if 0%{?with_omx}
@@ -709,6 +709,7 @@ popd
 
 %if 0%{?with_va}
 %files va-drivers
+%{_libdir}/dri/libgallium_drv_video.so
 %{_libdir}/dri/nouveau_drv_video.so
 %if 0%{?with_r600}
 %{_libdir}/dri/r600_drv_video.so
@@ -721,6 +722,7 @@ popd
 
 %if 0%{?with_vdpau}
 %files vdpau-drivers
+%{_libdir}/vdpau/libvdpau_gallium.so.1*
 %{_libdir}/vdpau/libvdpau_nouveau.so.1*
 %if 0%{?with_r600}
 %{_libdir}/vdpau/libvdpau_r600.so.1*
