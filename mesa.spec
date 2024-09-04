@@ -85,6 +85,7 @@ Source0:        https://archive.mesa3d.org/mesa-%{ver}.tar.xz
 Source1:        Mesa-MLAA-License-Clarification-Email.txt
 
 Patch10:        gnome-shell-glthread-disable.patch
+Patch11:        rhbz2270430.patch
 
 BuildRequires:  meson >= 1.3.0
 BuildRequires:  gcc
@@ -96,8 +97,8 @@ BuildRequires:  kernel-headers
 # We only check for the minimum version of pkgconfig(libdrm) needed so that the
 # SRPMs for each arch still have the same build dependencies. See:
 # https://bugzilla.redhat.com/show_bug.cgi?id=1859515
-BuildRequires:  pkgconfig(libdrm) >= 2.4.119
 BuildRequires:  pkgconfig(lua)
+BuildRequires:  pkgconfig(libdrm) >= 2.4.122
 %if 0%{?with_libunwind}
 BuildRequires:  pkgconfig(libunwind)
 %endif
