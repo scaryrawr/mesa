@@ -81,6 +81,7 @@ Source0:        https://archive.mesa3d.org/mesa-%{ver}.tar.xz
 Source1:        Mesa-MLAA-License-Clarification-Email.txt
 
 Patch10:        gnome-shell-glthread-disable.patch
+Patch11:        rhbz2270430.patch
 
 BuildRequires:  meson >= 1.3.0
 BuildRequires:  gcc
