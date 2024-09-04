@@ -39,11 +39,11 @@
 %endif
 
 %ifarch aarch64 x86_64 %{ix86}
+%global with_kmsro     1
 %if !0%{?rhel}
 %global with_lima      1
 %global with_vc4       1
 %global with_etnaviv   1
-%global with_kmsro     1
 %global with_tegra     1
 %endif
 %global with_freedreno 1
