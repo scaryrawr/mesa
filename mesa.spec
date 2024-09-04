@@ -92,7 +92,7 @@ BuildRequires:  kernel-headers
 # We only check for the minimum version of pkgconfig(libdrm) needed so that the
 # SRPMs for each arch still have the same build dependencies. See:
 # https://bugzilla.redhat.com/show_bug.cgi?id=1859515
-BuildRequires:  pkgconfig(libdrm) >= 2.4.119
+BuildRequires:  pkgconfig(libdrm) >= 2.4.122
 %if 0%{?with_libunwind}
 BuildRequires:  pkgconfig(libunwind)
 %endif
