@@ -82,6 +82,10 @@ Source1:        Mesa-MLAA-License-Clarification-Email.txt
 
 Patch10:        gnome-shell-glthread-disable.patch
 Patch11:        rhbz2270430.patch
+# https://gitlab.freedesktop.org/mesa/mesa/-/merge_requests/30979
+Patch12:        0001-dril-use-the-super-fallback-path-for-software-fallba.patch
+# https://gitlab.freedesktop.org/mesa/mesa/-/merge_requests/31013
+Patch13:        0001-dril-also-create-double-buffered-configs-in-swrast-f.patch
 
 BuildRequires:  meson >= 1.3.0
 BuildRequires:  gcc
