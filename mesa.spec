@@ -41,11 +41,11 @@
 %endif
 
 %ifarch aarch64 x86_64 %{ix86}
+%global with_kmsro     1
 %if !0%{?rhel}
 %global with_lima      1
 %global with_vc4       1
 %global with_etnaviv   1
-%global with_kmsro     1
 %global with_tegra     1
 %endif
 %global with_freedreno 1
@@ -72,7 +72,7 @@
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-%global ver 24.2.1
+%global ver 24.2.2
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
 Release:        %autorelease
 License:        MIT AND BSD-3-Clause AND SGI-B-2.0
