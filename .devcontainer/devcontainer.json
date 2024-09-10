@@ -1,0 +1,20 @@
+{
+  "name": "fedora",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "features": {
+    "ghcr.io/devcontainers/features/common-utils:2": {
+      "installZsh": "true",
+      "username": "vscode",
+      "upgradePackages": "true"
+    },
+    "ghcr.io/devcontainers/features/git:1": {
+      "version": "latest",
+      "ppa": "false"
+    }
+  },
+  "runArgs": ["--userns=keep-id"],
+  "containerUser": "vscode",
+  "remoteUser": "vscode"
+}
