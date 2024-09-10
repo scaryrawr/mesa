@@ -397,6 +397,7 @@ Requires:       %{name}-libd3d%{?_isa} = %{?epoch:%{epoch}:}%{version}-%{release
 %package vulkan-drivers
 Summary:        Mesa Vulkan drivers
 Requires:       vulkan%{_isa}
+Requires:       %{name}-filesystem%{?_isa} = %{?epoch:%{epoch}:}%{version}-%{release}
 Obsoletes:      mesa-vulkan-devel < %{?epoch:%{epoch}:}%{version}-%{release}
 
 %description vulkan-drivers
@@ -522,16 +523,13 @@ popd
 %files filesystem
 %doc docs/Mesa-MLAA-License-Clarification-Email.txt
 %dir %{_libdir}/dri
-%if 0%{?with_hardware}
-%if 0%{?with_vdpau}
-%dir %{_libdir}/vdpau
-%endif
-%endif
+%dir %{_datadir}/drirc.d
 
 %files libGL
 %{_libdir}/libGLX_mesa.so.0*
 %{_libdir}/libGLX_system.so.0*
 %files libGL-devel
+%dir %{_includedir}/GL
 %dir %{_includedir}/GL/internal
 %{_includedir}/GL/internal/dri_interface.h
 %{_libdir}/pkgconfig/dri.pc
@@ -611,7 +609,6 @@ popd
 %endif
 
 %files dri-drivers
-%dir %{_datadir}/drirc.d
 %{_datadir}/drirc.d/00-mesa-defaults.conf
 %{_libdir}/libgallium-*.so
 %{_libdir}/dri/kms_swrast_dri.so
@@ -730,6 +727,7 @@ popd
 
 %if 0%{?with_vdpau}
 %files vdpau-drivers
+%dir %{_libdir}/vdpau
 %{_libdir}/vdpau/libvdpau_gallium.so.1*
 %{_libdir}/vdpau/libvdpau_nouveau.so.1*
 %if 0%{?with_r600}
