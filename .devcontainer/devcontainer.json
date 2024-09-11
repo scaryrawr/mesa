@@ -10,7 +10,8 @@
       "upgradePackages": "true"
     }
   },
-  "runArgs": ["--userns=keep-id"],
   "containerUser": "vscode",
-  "remoteUser": "vscode"
+  "remoteUser": "vscode",
+  "postCreateCommand": "sudo dnf install -y dnf-plugins-core rpmdevtools",
+  "postStartCommand": "sudo dnf builddep -y mesa.spec"
 }
