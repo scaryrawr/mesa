@@ -68,7 +68,7 @@
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-%global ver 24.2.2
+%global ver 24.2.3
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
 Release:        %autorelease
 License:        MIT AND BSD-3-Clause AND SGI-B-2.0
@@ -81,7 +81,6 @@ Source0:        https://archive.mesa3d.org/mesa-%{ver}.tar.xz
 Source1:        Mesa-MLAA-License-Clarification-Email.txt
 
 Patch10:        gnome-shell-glthread-disable.patch
-Patch11:        rhbz2270430.patch
 
 BuildRequires:  meson >= 1.3.0
 BuildRequires:  gcc
@@ -684,7 +683,6 @@ popd
 
 %if 0%{?with_va}
 %files va-drivers
-%{_libdir}/dri/libgallium_drv_video.so
 %{_libdir}/dri/nouveau_drv_video.so
 %if 0%{?with_r600}
 %{_libdir}/dri/r600_drv_video.so
@@ -698,7 +696,6 @@ popd
 %if 0%{?with_vdpau}
 %files vdpau-drivers
 %dir %{_libdir}/vdpau
-%{_libdir}/vdpau/libvdpau_gallium.so.1*
 %{_libdir}/vdpau/libvdpau_nouveau.so.1*
 %if 0%{?with_r600}
 %{_libdir}/vdpau/libvdpau_r600.so.1*
