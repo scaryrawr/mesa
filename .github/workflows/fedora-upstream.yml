@@ -1,0 +1,26 @@
+name: Get Upstream Changes
+
+on:
+  schedule:
+    - cron: "0 0 * * 6"
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: fetch upstream & push changes
+        run: |
+          git remote add upstream https://src.fedoraproject.org/rpms/mesa
+          new_branch=fetch-rawhide-$(date +'%Y%m%d%s')
+          git checkout -b $new_branch
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git pull upstream rawhide --no-ff --no-edit && (
+            git push -u origin $new_branch
+            gh pr create -B master --title 'Update color themes' --body 'Created by Github action' -a scaryrawr
+          )
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
