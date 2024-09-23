@@ -12,6 +12,6 @@
   },
   "containerUser": "vscode",
   "remoteUser": "vscode",
-  "postCreateCommand": "sudo dnf install -y dnf-plugins-core rpmdevtools",
+  "onCreateCommand": "sudo dnf install -y dnf-plugins-core rpmdevtools",
   "postStartCommand": "sudo dnf builddep -y mesa.spec"
 }
