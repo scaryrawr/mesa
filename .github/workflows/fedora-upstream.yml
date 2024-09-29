@@ -16,7 +16,6 @@ jobs:
       - name: fetch upstream & push changes
         uses: devcontainers/ci@v0.3
         with:
-          env: GITHUB_TOKEN
           runCmd: |
             git remote add upstream https://src.fedoraproject.org/rpms/mesa
             new_branch=fetch-rawhide-$(date +'%Y%m%d%s')
@@ -27,9 +26,12 @@ jobs:
             rm mesa-*.tar.xz
             spectool -g mesa.spec
             git add mesa-*.tar.xz
-            git diff --quiet rawhide || (
-              git push -u origin $new_branch
-              gh pr create -B master --title 'Update color themes' --body 'Created by Github action' -a scaryrawr
-            )
+
+      - name: Create Pull Request
+        run: |
+          git diff --quiet rawhide || (
+            git push -u origin $new_branch
+            gh pr create -B master --title 'Update color themes' --body 'Created by Github action' -a scaryrawr
+          )
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
