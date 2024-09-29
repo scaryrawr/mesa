@@ -8,7 +8,5 @@
       "username": "vscode"
     }
   },
-  "containerUser": "vscode",
-  "remoteUser": "vscode",
   "postStartCommand": "sudo dnf builddep -y mesa.spec"
 }
