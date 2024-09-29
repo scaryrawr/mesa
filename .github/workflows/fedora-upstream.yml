@@ -23,7 +23,11 @@ jobs:
             git checkout -b $new_branch
             git config --global user.name "github-actions[bot]"
             git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git pull upstream rawhide --no-ff --no-edit && (
+            git pull upstream rawhide --no-ff --no-edit
+            rm mesa-*.tar.xz
+            spectool -g mesa.spec
+            git add mesa-*.tar.xz
+            git diff --quiet rawhide || (
               git push -u origin $new_branch
               gh pr create -B master --title 'Update color themes' --body 'Created by Github action' -a scaryrawr
             )
