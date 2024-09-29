@@ -10,17 +10,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: fetch upstream & push changes
-        run: |
-          git remote add upstream https://src.fedoraproject.org/rpms/mesa
-          new_branch=fetch-rawhide-$(date +'%Y%m%d%s')
-          git checkout -b $new_branch
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git pull upstream rawhide --no-ff --no-edit && (
-            git push -u origin $new_branch
-            gh pr create -B master --title 'Update color themes' --body 'Created by Github action' -a scaryrawr
-          )
+        uses: devcontainers/ci@v0.3
+        with:
+          env: GITHUB_TOKEN
+          runCmd: |
+            git remote add upstream https://src.fedoraproject.org/rpms/mesa
+            new_branch=fetch-rawhide-$(date +'%Y%m%d%s')
+            git checkout -b $new_branch
+            git config --global user.name "github-actions[bot]"
+            git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git pull upstream rawhide --no-ff --no-edit && (
+              git push -u origin $new_branch
+              gh pr create -B master --title 'Update color themes' --body 'Created by Github action' -a scaryrawr
+            )
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

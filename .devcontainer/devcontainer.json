@@ -5,13 +5,10 @@
   },
   "features": {
     "ghcr.io/devcontainers/features/common-utils:2": {
-      "installZsh": "true",
-      "username": "vscode",
-      "upgradePackages": "true"
+      "username": "vscode"
     }
   },
   "containerUser": "vscode",
   "remoteUser": "vscode",
-  "onCreateCommand": "sudo dnf install -y dnf-plugins-core rpmdevtools",
   "postStartCommand": "sudo dnf builddep -y mesa.spec"
 }
