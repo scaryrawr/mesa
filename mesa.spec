@@ -85,6 +85,9 @@ Source1:        Mesa-MLAA-License-Clarification-Email.txt
 
 Patch10:        gnome-shell-glthread-disable.patch
 
+# Backport of https://gitlab.freedesktop.org/mesa/mesa/-/merge_requests/31321 for LLVM 19 compat.
+Patch11:        0001-gallium-Don-t-pass-avx512er-and-avx512pf-features-on.patch
+
 BuildRequires:  meson >= 1.3.0
 BuildRequires:  gcc
 BuildRequires:  gcc-c++
