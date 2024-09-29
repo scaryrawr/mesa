@@ -4,11 +4,10 @@
   "features": {
     "ghcr.io/devcontainers/features/common-utils:2": {
       "username": "vscode"
-    },
-    "ghcr.io/devcontainers/features/github-cli:1": {}
+    }
   },
   "containerUser": "vscode",
   "remoteUser": "vscode",
-  "onCreateCommand": "sudo dnf install -y dnf-plugins-core 'dnf-command(builddep)' rpmdevtools",
+  "onCreateCommand": "sudo dnf install -y dnf-plugins-core 'dnf-command(builddep)' rpmdevtools gh",
   "postStartCommand": "sudo dnf builddep -y mesa.spec"
 }
