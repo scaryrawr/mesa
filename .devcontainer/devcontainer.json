@@ -1,5 +1,5 @@
 {
-  "name": "fedora",
+  "name": "mesa",
   "image": "fedora:latest",
   "features": {
     "ghcr.io/devcontainers/features/common-utils:2": {
