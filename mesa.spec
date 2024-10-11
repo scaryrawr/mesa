@@ -601,6 +601,9 @@ popd
 %{_libdir}/dri/libdril_dri.so
 %{_libdir}/dri/swrast_dri.so
 %{_libdir}/dri/virtio_gpu_dri.so
+%if 0%{?with_d3d12}
+%{_libdir}/dri/d3d12_dri.so
+%endif
 
 %if 0%{?with_hardware}
 %if 0%{?with_r300}
@@ -704,6 +707,9 @@ popd
 %endif
 %{_libdir}/dri/virtio_gpu_drv_video.so
 %endif
+%if 0%{?with_d3d12}
+%{_libdir}/dri/d3d12_drv_video.so
+%endif
 
 %if 0%{?with_vdpau}
 %files vdpau-drivers
@@ -754,10 +760,6 @@ popd
 %endif
 
 %if 0%{?with_d3d12}
-%files d3d12
-%{_libdir}/dri/d3d12_dri.so
-%{_libdir}/dri/d3d12_drv_video.so
-
 %files d3d12-devel
 %{_includedir}/directx
 %{_includedir}/dxguids
