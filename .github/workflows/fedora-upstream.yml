@@ -28,6 +28,7 @@ jobs:
         with:
           runCmd: |
             rm mesa-*.tar.xz
+            git add -u
             spectool -g mesa.spec
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
