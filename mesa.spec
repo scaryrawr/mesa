@@ -71,7 +71,7 @@
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-%global ver 24.2.6
+%global ver 24.3.0-rc2
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
 Release:        %autorelease
 License:        MIT AND BSD-3-Clause AND SGI-B-2.0
@@ -440,7 +440,6 @@ export MESON_PACKAGE_CACHE_DIR="%{cargo_registry}/"
 
 %meson \
   -Dplatforms=x11,wayland \
-  -Ddri3=enabled \
   -Dosmesa=true \
   -Dvideo-codecs=h264dec,h264enc,h265dec,h265enc,vc1dec \
 %if 0%{?with_hardware}
@@ -542,6 +541,7 @@ popd
 %{_libdir}/pkgconfig/osmesa.pc
 
 %files libgbm
+%{_libdir}/gbm/dri_gbm.so
 %{_libdir}/libgbm.so.1
 %{_libdir}/libgbm.so.1.*
 %files libgbm-devel
