@@ -1,0 +1,66 @@
+name: Build SRPM
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - v*
+  pull_request:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build mesa src.rpm
+        uses: devcontainers/ci@v0.3
+        with:
+          runCmd: |
+            spectool -Rg mesa.spec
+            cp *.patch ~/rpmbuild/SOURCES/
+            cp Mesa-MLAA-License-Clarification-Email.txt ~/rpmbuild/SOURCES/
+            rpmbuild -bs mesa.spec
+            cp ~/rpmbuild/SRPMS/mesa*.src.rpm .
+
+      - name: rpms
+        id: src
+        run: |
+          echo "file=$(ls *.src.rpm)" >> "$GITHUB_OUTPUT"
+
+      - name: Upload extension
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{steps.rpms.file}}
+          path: ${{steps.rpms.file}}
+
+  release:
+    name: Release
+    needs: build
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download extension
+        id: download-extension
+        uses: actions/download-artifact@v4
+        with:
+          path: mesa
+          pattern: *.src.rpm
+          merge-multiple: true
+
+      - name: List Files
+        run: ls -R ${{ steps.download-extension.outputs.download-path }}
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          prerelease: false
+          files: |
+            ${{ steps.download-extension.outputs.download-path }}*.src.srpm
