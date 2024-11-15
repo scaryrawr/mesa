@@ -3,12 +3,12 @@ name: Build SRPM
 on:
   push:
     branches:
-      - main
+      - rawhide
     tags:
       - v*
   pull_request:
     branches:
-      - main
+      - rawhide
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
