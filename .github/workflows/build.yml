@@ -40,7 +40,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{steps.rpms.file}}
-          path: ${{steps.rpms.file}}
+          path: mesa*.src.rpm
 
   release:
     name: Release
