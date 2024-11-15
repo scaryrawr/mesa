@@ -31,6 +31,12 @@ jobs:
             rpmbuild -bs mesa.spec
             cp ~/rpmbuild/SRPMS/mesa*.src.rpm .
 
+      - name: Build mesa
+        uses: devcontainers/ci@v0.3
+        with:
+          runCmd: |
+            rpmbuild -bb mesa.spec
+
       - name: rpms
         id: src
         run: |
