@@ -39,8 +39,8 @@ jobs:
       - name: Upload extension
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ steps.rpms.outputs.file }}
-          path: mesa*.src.rpm
+          name: ${{ steps.src.outputs.file }}
+          path: ${{ steps.src.outputs.file }}
 
   release:
     name: Release
