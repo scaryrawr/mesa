@@ -63,5 +63,6 @@ jobs:
         with:
           prerelease: false
           generate_release_notes: true
+          fail_on_unmatched_files: true
           files: |
-            ${{ steps.download-extension.outputs.download-path }}*.src.srpm
+            ${{ steps.download-extension.outputs.download-path }}/*.src.srpm
