@@ -75,7 +75,7 @@ Summary:        Mesa graphics libraries
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
 Release:        %autorelease
 License:        MIT AND BSD-3-Clause AND SGI-B-2.0
-URL:            http://www.mesa3d.org
+URL:            https://www.mesa3d.org
 
 Source0:        https://archive.mesa3d.org/mesa-%{ver}.tar.xz
 # src/gallium/auxiliary/postprocess/pp_mlaa* have an ... interestingly worded license.
