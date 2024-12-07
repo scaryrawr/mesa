@@ -21,9 +21,12 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git pull upstream rawhide --no-ff --no-edit
+          rm mesa-*.tar.xz
           git diff --quiet rawhide && echo 'No updates' && exit 1 || echo 'Has updates'
+          git add -u
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m 'Update mesa'
 
       - name: Create Pull Request
         run: |
