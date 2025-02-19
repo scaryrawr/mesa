@@ -21,12 +21,12 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git pull upstream rawhide --no-ff --no-edit
-          git diff --quiet rawhide && echo 'No updates' && exit 1 || echo 'Has updates'
 
       - name: Update mesa
         uses: devcontainers/ci@v0.3
         with:
           runCmd: |
+            git diff --quiet rawhide && echo 'No updates' && exit 0
             rm mesa-*.tar.xz
             git add -u
             spectool -g mesa.spec
@@ -37,6 +37,7 @@ jobs:
 
       - name: Create Pull Request
         run: |
+          git diff --quiet rawhide && echo 'No updates' && exit 
           git config push.autoSetupRemote true
           git push
           gh pr create -B rawhide --title 'Pull fedora mesa upstream changes' --body 'Created by Github action' -a scaryrawr
