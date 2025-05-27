@@ -156,7 +156,7 @@ BuildRequires:  flatbuffers-devel
 BuildRequires:  flatbuffers-compiler
 BuildRequires:  xtensor-devel
 %endif
-%if 0%{?with_opencl} || 0%{?with_nvk} || 0%{?with_intel_clc} || 0%{?with_asahi}
+%if 0%{?with_opencl} || 0%{?with_nvk} || 0%{?with_intel_clc} || 0%{?with_asahi} || 0%{?with_panfrost}
 BuildRequires:  clang-devel
 BuildRequires:  pkgconfig(libclc)
 BuildRequires:  pkgconfig(SPIRV-Tools)
@@ -430,9 +430,9 @@ export MESON_PACKAGE_CACHE_DIR="%{cargo_registry}/"
   -Dgallium-xa=%{?with_xa:enabled}%{!?with_xa:disabled} \
   -Dgallium-nine=%{?with_nine:true}%{!?with_nine:false} \
   -Dteflon=%{?with_teflon:true}%{!?with_teflon:false} \
-  -Dgallium-opencl=%{?with_opencl:icd}%{!?with_opencl:disabled} \
 %if 0%{?with_opencl}
   -Dgallium-rusticl=true \
+  -Dgallium-opencl=disabled \
 %endif
   -Dvulkan-drivers=%{?vulkan_drivers} \
   -Dvulkan-layers=device-select \
@@ -544,13 +544,10 @@ popd
 
 %if 0%{?with_opencl}
 %files libOpenCL
-%{_libdir}/libMesaOpenCL.so.*
 %{_libdir}/libRusticlOpenCL.so.*
-%{_sysconfdir}/OpenCL/vendors/mesa.icd
 %{_sysconfdir}/OpenCL/vendors/rusticl.icd
 
 %files libOpenCL-devel
-%{_libdir}/libMesaOpenCL.so
 %{_libdir}/libRusticlOpenCL.so
 %endif
 
@@ -635,10 +632,6 @@ popd
 %if 0%{?with_vmware}
 %{_libdir}/dri/vmwgfx_dri.so
 %endif
-%endif
-%if 0%{?with_opencl}
-%dir %{_libdir}/gallium-pipe
-%{_libdir}/gallium-pipe/*.so
 %endif
 %if 0%{?with_kmsro}
 %{_libdir}/dri/armada-drm_dri.so
